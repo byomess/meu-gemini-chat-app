@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+body {
+    background-color: #0f172a;
+    /* slate-900 */
+    color: #f1f5f9;
+    /* slate-100 */
+}
+
+/* Custom scrollbar styles (Webkit-based browsers) */
+.scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.scrollbar-thumb-slate-700::-webkit-scrollbar-thumb {
+    background-color: #334155;
+    /* slate-700 */
+    border-radius: 10px;
+    border: 2px solid transparent;
+    /* Cor do track para dar padding */
+    background-clip: padding-box;
+}
+
+.hover\:scrollbar-thumb-slate-600::-webkit-scrollbar-thumb:hover {
+    background-color: #475569;
+    /* slate-600 */
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Para Firefox (mais limitado) */
+.scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent;
+    /* thumb track */
+}
+
+.hover\:scrollbar-thumb-slate-600:hover {
+    /* O hover no thumb é mais difícil de controlar no Firefox com CSS puro */
+    /* Geralmente o scrollbar-color já define o thumb e o track */
+}
