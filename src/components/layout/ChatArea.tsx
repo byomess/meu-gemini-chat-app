@@ -1,19 +1,27 @@
-import React, { useEffect, useRef, useState } from 'react'
-import MessageInput from '../chat/MessageInput'
-import MessageBubble from '../chat/MessageBubble'
-import { useConversations } from '../../contexts/ConversationContext'
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import MessageInput from '../chat/MessageInput';
+import MessageBubble from '../chat/MessageBubble';
+import { useConversations } from '../../contexts/ConversationContext';
 import {
     IoChatbubblesOutline,
     IoSparklesOutline,
     IoLockClosedOutline,
     IoArrowDownCircleOutline,
-} from 'react-icons/io5'
-import { useAppSettings } from '../../contexts/AppSettingsContext'
+    IoMenuOutline,
+} from 'react-icons/io5';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
+import useIsMobile from '../../hooks/useIsMobile';
 
-const ChatArea: React.FC = () => {
+interface ChatAreaProps {
+    onOpenMobileSidebar: () => void;
+}
+
+const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
     const { activeConversation, activeConversationId, isProcessingEditedMessage } =
-        useConversations()
-    const { settings } = useAppSettings()
+        useConversations();
+    const { settings } = useAppSettings();
+
+    const isMobile = useIsMobile();
 
     const chatContainerRef = useRef<HTMLDivElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -23,23 +31,25 @@ const ChatArea: React.FC = () => {
     const messages = activeConversation?.messages || []
     const conversationTitle = activeConversation?.title || 'Chat'
 
-    const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
         messagesEndRef.current?.scrollIntoView({ behavior })
         setIsUserScrolledUp(false)
         setForceScrollDown(false)
-    }
+    }, []);
 
     useEffect(() => {
         const container = chatContainerRef.current
         if (!container) return
+
         const threshold = 200
         const isNearBottom =
             container.scrollHeight - container.scrollTop - container.clientHeight <
             threshold
+
         if (forceScrollDown || (isNearBottom && !isUserScrolledUp)) {
             scrollToBottom()
         }
-    }, [messages, isProcessingEditedMessage, forceScrollDown])
+    }, [messages, isProcessingEditedMessage, forceScrollDown, isUserScrolledUp, scrollToBottom])
 
     useEffect(() => {
         const container = chatContainerRef.current
@@ -62,14 +72,24 @@ const ChatArea: React.FC = () => {
             setTimeout(() => scrollToBottom('auto'), 0)
             setIsUserScrolledUp(false)
         }
-    }, [activeConversationId])
+    }, [activeConversationId, scrollToBottom])
 
     const showWelcomeMessage = !activeConversationId
     const showApiKeyMissingMessage = activeConversationId && !settings.apiKey
 
     return (
-        <main className="flex-1 flex flex-col bg-slate-900 text-slate-100 h-screen overflow-hidden relative">
+        <main className="flex-1 flex flex-col bg-slate-900 text-slate-100 h-screen relative overflow-hidden chat-area-wrapper">
             <div className="p-3 sm:p-4 border-b border-slate-700/80 flex items-center space-x-3 sticky top-0 z-20 bg-slate-900/80 backdrop-blur-md">
+                {isMobile && onOpenMobileSidebar && (
+                    <button
+                        onClick={onOpenMobileSidebar}
+                        className="p-1 mr-2 text-slate-400 hover:text-slate-100 rounded-md"
+                        title="Abrir menu de conversas"
+                        aria-label="Abrir menu de conversas"
+                    >
+                        <IoMenuOutline size={24} />
+                    </button>
+                )}
                 <IoChatbubblesOutline
                     size={22}
                     className="text-slate-400 flex-shrink-0"
@@ -95,15 +115,18 @@ const ChatArea: React.FC = () => {
 
             <div
                 ref={chatContainerRef}
-                className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 hover:scrollbar-thumb-slate-600 scrollbar-track-transparent"
+                className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 hover:scrollbar-thumb-slate-600 scrollbar-track-transparent
+                           px-1 sm:px-2 md:px-3 py-3 sm:py-4 md:py-6"
             >
                 {showWelcomeMessage ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-500 p-6 text-center">
                         <IoSparklesOutline size={50} className="mb-4 opacity-40" />
                         <p className="text-lg font-medium">Bem-vindo à Interface Gemini!</p>
                         <p className="text-sm max-w-xs">
-                            Crie uma nova conversa ou selecione uma existente no painel à
-                            esquerda para começar.
+                            {isMobile ?
+                                "Toque no ícone de menu no canto superior esquerdo para ver suas conversas ou iniciar uma nova." :
+                                "Crie uma nova conversa ou selecione uma existente no painel à esquerda para começar."
+                            }
                         </p>
                     </div>
                 ) : showApiKeyMissingMessage ? (
@@ -125,7 +148,7 @@ const ChatArea: React.FC = () => {
                         </p>
                     </div>
                 ) : (
-                    <div className="px-1 sm:px-2 md:px-3 py-3 sm:py-4 md:py-6 space-y-4 sm:space-y-5 w-full">
+                    <div className="space-y-4 sm:space-y-5">
                         {messages.map(msg => (
                             <MessageBubble
                                 key={msg.id}

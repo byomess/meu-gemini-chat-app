@@ -239,18 +239,10 @@ const MessageInput: React.FC = () => {
             if (e.key === 'Enter') e.preventDefault();
             return;
         }
-        const hasLineBreakInText = text.includes('\n');
+
         if (e.key === 'Enter' && e.ctrlKey) {
             e.preventDefault();
             handleSubmit();
-            return;
-        }
-        if (e.key === 'Enter' && e.shiftKey) { return; }
-        if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
-            if (!hasLineBreakInText) {
-                e.preventDefault();
-                handleSubmit();
-            }
         }
     };
 
@@ -262,7 +254,7 @@ const MessageInput: React.FC = () => {
         isProcessingEditedMessage ? "Processando edição anterior..." :
             isLoadingAI ? "Gemini está respondendo..." :
                 activeConversationId ?
-                    (settings.apiKey ? "Digite sua mensagem... (Ctrl+Enter para enviar / Ctrl+Shift para quebrar linha)" : "Configure sua API Key nas Configurações.") :
+                    (settings.apiKey ? "Digite sua mensagem... (Ctrl+Enter para enviar / Enter para quebrar linha)" : "Configure sua API Key nas Configurações.") :
                     "Selecione ou crie uma conversa.";
 
     return (

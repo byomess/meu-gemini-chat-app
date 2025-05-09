@@ -7,7 +7,7 @@ import {
     type Content,
 } from "@google/genai";
 
-const MODEL_NAME = "gemini-2.5-pro-preview-05-06"; // ou o modelo que estiver usando
+const MODEL_NAME = "gemini-2.5-flash-preview-04-17"; // ou o modelo que estiver usando
 
 export interface StreamedGeminiResponseChunk {
     delta?: string;

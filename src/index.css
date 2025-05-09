@@ -42,3 +42,31 @@ body {
     /* O hover no thumb é mais difícil de controlar no Firefox com CSS puro */
     /* Geralmente o scrollbar-color já define o thumb e o track */
 }
+
+/* Estilo para desabilitar o scroll do body quando a sidebar mobile está aberta */
+/* Esta classe é adicionada ao body em App.tsx */
+body.mobile-sidebar-open {
+  overflow: hidden;
+}
+
+main {
+    max-width: 100vw;
+}
+
+/* Se você estivesse usando margem fixa para o ChatArea no desktop, precisaria de algo assim: */
+/*
+@media (min-width: 768px) {
+  body:not(.desktop-sidebar-collapsed) .chat-area-wrapper {
+    margin-left: 288px; *//* desktop expanded width */
+/*  }
+  body.desktop-sidebar-collapsed .chat-area-wrapper {
+    margin-left: 72px; *//* desktop collapsed width */
+/*  }
+}
+*/
+
+/* Como no código App.tsx atual a ChatArea está dentro de um div flex-1
+   e a Sidebar mobile usa position fixed/absolute e z-index,
+   você NÃO precisa das classes desktop-sidebar-collapsed no body nem da margem no .chat-area-wrapper.
+   O flexbox cuida do espaço.
+   A única classe necessária no body para o comportamento do modal é `mobile-sidebar-open`. */

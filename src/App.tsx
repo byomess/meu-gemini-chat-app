@@ -1,58 +1,111 @@
 // src/App.tsx
-import { useState, useEffect } from 'react'; // Adicionar useEffect
+import { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import ChatArea from './components/layout/ChatArea';
 import SettingsModal from './components/settings/SettingsModal';
-import { useLocalStorage } from './hooks/useLocalStorage'; // Importar useLocalStorage
+// Removido useLocalStorage e SIDEBAR_COLLAPSED_KEY
+import useIsMobile from './hooks/useIsMobile';
 
-const SIDEBAR_COLLAPSED_KEY = 'geminiChat_sidebarCollapsed';
+// Removida a constante SIDEBAR_COLLAPSED_KEY
 
 function App() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  // Usar localStorage para persistir o estado da sidebar
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useLocalStorage<boolean>(
-    SIDEBAR_COLLAPSED_KEY,
-    false // Sidebar começa expandida por padrão
-  );
+  // Removidos os estados e useLocalStorage relacionados ao colapso do desktop
+  // const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useLocalStorage<boolean>(...);
 
-  const handleOpenSettingsModal = () => {
+  // Mobile: estado de abertura do modal lateral (mantido)
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  const isMobile = useIsMobile(); // Usa o hook
+
+  const handleOpenSettingsModal = useCallback(() => {
     setIsSettingsModalOpen(true);
-  };
-
-  const handleCloseSettingsModal = () => {
-    setIsSettingsModalOpen(false);
-  };
-
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(prev => !prev);
-  };
-
-  // Adiciona uma classe ao body para estilos globais se a sidebar estiver colapsada,
-  // ou para o layout principal se adaptar.
-  useEffect(() => {
-    if (isSidebarCollapsed) {
-      document.body.classList.add('sidebar-collapsed');
-    } else {
-      document.body.classList.remove('sidebar-collapsed');
+    // No mobile, ao abrir configurações, fechar o sidebar modal
+    if (isMobile) {
+      setIsMobileSidebarOpen(false);
     }
-    // Disparar um evento de resize pode ajudar alguns componentes a se re-renderizarem corretamente
-    // window.dispatchEvent(new Event('resize')); // Usar com cautela, pode ter implicações de performance
-  }, [isSidebarCollapsed]);
+  }, [isMobile]);
 
+  const handleCloseSettingsModal = useCallback(() => {
+    setIsSettingsModalOpen(false);
+  }, []);
+
+  // Removidas as funções de toggle da sidebar desktop
+  // const handleToggleDesktopSidebar = useCallback(() => {...}, [...]);
+
+  // Funções para o modal lateral (apenas no mobile) - Mantidas
+  const handleOpenMobileSidebar = useCallback(() => {
+      setIsMobileSidebarOpen(true);
+  }, []);
+
+  const handleCloseMobileSidebar = useCallback(() => {
+      setIsMobileSidebarOpen(false);
+  }, []);
+  
+  // Handler quando uma conversa é selecionada no mobile, fecha o modal - Mantido
+  const handleSelectConversationInMobile = useCallback(() => {
+      setIsMobileSidebarOpen(false);
+  }, []);
+
+
+  // Adiciona/remove classe no body para desabilitar scroll quando o modal mobile está aberto
+  // Removida a lógica para desktop-sidebar-collapsed
+  useEffect(() => {
+    const body = document.body;
+
+    // Lida com o estado aberto do mobile (para desabilitar scroll do body)
+    if (isMobileSidebarOpen) {
+        body.classList.add('mobile-sidebar-open');
+    } else {
+        body.classList.remove('mobile-sidebar-open');
+    }
+
+    // Não é mais necessário limpar classes de desktop, pois não as estamos adicionando aqui.
+    // window.dispatchEvent(new Event('resize')); 
+  }, [isMobileSidebarOpen]); // Dependência simplificada
 
   return (
-    <div className="flex h-screen bg-slate-950 text-white selection:bg-blue-600 selection:text-white overflow-hidden"> {/* overflow-hidden para evitar scroll duplo */}
-      <Sidebar
-        onOpenSettings={handleOpenSettingsModal}
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={toggleSidebar}
-      />
-      {/* Adicionar uma div wrapper para a ChatArea pode ajudar com transições ou margens */}
-      <div className={`flex-1 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'ml-0' : 'ml-0'}`}> 
-        {/* O ml-0 é porque a sidebar tem position fixed/absolute ou ajusta seu próprio tamanho.
-            Se a sidebar empurrasse o conteúdo, aqui seria ml-larguraDaSidebar */}
-        <ChatArea />
+    // Removida a classe que controlava a margem baseada no colapso desktop
+    <div className="flex h-screen bg-slate-950 text-white selection:bg-blue-600 selection:text-white overflow-hidden">
+      
+      {/* Sidebar - Renderização Condicional de Layout */}
+      {isMobile ? (
+        // Modo Mobile: Sidebar como Overlay Condicional
+        isMobileSidebarOpen && (
+            <>
+              {/* Overlay de fundo clicável para fechar */}
+              <div 
+                className="fixed inset-0 bg-black/50 z-40" 
+                onClick={handleCloseMobileSidebar}
+                aria-hidden="true"
+              ></div>
+              {/* Sidebar no modo Mobile */}
+              <Sidebar
+                  onOpenSettings={handleOpenSettingsModal}
+                  isMobile={true}
+                  onCloseMobile={handleCloseMobileSidebar}
+                  onSelectConversation={handleSelectConversationInMobile}
+                   // Props de colapso desktop removidos
+              />
+            </>
+        )
+      ) : (
+        // Modo Desktop: Sidebar Fixo e SEMPRE Expandido
+        <Sidebar
+            onOpenSettings={handleOpenSettingsModal}
+            isMobile={false}
+             // Props de colapso desktop removidos (isCollapsed e onToggleCollapse)
+             // Props mobile removidos
+        />
+      )}
+
+      {/* ChatArea - Passar prop para abrir sidebar mobile */}
+      {/* A div wrapper para ChatArea pode ser necessária ou não dependendo do CSS */}
+      {/* Se Sidebar desktop for fixo, ChatArea flex-1 funcionará sem margem aqui. */}
+      <div className="flex-1 transition-all duration-300 ease-in-out">
+         <ChatArea onOpenMobileSidebar={handleOpenMobileSidebar} />
       </div>
+
       <SettingsModal
         isOpen={isSettingsModalOpen}
         onClose={handleCloseSettingsModal}
