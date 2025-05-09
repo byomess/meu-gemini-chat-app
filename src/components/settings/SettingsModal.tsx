@@ -7,22 +7,24 @@ import {
     IoPencilOutline,
     IoAddCircleOutline,
     IoKeyOutline,
-    IoDownloadOutline, // Ícone para Exportar
-    IoCloudUploadOutline, // Ícone para Importar
+    IoDownloadOutline,
+    IoCloudUploadOutline,
+    IoChatbubblesOutline, // Para apagar conversas
 } from 'react-icons/io5';
 import Button from '../common/Button';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { useMemories } from '../../contexts/MemoryContext';
+import { useConversations } from '../../contexts/ConversationContext'; // Importar para apagar conversas
 import type { Memory } from '../../types';
 import { LuBrain } from 'react-icons/lu';
+import { FiDatabase } from 'react-icons/fi'; // Mantido para a aba de Dados
 
-type TabId = 'general' | 'memories';
+type TabId = 'general' | 'memories' | 'data';
 
 interface Tab {
     id: TabId;
     label: string;
     icon: ReactNode;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     component: React.FC<any>;
 }
 
@@ -37,7 +39,7 @@ const GeneralSettingsTab: React.FC<{
     onSaveApiKey: () => void;
 }> = ({ currentApiKey, setCurrentApiKey, onSaveApiKey }) => {
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <div>
                 <label htmlFor="apiKey" className="block text-sm font-medium text-slate-300 mb-1.5">
                     Chave da API Google Gemini
@@ -63,13 +65,13 @@ const GeneralSettingsTab: React.FC<{
 };
 
 const MemoriesSettingsTab: React.FC = () => {
-    const { memories, addMemory, deleteMemory, updateMemory, clearAllMemories, replaceAllMemories } = useMemories();
+    const { memories, addMemory, deleteMemory, updateMemory, replaceAllMemories } = useMemories();
     const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
     const [editedMemoryText, setEditedMemoryText] = useState<string>('');
     const [newMemoryText, setNewMemoryText] = useState<string>('');
     const newMemoryInputRef = useRef<HTMLInputElement>(null);
     const editMemoryInputRef = useRef<HTMLInputElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null); // Para o input de arquivo
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (editingMemory && editMemoryInputRef.current) {
@@ -77,10 +79,6 @@ const MemoriesSettingsTab: React.FC = () => {
             editMemoryInputRef.current.select();
         }
     }, [editingMemory]);
-
-    const handleLocalClearAllMemories = () => {
-        clearAllMemories(); // A confirmação já está no contexto
-    };
 
     const handleLocalDeleteMemory = (id: string) => {
         if (window.confirm('Tem certeza de que deseja apagar esta memória?')) {
@@ -98,9 +96,9 @@ const MemoriesSettingsTab: React.FC = () => {
     };
 
     const handleSaveMemoryEdit = () => {
-        if (editingMemory) { // Garante que editingMemory não é null
+        if (editingMemory) {
             if (editedMemoryText.trim() !== editingMemory.content) {
-                updateMemory(editingMemory.id, editedMemoryText.trim()); // updateMemory lida com texto vazio
+                updateMemory(editingMemory.id, editedMemoryText.trim());
             }
             setEditingMemory(null);
             setEditedMemoryText('');
@@ -144,7 +142,7 @@ const MemoriesSettingsTab: React.FC = () => {
             alert("Nenhuma memória para exportar.");
             return;
         }
-        const jsonString = JSON.stringify(memories, null, 4); // null, 4 para formatação bonita
+        const jsonString = JSON.stringify(memories, null, 4);
         const blob = new Blob([jsonString], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -178,7 +176,6 @@ const MemoriesSettingsTab: React.FC = () => {
                 console.error("Erro ao importar memórias:", error);
                 alert(`Erro ao importar memórias: ${error instanceof Error ? error.message : "Formato de arquivo inválido."}`);
             } finally {
-                // Resetar o valor do input para permitir o re-upload do mesmo arquivo
                 if (fileInputRef.current) {
                     fileInputRef.current.value = "";
                 }
@@ -187,9 +184,8 @@ const MemoriesSettingsTab: React.FC = () => {
         reader.readAsText(file);
     };
 
-
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <div className="flex flex-wrap justify-between items-center gap-2">
                 <h3 className="text-base font-medium text-slate-300">Gerenciar Memórias</h3>
                 <div className="flex gap-2 flex-wrap">
@@ -217,16 +213,6 @@ const MemoriesSettingsTab: React.FC = () => {
                         onChange={handleImportMemories}
                         className="hidden"
                     />
-                    {memories.length > 0 && (
-                        <Button
-                            variant="danger"
-                            className="!text-xs !py-1.5 !px-3 !font-normal"
-                            onClick={handleLocalClearAllMemories}
-                        >
-                            <IoTrashOutline className="mr-1.5 inline" />
-                            Limpar Tudo
-                        </Button>
-                    )}
                 </div>
             </div>
 
@@ -308,6 +294,62 @@ const MemoriesSettingsTab: React.FC = () => {
     );
 };
 
+const DataSettingsTab: React.FC = () => {
+    const { clearAllMemories } = useMemories();
+    const { deleteAllConversations, conversations } = useConversations(); // Obter deleteAllConversations e conversations
+
+    const handleLocalClearAllMemories = () => {
+        clearAllMemories();
+    };
+
+    const handleLocalDeleteAllConversations = () => {
+        if (window.confirm('Tem certeza de que deseja apagar TODAS as conversas? Esta ação não pode ser desfeita e apagará todo o seu histórico.')) {
+            deleteAllConversations();
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-base font-medium text-slate-300 mb-3">Gerenciamento de Dados</h3>
+                <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/50 space-y-4">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-sm text-slate-200">Apagar todas as memórias</p>
+                            <p className="text-xs text-slate-400">Remove todas as memórias armazenadas pela IA.</p>
+                        </div>
+                        <Button
+                            variant="danger"
+                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0"
+                            onClick={handleLocalClearAllMemories}
+                            disabled={useMemories().memories.length === 0}
+                        >
+                            <IoTrashOutline className="mr-1.5 inline" />
+                            Limpar Memórias
+                        </Button>
+                    </div>
+                    <hr className="border-slate-600/70" />
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-sm text-slate-200">Apagar todas as conversas</p>
+                            <p className="text-xs text-slate-400">Remove todo o seu histórico de conversas.</p>
+                        </div>
+                        <Button
+                            variant="danger"
+                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0"
+                            onClick={handleLocalDeleteAllConversations}
+                            disabled={conversations.length === 0}
+                        >
+                            <IoChatbubblesOutline className="mr-1.5 inline" />
+                            Limpar Conversas
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const { settings, saveApiKey } = useAppSettings();
     const [currentApiKey, setCurrentApiKey] = useState<string>('');
@@ -326,7 +368,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
     const handleSaveApiKeyOnly = () => {
         saveApiKey(currentApiKey);
-        alert("Chave de API salva!"); // Feedback simples
+        alert("Chave de API salva!");
     };
     
     const handleFinalSaveAndClose = () => {
@@ -337,6 +379,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const tabs: Tab[] = [
         { id: 'general', label: 'Geral', icon: <IoKeyOutline size={18} />, component: GeneralSettingsTab },
         { id: 'memories', label: 'Memórias', icon: <LuBrain size={18} />, component: MemoriesSettingsTab },
+        { id: 'data', label: 'Dados', icon: <FiDatabase size={18} />, component: DataSettingsTab },
     ];
 
     const ActiveTabComponent = tabs.find(tab => tab.id === activeTab)?.component;

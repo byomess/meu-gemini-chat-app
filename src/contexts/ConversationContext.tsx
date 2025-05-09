@@ -19,6 +19,7 @@ interface ConversationContextType {
     setActiveConversationId: (id: string | null) => void;
     createNewConversation: () => Conversation;
     deleteConversation: (id: string) => void;
+    deleteAllConversations: () => void;
     addMessageToConversation: (
         conversationId: string,
         messageContent: Omit<Message, 'id' | 'timestamp'>
@@ -85,6 +86,11 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             }
         }
     }, [conversations, activeId, setConversations, setActiveId]);
+
+    const deleteAllConversations = useCallback(() => {
+        setConversations([]);
+        setActiveId(null);
+    }, [setConversations, setActiveId]);
 
     const addMessageToConversation = useCallback((
         conversationId: string,
@@ -247,9 +253,9 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 c.id === conversationId
                     ? { ...c, messages: updatedMessages, updatedAt: new Date() }
                     : c
-            ).sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
         );
-        
+
         const newAiMessageId = addMessageToConversation(conversationId, {
             text: "",
             sender: 'ai',
@@ -266,7 +272,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
         let finalMemories: string[] = [];
         let streamError: string | null = null;
-        
+
         // Inicia o processador da fila pela primeira vez (se houver chunks ou o stream não terminou)
         // Isso garante que mesmo que o primeiro chunk demore um pouco, o timer será iniciado.
         if (!renderIntervalRef.current) {
@@ -294,10 +300,10 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 if (streamResponse.isFinished) {
                     finalMemories = streamResponse.newMemories || [];
                     streamHasFinishedRef.current = true; // Marca que o stream terminou
-                    break; 
+                    break;
                 }
             }
-            
+
             // Esperar a fila de renderização terminar APÓS o stream ter finalizado completamente
             // Esta é a parte mais delicada. Se o streamHasFinishedRef.current for true,
             // o processChunkQueue irá parar de se reagendar quando a fila estiver vazia.
@@ -310,7 +316,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             // Nesse ponto, accumulatedTextRef.current terá o texto completo.
 
             // Pequena espera para dar chance ao último chunk ser processado pela fila do timer
-            if(streamHasFinishedRef.current) {
+            if (streamHasFinishedRef.current) {
                 await new Promise(resolve => setTimeout(resolve, CHUNK_RENDER_INTERVAL_MS * 1.5));
             }
 
@@ -345,13 +351,13 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             setIsProcessingEditedMessage(false);
         }
     }, [
-        appSettingsHook, 
-        memoriesHook, 
+        appSettingsHook,
+        memoriesHook,
         conversations,
-        setConversations, 
-        addMessageToConversation, 
+        setConversations,
+        addMessageToConversation,
         updateMessageInConversation,
-        processChunkQueue 
+        processChunkQueue
     ]);
 
     return (
@@ -363,6 +369,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             setActiveConversationId,
             createNewConversation,
             deleteConversation,
+            deleteAllConversations,
             addMessageToConversation,
             updateMessageInConversation,
             updateConversationTitle,
