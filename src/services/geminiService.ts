@@ -8,7 +8,7 @@ import {
     type Content,
   } from "@google/genai";
   
-  const MODEL_NAME = "gemini-2.0-flash-001";
+  const MODEL_NAME = "gemini-2.5-pro-preview-05-06";
   
   export interface StreamedGeminiResponseChunk {
     delta?: string;

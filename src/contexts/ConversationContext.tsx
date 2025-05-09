@@ -1,21 +1,21 @@
 // src/contexts/ConversationContext.tsx
-import React, { createContext, useContext, type ReactNode, useState as useReactState } from 'react'; // Renomear useState para evitar conflito
+import React, { createContext, useContext, type ReactNode, useState as useReactState, useCallback, useRef, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import type { Conversation, Message, MessageMetadata } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-// Importar os hooks necessários para a chamada da API dentro do contexto
 import { useAppSettings } from './AppSettingsContext';
 import { useMemories } from './MemoryContext';
 import { streamMessageToGemini } from '../services/geminiService';
 
 const CONVERSATIONS_KEY = 'geminiChat_conversations';
 const ACTIVE_CONVERSATION_ID_KEY = 'geminiChat_activeConversationId';
+const CHUNK_RENDER_INTERVAL_MS = 200; // Intervalo para renderizar chunks da fila
 
 interface ConversationContextType {
     conversations: Conversation[];
     activeConversationId: string | null;
     activeConversation: Conversation | null;
-    isProcessingEditedMessage: boolean; // Novo estado para feedback de UI
+    isProcessingEditedMessage: boolean;
     setActiveConversationId: (id: string | null) => void;
     createNewConversation: () => Conversation;
     deleteConversation: (id: string) => void;
@@ -30,7 +30,7 @@ interface ConversationContextType {
     ) => void;
     updateConversationTitle: (id: string, newTitle: string) => void;
     removeMessageById: (conversationId: string, messageId: string) => void;
-    regenerateResponseForEditedMessage: ( // Nova função
+    regenerateResponseForEditedMessage: (
         conversationId: string,
         editedMessageId: string,
         newText: string
@@ -44,19 +44,23 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
     const [activeId, setActiveId] = useLocalStorage<string | null>(ACTIVE_CONVERSATION_ID_KEY, null);
     const [isProcessingEditedMessage, setIsProcessingEditedMessage] = useReactState<boolean>(false);
 
+    const appSettingsHook = useAppSettings();
+    const memoriesHook = useMemories();
 
-    // Dependências para a chamada da API
-    const appSettingsHook = useAppSettings(); // Chamado aqui para estar no corpo do provider
-    const memoriesHook = useMemories();     // Chamado aqui
+    const chunkQueueRef = useRef<string[]>([]);
+    const accumulatedTextRef = useRef<string>("");
+    const currentAiMessageIdRef = useRef<string | null>(null);
+    const currentConversationIdRef = useRef<string | null>(null);
+    const renderIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const streamHasFinishedRef = useRef<boolean>(false); // Nova ref para indicar fim do stream da API
 
     const activeConversation = conversations.find(c => c.id === activeId) || null;
 
-    const setActiveConversationId = (id: string | null) => {
+    const setActiveConversationId = useCallback((id: string | null) => {
         setActiveId(id);
-    };
+    }, [setActiveId]);
 
-    const createNewConversation = (): Conversation => {
-        // ... (sem alterações)
+    const createNewConversation = useCallback((): Conversation => {
         const newConversation: Conversation = {
             id: uuidv4(),
             title: 'Nova Conversa',
@@ -67,10 +71,9 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         setConversations(prev => [newConversation, ...prev].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()));
         setActiveId(newConversation.id);
         return newConversation;
-    };
+    }, [setConversations, setActiveId]);
 
-    const deleteConversation = (id: string) => {
-        // ... (sem alterações)
+    const deleteConversation = useCallback((id: string) => {
         const updatedConversations = conversations.filter(c => c.id !== id);
         setConversations(updatedConversations);
         if (activeId === id) {
@@ -81,13 +84,12 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 setActiveId(null);
             }
         }
-    };
+    }, [conversations, activeId, setConversations, setActiveId]);
 
-    const addMessageToConversation = (
+    const addMessageToConversation = useCallback((
         conversationId: string,
         messageContent: Omit<Message, 'id' | 'timestamp'>
     ): string => {
-        // ... (sem alterações)
         const newMessageId = uuidv4();
         const newMessage: Message = {
             id: newMessageId,
@@ -96,7 +98,6 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             timestamp: new Date(),
             metadata: messageContent.metadata || {},
         };
-
         setConversations(prevConvos =>
             prevConvos.map(c =>
                 c.id === conversationId
@@ -112,14 +113,13 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
         );
         return newMessageId;
-    };
+    }, [setConversations]);
 
-    const updateMessageInConversation = (
+    const updateMessageInConversation = useCallback((
         conversationId: string,
         messageId: string,
         updates: { text?: string; metadata?: Partial<MessageMetadata> }
     ) => {
-        // ... (sem alterações)
         setConversations(prevConvos =>
             prevConvos.map(c =>
                 c.id === conversationId
@@ -140,37 +140,76 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                     : c
             ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
         );
-    };
+    }, [setConversations]);
 
-    const removeMessageById = (conversationId: string, messageId: string) => {
-        // ... (sem alterações)
+    const removeMessageById = useCallback((conversationId: string, messageId: string) => {
         setConversations(prevConvos =>
             prevConvos.map(c =>
                 c.id === conversationId
-                    ? { ...c, messages: c.messages.filter(m => m.id !== messageId), updatedAt: new Date() } // Adiciona updatedAt
+                    ? { ...c, messages: c.messages.filter(m => m.id !== messageId), updatedAt: new Date() }
                     : c
             ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
         );
-    };
+    }, [setConversations]);
 
-    const updateConversationTitle = (id: string, newTitle: string) => {
-        // ... (sem alterações)
+    const updateConversationTitle = useCallback((id: string, newTitle: string) => {
         setConversations(prev =>
             prev.map(c =>
                 c.id === id ? { ...c, title: newTitle, updatedAt: new Date() } : c
             ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
         );
-    };
+    }, [setConversations]);
 
-    // NOVA FUNÇÃO
-    const regenerateResponseForEditedMessage = async (
+    const processChunkQueue = useCallback(() => {
+        if (renderIntervalRef.current) {
+            clearTimeout(renderIntervalRef.current); // Limpa timer anterior
+            renderIntervalRef.current = null;
+        }
+
+        if (chunkQueueRef.current.length > 0 && currentAiMessageIdRef.current && currentConversationIdRef.current) {
+            const chunkToRender = chunkQueueRef.current.shift();
+            if (chunkToRender) {
+                accumulatedTextRef.current += chunkToRender;
+                updateMessageInConversation(currentConversationIdRef.current, currentAiMessageIdRef.current, {
+                    text: accumulatedTextRef.current + "▍",
+                    metadata: { isLoading: true }
+                });
+            }
+        }
+
+        // Se ainda há chunks ou o stream da API não terminou (para pegar os últimos chunks), continua
+        if (chunkQueueRef.current.length > 0 || !streamHasFinishedRef.current) {
+            renderIntervalRef.current = setTimeout(processChunkQueue, CHUNK_RENDER_INTERVAL_MS);
+        } else {
+            // A fila está vazia E o stream da API terminou. Agora podemos fazer a atualização final.
+            // A atualização final será feita na função `regenerateResponseForEditedMessage`
+            // após este loop de `processChunkQueue` naturalmente se encerrar.
+        }
+    }, [updateMessageInConversation]);
+
+
+    useEffect(() => {
+        return () => {
+            if (renderIntervalRef.current) {
+                clearTimeout(renderIntervalRef.current);
+            }
+        };
+    }, []);
+
+    const regenerateResponseForEditedMessage = useCallback(async (
         conversationId: string,
         editedMessageId: string,
         newText: string
     ): Promise<void> => {
         setIsProcessingEditedMessage(true);
-        const { settings } = appSettingsHook; // Obtém settings do hook
-        const { memories: globalMemories, addMemory: addNewGlobalMemory } = memoriesHook; // Obtém memories do hook
+        const { settings } = appSettingsHook;
+        const { memories: globalMemories, addMemory: addNewGlobalMemory } = memoriesHook;
+
+        chunkQueueRef.current = [];
+        accumulatedTextRef.current = "";
+        streamHasFinishedRef.current = false; // Importante resetar
+        if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
+        renderIntervalRef.current = null;
 
         if (!settings.apiKey) {
             addMessageToConversation(conversationId, {
@@ -182,26 +221,25 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             return;
         }
 
-        let conversationToUpdate = conversations.find(c => c.id === conversationId);
+        const currentConversations = [...conversations]; // Cria uma cópia para trabalhar
+        const conversationToUpdate = currentConversations.find(c => c.id === conversationId);
+
         if (!conversationToUpdate) {
-            console.error("Conversa não encontrada para regeneração.");
             setIsProcessingEditedMessage(false);
             return;
         }
 
         const messageIndex = conversationToUpdate.messages.findIndex(msg => msg.id === editedMessageId);
         if (messageIndex === -1) {
-            console.error("Mensagem editada não encontrada para regeneração.");
             setIsProcessingEditedMessage(false);
             return;
         }
 
-        // 1. Atualiza a mensagem do usuário e remove as subsequentes
         const updatedMessages = conversationToUpdate.messages.slice(0, messageIndex + 1);
         updatedMessages[messageIndex] = {
             ...updatedMessages[messageIndex],
             text: newText,
-            timestamp: new Date(), // Atualiza o timestamp da mensagem editada
+            timestamp: new Date(),
         };
 
         setConversations(prevConvos =>
@@ -209,18 +247,9 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 c.id === conversationId
                     ? { ...c, messages: updatedMessages, updatedAt: new Date() }
                     : c
-            ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            ).sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
         );
-
-        // A conversa foi atualizada, precisamos pegar a referência mais recente para o histórico da API
-        conversationToUpdate = conversations.find(c => c.id === conversationId);
-        if (!conversationToUpdate) { // Checagem de segurança, improvável de falhar
-            setIsProcessingEditedMessage(false);
-            return;
-        }
-
-
-        // 2. Adiciona uma mensagem placeholder para a nova resposta da IA
+        
         const newAiMessageId = addMessageToConversation(conversationId, {
             text: "",
             sender: 'ai',
@@ -228,51 +257,72 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         });
 
         if (!newAiMessageId) {
-            console.error("Não foi possível criar a mensagem placeholder da IA para regeneração.");
             setIsProcessingEditedMessage(false);
             return;
         }
 
-        let accumulatedResponse = "";
+        currentAiMessageIdRef.current = newAiMessageId;
+        currentConversationIdRef.current = conversationId;
+
         let finalMemories: string[] = [];
         let streamError: string | null = null;
+        
+        // Inicia o processador da fila pela primeira vez (se houver chunks ou o stream não terminou)
+        // Isso garante que mesmo que o primeiro chunk demore um pouco, o timer será iniciado.
+        if (!renderIntervalRef.current) {
+            renderIntervalRef.current = setTimeout(processChunkQueue, CHUNK_RENDER_INTERVAL_MS);
+        }
 
         try {
-            // O histórico para a API agora são as `updatedMessages` (até a mensagem editada inclusive)
             const historyForAPI = updatedMessages.map(msg => ({ sender: msg.sender, text: msg.text }));
 
             for await (const streamResponse of streamMessageToGemini(
                 settings.apiKey,
-                historyForAPI.slice(0, -1), // Todo o histórico EXCETO a última mensagem do usuário (editada)
-                newText,                     // A mensagem do usuário (editada) como a atual
+                historyForAPI.slice(0, -1),
+                newText,
                 globalMemories.map(mem => mem.content)
             )) {
                 if (streamResponse.delta) {
-                    accumulatedResponse += streamResponse.delta;
-                    updateMessageInConversation(conversationId, newAiMessageId, {
-                        text: accumulatedResponse + "▍",
-                        metadata: { isLoading: true }
-                    });
+                    chunkQueueRef.current.push(streamResponse.delta);
+                    // Não precisa chamar processChunkQueue aqui, o setTimeout já está agendado ou será agendado
                 }
                 if (streamResponse.error) {
                     streamError = streamResponse.error;
+                    streamHasFinishedRef.current = true; // Marca que o stream (com erro) terminou
                     break;
                 }
                 if (streamResponse.isFinished) {
-                    accumulatedResponse = streamResponse.finalText || accumulatedResponse;
                     finalMemories = streamResponse.newMemories || [];
-                    break;
+                    streamHasFinishedRef.current = true; // Marca que o stream terminou
+                    break; 
                 }
             }
+            
+            // Esperar a fila de renderização terminar APÓS o stream ter finalizado completamente
+            // Esta é a parte mais delicada. Se o streamHasFinishedRef.current for true,
+            // o processChunkQueue irá parar de se reagendar quando a fila estiver vazia.
+            // Precisamos de uma forma de saber quando a última atualização de UI via processChunkQueue aconteceu.
+
+            // Simplificação: a atualização final ocorrerá no finally.
+            // A `processChunkQueue` continuará até esvaziar a fila.
+            // Quando o stream termina (streamHasFinishedRef.current = true), 
+            // e a chunkQueueRef.current.length se torna 0, o timer para.
+            // Nesse ponto, accumulatedTextRef.current terá o texto completo.
+
+            // Pequena espera para dar chance ao último chunk ser processado pela fila do timer
+            if(streamHasFinishedRef.current) {
+                await new Promise(resolve => setTimeout(resolve, CHUNK_RENDER_INTERVAL_MS * 1.5));
+            }
+
 
             if (streamError) {
                 updateMessageInConversation(conversationId, newAiMessageId, {
-                    text: streamError,
+                    text: accumulatedTextRef.current + (accumulatedTextRef.current ? '\n\n--- ERRO ---\n' : '') + streamError,
                     metadata: { isLoading: false, error: true }
                 });
             } else {
                 updateMessageInConversation(conversationId, newAiMessageId, {
-                    text: accumulatedResponse,
+                    text: accumulatedTextRef.current,
                     metadata: { isLoading: false, memorizedItems: finalMemories.length > 0 ? finalMemories : undefined }
                 });
                 if (finalMemories.length > 0) {
@@ -282,21 +332,34 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         } catch (error) {
             console.error("Erro ao regenerar resposta:", error);
             updateMessageInConversation(conversationId, newAiMessageId, {
-                text: "Erro ao processar a regeneração da resposta.",
+                text: accumulatedTextRef.current + "\n\nErro ao processar a regeneração da resposta.",
                 metadata: { isLoading: false, error: true }
             });
         } finally {
+            if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
+            renderIntervalRef.current = null;
+            currentAiMessageIdRef.current = null;
+            currentConversationIdRef.current = null;
+            chunkQueueRef.current = []; // Limpa a fila para garantir
+            accumulatedTextRef.current = ""; // Limpa o acumulador
             setIsProcessingEditedMessage(false);
         }
-    };
-
+    }, [
+        appSettingsHook, 
+        memoriesHook, 
+        conversations,
+        setConversations, 
+        addMessageToConversation, 
+        updateMessageInConversation,
+        processChunkQueue 
+    ]);
 
     return (
         <ConversationContext.Provider value={{
             conversations,
             activeConversationId: activeId,
             activeConversation,
-            isProcessingEditedMessage, // Expor o novo estado
+            isProcessingEditedMessage,
             setActiveConversationId,
             createNewConversation,
             deleteConversation,
@@ -304,14 +367,13 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             updateMessageInConversation,
             updateConversationTitle,
             removeMessageById,
-            regenerateResponseForEditedMessage, // Expor a nova função
+            regenerateResponseForEditedMessage,
         }}>
             {children}
         </ConversationContext.Provider>
     );
 };
 
-// Hook useConversations permanece o mesmo
 export const useConversations = (): ConversationContextType => {
     const context = useContext(ConversationContext);
     if (context === undefined) {
