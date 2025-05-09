@@ -1,22 +1,24 @@
 // src/components/chat/MessageInput.tsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react'; // Adicionado useCallback
 import Button from '../common/Button';
 import { IoSend, IoPulseOutline, IoWarningOutline } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { useMemories } from '../../contexts/MemoryContext';
-import { streamMessageToGemini } from '../../services/geminiService';
+import { streamMessageToGemini, type StreamedGeminiResponseChunk } from '../../services/geminiService';
+import type { MessageMetadata } from '../../types';
 
 const MessageInput: React.FC = () => {
     const {
         activeConversationId,
-        activeConversation,
         addMessageToConversation,
         updateMessageInConversation,
         isProcessingEditedMessage,
+        // Precisamos do array de conversas para pegar o estado mais recente
+        conversations, 
     } = useConversations();
     const { settings } = useAppSettings();
-    const { memories: globalMemories, addMemory: addNewGlobalMemory } = useMemories();
+    const { memories: globalMemoriesFromHook, addMemory, updateMemory, deleteMemory: deleteMemoryFromHook } = useMemories();
 
     const [text, setText] = useState<string>('');
     const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
@@ -25,18 +27,18 @@ const MessageInput: React.FC = () => {
 
     const MAX_TEXTAREA_HEIGHT = 160;
 
-    const adjustTextareaHeight = () => {
+    const adjustTextareaHeight = useCallback(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
             const scrollHeight = textareaRef.current.scrollHeight;
             textareaRef.current.style.height = `${Math.min(scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
             textareaRef.current.style.overflowY = scrollHeight > MAX_TEXTAREA_HEIGHT ? 'auto' : 'hidden';
         }
-    };
+    }, []); // useCallback pois não depende de props/state que mudam frequentemente
 
     useEffect(() => {
         adjustTextareaHeight();
-    }, [text]);
+    }, [text, adjustTextareaHeight]);
 
     useEffect(() => {
         if (activeConversationId && textareaRef.current && text === '' && !isLoadingAI && !isProcessingEditedMessage) {
@@ -49,6 +51,7 @@ const MessageInput: React.FC = () => {
             setErrorFromAI(null);
         }
     }, [text, errorFromAI]);
+
 
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
@@ -70,9 +73,21 @@ const MessageInput: React.FC = () => {
             return;
         }
 
-        addMessageToConversation(activeConversationId, { text: trimmedText, sender: 'user' });
+        // Captura o histórico ANTES de adicionar a nova mensagem do usuário
+        // Usa o array `conversations` do hook, que é o estado mais atualizado.
+        const conversationForHistory = conversations.find(c => c.id === activeConversationId);
+        const historyBeforeCurrentUserMessage = conversationForHistory?.messages.map(msg => ({
+            sender: msg.sender,
+            text: msg.text
+        })) || [];
+        
+        const currentTextForAI = trimmedText; // Mensagem atual do usuário
 
-        const currentTextForAI = trimmedText;
+        // Adiciona a mensagem do usuário ao estado (para a UI)
+        // Esta chamada atualizará `conversations` e, consequentemente, `activeConversation` no próximo render,
+        // mas `historyBeforeCurrentUserMessage` já foi capturado.
+        addMessageToConversation(activeConversationId, { text: currentTextForAI, sender: 'user' });
+        
         setText('');
         setIsLoadingAI(true);
         if (textareaRef.current) {
@@ -93,25 +108,23 @@ const MessageInput: React.FC = () => {
             return;
         }
 
-        let accumulatedResponse = "";
-        let finalMemories: string[] = [];
+        let memoryOperationsFromServer: StreamedGeminiResponseChunk['memoryOperations'] = [];
         let streamError: string | null = null;
+        let finalCleanedTextForMessage = "";
 
         try {
-            const conversationHistoryForAPI = activeConversation?.messages
-                .filter(msg => msg.id !== aiMessageId)
-                .map(msg => ({ sender: msg.sender, text: msg.text })) || [];
+            const currentGlobalMemoriesWithObjects = globalMemoriesFromHook.map(mem => ({ id: mem.id, content: mem.content }));
 
             for await (const streamResponse of streamMessageToGemini(
                 settings.apiKey,
-                conversationHistoryForAPI,
-                currentTextForAI,
-                globalMemories.map(mem => mem.content)
+                historyBeforeCurrentUserMessage, // Histórico ANTES da mensagem atual do usuário
+                currentTextForAI,                // A mensagem atual do usuário
+                currentGlobalMemoriesWithObjects
             )) {
                 if (streamResponse.delta) {
-                    accumulatedResponse += streamResponse.delta;
+                    finalCleanedTextForMessage += streamResponse.delta;
                     updateMessageInConversation(activeConversationId, aiMessageId, {
-                        text: accumulatedResponse + "▍",
+                        text: finalCleanedTextForMessage + "▍",
                         metadata: { isLoading: true }
                     });
                 }
@@ -120,28 +133,89 @@ const MessageInput: React.FC = () => {
                     break;
                 }
                 if (streamResponse.isFinished) {
-                    accumulatedResponse = streamResponse.finalText || accumulatedResponse;
-                    finalMemories = streamResponse.newMemories || [];
+                    finalCleanedTextForMessage = streamResponse.finalText || finalCleanedTextForMessage;
+                    memoryOperationsFromServer = streamResponse.memoryOperations || [];
                     break;
                 }
             }
 
             if (streamError) {
                 updateMessageInConversation(activeConversationId, aiMessageId, {
-                    text: streamError,
+                    text: (finalCleanedTextForMessage || "") + 
+                          ((finalCleanedTextForMessage) ? '\n\n--- ERRO ---\n' : '') + 
+                          streamError,
                     metadata: { isLoading: false, error: true }
                 });
                 setErrorFromAI(streamError);
             } else {
-                updateMessageInConversation(activeConversationId, aiMessageId, {
-                    text: accumulatedResponse,
-                    metadata: { isLoading: false, memorizedItems: finalMemories.length > 0 ? finalMemories : undefined }
-                });
+                const processedMemoryActions: Required<MessageMetadata>['memorizedMemoryActions'] = [];
 
-                if (finalMemories.length > 0) {
-                    finalMemories.forEach(memContent => addNewGlobalMemory(memContent));
-                    console.log("Novas memórias adicionadas:", finalMemories);
+                if (memoryOperationsFromServer && memoryOperationsFromServer.length > 0) {
+                    console.log("MESSAGE_INPUT: Processing operations:", memoryOperationsFromServer);
+                    memoryOperationsFromServer.forEach(op => {
+                        console.log("MESSAGE_INPUT: Current operation:", op);
+                        if (op.action === 'create' && op.content) {
+                            const newMemoryObject = addMemory(op.content);
+                            console.log("MESSAGE_INPUT: addMemory called with content:", op.content, " ---- Resulting newMemoryObject:", newMemoryObject);
+                            if (newMemoryObject) {
+                                processedMemoryActions.push({
+                                    id: newMemoryObject.id,
+                                    content: newMemoryObject.content,
+                                    action: 'created'
+                                });
+                            } else {
+                                console.warn("MESSAGE_INPUT: addMemory returned undefined for content:", op.content);
+                            }
+                        } else if (op.action === 'update' && op.targetMemoryContent && op.content) {
+                            const memoryToUpdate = globalMemoriesFromHook.find(
+                                mem => mem.content.toLowerCase() === op.targetMemoryContent?.toLowerCase()
+                            );
+                            if (memoryToUpdate) {
+                                updateMemory(memoryToUpdate.id, op.content);
+                                processedMemoryActions.push({
+                                    id: memoryToUpdate.id,
+                                    content: op.content,
+                                    originalContent: memoryToUpdate.content,
+                                    action: 'updated'
+                                });
+                            } else {
+                                console.warn(`MESSAGE_INPUT: IA tentou atualizar memória não encontrada: "${op.targetMemoryContent}". Criando como nova.`);
+                                const newMemoryObject = addMemory(op.content);
+                                if (newMemoryObject) {
+                                    processedMemoryActions.push({
+                                        id: newMemoryObject.id,
+                                        content: newMemoryObject.content,
+                                        action: 'created'
+                                    });
+                                }
+                            }
+                        } else if (op.action === 'delete_by_ai_suggestion' && op.targetMemoryContent) {
+                            const memoryToDelete = globalMemoriesFromHook.find(
+                                mem => mem.content.toLowerCase() === op.targetMemoryContent?.toLowerCase()
+                            );
+                            if (memoryToDelete) {
+                                deleteMemoryFromHook(memoryToDelete.id);
+                                processedMemoryActions.push({
+                                    id: memoryToDelete.id,
+                                    content: memoryToDelete.content,
+                                    originalContent: memoryToDelete.content,
+                                    action: 'deleted_by_ai'
+                                });
+                            } else {
+                                console.warn(`MESSAGE_INPUT: IA tentou deletar memória não encontrada: "${op.targetMemoryContent}"`);
+                            }
+                        }
+                    });
                 }
+                console.log("MESSAGE_INPUT: Final processedMemoryActions:", processedMemoryActions);
+
+                updateMessageInConversation(activeConversationId, aiMessageId, {
+                    text: finalCleanedTextForMessage,
+                    metadata: { 
+                        isLoading: false, 
+                        memorizedMemoryActions: processedMemoryActions.length > 0 ? processedMemoryActions : undefined,
+                    }
+                });
             }
 
         } catch (error: unknown) {
@@ -165,19 +239,13 @@ const MessageInput: React.FC = () => {
             if (e.key === 'Enter') e.preventDefault();
             return;
         }
-
         const hasLineBreakInText = text.includes('\n');
-
         if (e.key === 'Enter' && e.ctrlKey) {
             e.preventDefault();
             handleSubmit();
             return;
         }
-
-        if (e.key === 'Enter' && e.shiftKey) {
-            return;
-        }
-
+        if (e.key === 'Enter' && e.shiftKey) { return; }
         if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
             if (!hasLineBreakInText) {
                 e.preventDefault();

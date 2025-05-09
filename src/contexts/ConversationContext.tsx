@@ -1,15 +1,17 @@
 // src/contexts/ConversationContext.tsx
-import React, { createContext, useContext, type ReactNode, useState as useReactState, useCallback, useRef, useEffect } from 'react';
+import React, { createContext, useContext, type ReactNode, useState, useCallback, useRef, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+// Importe os tipos atualizados, incluindo MemoryActionType
 import type { Conversation, Message, MessageMetadata } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { useAppSettings } from './AppSettingsContext';
 import { useMemories } from './MemoryContext';
-import { streamMessageToGemini } from '../services/geminiService';
+// A interface do chunk de geminiService mudou para incluir memoryOperations
+import { streamMessageToGemini, type StreamedGeminiResponseChunk } from '../services/geminiService';
 
 const CONVERSATIONS_KEY = 'geminiChat_conversations';
 const ACTIVE_CONVERSATION_ID_KEY = 'geminiChat_activeConversationId';
-const CHUNK_RENDER_INTERVAL_MS = 200; // Intervalo para renderizar chunks da fila
+const CHUNK_RENDER_INTERVAL_MS = 200;
 
 interface ConversationContextType {
     conversations: Conversation[];
@@ -40,26 +42,26 @@ interface ConversationContextType {
 
 const ConversationContext = createContext<ConversationContextType | undefined>(undefined);
 
+const sortByUpdatedAtDesc = (a: Conversation, b: Conversation) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+
 export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [conversations, setConversations] = useLocalStorage<Conversation[]>(CONVERSATIONS_KEY, []);
     const [activeId, setActiveId] = useLocalStorage<string | null>(ACTIVE_CONVERSATION_ID_KEY, null);
-    const [isProcessingEditedMessage, setIsProcessingEditedMessage] = useReactState<boolean>(false);
+    const [isProcessingEditedMessage, setIsProcessingEditedMessage] = useState<boolean>(false);
 
-    const appSettingsHook = useAppSettings();
-    const memoriesHook = useMemories();
+    const { settings } = useAppSettings();
+    const { memories: globalMemoriesFromHook, addMemory, updateMemory, deleteMemory: deleteMemoryFromHook } = useMemories();
 
     const chunkQueueRef = useRef<string[]>([]);
     const accumulatedTextRef = useRef<string>("");
     const currentAiMessageIdRef = useRef<string | null>(null);
     const currentConversationIdRef = useRef<string | null>(null);
     const renderIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    const streamHasFinishedRef = useRef<boolean>(false); // Nova ref para indicar fim do stream da API
+    const streamHasFinishedRef = useRef<boolean>(false);
 
     const activeConversation = conversations.find(c => c.id === activeId) || null;
 
-    const setActiveConversationId = useCallback((id: string | null) => {
-        setActiveId(id);
-    }, [setActiveId]);
+    const setActiveConversationId = useCallback((id: string | null) => setActiveId(id), [setActiveId]);
 
     const createNewConversation = useCallback((): Conversation => {
         const newConversation: Conversation = {
@@ -69,7 +71,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             createdAt: new Date(),
             updatedAt: new Date(),
         };
-        setConversations(prev => [newConversation, ...prev].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()));
+        setConversations(prev => [newConversation, ...prev].sort(sortByUpdatedAtDesc));
         setActiveId(newConversation.id);
         return newConversation;
     }, [setConversations, setActiveId]);
@@ -78,12 +80,11 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         const updatedConversations = conversations.filter(c => c.id !== id);
         setConversations(updatedConversations);
         if (activeId === id) {
-            if (updatedConversations.length > 0) {
-                const sortedRemaining = [...updatedConversations].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-                setActiveId(sortedRemaining[0].id);
-            } else {
-                setActiveId(null);
-            }
+            setActiveId(
+                updatedConversations.length > 0
+                    ? [...updatedConversations].sort(sortByUpdatedAtDesc)[0].id
+                    : null
+            );
         }
     }, [conversations, activeId, setConversations, setActiveId]);
 
@@ -116,7 +117,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                             : c.title,
                     }
                     : c
-            ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            ).sort(sortByUpdatedAtDesc)
         );
         return newMessageId;
     }, [setConversations]);
@@ -144,7 +145,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                         updatedAt: new Date(),
                     }
                     : c
-            ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            ).sort(sortByUpdatedAtDesc)
         );
     }, [setConversations]);
 
@@ -154,7 +155,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 c.id === conversationId
                     ? { ...c, messages: c.messages.filter(m => m.id !== messageId), updatedAt: new Date() }
                     : c
-            ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            ).sort(sortByUpdatedAtDesc)
         );
     }, [setConversations]);
 
@@ -162,13 +163,13 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         setConversations(prev =>
             prev.map(c =>
                 c.id === id ? { ...c, title: newTitle, updatedAt: new Date() } : c
-            ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            ).sort(sortByUpdatedAtDesc)
         );
     }, [setConversations]);
 
     const processChunkQueue = useCallback(() => {
         if (renderIntervalRef.current) {
-            clearTimeout(renderIntervalRef.current); // Limpa timer anterior
+            clearTimeout(renderIntervalRef.current);
             renderIntervalRef.current = null;
         }
 
@@ -182,23 +183,15 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 });
             }
         }
-
-        // Se ainda há chunks ou o stream da API não terminou (para pegar os últimos chunks), continua
         if (chunkQueueRef.current.length > 0 || !streamHasFinishedRef.current) {
             renderIntervalRef.current = setTimeout(processChunkQueue, CHUNK_RENDER_INTERVAL_MS);
-        } else {
-            // A fila está vazia E o stream da API terminou. Agora podemos fazer a atualização final.
-            // A atualização final será feita na função `regenerateResponseForEditedMessage`
-            // após este loop de `processChunkQueue` naturalmente se encerrar.
         }
     }, [updateMessageInConversation]);
 
 
     useEffect(() => {
         return () => {
-            if (renderIntervalRef.current) {
-                clearTimeout(renderIntervalRef.current);
-            }
+            if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
         };
     }, []);
 
@@ -208,18 +201,17 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         newText: string
     ): Promise<void> => {
         setIsProcessingEditedMessage(true);
-        const { settings } = appSettingsHook;
-        const { memories: globalMemories, addMemory: addNewGlobalMemory } = memoriesHook;
+        // settings e funções do memoryHook já estão desestruturadas no escopo do Provider
 
         chunkQueueRef.current = [];
         accumulatedTextRef.current = "";
-        streamHasFinishedRef.current = false; // Importante resetar
+        streamHasFinishedRef.current = false;
         if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
         renderIntervalRef.current = null;
 
         if (!settings.apiKey) {
             addMessageToConversation(conversationId, {
-                text: "Erro: Chave de API não configurada para regenerar resposta.",
+                text: "Erro: Chave de API não configurada.",
                 sender: 'ai',
                 metadata: { error: true }
             });
@@ -227,16 +219,16 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             return;
         }
 
-        const currentConversations = [...conversations]; // Cria uma cópia para trabalhar
-        const conversationToUpdate = currentConversations.find(c => c.id === conversationId);
-
+        const conversationToUpdate = conversations.find(c => c.id === conversationId);
         if (!conversationToUpdate) {
+            console.error("Conversa não encontrada para regeneração.");
             setIsProcessingEditedMessage(false);
             return;
         }
 
         const messageIndex = conversationToUpdate.messages.findIndex(msg => msg.id === editedMessageId);
         if (messageIndex === -1) {
+            console.error("Mensagem editada não encontrada na conversa.");
             setIsProcessingEditedMessage(false);
             return;
         }
@@ -253,16 +245,15 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 c.id === conversationId
                     ? { ...c, messages: updatedMessages, updatedAt: new Date() }
                     : c
-            ).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            ).sort(sortByUpdatedAtDesc)
         );
 
         const newAiMessageId = addMessageToConversation(conversationId, {
-            text: "",
-            sender: 'ai',
-            metadata: { isLoading: true }
+            text: "", sender: 'ai', metadata: { isLoading: true }
         });
 
         if (!newAiMessageId) {
+            console.error("Falha ao criar ID para nova mensagem da IA.");
             setIsProcessingEditedMessage(false);
             return;
         }
@@ -270,75 +261,122 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         currentAiMessageIdRef.current = newAiMessageId;
         currentConversationIdRef.current = conversationId;
 
-        let finalMemories: string[] = [];
+        let memoryOperationsFromServer: StreamedGeminiResponseChunk['memoryOperations'] = [];
         let streamError: string | null = null;
+        let finalCleanedTextForMessage = "";
 
-        // Inicia o processador da fila pela primeira vez (se houver chunks ou o stream não terminou)
-        // Isso garante que mesmo que o primeiro chunk demore um pouco, o timer será iniciado.
         if (!renderIntervalRef.current) {
             renderIntervalRef.current = setTimeout(processChunkQueue, CHUNK_RENDER_INTERVAL_MS);
         }
 
         try {
             const historyForAPI = updatedMessages.map(msg => ({ sender: msg.sender, text: msg.text }));
+            const currentGlobalMemoriesWithObjects = globalMemoriesFromHook.map(mem => ({ id: mem.id, content: mem.content }));
 
             for await (const streamResponse of streamMessageToGemini(
                 settings.apiKey,
                 historyForAPI.slice(0, -1),
                 newText,
-                globalMemories.map(mem => mem.content)
+                currentGlobalMemoriesWithObjects
             )) {
                 if (streamResponse.delta) {
                     chunkQueueRef.current.push(streamResponse.delta);
-                    // Não precisa chamar processChunkQueue aqui, o setTimeout já está agendado ou será agendado
                 }
                 if (streamResponse.error) {
                     streamError = streamResponse.error;
-                    streamHasFinishedRef.current = true; // Marca que o stream (com erro) terminou
+                    streamHasFinishedRef.current = true;
                     break;
                 }
                 if (streamResponse.isFinished) {
-                    finalMemories = streamResponse.newMemories || [];
-                    streamHasFinishedRef.current = true; // Marca que o stream terminou
+                    finalCleanedTextForMessage = streamResponse.finalText || accumulatedTextRef.current;
+                    memoryOperationsFromServer = streamResponse.memoryOperations || [];
+                    streamHasFinishedRef.current = true;
                     break;
                 }
             }
 
-            // Esperar a fila de renderização terminar APÓS o stream ter finalizado completamente
-            // Esta é a parte mais delicada. Se o streamHasFinishedRef.current for true,
-            // o processChunkQueue irá parar de se reagendar quando a fila estiver vazia.
-            // Precisamos de uma forma de saber quando a última atualização de UI via processChunkQueue aconteceu.
-
-            // Simplificação: a atualização final ocorrerá no finally.
-            // A `processChunkQueue` continuará até esvaziar a fila.
-            // Quando o stream termina (streamHasFinishedRef.current = true), 
-            // e a chunkQueueRef.current.length se torna 0, o timer para.
-            // Nesse ponto, accumulatedTextRef.current terá o texto completo.
-
-            // Pequena espera para dar chance ao último chunk ser processado pela fila do timer
-            if (streamHasFinishedRef.current) {
+            if (streamHasFinishedRef.current && chunkQueueRef.current.length > 0) {
+                await new Promise(resolve => setTimeout(resolve, CHUNK_RENDER_INTERVAL_MS * (chunkQueueRef.current.length + 1.5)));
+            } else if (streamHasFinishedRef.current) {
                 await new Promise(resolve => setTimeout(resolve, CHUNK_RENDER_INTERVAL_MS * 1.5));
             }
 
-
             if (streamError) {
                 updateMessageInConversation(conversationId, newAiMessageId, {
-                    text: accumulatedTextRef.current + (accumulatedTextRef.current ? '\n\n--- ERRO ---\n' : '') + streamError,
+                    text: (finalCleanedTextForMessage || accumulatedTextRef.current) +
+                          ((finalCleanedTextForMessage || accumulatedTextRef.current) ? '\n\n--- ERRO ---\n' : '') +
+                          streamError,
                     metadata: { isLoading: false, error: true }
                 });
             } else {
-                updateMessageInConversation(conversationId, newAiMessageId, {
-                    text: accumulatedTextRef.current,
-                    metadata: { isLoading: false, memorizedItems: finalMemories.length > 0 ? finalMemories : undefined }
-                });
-                if (finalMemories.length > 0) {
-                    finalMemories.forEach(memContent => addNewGlobalMemory(memContent));
+                const processedMemoryActions: Required<MessageMetadata>['memorizedMemoryActions'] = [];
+
+                if (memoryOperationsFromServer && memoryOperationsFromServer.length > 0) {
+                    memoryOperationsFromServer.forEach(op => {
+                        if (op.action === 'create' && op.content) {
+                            const newMemoryObject = addMemory(op.content);
+                            if (newMemoryObject) {
+                                processedMemoryActions.push({
+                                    id: newMemoryObject.id,
+                                    content: newMemoryObject.content,
+                                    action: 'created'
+                                });
+                            }
+                        } else if (op.action === 'update' && op.targetMemoryContent && op.content) {
+                            const memoryToUpdate = globalMemoriesFromHook.find(
+                                mem => mem.content.toLowerCase() === op.targetMemoryContent?.toLowerCase()
+                            );
+                            if (memoryToUpdate) {
+                                updateMemory(memoryToUpdate.id, op.content); // Chama a função do MemoryContext
+                                processedMemoryActions.push({
+                                    id: memoryToUpdate.id,
+                                    content: op.content, // Novo conteúdo
+                                    originalContent: memoryToUpdate.content, // Conteúdo antigo
+                                    action: 'updated'
+                                });
+                            } else {
+                                console.warn(`IA tentou atualizar memória por conteúdo que não foi encontrada: "${op.targetMemoryContent}". Criando como nova memória.`);
+                                // Fallback: criar como nova memória se a original não for encontrada.
+                                const newMemoryObject = addMemory(op.content);
+                                if (newMemoryObject) {
+                                    processedMemoryActions.push({
+                                        id: newMemoryObject.id,
+                                        content: newMemoryObject.content,
+                                        action: 'created' // Tratada como 'created' se a original não for achada
+                                    });
+                                }
+                            }
+                        } else if (op.action === 'delete_by_ai_suggestion' && op.targetMemoryContent) {
+                            const memoryToDelete = globalMemoriesFromHook.find(
+                                mem => mem.content.toLowerCase() === op.targetMemoryContent?.toLowerCase()
+                            );
+                            if (memoryToDelete) {
+                                deleteMemoryFromHook(memoryToDelete.id); // Chama a função do MemoryContext
+                                processedMemoryActions.push({
+                                    id: memoryToDelete.id,
+                                    content: memoryToDelete.content, // Conteúdo que foi deletado
+                                    originalContent: memoryToDelete.content,
+                                    action: 'deleted_by_ai'
+                                });
+                            } else {
+                                console.warn(`IA tentou deletar memória não encontrada pelo conteúdo: "${op.targetMemoryContent}"`);
+                            }
+                        }
+                    });
                 }
+
+                updateMessageInConversation(conversationId, newAiMessageId, {
+                    text: finalCleanedTextForMessage,
+                    metadata: {
+                        isLoading: false,
+                        memorizedMemoryActions: processedMemoryActions.length > 0 ? processedMemoryActions : undefined,
+                    }
+                });
             }
         } catch (error) {
             console.error("Erro ao regenerar resposta:", error);
             updateMessageInConversation(conversationId, newAiMessageId, {
-                text: accumulatedTextRef.current + "\n\nErro ao processar a regeneração da resposta.",
+                text: (finalCleanedTextForMessage || accumulatedTextRef.current) + "\n\nErro ao processar a regeneração da resposta.",
                 metadata: { isLoading: false, error: true }
             });
         } finally {
@@ -346,18 +384,18 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             renderIntervalRef.current = null;
             currentAiMessageIdRef.current = null;
             currentConversationIdRef.current = null;
-            chunkQueueRef.current = []; // Limpa a fila para garantir
-            accumulatedTextRef.current = ""; // Limpa o acumulador
+            chunkQueueRef.current = [];
+            accumulatedTextRef.current = "";
             setIsProcessingEditedMessage(false);
         }
     }, [
-        appSettingsHook,
-        memoriesHook,
+        settings.apiKey,
+        globalMemoriesFromHook, addMemory, updateMemory, deleteMemoryFromHook,
         conversations,
         setConversations,
         addMessageToConversation,
         updateMessageInConversation,
-        processChunkQueue
+        processChunkQueue // Removido setActiveId pois não é usado diretamente aqui
     ]);
 
     return (

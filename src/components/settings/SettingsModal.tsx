@@ -25,6 +25,7 @@ interface Tab {
     id: TabId;
     label: string;
     icon: ReactNode;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     component: React.FC<any>;
 }
 

@@ -1,9 +1,17 @@
-// src/types/conversation.ts
+export type MemoryActionType = 'created' | 'updated' | 'deleted_by_ai'; // Adicionando 'deleted_by_ai'
+
 export interface MessageMetadata {
-    temp?: boolean; // Para mensagens temporárias como "digitando"
-    isLoading?: boolean; // Para indicar que o conteúdo está sendo streamado
-    memorizedItems?: string[]; // Conteúdo das memórias que foram extraídas desta resposta da IA
-    error?: boolean; // Se esta mensagem é um erro
+    temp?: boolean;
+    isLoading?: boolean;
+    // memorizedItems?: string[]; // Pode ser depreciado se memorizedMemoryActions cobrir
+    error?: boolean;
+    // Novo campo para rastrear ações de memória
+    memorizedMemoryActions?: {
+        id: string; // ID da memória afetada
+        content: string; // Conteúdo (novo ou antigo, dependendo da ação)
+        originalContent?: string; // Conteúdo original (para 'updated' e 'deleted_by_ai')
+        action: MemoryActionType;
+    }[];
 }
 
 export interface Message {
