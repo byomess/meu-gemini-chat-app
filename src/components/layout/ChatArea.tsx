@@ -60,7 +60,11 @@ const ChatArea: React.FC = () => {
                 ) : (
                     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-5">
                         {messages.map((msg) => (
-                            <MessageBubble key={msg.id} message={msg} />
+                            <MessageBubble
+                                key={msg.id}
+                                message={msg}
+                                conversationId={activeConversationId!} // Passar o ID da conversa ativa
+                            />
                         ))}
                         <div ref={messagesEndRef} /> {/* Elemento invisível para o auto-scroll */}
                     </div>

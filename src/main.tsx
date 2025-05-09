@@ -9,12 +9,12 @@ import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-      <AppSettingsProvider>
-        <ConversationProvider>
-          <MemoryProvider>
-            <App />
-          </MemoryProvider>
-        </ConversationProvider>
-      </AppSettingsProvider>
+        <AppSettingsProvider>
+            <MemoryProvider>
+                <ConversationProvider>
+                    <App />
+                </ConversationProvider>
+            </MemoryProvider>
+        </AppSettingsProvider>
     </React.StrictMode>,
-  );
+);

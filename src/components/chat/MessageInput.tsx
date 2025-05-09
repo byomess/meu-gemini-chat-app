@@ -1,7 +1,7 @@
 // src/components/chat/MessageInput.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import Button from '../common/Button';
-import { IoSend, IoPulseOutline, IoWarningOutline } from 'react-icons/io5'; // Adicionar IoWarningOutline
+import { IoSend, IoPulseOutline, IoWarningOutline } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { useMemories } from '../../contexts/MemoryContext';
@@ -10,19 +10,20 @@ import { streamMessageToGemini } from '../../services/geminiService';
 const MessageInput: React.FC = () => {
   const {
     activeConversationId,
-    activeConversation, // Para obter o histórico de mensagens para a API
+    activeConversation,
     addMessageToConversation,
     updateMessageInConversation,
+    isProcessingEditedMessage, // Novo estado do ConversationContext
   } = useConversations();
   const { settings } = useAppSettings();
   const { memories: globalMemories, addMemory: addNewGlobalMemory } = useMemories();
 
   const [text, setText] = useState<string>('');
-  const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
-  const [errorFromAI, setErrorFromAI] = useState<string | null>(null); // Para mostrar erros específicos da IA no input
+  const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false); // Loading para novas mensagens
+  const [errorFromAI, setErrorFromAI] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const MAX_TEXTAREA_HEIGHT = 160; // Aproximadamente 10rem ou max-h-40
+  const MAX_TEXTAREA_HEIGHT = 160;
 
   const adjustTextareaHeight = () => {
     if (textareaRef.current) {
@@ -37,58 +38,54 @@ const MessageInput: React.FC = () => {
     adjustTextareaHeight();
   }, [text]);
 
-  // Focar no textarea quando uma conversa ativa é selecionada ou criada, e não há texto/loading
   useEffect(() => {
-    if (activeConversationId && textareaRef.current && text === '' && !isLoadingAI) {
+    // Foca no input se não houver texto e nenhum tipo de loading estiver ativo
+    if (activeConversationId && textareaRef.current && text === '' && !isLoadingAI && !isProcessingEditedMessage) {
       textareaRef.current.focus();
     }
-  }, [activeConversationId, text, isLoadingAI]);
+  }, [activeConversationId, text, isLoadingAI, isProcessingEditedMessage]);
 
-  // Limpar erro da IA quando o usuário começa a digitar
   useEffect(() => {
     if (text !== '' && errorFromAI) {
       setErrorFromAI(null);
     }
   }, [text, errorFromAI]);
 
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorFromAI(null); // Limpa erros anteriores ao tentar enviar
+    setErrorFromAI(null);
     const trimmedText = text.trim();
 
-    if (!trimmedText || !activeConversationId || isLoadingAI) {
+    // Bloqueia o envio se estiver carregando uma nova mensagem OU reprocessando uma editada
+    if (!trimmedText || !activeConversationId || isLoadingAI || isProcessingEditedMessage) {
       return;
     }
 
     if (!settings.apiKey) {
-      // Adiciona uma mensagem de erro diretamente no chat se a API Key não estiver configurada
       addMessageToConversation(activeConversationId, {
         text: "Erro: Chave de API não configurada. Por favor, adicione sua chave nas Configurações para interagir com a IA.",
         sender: 'ai',
         metadata: { error: true }
       });
-      setText(''); // Limpa o input
-      if (textareaRef.current) textareaRef.current.style.height = 'auto'; // Reseta altura
+      setText('');
+      if (textareaRef.current) textareaRef.current.style.height = 'auto';
       return;
     }
 
-    // Adiciona a mensagem do usuário à conversa
     addMessageToConversation(activeConversationId, { text: trimmedText, sender: 'user' });
 
-    const currentTextForAI = trimmedText; // Guarda o texto antes de limpar o input
-    setText(''); // Limpa o input para o usuário
-    setIsLoadingAI(true); // Ativa o estado de loading
-    if (textareaRef.current) { // Reseta a altura do textarea
+    const currentTextForAI = trimmedText;
+    setText('');
+    setIsLoadingAI(true); // Loading para esta nova mensagem
+    if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.overflowY = 'hidden';
     }
 
-    // Adiciona uma mensagem placeholder para a IA que será atualizada pelo stream
     const aiMessageId = addMessageToConversation(activeConversationId, {
-      text: "", // Começa vazia, será preenchida pelo stream
+      text: "",
       sender: 'ai',
-      metadata: { isLoading: true } // Marca como carregando
+      metadata: { isLoading: true }
     });
 
     if (!aiMessageId) {
@@ -103,60 +100,53 @@ const MessageInput: React.FC = () => {
     let streamError: string | null = null;
 
     try {
-      // Prepara o histórico de mensagens para a API, excluindo a placeholder da IA atual
       const conversationHistoryForAPI = activeConversation?.messages
-        .filter(msg => msg.id !== aiMessageId) // Exclui a mensagem da IA que está sendo streamada
+        .filter(msg => msg.id !== aiMessageId)
         .map(msg => ({ sender: msg.sender, text: msg.text })) || [];
-
 
       for await (const streamResponse of streamMessageToGemini(
         settings.apiKey,
-        conversationHistoryForAPI, // Histórico sem a mensagem atual do usuário (já que o serviço a adiciona)
-        currentTextForAI,          // Mensagem atual do usuário
+        conversationHistoryForAPI,
+        currentTextForAI,
         globalMemories.map(mem => mem.content)
       )) {
         if (streamResponse.delta) {
           accumulatedResponse += streamResponse.delta;
           updateMessageInConversation(activeConversationId, aiMessageId, {
-            text: accumulatedResponse + "▍", // Adiciona um cursor de digitação simples
+            text: accumulatedResponse + "▍",
             metadata: { isLoading: true }
           });
         }
         if (streamResponse.error) {
-          streamError = streamResponse.error; // Guarda o erro para tratar após o loop
-          break; // Interrompe o stream em caso de erro
+          streamError = streamResponse.error;
+          break;
         }
         if (streamResponse.isFinished) {
-          // Se o stream terminou e houve um erro antes (já tratado), não sobrescreva.
-          // A resposta final pode ter texto e memórias mesmo se isFinished for true aqui.
-          accumulatedResponse = streamResponse.finalText || accumulatedResponse; // Usa finalText se disponível
+          accumulatedResponse = streamResponse.finalText || accumulatedResponse;
           finalMemories = streamResponse.newMemories || [];
           break;
         }
       }
 
-      // Atualização final da mensagem da IA
       if (streamError) {
         updateMessageInConversation(activeConversationId, aiMessageId, {
-          text: streamError, // Exibe a mensagem de erro da API
+          text: streamError,
           metadata: { isLoading: false, error: true }
         });
-        setErrorFromAI(streamError); // Mostra o erro também perto do input
+        setErrorFromAI(streamError);
       } else {
         updateMessageInConversation(activeConversationId, aiMessageId, {
-          text: accumulatedResponse, // Texto final sem o cursor
+          text: accumulatedResponse,
           metadata: { isLoading: false, memorizedItems: finalMemories.length > 0 ? finalMemories : undefined }
         });
 
         if (finalMemories.length > 0) {
-          finalMemories.forEach(memContent => {
-            addNewGlobalMemory(memContent);
-          });
+          finalMemories.forEach(memContent => addNewGlobalMemory(memContent));
           console.log("Novas memórias adicionadas:", finalMemories);
         }
       }
 
-    } catch (error: unknown) { // Erro inesperado no lado do cliente ao processar o stream
+    } catch (error: unknown) {
       console.error("Falha catastrófica ao processar stream com Gemini:", error);
       const clientErrorMessage = error instanceof Error ? error.message : "Desculpe, ocorreu uma falha desconhecida no processamento da resposta.";
       updateMessageInConversation(activeConversationId, aiMessageId, {
@@ -165,28 +155,33 @@ const MessageInput: React.FC = () => {
       });
       setErrorFromAI(clientErrorMessage);
     } finally {
-      setIsLoadingAI(false); // Desativa o estado de loading
-      // Focar novamente no input após a resposta, se não houver erro crítico e a API Key estiver ok
-      if (textareaRef.current && settings.apiKey && !streamError && !errorFromAI) {
+      setIsLoadingAI(false); // Loading desta nova mensagem terminou
+      if (textareaRef.current && settings.apiKey && !streamError && !errorFromAI && !isProcessingEditedMessage) {
         textareaRef.current.focus();
       }
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey && !isLoadingAI) {
+    // Bloqueia o envio se estiver carregando uma nova mensagem OU reprocessando uma editada
+    if (e.key === 'Enter' && !e.shiftKey && !isLoadingAI && !isProcessingEditedMessage) {
       e.preventDefault();
       handleSubmit(e as unknown as React.FormEvent);
     }
   };
 
-  const canSubmit = text.trim().length > 0 && !!activeConversationId && !isLoadingAI;
-  const isInputDisabled = !activeConversationId || !settings.apiKey || isLoadingAI;
-  const placeholderText = isLoadingAI
-    ? "Gemini está respondendo..."
-    : activeConversationId
-      ? settings.apiKey ? "Digite sua mensagem... (Shift+Enter para nova linha)" : "Configure sua API Key nas Configurações para conversar."
-      : "Selecione ou crie uma conversa para começar.";
+  // Combina isLoadingAI (para nova mensagem) e isProcessingEditedMessage (para edições)
+  const isOverallBusy = isLoadingAI || isProcessingEditedMessage;
+
+  const canSubmit = text.trim().length > 0 && !!activeConversationId && !isOverallBusy;
+  const isInputDisabled = !activeConversationId || !settings.apiKey || isOverallBusy;
+
+  const placeholderText =
+    isProcessingEditedMessage ? "Processando edição anterior..." :
+    isLoadingAI ? "Gemini está respondendo..." :
+    activeConversationId ?
+      (settings.apiKey ? "Digite sua mensagem... (Shift+Enter para nova linha)" : "Configure sua API Key nas Configurações.") :
+    "Selecione ou crie uma conversa.";
 
   return (
     <div className="px-3 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-3 border-t border-slate-700/60 bg-slate-800/90 backdrop-blur-sm sticky bottom-0">
@@ -216,17 +211,17 @@ const MessageInput: React.FC = () => {
           type="submit"
           variant="primary"
           className="ml-2 !p-2 sm:!p-2.5 rounded-lg"
-          disabled={!canSubmit} // O canSubmit já considera isLoadingAI e activeConversationId
+          disabled={!canSubmit}
           aria-label="Enviar mensagem"
         >
-          {isLoadingAI ? (
-            <IoPulseOutline size={18} className="animate-pulse" /> // Removido sm-size, Tailwind lida com responsividade
+          {isOverallBusy ? ( // Usa isOverallBusy para o ícone de loading
+            <IoPulseOutline size={18} className="animate-pulse" />
           ) : (
             <IoSend size={18} />
           )}
         </Button>
       </form>
-      {!settings.apiKey && activeConversationId && !isLoadingAI && !errorFromAI && (
+      {!settings.apiKey && activeConversationId && !isOverallBusy && !errorFromAI && (
         <p className="text-xs text-yellow-400/90 text-center mt-2 px-2">
           Chave de API não configurada. Por favor, adicione sua chave nas <strong className="font-medium">Configurações</strong> para interagir com a IA.
         </p>
