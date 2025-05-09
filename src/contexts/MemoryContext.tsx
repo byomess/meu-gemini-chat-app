@@ -1,5 +1,5 @@
 // src/contexts/MemoryContext.tsx
-import React, { createContext, useContext, type ReactNode, useCallback } from 'react'; // Adicionado useCallback
+import React, { createContext, useContext, type ReactNode, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import type { Memory } from '../types';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,8 +10,9 @@ interface MemoryContextType {
     memories: Memory[];
     addMemory: (content: string, sourceMessageId?: string) => void;
     deleteMemory: (id: string) => void;
-    updateMemory: (id: string, newContent: string) => void; // Nova função
+    updateMemory: (id: string, newContent: string) => void;
     clearAllMemories: () => void;
+    replaceAllMemories: (newMemories: Memory[]) => void; // Nova função para importação
 }
 
 const MemoryContext = createContext<MemoryContextType | undefined>(undefined);
@@ -21,17 +22,18 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     const addMemory = useCallback((content: string, sourceMessageId?: string) => {
         const trimmedContent = content.trim();
-        if (!trimmedContent) return; // Não adiciona memória vazia
+        if (!trimmedContent) return;
 
         const newMemory: Memory = {
             id: uuidv4(),
             content: trimmedContent,
             timestamp: new Date(),
-            sourceMessageId, // Pode ser undefined para memórias manuais
+            sourceMessageId,
         };
-        // Adiciona no início e evita duplicatas exatas de conteúdo
-        setMemories(prev => [newMemory, ...prev.filter(m => m.content.toLowerCase() !== trimmedContent.toLowerCase())]
-                            .sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())); // Ordenar por mais recente
+        setMemories(prev =>
+            [newMemory, ...prev.filter(m => m.content.toLowerCase() !== trimmedContent.toLowerCase())]
+                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        );
     }, [setMemories]);
 
     const deleteMemory = useCallback((id: string) => {
@@ -40,23 +42,54 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     const updateMemory = useCallback((id: string, newContent: string) => {
         const trimmedNewContent = newContent.trim();
-        if (!trimmedNewContent) { // Se o novo conteúdo for vazio, exclui a memória
-            deleteMemory(id);
+        if (!trimmedNewContent) {
+            if (window.confirm("O conteúdo da memória está vazio. Deseja excluir esta memória?")) {
+                setMemories(prev => prev.filter(m => m.id !== id));
+            }
             return;
         }
         setMemories(prev =>
             prev.map(mem =>
                 mem.id === id ? { ...mem, content: trimmedNewContent, timestamp: new Date() } : mem
-            ).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) // Reordena após update
+            ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
         );
-    }, [setMemories, deleteMemory]); // deleteMemory é dependência aqui
-
-    const clearAllMemories = useCallback(() => {
-        setMemories([]);
     }, [setMemories]);
 
+    const clearAllMemories = useCallback(() => {
+        if (window.confirm('Tem certeza de que deseja apagar TODAS as memórias? Esta ação não pode ser desfeita.')) {
+            setMemories([]);
+        }
+    }, [setMemories]);
+
+    const replaceAllMemories = useCallback((newMemories: Memory[]) => {
+        // Validar minimamente o formato das memórias importadas
+        const isValidFormat = newMemories.every(
+            mem => typeof mem.id === 'string' && typeof mem.content === 'string' && mem.timestamp
+        );
+        if (!isValidFormat) {
+            alert("Formato de arquivo de memórias inválido. A importação foi cancelada.");
+            return;
+        }
+        // Assegurar que timestamps sejam objetos Date
+        const processedMemories = newMemories.map(mem => ({
+            ...mem,
+            timestamp: new Date(mem.timestamp) // Converte string ISO para Date, se necessário
+        })).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        setMemories(processedMemories);
+        alert(`${processedMemories.length} memórias importadas com sucesso!`);
+    }, [setMemories]);
+
+
     return (
-        <MemoryContext.Provider value={{ memories, addMemory, deleteMemory, updateMemory, clearAllMemories }}>
+        <MemoryContext.Provider value={{
+            memories,
+            addMemory,
+            deleteMemory,
+            updateMemory,
+            clearAllMemories,
+            replaceAllMemories // Expor a nova função
+        }}>
             {children}
         </MemoryContext.Provider>
     );

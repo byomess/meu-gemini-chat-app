@@ -5,9 +5,10 @@ import {
     IoTrashOutline,
     IoInformationCircleOutline,
     IoPencilOutline,
-    // IoCheckmarkOutline,
     IoAddCircleOutline,
-    IoKeyOutline,      // Ícone para Aba Geral/API
+    IoKeyOutline,
+    IoDownloadOutline, // Ícone para Exportar
+    IoCloudUploadOutline, // Ícone para Importar
 } from 'react-icons/io5';
 import Button from '../common/Button';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
@@ -15,7 +16,6 @@ import { useMemories } from '../../contexts/MemoryContext';
 import type { Memory } from '../../types';
 import { LuBrain } from 'react-icons/lu';
 
-// Tipos para as Abas
 type TabId = 'general' | 'memories';
 
 interface Tab {
@@ -23,7 +23,7 @@ interface Tab {
     label: string;
     icon: ReactNode;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: React.FC<any>; // Usaremos 'any' por simplicidade, mas poderia ser mais específico
+    component: React.FC<any>;
 }
 
 interface SettingsModalProps {
@@ -31,7 +31,6 @@ interface SettingsModalProps {
     onClose: () => void;
 }
 
-// --- Subcomponente: Aba Geral (API Key) ---
 const GeneralSettingsTab: React.FC<{
     currentApiKey: string;
     setCurrentApiKey: (key: string) => void;
@@ -59,19 +58,18 @@ const GeneralSettingsTab: React.FC<{
                     Sua chave de API é armazenada localmente.
                 </p>
             </div>
-            {/* Outras configurações gerais podem vir aqui */}
         </div>
     );
 };
 
-// --- Subcomponente: Aba Memórias ---
 const MemoriesSettingsTab: React.FC = () => {
-    const { memories, addMemory, deleteMemory, updateMemory, clearAllMemories } = useMemories();
+    const { memories, addMemory, deleteMemory, updateMemory, clearAllMemories, replaceAllMemories } = useMemories();
     const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
     const [editedMemoryText, setEditedMemoryText] = useState<string>('');
     const [newMemoryText, setNewMemoryText] = useState<string>('');
     const newMemoryInputRef = useRef<HTMLInputElement>(null);
     const editMemoryInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null); // Para o input de arquivo
 
     useEffect(() => {
         if (editingMemory && editMemoryInputRef.current) {
@@ -80,53 +78,156 @@ const MemoriesSettingsTab: React.FC = () => {
         }
     }, [editingMemory]);
 
-    const handleSaveMemoryEdit = () => {
-        if (editingMemory && editedMemoryText.trim() !== editingMemory.content) {
-            if (editedMemoryText.trim() === "") { // Se o novo texto for vazio, pergunta se quer deletar
-                if (window.confirm("O conteúdo da memória está vazio. Deseja excluir esta memória?")) {
-                    deleteMemory(editingMemory.id);
-                }
-            } else {
-                updateMemory(editingMemory.id, editedMemoryText.trim());
-            }
-        }
-        setEditingMemory(null);
-        setEditedMemoryText('');
+    const handleLocalClearAllMemories = () => {
+        clearAllMemories(); // A confirmação já está no contexto
     };
 
+    const handleLocalDeleteMemory = (id: string) => {
+        if (window.confirm('Tem certeza de que deseja apagar esta memória?')) {
+            deleteMemory(id);
+            if (editingMemory?.id === id) {
+                setEditingMemory(null);
+                setEditedMemoryText('');
+            }
+        }
+    };
+
+    const handleStartEditMemory = (memory: Memory) => {
+        setEditingMemory(memory);
+        setEditedMemoryText(memory.content);
+    };
+
+    const handleSaveMemoryEdit = () => {
+        if (editingMemory) { // Garante que editingMemory não é null
+            if (editedMemoryText.trim() !== editingMemory.content) {
+                updateMemory(editingMemory.id, editedMemoryText.trim()); // updateMemory lida com texto vazio
+            }
+            setEditingMemory(null);
+            setEditedMemoryText('');
+        }
+    };
+    
     const handleCancelMemoryEdit = () => {
         setEditingMemory(null);
         setEditedMemoryText('');
     };
 
-    // Reimplementando as funções de manipulação de memória aqui
-    // (copiadas e adaptadas da versão anterior do SettingsModal)
-    // handleClearAllMemories
-    // handleDeleteMemory
-    // handleStartEditMemory
-    // handleSaveMemoryEdit
-    // handleCancelMemoryEdit
-    // handleAddNewMemory
-    // handleNewMemoryKeyDown
-    // handleEditMemoryKeyDown
-    // (Lógica completa dessas funções omitida aqui por brevidade, mas deve ser incluída)
+    const handleAddNewMemory = () => {
+        if (newMemoryText.trim()) {
+            addMemory(newMemoryText.trim());
+            setNewMemoryText('');
+            if (newMemoryInputRef.current) {
+                newMemoryInputRef.current.focus();
+            }
+        }
+    };
+
+    const handleNewMemoryKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleAddNewMemory();
+        }
+    };
+    
+    const handleEditMemoryKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleSaveMemoryEdit();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            handleCancelMemoryEdit();
+        }
+    };
+
+    const handleExportMemories = () => {
+        if (memories.length === 0) {
+            alert("Nenhuma memória para exportar.");
+            return;
+        }
+        const jsonString = JSON.stringify(memories, null, 4); // null, 4 para formatação bonita
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `gemini_chat_memories_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleImportMemories = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const content = e.target?.result;
+                if (typeof content === 'string') {
+                    const importedMemories = JSON.parse(content) as Memory[];
+                    if (Array.isArray(importedMemories)) {
+                        if (window.confirm(`Isso substituirá todas as memórias atuais por ${importedMemories.length} memórias do arquivo. Deseja continuar?`)) {
+                            replaceAllMemories(importedMemories);
+                        }
+                    } else {
+                        throw new Error("O arquivo JSON não contém um array de memórias.");
+                    }
+                }
+            } catch (error) {
+                console.error("Erro ao importar memórias:", error);
+                alert(`Erro ao importar memórias: ${error instanceof Error ? error.message : "Formato de arquivo inválido."}`);
+            } finally {
+                // Resetar o valor do input para permitir o re-upload do mesmo arquivo
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                }
+            }
+        };
+        reader.readAsText(file);
+    };
+
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap justify-between items-center gap-2">
                 <h3 className="text-base font-medium text-slate-300">Gerenciar Memórias</h3>
-                {memories.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
                     <Button
-                        variant="danger"
-                        className="!text-xs !py-1 !px-2.5 !font-normal"
-                        onClick={() => {
-                            if (window.confirm('Tem certeza?')) clearAllMemories();
-                        }}
+                        variant="secondary"
+                        className="!text-xs !py-1.5 !px-3 !font-normal"
+                        onClick={handleExportMemories}
+                        disabled={memories.length === 0}
                     >
-                        <IoTrashOutline className="mr-1 inline" />
-                        Limpar Tudo
+                        <IoDownloadOutline className="mr-1.5 inline" />
+                        Exportar
                     </Button>
-                )}
+                    <Button
+                        variant="secondary"
+                        className="!text-xs !py-1.5 !px-3 !font-normal"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <IoCloudUploadOutline className="mr-1.5 inline" />
+                        Importar
+                    </Button>
+                    <input
+                        type="file"
+                        accept=".json"
+                        ref={fileInputRef}
+                        onChange={handleImportMemories}
+                        className="hidden"
+                    />
+                    {memories.length > 0 && (
+                        <Button
+                            variant="danger"
+                            className="!text-xs !py-1.5 !px-3 !font-normal"
+                            onClick={handleLocalClearAllMemories}
+                        >
+                            <IoTrashOutline className="mr-1.5 inline" />
+                            Limpar Tudo
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <div className="flex gap-2">
@@ -135,14 +236,14 @@ const MemoriesSettingsTab: React.FC = () => {
                     type="text"
                     value={newMemoryText}
                     onChange={(e) => setNewMemoryText(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (newMemoryText.trim()) { addMemory(newMemoryText.trim()); setNewMemoryText(''); } } }}
-                    placeholder="Adicionar nova memória..."
+                    onKeyDown={handleNewMemoryKeyDown}
+                    placeholder="Adicionar nova memória personalizada..."
                     className="flex-grow p-2 bg-slate-700/60 border border-slate-600/70 rounded-md focus:ring-1 focus:ring-teal-500 placeholder-slate-500 text-sm"
                 />
                 <Button
                     variant="secondary"
-                    onClick={() => { if (newMemoryText.trim()) { addMemory(newMemoryText.trim()); setNewMemoryText(''); if (newMemoryInputRef.current) newMemoryInputRef.current.focus(); } }}
-                    className="!py-2 !px-2.5 bg-teal-600 hover:bg-teal-500 text-white"
+                    onClick={handleAddNewMemory}
+                    className="!py-2 !px-2.5 bg-teal-600 hover:bg-teal-500 text-white flex-shrink-0"
                     disabled={!newMemoryText.trim()}
                 >
                     <IoAddCircleOutline size={18} />
@@ -163,7 +264,7 @@ const MemoriesSettingsTab: React.FC = () => {
                                         type="text"
                                         value={editedMemoryText}
                                         onChange={(e) => setEditedMemoryText(e.target.value)}
-                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSaveMemoryEdit(); } else if (e.key === 'Escape') { e.preventDefault(); handleCancelMemoryEdit(); } }}
+                                        onKeyDown={handleEditMemoryKeyDown}
                                         className="w-full p-1.5 bg-slate-600 border border-slate-500 rounded text-xs text-slate-100"
                                     />
                                     <div className="flex justify-end gap-1">
@@ -177,17 +278,17 @@ const MemoriesSettingsTab: React.FC = () => {
                                     <div className="flex-shrink-0 flex gap-1">
                                         <Button
                                             variant="secondary"
-                                            className="!p-1 !text-xs"
+                                            className="!p-1 !text-xs text-slate-400 hover:text-blue-400"
                                             title="Editar memória"
-                                            onClick={() => { setEditingMemory(memory); setEditedMemoryText(memory.content); }}
+                                            onClick={() => handleStartEditMemory(memory)}
                                         >
                                             <IoPencilOutline size={14} />
                                         </Button>
                                         <Button
                                             variant="secondary"
-                                            className="!p-1 !text-xs hover:!text-red-400"
+                                            className="!p-1 !text-xs text-slate-400 hover:text-red-400"
                                             title="Excluir memória"
-                                            onClick={() => { if (window.confirm('Excluir esta memória?')) deleteMemory(memory.id); }}
+                                            onClick={() => handleLocalDeleteMemory(memory.id)}
                                         >
                                             <IoTrashOutline size={14} />
                                         </Button>
@@ -207,8 +308,6 @@ const MemoriesSettingsTab: React.FC = () => {
     );
 };
 
-
-// --- Componente Principal do Modal ---
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const { settings, saveApiKey } = useAppSettings();
     const [currentApiKey, setCurrentApiKey] = useState<string>('');
@@ -217,7 +316,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     useEffect(() => {
         if (isOpen) {
             setCurrentApiKey(settings.apiKey);
-            setActiveTab('general'); // Reseta para a aba geral ao abrir
+            setActiveTab('general');
         }
     }, [settings.apiKey, isOpen]);
 
@@ -227,11 +326,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
     const handleSaveApiKeyOnly = () => {
         saveApiKey(currentApiKey);
-        // Feedback de salvo (ex: toast ou estado breve)
+        alert("Chave de API salva!"); // Feedback simples
     };
     
     const handleFinalSaveAndClose = () => {
-        saveApiKey(currentApiKey); // Salva API Key antes de fechar
+        saveApiKey(currentApiKey);
         onClose();
     };
 
@@ -245,7 +344,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     return (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
             <div className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl text-slate-100 relative animate-modalEnter max-h-[90vh] flex flex-col">
-                {/* Botão de Fechar Global */}
                 <Button
                     onClick={onClose}
                     className="!absolute top-3.5 right-3.5 !p-1.5 text-slate-400 hover:text-slate-100 rounded-full hover:bg-slate-700/70 z-30"
@@ -255,9 +353,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                     <IoClose size={22} />
                 </Button>
 
-                {/* Layout com Abas Laterais e Conteúdo */}
-                <div className="flex flex-grow min-h-0"> {/* min-h-0 para permitir scroll interno */}
-                    {/* Barra Lateral de Abas */}
+                <div className="flex flex-grow min-h-0">
                     <nav className="w-48 flex-shrink-0 bg-slate-850 p-4 space-y-2 border-r border-slate-700/50 rounded-l-xl">
                         <h2 className="text-lg font-semibold mb-4 px-1 text-slate-200">Configurações</h2>
                         {tabs.map(tab => (
@@ -276,19 +372,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                         ))}
                     </nav>
 
-                    {/* Conteúdo da Aba Ativa */}
                     <div className="flex-grow p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50">
                         {ActiveTabComponent && (
                             <ActiveTabComponent
-                                // Passar props específicas para cada aba, se necessário
                                 {...(activeTab === 'general' && { currentApiKey, setCurrentApiKey, onSaveApiKey: handleSaveApiKeyOnly })}
-                                // A aba de memórias já usa seu próprio hook useMemories internamente
                             />
                         )}
                     </div>
                 </div>
                 
-                {/* Rodapé com Botões Globais (opcional, pode estar dentro de cada aba) */}
                 <div className="flex-shrink-0 p-4 border-t border-slate-700/50 flex justify-end space-x-3 bg-slate-800 rounded-b-xl">
                     <Button variant="secondary" onClick={onClose} className="!py-2">
                         Cancelar
@@ -301,12 +393,5 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         </div>
     );
 };
-
-// Reimplementando as funções de manipulação de memória para MemoriesSettingsTab
-// Essas funções foram simplificadas e o código completo deve ser restaurado
-// da versão anterior do SettingsModal se necessário.
-// Por exemplo:
-// const handleClearAllMemories = () => { if (window.confirm('Tem certeza?')) clearAllMemories(); };
-// ... e assim por diante para as outras funções de memória.
 
 export default SettingsModal;
