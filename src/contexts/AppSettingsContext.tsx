@@ -1,18 +1,30 @@
+// src/contexts/AppSettingsContext.tsx
 import React, { createContext, useContext, type ReactNode } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import type { AppSettings } from '../types';
+import type { AppSettings, GeminiModelConfig, GeminiModel } from '../types';
 
 const APP_SETTINGS_KEY = 'geminiChat_appSettings';
+
+const DEFAULT_GEMINI_MODEL: GeminiModel = "gemini-2.5-pro-preview-05-06";
 
 const defaultAppSettings: AppSettings = {
     apiKey: '',
     theme: 'dark',
+    geminiModelConfig: {
+        model: DEFAULT_GEMINI_MODEL,
+        temperature: 0.7,
+        topP: 1.0,
+        topK: 1,
+        maxOutputTokens: 32768,
+    },
 };
 
 interface AppSettingsContextType {
     settings: AppSettings;
     setSettings: React.Dispatch<React.SetStateAction<AppSettings>>;
     saveApiKey: (apiKey: string) => void;
+    // Adicionar uma função para atualizar geminiModelConfig pode ser útil
+    updateGeminiModelConfig: (config: Partial<GeminiModelConfig>) => void;
 }
 
 const AppSettingsContext = createContext<AppSettingsContextType | undefined>(undefined);
@@ -27,18 +39,18 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
         setSettings((prevSettings) => ({ ...prevSettings, apiKey }));
     };
 
-    // Poderíamos adicionar uma função para mudar o tema aqui também, se necessário
-    // useEffect(() => {
-    //   if (settings.theme === 'dark') {
-    //     document.documentElement.classList.add('dark');
-    //   } else {
-    //     document.documentElement.classList.remove('dark');
-    //   }
-    // }, [settings.theme]);
-    // A classe 'dark' já está no HTML, então este useEffect é mais para alternância de tema.
+    const updateGeminiModelConfig = (configUpdate: Partial<GeminiModelConfig>) => {
+        setSettings((prevSettings) => ({
+            ...prevSettings,
+            geminiModelConfig: {
+                ...prevSettings.geminiModelConfig, // Preserva as configurações existentes
+                ...configUpdate,                   // Aplica as atualizações
+            },
+        }));
+    };
 
     return (
-        <AppSettingsContext.Provider value={{ settings, setSettings, saveApiKey }}>
+        <AppSettingsContext.Provider value={{ settings, setSettings, saveApiKey, updateGeminiModelConfig }}>
             {children}
         </AppSettingsContext.Provider>
     );

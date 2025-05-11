@@ -271,7 +271,8 @@ const MessageInput: React.FC = () => {
                 historyBeforeCurrentUserMessage,
                 currentTextForAI,
                 fileDataPartsForAPI,
-                currentGlobalMemoriesWithObjects
+                currentGlobalMemoriesWithObjects,
+                settings.geminiModelConfig // Pass the modelConfig from settings
             )) {
                 // ... (lógica do stream) ...
                 if (streamResponse.delta) {

@@ -10,16 +10,28 @@ import {
     IoDownloadOutline,
     IoCloudUploadOutline,
     IoChatbubblesOutline, // Para apagar conversas
+    IoBuildOutline,       // Novo ícone para a aba de Modelo
 } from 'react-icons/io5';
 import Button from '../common/Button';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { useMemories } from '../../contexts/MemoryContext';
-import { useConversations } from '../../contexts/ConversationContext'; // Importar para apagar conversas
-import type { Memory } from '../../types';
+import { useConversations } from '../../contexts/ConversationContext';
+import type { Memory, GeminiModel, GeminiModelConfig } from '../../types'; // Importar AppSettings, GeminiModel, GeminiModelConfig
 import { LuBrain } from 'react-icons/lu';
-import { FiDatabase } from 'react-icons/fi'; // Mantido para a aba de Dados
+import { FiDatabase } from 'react-icons/fi';
 
-type TabId = 'general' | 'memories' | 'data';
+// Lista de modelos disponíveis (deve corresponder ao seu `types/index.ts` ou similar)
+const AVAILABLE_GEMINI_MODELS: GeminiModel[] = [
+    "gemini-2.5-pro-preview-05-06",
+    "gemini-2.5-flash-preview-04-17",
+    "gemini-2.0-flash", // Ajuste esta lista conforme seus tipos
+    // Adicione outros modelos suportados aqui se necessário
+    // "gemini-1.5-pro-latest",
+    // "gemini-1.5-flash-latest",
+    // "gemini-pro",
+];
+
+type TabId = 'general' | 'model' | 'memories' | 'data'; // Adicionada a aba 'model'
 
 interface Tab {
     id: TabId;
@@ -34,11 +46,47 @@ interface SettingsModalProps {
     onClose: () => void;
 }
 
+// Componente reutilizável para input de range
+const RangeInput: React.FC<{
+    id: string;
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+    value: number;
+    onChange: (value: number) => void;
+    info?: string;
+    disabled?: boolean;
+}> = ({ id, label, min, max, step, value, onChange, info, disabled = false }) => (
+    <div>
+        <div className="flex justify-between items-center mb-1">
+            <label htmlFor={id} className={`block text-sm font-medium ${disabled ? 'text-slate-500' : 'text-slate-300'}`}>
+                {label}
+            </label>
+            <span className={`text-xs px-1.5 py-0.5 rounded-md ${disabled ? 'text-slate-600 bg-slate-800' : 'text-slate-400 bg-slate-700'}`}>{value}</span>
+        </div>
+        <input
+            type="range"
+            id={id}
+            name={id}
+            min={min}
+            max={max}
+            step={step}
+            value={value}
+            onChange={(e) => onChange(parseFloat(e.target.value))}
+            disabled={disabled}
+            className={`w-full h-2 rounded-lg appearance-none ${disabled ? 'bg-slate-700 cursor-not-allowed' : 'bg-slate-600 cursor-pointer accent-blue-500'}`}
+        />
+        {info && <p className={`text-xs mt-1 ${disabled ? 'text-slate-600' : 'text-slate-500'}`}>{info}</p>}
+    </div>
+);
+
+
 const GeneralSettingsTab: React.FC<{
     currentApiKey: string;
     setCurrentApiKey: (key: string) => void;
-    onSaveApiKey: () => void;
-}> = ({ currentApiKey, setCurrentApiKey, onSaveApiKey }) => {
+    // onSaveApiKey: () => void; // Será tratado pelo botão Salvar Configurações geral
+}> = ({ currentApiKey, setCurrentApiKey /*, onSaveApiKey */ }) => {
     return (
         <div className="space-y-6">
             <div>
@@ -55,17 +103,107 @@ const GeneralSettingsTab: React.FC<{
                         onChange={(e) => setCurrentApiKey(e.target.value)}
                         className="flex-grow p-2.5 bg-slate-700/80 border border-slate-600/80 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-slate-500 text-slate-100 shadow-sm w-full"
                     />
-                    <Button variant="primary" onClick={onSaveApiKey} className="!py-2.5 flex-shrink-0 w-full sm:w-auto">Salvar Chave</Button>
+                    {/* O botão de salvar API Key individual foi removido, pois haverá um Salvar Configurações geral */}
+                    {/* <Button variant="primary" onClick={onSaveApiKey} className="!py-2.5 flex-shrink-0 w-full sm:w-auto">Salvar Chave</Button> */}
                 </div>
                 <p className="text-xs text-slate-400 mt-2">
-                    Sua chave de API é armazenada localmente.
+                    Sua chave de API é armazenada localmente no seu navegador.
+                </p>
+            </div>
+             {/* Você pode adicionar outras configurações gerais aqui, como Tema, etc. */}
+        </div>
+    );
+};
+
+// Nova aba para configurações do modelo
+const ModelSettingsTab: React.FC<{
+    currentModelConfig: GeminiModelConfig; // Recebe a configuração atual do modelo
+    onModelConfigChange: (field: keyof GeminiModelConfig, value: unknown) => void; // Função para atualizar um campo
+}> = ({ currentModelConfig, onModelConfigChange }) => {
+    return (
+        <div className="space-y-6">
+            <div>
+                <label htmlFor="modelName" className="block text-sm font-medium text-slate-300 mb-1.5">
+                    Modelo Gemini
+                </label>
+                <select
+                    id="modelName"
+                    name="modelName"
+                    value={currentModelConfig.model}
+                    onChange={(e) => onModelConfigChange('model', e.target.value as GeminiModel)}
+                    className="w-full p-2.5 bg-slate-700/80 border border-slate-600/80 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-100 shadow-sm"
+                >
+                    {AVAILABLE_GEMINI_MODELS.map(model => (
+                        <option key={model} value={model}>{model}</option>
+                    ))}
+                </select>
+                <p className="text-xs text-slate-400 mt-2">
+                    Escolha o modelo Gemini. Verifique a documentação para compatibilidade e capacidades.
+                </p>
+            </div>
+
+            <RangeInput
+                id="temperature"
+                label="Temperatura"
+                min={0.0}
+                max={2.0} // Alguns modelos Gemini 1.5+ suportam até 2.0
+                step={0.01}
+                value={currentModelConfig.temperature}
+                onChange={(value) => onModelConfigChange('temperature', value)}
+                info="Controla a aleatoriedade. Mais alto = mais criativo/aleatório. (Ex: 0.7)"
+            />
+
+            <RangeInput
+                id="topP"
+                label="Top P"
+                min={0.0}
+                max={1.0}
+                step={0.01}
+                value={currentModelConfig.topP}
+                onChange={(value) => onModelConfigChange('topP', value)}
+                info="Considera tokens com probabilidade cumulativa até este valor. (Ex: 0.95)"
+            />
+            
+            <RangeInput
+                id="topK"
+                label="Top K"
+                min={0} // 0 ou 1 geralmente desativa Top K se Top P estiver ativo.
+                max={100} 
+                step={1}
+                value={currentModelConfig.topK}
+                onChange={(value) => onModelConfigChange('topK', value)}
+                info="Considera os K tokens mais prováveis. (Ex: 40, ou 1 se Top P é usado)"
+            />
+
+            <div>
+                 <label htmlFor="maxOutputTokens" className="block text-sm font-medium text-slate-300 mb-1.5">
+                    Máximo de Tokens de Saída
+                </label>
+                <input
+                    type="number"
+                    id="maxOutputTokens"
+                    name="maxOutputTokens"
+                    min="1"
+                    // O limite real pode variar por modelo, mas 8192 é comum para Pro, e Flash pode ser menos.
+                    // Gemini 1.5 pode ter limites muito maiores (ex: 32768, 65536 ou até mais para contexto)
+                    // Max Output Tokens é diferente de Context Window.
+                    max={65536} // Um limite superior razoável para o input
+                    step="128" // Passos maiores podem ser úteis
+                    value={currentModelConfig.maxOutputTokens}
+                    onChange={(e) => onModelConfigChange('maxOutputTokens', parseInt(e.target.value, 10) || 1)} // Evita NaN
+                    className="w-full p-2.5 bg-slate-700/80 border border-slate-600/80 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-100 shadow-sm"
+                />
+                <p className="text-xs text-slate-400 mt-2">
+                    Limite de tokens na resposta da IA. (Ex: 8192)
                 </p>
             </div>
         </div>
     );
 };
 
+
 const MemoriesSettingsTab: React.FC = () => {
+    // ... (código do MemoriesSettingsTab como no seu último fornecimento - sem alterações aqui)
     const { memories, addMemory, deleteMemory, updateMemory, replaceAllMemories } = useMemories();
     const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
     const [editedMemoryText, setEditedMemoryText] = useState<string>('');
@@ -238,7 +376,7 @@ const MemoriesSettingsTab: React.FC = () => {
             </div>
 
             {memories.length > 0 ? (
-                <div className="overflow-y-auto space-y-1.5 p-2 bg-slate-900/50 rounded-md scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50 border border-slate-700/40">
+                <div className="overflow-y-auto space-y-1.5 p-2 bg-slate-900/50 rounded-md scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50 border border-slate-700/40 max-h-[calc(50vh-180px)] sm:max-h-[calc(60vh-200px)]">
                     {memories.map((memory) => (
                         <div
                             key={memory.id}
@@ -296,6 +434,7 @@ const MemoriesSettingsTab: React.FC = () => {
 };
 
 const DataSettingsTab: React.FC = () => {
+    // ... (código do DataSettingsTab como no seu último fornecimento - sem alterações aqui)
     const { clearAllMemories, memories } = useMemories();
     const { deleteAllConversations, conversations } = useConversations(); 
 
@@ -353,29 +492,89 @@ const DataSettingsTab: React.FC = () => {
     );
 };
 
+
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
-    const { settings, saveApiKey } = useAppSettings();
+    const { settings, setSettings } = useAppSettings(); // Removido saveApiKey pois setSettings é mais geral
     const [currentApiKey, setCurrentApiKey] = useState<string>('');
     const [activeTab, setActiveTab] = useState<TabId>('general');
 
+    // Estado local para as configurações do modelo, inicializado com os valores do contexto
+    const [localModelConfig, setLocalModelConfig] = useState<GeminiModelConfig>(
+        // Garante que geminiModelConfig exista e tenha valores padrão
+        settings.geminiModelConfig || {
+            model: AVAILABLE_GEMINI_MODELS[0],
+            temperature: 0.7,
+            topP: 1.0,
+            topK: 1,
+            maxOutputTokens: 32768,
+        }
+    );
+
     useEffect(() => {
         if (isOpen) {
-            setCurrentApiKey(settings.apiKey);
+            setCurrentApiKey(settings.apiKey || '');
+            // Atualizar localModelConfig com os valores atuais de settings.geminiModelConfig quando o modal abrir
+            // ou com defaults se settings.geminiModelConfig não estiver definido (para migração)
+            setLocalModelConfig(
+                settings.geminiModelConfig || {
+                    model: AVAILABLE_GEMINI_MODELS[0],
+                    temperature: 0.7,
+                    topP: 1.0,
+                    topK: 1,
+                    maxOutputTokens: 32768,
+                }
+            );
             setActiveTab('general');
         }
-    }, [settings.apiKey, isOpen]);
+    }, [settings, isOpen]); // Depender de settings completo
 
     if (!isOpen) {
         return null;
     }
 
-    const handleSaveApiKeyOnly = () => {
-        saveApiKey(currentApiKey);
-        alert("Chave de API salva!");
+    // Handler para quando um campo de configuração do modelo muda na aba "Modelo"
+    const handleLocalModelConfigChange = (
+        field: keyof GeminiModelConfig,
+        value: string | number // Aceita string ou número, pois o select retorna string
+    ) => {
+        setLocalModelConfig(prev => ({
+            ...prev,
+            [field]: field === 'model' ? value : Number(value) // Converte para número se não for 'model'
+        }));
+    };
+
+    // Handler para salvar todas as configurações (API Key + Modelo)
+    const handleSaveAllSettings = () => {
+        // Validação básica antes de salvar
+        if (localModelConfig.temperature < 0 || localModelConfig.temperature > 2) {
+            alert("A temperatura deve estar entre 0.0 e 2.0.");
+            return;
+        }
+        if (localModelConfig.topP < 0 || localModelConfig.topP > 1) {
+            alert("Top P deve estar entre 0.0 e 1.0.");
+            return;
+        }
+        if (localModelConfig.topK < 0) {
+            alert("Top K não pode ser negativo.");
+            return;
+        }
+        if (localModelConfig.maxOutputTokens < 1) {
+            alert("Máximo de Tokens de Saída deve ser pelo menos 1.");
+            return;
+        }
+
+        setSettings(prevSettings => ({
+            ...prevSettings,
+            apiKey: currentApiKey,
+            geminiModelConfig: localModelConfig, // Salva o estado local do modelConfig
+        }));
+        alert("Configurações salvas!");
+        // onClose(); // Opcional: fechar modal após salvar
     };
 
     const tabs: Tab[] = [
         { id: 'general', label: 'Geral', icon: <IoKeyOutline size={18} />, component: GeneralSettingsTab },
+        { id: 'model', label: 'Modelo', icon: <IoBuildOutline size={18} />, component: ModelSettingsTab }, // Nova aba
         { id: 'memories', label: 'Memórias', icon: <LuBrain size={18} />, component: MemoriesSettingsTab },
         { id: 'data', label: 'Dados', icon: <FiDatabase size={18} />, component: DataSettingsTab },
     ];
@@ -384,7 +583,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-            <div className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl text-slate-100 relative animate-modalEnter h-[80vh] flex flex-col overflow-hidden">
+            <div className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl text-slate-100 relative animate-modalEnter h-[85vh] sm:h-[80vh] flex flex-col overflow-hidden">
                 
                 <div className="flex items-center justify-between p-4 border-b border-slate-700/50 flex-shrink-0">
                     <h2 className="text-lg font-semibold text-slate-200">Configurações</h2>
@@ -440,9 +639,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                         <div className="flex-grow p-4 sm:p-5 md:p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50">
                             {ActiveTabComponent && (
                                 <ActiveTabComponent
-                                    {...(activeTab === 'general' && { currentApiKey, setCurrentApiKey, onSaveApiKey: handleSaveApiKeyOnly })}
+                                    // Passa props específicas para cada aba
+                                    {...(activeTab === 'general' && { currentApiKey, setCurrentApiKey })}
+                                    {...(activeTab === 'model' && { currentModelConfig: localModelConfig, onModelConfigChange: handleLocalModelConfigChange })}
+                                    // As abas MemoriesSettingsTab e DataSettingsTab não precisam de props extras aqui,
+                                    // pois usam seus próprios hooks de contexto.
                                 />
                             )}
+                        </div>
+                        {/* Botão de Salvar Configurações no rodapé do modal */}
+                        <div className="p-4 border-t border-slate-700/50 flex-shrink-0 bg-slate-800/70">
+                            <Button
+                                variant="primary"
+                                onClick={handleSaveAllSettings}
+                                className="w-full sm:w-auto !py-2.5"
+                            >
+                                Salvar Todas as Configurações
+                            </Button>
                         </div>
                     </div>
                 </div>

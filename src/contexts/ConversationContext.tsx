@@ -278,7 +278,9 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 historyForAPI.slice(0, -1),
                 newText,
                 [],
-                currentGlobalMemoriesWithObjects
+                currentGlobalMemoriesWithObjects,
+                settings.geminiModelConfig, // Pass the modelConfig from settings
+                // settings.systemInstruction // Pass the systemInstruction from settings
             )) {
                 if (streamResponse.delta) {
                     chunkQueueRef.current.push(streamResponse.delta);

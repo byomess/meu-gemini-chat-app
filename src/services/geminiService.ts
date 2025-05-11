@@ -5,12 +5,10 @@ import {
     HarmBlockThreshold,
     type GenerateContentConfig,
     type Content,
-    type Part, // Importar Part
+    type Part,
 } from "@google/genai";
 
-// Certifique-se de que este modelo suporta entrada multimodal (texto e imagem)
-// Modelos como "gemini-1.5-pro-latest" (ou "gemini-1.5-pro-preview-MMDD") ou "gemini-1.5-flash-latest" geralmente suportam.
-const MODEL_NAME = "gemini-2.5-pro-preview-05-06"; // Verifique o nome do modelo mais recente e apropriado
+import type { GeminiModelConfig } from '../types';
 
 export interface StreamedGeminiResponseChunk {
     delta?: string;
@@ -25,23 +23,21 @@ export interface StreamedGeminiResponseChunk {
     isFinished: boolean;
 }
 
-// Interface para os dados do arquivo que este serviço espera.
-// A conversão de File para base64 e a obtenção do mimeType devem ocorrer no chamador (MessageInput.tsx).
 export interface FileDataPart {
     mimeType: string;
-    data: string; // String de dados Base64
+    data: string;
 }
 
 const buildChatHistory = (
     priorConversationMessages: { sender: 'user' | 'ai'; text: string }[],
-    systemInstruction: string,
+    currentSystemInstruction: string,
     globalMemories: string[]
 ): Content[] => {
     const history: Content[] = [];
     let initialSystemBlock = "";
 
-    if (systemInstruction) {
-        initialSystemBlock += systemInstruction;
+    if (currentSystemInstruction) {
+        initialSystemBlock += currentSystemInstruction;
     }
 
     let memoriesTextSegment = "";
@@ -72,9 +68,6 @@ const buildChatHistory = (
     }
 
     priorConversationMessages.forEach(msg => {
-        // Assume que mensagens históricas são apenas texto.
-        // Se mensagens históricas pudessem ter imagens de forma estruturada,
-        // a estrutura `msg` e esta parte precisariam ser adaptadas.
         history.push({
             role: msg.sender === 'user' ? 'user' : 'model',
             parts: [{ text: msg.text }]
@@ -93,31 +86,39 @@ const parseMemoryOperations = (responseText: string): {
 } => {
     const operations: NonNullable<StreamedGeminiResponseChunk['memoryOperations']> = [];
     let cleanedResponse = responseText;
-    let match;
 
-    while ((match = updateMemoryRegex.exec(responseText)) !== null) {
-        if (match[1] && match[2]) {
-            operations.push({
-                action: 'update',
-                targetMemoryContent: match[1].trim(),
-                content: match[2].trim(),
-            });
-        }
-    }
+    const updateMatches = Array.from(responseText.matchAll(updateMemoryRegex));
+     updateMatches.forEach(match => {
+         if (match[1] && match[2]) {
+             operations.push({
+                 action: 'update',
+                 targetMemoryContent: match[1].trim(),
+                 content: match[2].trim(),
+             });
+         }
+     });
     cleanedResponse = cleanedResponse.replace(updateMemoryRegex, "").trim();
 
-    while ((match = deleteMemoryRegex.exec(cleanedResponse)) !== null) {
-        if (match[1]) {
-            operations.push({ action: 'delete_by_ai_suggestion', targetMemoryContent: match[1].trim() });
-        }
-    }
+     const deleteMatches = Array.from(cleanedResponse.matchAll(deleteMemoryRegex));
+     deleteMatches.forEach(match => {
+         if (match[1]) {
+             operations.push({
+                 action: 'delete_by_ai_suggestion',
+                 targetMemoryContent: match[1].trim()
+             });
+         }
+     });
     cleanedResponse = cleanedResponse.replace(deleteMemoryRegex, "").trim();
 
-    while ((match = createMemoryRegex.exec(cleanedResponse)) !== null) {
-        if (match[1]) {
-            operations.push({ action: 'create', content: match[1].trim() });
-        }
-    }
+    const createMatches = Array.from(cleanedResponse.matchAll(createMemoryRegex));
+     createMatches.forEach(match => {
+         if (match[1]) {
+             operations.push({
+                 action: 'create',
+                 content: match[1].trim()
+             });
+         }
+     });
     cleanedResponse = cleanedResponse.replace(createMemoryRegex, "").trim();
 
     return { cleanedResponse, operations: operations.length > 0 ? operations : undefined };
@@ -126,67 +127,37 @@ const parseMemoryOperations = (responseText: string): {
 
 export async function* streamMessageToGemini(
     apiKey: string,
-    conversationHistory: { sender: 'user' | 'ai'; text: string }[], // Histórico ANTES da mensagem atual
-    currentUserMessageText: string, // Texto da mensagem ATUAL
-    attachedFileDataParts: FileDataPart[], // Arquivos da mensagem ATUAL, já convertidos (base64)
-    globalMemoriesObjects: { id: string; content: string }[]
+    conversationHistory: { sender: 'user' | 'ai'; text: string }[],
+    currentUserMessageText: string,
+    attachedFileDataParts: FileDataPart[],
+    globalMemoriesObjects: { id: string; content: string }[],
+    modelConfig: GeminiModelConfig,
+    // systemInstruction: string 
 ): AsyncGenerator<StreamedGeminiResponseChunk, void, undefined> {
     if (!apiKey) {
         yield { error: "Chave de API não fornecida.", isFinished: true };
         return;
     }
 
-    const genAI = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenAI({
+        apiKey: apiKey
+    });
     const globalMemoriesContent = globalMemoriesObjects.map(mem => mem.content);
-
-    const systemInstruction = `
-Você é um assistente de IA prestativo e amigável.
-Se o usuário enviar imagens, você pode descrevê-las ou responder perguntas sobre elas. Se nenhuma imagem for enviada explicitamente com a mensagem atual, não mencione imagens.
-Siga estas instruções RIGOROSAMENTE para gerenciar memórias sobre o usuário.
-
-MEMÓRIAS GLOBAIS:
-(Esta seção será preenchida com as memórias atuais do usuário, se houver.)
-
-INSTRUÇÕES PARA GERENCIAR MEMÓRIAS (use estas tags ao FINAL da sua resposta, se aplicável):
-
-1.  CRIAR NOVA MEMÓRIA: Se a ÚLTIMA MENSAGEM DO USUÁRIO (texto ou contexto de imagem) contiver uma informação nova, factual e relevante que precise ser lembrada para o futuro, use a tag:
-    [MEMORIZE: "conteúdo da nova memória aqui"]
-    Seja muito seletivo. Não memorize perguntas, comentários triviais, ou suas próprias respostas. Foco em fatos sobre o usuário ou suas preferências explícitas.
-
-2.  ATUALIZAR MEMÓRIA EXISTENTE: Se a ÚLTIMA MENSAGEM DO USUÁRIO (texto ou contexto de imagem) corrigir ou atualizar diretamente uma memória listada no "CONHECIMENTO PRÉVIO", use a tag:
-    [UPDATE_MEMORY original:"conteúdo EXATO da memória antiga como listada" new:"novo conteúdo completo para essa memória"]
-    É CRUCIAL que o "conteúdo EXATO da memória antiga como listada" seja IDÊNTICO ao texto de uma das memórias fornecidas (sem o prefixo "Memória N:").
-
-3.  REMOVER MEMÓRIA (Use com extrema cautela): Se uma memória se tornar completamente obsoleta ou irrelevante com base na ÚLTIMA MENSAGEM DO USUÁRIO (texto ou contexto de imagem), e não apenas precisar de uma atualização, você PODE sugerir sua remoção usando:
-    [DELETE_MEMORY: "conteúdo EXATO da memória a ser removida como listada"]
-    Esta ação deve ser rara. Prefira atualizar, se possível. Se não tiver certeza, pergunte ao usuário.
-
-REGRAS IMPORTANTES:
--   As tags de memória ([MEMORIZE:...], [UPDATE_MEMORY:...], [DELETE_MEMORY:...]) DEVEM ser colocadas no final da sua resposta completa.
--   Essas tags NÃO DEVEM aparecer no texto visível ao usuário. Elas serão processadas internamente.
--   Se múltiplas operações de memória forem necessárias (ex: uma atualização e uma nova memória), liste cada tag separadamente, uma após a outra, no final.
--   Se NÃO houver NADA a memorizar, atualizar ou remover da ÚLTIMA MENSAGEM DO USUÁRIO, NÃO inclua NENHUMA dessas tags.
--   Sua resposta principal ao usuário deve ser natural, útil e direta. As operações de memória são uma funcionalidade de bastidor.
-`;
 
     const baseHistory = buildChatHistory(
         conversationHistory,
-        systemInstruction,
+        "", // Provide an empty string or the appropriate system instruction
         globalMemoriesContent
     );
 
     const currentUserParts: Part[] = [];
-
     if (currentUserMessageText.trim()) {
         currentUserParts.push({ text: currentUserMessageText.trim() });
     }
 
-    // Tipos de MIME de imagem suportados pela API Gemini para inlineData.
-    // Consulte a documentação da API Gemini para a lista mais atualizada.
     const supportedImageMimeTypes = [
         "image/png", "image/jpeg", "image/jpg", 
         "image/webp", "image/heic", "image/heif"
-        // "image/gif" // GIFs podem ser suportados, mas são frequentemente animados. Verificar documentação.
     ];
 
     for (const fileData of attachedFileDataParts) {
@@ -198,32 +169,19 @@ REGRAS IMPORTANTES:
                 },
             });
         } else {
-            console.warn(`GEMINI_SERVICE: Tipo de arquivo '${fileData.mimeType}' não é uma imagem suportada para envio direto. O arquivo não será enviado como inlineData.`);
-            // A informação textual sobre o arquivo (nome) já deve estar em currentUserMessageText
-            // se o MessageInput.tsx a adicionou.
+            console.warn(`GEMINI_SERVICE: Tipo de arquivo '${fileData.mimeType}' não é suportado para envio direto.`);
         }
     }
 
     const chatHistoryForAPI: Content[] = [...baseHistory];
-
     if (currentUserParts.length > 0) {
         chatHistoryForAPI.push({
             role: "user",
             parts: currentUserParts,
         });
     } else {
-        // Se não houver texto nem arquivos válidos para a mensagem atual do usuário,
-        // e o histórico anterior não terminar com uma mensagem do usuário,
-        // a API pode retornar um erro.
-        // O `MessageInput.tsx` deve garantir que `canSubmit` previna chamadas vazias.
-        if (chatHistoryForAPI.length === 0 || chatHistoryForAPI[chatHistoryForAPI.length -1].role !== 'user') {
-             console.warn("GEMINI_SERVICE: Nenhuma parte de usuário válida para enviar e o histórico não termina com o usuário.");
-             // É crucial que `contents` para `generateContentStream` termine com uma mensagem de 'user'.
-             // Se `baseHistory` já contém o system prompt (user) e model (ok), e `currentUserParts` está vazio,
-             // a última mensagem seria 'model', o que é inválido.
-             // Esta situação deve ser prevenida pelo `MessageInput`.
-             // Se `baseHistory` estiver vazio e `currentUserParts` também, não há o que enviar.
-             yield { error: "Nenhum conteúdo de usuário válido para enviar (nem texto, nem arquivos suportados).", isFinished: true };
+        if (chatHistoryForAPI.length === 0 || (chatHistoryForAPI.length > 0 && chatHistoryForAPI[chatHistoryForAPI.length -1].role !== 'user')) {
+             yield { error: "Nenhum conteúdo de usuário válido para enviar.", isFinished: true };
              return;
         }
     }
@@ -235,35 +193,43 @@ REGRAS IMPORTANTES:
         { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
     ];
 
-    const config: GenerateContentConfig = { // Renomeado para evitar conflito com 'config' no escopo
-        temperature: 0.7,
-        topK: 1,
-        topP: 1,
-        // maxOutputTokens: 8192,
-        // maxOutputTokens: 16384,
-        maxOutputTokens: 32768,
+    const apiGenerationConfig: GenerateContentConfig = {
+        temperature: modelConfig.temperature,
+        topK: modelConfig.topK === 0 ? undefined : modelConfig.topK, // TopK não pode ser 0 se topP for 1. undefined é melhor.
+        topP: modelConfig.topP,
+        maxOutputTokens: modelConfig.maxOutputTokens,
         safetySettings,
     };
+    
+    // Certifique-se de que topK e topP não sejam ambos 0, ou que topK não seja 0 se topP for 1.
+    // A API do Gemini pode ter regras específicas. A SDK geralmente lida com isso,
+    // mas para `topK: 0` é mais seguro omitir se `topP` está presente.
+    if (apiGenerationConfig.topK === undefined && apiGenerationConfig.topP === undefined) {
+        // Se ambos forem undefined (por ex, topK era 0 e topP não foi setado ou 0),
+        // a API pode usar defaults, ou pode ser bom setar um topK padrão aqui.
+        // Por agora, vamos deixar a API decidir.
+    }
+
 
     try {
         const result = await genAI.models.generateContentStream({
-            model: MODEL_NAME,
             contents: chatHistoryForAPI,
-            config: config,
+            model: modelConfig.model,
+            config: apiGenerationConfig,
         });
-
+        
         let accumulatedText = "";
-        for await (const chunk of result) {
-            if (chunk?.candidates?.[0]?.content?.parts?.[0]?.text) {
-                const chunkText = chunk.candidates[0].content.parts[0].text;
-                accumulatedText += chunkText;
-                yield { delta: chunkText, isFinished: false };
+        const stream = result;
+
+        for await (const chunk of stream) {
+            const textFromChunk = chunk?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (textFromChunk) {
+                accumulatedText += textFromChunk;
+                yield { delta: textFromChunk, isFinished: false };
             }
         }
 
         const { cleanedResponse, operations } = parseMemoryOperations(accumulatedText);
-        console.log("GEMINI_SERVICE: Accumulated text from AI:", accumulatedText);
-        console.log("GEMINI_SERVICE: Parsed operations:", operations);
         yield { finalText: cleanedResponse, memoryOperations: operations, isFinished: true };
 
     } catch (error: unknown) {
@@ -274,7 +240,11 @@ REGRAS IMPORTANTES:
             if (error.message.toLowerCase().includes("api key") || error.message.toLowerCase().includes("permission denied")) {
                 errorMessage = "Chave de API inválida ou não autorizada. Verifique suas configurações.";
             } else if (error.message.toLowerCase().includes("model not found")) {
-                errorMessage = `Modelo "${MODEL_NAME}" não encontrado ou não acessível. Verifique o nome do modelo.`;
+                errorMessage = `Modelo "${modelConfig.model}" não encontrado ou não acessível. Verifique o nome do modelo.`;
+            } else if (error.message.toLowerCase().includes("quota")) {
+                errorMessage = `Erro de quota da API. Você excedeu o limite de uso. Detalhes: ${error.message}`;
+            } else if (error.message.toLowerCase().includes("invalid argument") || error.message.toLowerCase().includes("bad request")) {
+                 errorMessage = `Erro na requisição para a IA. Verifique os parâmetros e o conteúdo enviado. Detalhes: ${error.message}`;
             }
         }
         yield { error: errorMessage, isFinished: true };
