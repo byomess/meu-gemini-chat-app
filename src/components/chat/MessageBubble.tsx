@@ -18,6 +18,7 @@ interface MessageBubbleProps {
     conversationId: string;
 }
 
+// ... (MemoryActionItem COMPLETO como fornecido anteriormente)
 interface MemoryActionItemProps {
     memoryActionDetail: NonNullable<MessageMetadata['memorizedMemoryActions']>[0];
 }
@@ -37,7 +38,7 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
             setEditedMemoryContent(memoryActionDetail.content);
         }
     }, [currentMemoryInContext, isEditingMemory, memoryActionDetail.content, memoryActionDetail.action]);
-    
+
     const displayContent = currentMemoryInContext ? currentMemoryInContext.content : memoryActionDetail.content;
     const memoryExistsInContext = !!currentMemoryInContext;
 
@@ -66,7 +67,7 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
     };
 
     const handleDeleteUserMemory = () => {
-        if (!currentMemoryInContext) return; 
+        if (!currentMemoryInContext) return;
         if (window.confirm(`Tem certeza que deseja excluir a memória: "${currentMemoryInContext.content}"? Esta ação afeta o armazenamento global de memórias.`)) {
             deleteMemory(memoryActionDetail.id);
         }
@@ -79,7 +80,7 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
     if (memoryActionDetail.action === 'created') {
         ActionIconComponent = IoGitNetworkOutline;
         if (!memoryExistsInContext && !isEditingMemory) {
-             displayText = `"${memoryActionDetail.content}" (removida pelo usuário)`;
+            displayText = `"${memoryActionDetail.content}" (removida pelo usuário)`;
         } else {
             displayText = `"${displayContent}"`;
         }
@@ -96,12 +97,12 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
         itemTitle = `Memória removida pela IA: "${memoryActionDetail.originalContent}"`;
         displayText = `"${memoryActionDetail.originalContent}" (removida pela IA)`;
     }
-    
+
     if (!memoryExistsInContext && memoryActionDetail.action !== 'deleted_by_ai' && !isEditingMemory) {
         return (
             <li className="flex items-center justify-between text-slate-500 italic py-1 px-1 -mx-1 min-h-[28px] max-w-full overflow-hidden">
                 <span className="line-through truncate flex items-center" title={`Memória original: "${memoryActionDetail.originalContent || memoryActionDetail.content}"`}>
-                    <ActionIconComponent className="mr-1 flex-shrink-0" /> 
+                    <ActionIconComponent className="mr-1 flex-shrink-0" />
                     <span className="whitespace-pre-wrap break-words">{memoryActionDetail.originalContent || memoryActionDetail.content}</span> (removida pelo usuário)
                 </span>
             </li>
@@ -133,11 +134,10 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
             ) : (
                 <>
                     <span
-                        className={`truncate text-sm flex items-center ${
-                            memoryExistsInContext || memoryActionDetail.action === 'deleted_by_ai' 
-                                ? 'text-slate-300' 
+                        className={`truncate text-sm flex items-center ${memoryExistsInContext || memoryActionDetail.action === 'deleted_by_ai'
+                                ? 'text-slate-300'
                                 : 'text-slate-500 line-through'
-                        }`}
+                            }`}
                         title={itemTitle}
                     >
                         <ActionIconComponent className="mr-1.5 flex-shrink-0" />
@@ -167,6 +167,7 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
     );
 };
 
+
 const MAX_THUMBNAIL_SIZE_IN_BUBBLE = 100;
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }) => {
@@ -181,13 +182,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const isUser = message.sender === 'user';
     const isLoading = message.metadata?.isLoading;
     const isErrorString = typeof message.metadata?.error === 'string' && message.metadata.error.length > 0;
-    const isErrorFlag = Boolean(message.metadata?.error); // Catches true or string
+    const isErrorFlag = Boolean(message.metadata?.error);
 
     const memoryActions = message.metadata?.memorizedMemoryActions;
     const hasMemoryActions = memoryActions && memoryActions.length > 0;
 
     const attachedFilesInfo = message.metadata?.attachedFilesInfo;
-    const hasAttachedFiles = !!(attachedFilesInfo && attachedFilesInfo.length > 0); // Garantir booleano
+    const hasAttachedFiles = !!(attachedFilesInfo && attachedFilesInfo.length > 0);
 
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [editedText, setEditedText] = useState<string>(message.text);
@@ -231,24 +232,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         setIsEditing(false);
 
         if (newText === message.text) return;
-        
+
         if (newText === '' && !hasAttachedFiles) {
             if (message.text !== '' && window.confirm('O texto está vazio e não há anexos. Deseja excluir a mensagem?')) {
                 removeMessageById(conversationId, message.id);
             }
             return;
         }
-        
+
         if (isUser) {
             await regenerateResponseForEditedMessage(conversationId, message.id, newText);
         } else {
-            updateMessageInConversation(conversationId, message.id, { 
+            updateMessageInConversation(conversationId, message.id, {
                 text: newText,
                 metadata: { ...message.metadata }
             });
         }
     };
-    
+
     const handleCancelEdit = (): void => {
         setEditedText(message.text);
         setIsEditing(false);
@@ -281,24 +282,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const editControlsUserClasses = 'text-blue-200 hover:text-white hover:bg-blue-500/50';
     const editControlsAIClasses = 'text-slate-300 hover:text-white hover:bg-slate-500/50';
 
-    const markdownComponents: Components = { 
-        code: ({ children, ...props }) => ( <CodeBlock {...props}>{String(children)}</CodeBlock> ),
-        h1: (props) => ( <h1 className="text-2xl font-bold my-3" {...props} /> ),
-        h2: (props) => ( <h2 className="text-xl font-semibold my-2.5" {...props} /> ),
-        h3: (props) => ( <h3 className="text-lg font-semibold my-2" {...props} /> ),
-        ul: (props) => ( <ul className="list-disc list-inside my-2 pl-4 space-y-1" {...props} /> ),
-        ol: (props) => ( <ol className="list-decimal list-inside my-2 pl-4 space-y-1" {...props} /> ),
+    const markdownComponents: Components = {
+        code: ({ children, ...props }) => (<CodeBlock {...props}>{String(children)}</CodeBlock>),
+        h1: (props) => (<h1 className="text-2xl font-bold my-3" {...props} />),
+        h2: (props) => (<h2 className="text-xl font-semibold my-2.5" {...props} />),
+        h3: (props) => (<h3 className="text-lg font-semibold my-2" {...props} />),
+        ul: (props) => (<ul className="list-disc list-inside my-2 pl-4 space-y-1" {...props} />),
+        ol: (props) => (<ol className="list-decimal list-inside my-2 pl-4 space-y-1" {...props} />),
         li: (props) => <li className="pb-0.5" {...props} />,
-        a: (props) => ( <a className="underline" target="_blank" rel="noopener noreferrer" {...props} /> ),
-        blockquote: (props) => ( <blockquote className="border-l-4 pl-3 my-2 italic" {...props} /> ),
-        table: (props) => ( <div className="overflow-x-auto my-2"><table className="table-auto w-full border border-collapse" {...props} /></div> ),
+        a: (props) => (<a className="underline" target="_blank" rel="noopener noreferrer" {...props} />),
+        blockquote: (props) => (<blockquote className="border-l-4 pl-3 my-2 italic" {...props} />),
+        table: (props) => (<div className="overflow-x-auto my-2"><table className="table-auto w-full border border-collapse" {...props} /></div>),
         thead: (props) => <thead {...props} />,
-        th: (props) => ( <th className="border px-2 py-1 text-left" {...props} /> ),
-        td: (props) => ( <td className="border px-2 py-1" {...props} /> ),
+        th: (props) => (<th className="border px-2 py-1 text-left" {...props} />),
+        td: (props) => (<td className="border px-2 py-1" {...props} />),
         strong: (props) => <strong className="font-semibold" {...props} />,
         em: (props) => <em className="italic" {...props} />,
     };
-    
+
     let mainMemoryActionLabel = "Operações de memória:";
     let MainActionIcon = IoGitNetworkOutline;
     if (hasMemoryActions && memoryActions) {
@@ -326,16 +327,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
 
     const messageContainerBaseClass = `p-3 sm:p-3.5 rounded-xl sm:rounded-2xl shadow relative prose prose-sm prose-invert max-w-none`;
     const messageUserClass = `${messageContainerBaseClass} bg-blue-600 text-white prose-strong:text-white prose-a:text-blue-200 hover:prose-a:text-blue-100`;
-    const messageAIClass = `${messageContainerBaseClass} bg-slate-700 text-slate-100 prose-a:text-blue-400 hover:prose-a:text-blue-300 ${isErrorFlag ? '!bg-red-800/90 !border !border-red-600 prose-p:text-red-100' : '' }`;
-    const messageLoadingClass = `opacity-70 animate-pulseSlow`;
+    const messageAIClass = `${messageContainerBaseClass} bg-slate-700 text-slate-100 prose-a:text-blue-400 hover:prose-a:text-blue-300 ${isErrorFlag ? '!bg-red-800/90 !border !border-red-600 prose-p:text-red-100' : ''}`;
+    const messageLoadingClass = `opacity-70 animate-pulse bg-slate-600/50 border border-slate-500/50`;
 
-    // Condição para determinar se o balão de texto deve ser renderizado
-    // Renderiza se houver texto, ou se for uma mensagem da IA carregando (mesmo sem texto inicial),
-    // ou se for uma mensagem de erro da IA.
-    const shouldRenderTextBubble = 
-        message.text.trim().length > 0 || 
-        (!isUser && (isLoading || isErrorString)) ||
-        (isLoading && !hasAttachedFiles && !message.text); // Mostrar placeholder de carregamento para IA mesmo sem texto/anexos
+    // Condição para determinar se o balão de texto principal deve ser renderizado
+    const shouldRenderTextBubbleContent =
+        message.text.trim().length > 0 ||
+        (!isUser && isErrorString); // Mostra balão para texto ou erro da IA
+
+    // Condição para mostrar animação de "digitando" da IA
+    const showAITypingIndicator = !isUser && isLoading && message.text.trim() === '';
 
     return (
         <div
@@ -343,7 +344,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
             onMouseEnter={() => canPerformActionsOnMessage && setShowActions(true)}
             onMouseLeave={() => canPerformActionsOnMessage && setShowActions(false)}
         >
-            {/* Container para as miniaturas, posicionado ACIMA do balão de texto */}
+            {/* Container para as miniaturas ANEXADAS, posicionado ACIMA do balão de texto */}
             {isUser && hasAttachedFiles && attachedFilesInfo && (
                 <div className={`flex flex-wrap gap-2 mb-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
                     <div className={`flex flex-wrap gap-2 ${isUser ? 'pl-10 sm:pl-11' : 'pr-10 sm:pr-11'}`}>
@@ -354,24 +355,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                         src={fileInfo.dataUrl}
                                         alt={`Preview ${fileInfo.name}`}
                                         className="object-cover rounded"
-                                        style={{ 
-                                            maxWidth: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE}px`, 
+                                        style={{
+                                            maxWidth: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE}px`,
                                             maxHeight: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE}px`,
                                             display: 'block'
                                         }}
                                         title={`${fileInfo.name} (${(fileInfo.size / 1024).toFixed(1)} KB)`}
                                     />
                                 ) : (
-                                    <div 
+                                    <div
                                         className="flex flex-col items-center justify-center text-xs p-2 text-center bg-slate-700/70 rounded"
-                                        style={{ 
-                                            width: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE * 0.9}px`, 
+                                        style={{
+                                            width: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE * 0.9}px`,
                                             height: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE * 0.9}px`,
                                             minWidth: '60px',
                                         }}
                                         title={`${fileInfo.name} (${(fileInfo.size / 1024).toFixed(1)} KB)`}
                                     >
-                                        {fileInfo.type.startsWith('image/') ? <IoImageOutline size={24} className="mb-1 text-slate-400"/> : <IoDocumentTextOutline size={24} className="mb-1 text-slate-400"/>}
+                                        {fileInfo.type.startsWith('image/') ? <IoImageOutline size={24} className="mb-1 text-slate-400" /> : <IoDocumentTextOutline size={24} className="mb-1 text-slate-400" />}
                                         <span className="truncate block w-full text-slate-300">{fileInfo.name}</span>
                                     </div>
                                 )}
@@ -382,8 +383,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
             )}
 
             {/* Balão de mensagem principal (texto e avatar) */}
-            {/* Só renderiza o balão se houver texto ou se for mensagem da IA carregando/com erro */}
-            {shouldRenderTextBubble && (
+            {/* Renderiza se houver conteúdo de texto, ou se for IA carregando/com erro */}
+            {(shouldRenderTextBubbleContent || showAITypingIndicator) && (
                 <div className={`flex items-start gap-2.5 sm:gap-3 w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
                     {!isUser && (
                         <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-md mt-px">
@@ -408,44 +409,53 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                 />
                                 <div className="flex justify-end gap-2 mt-1.5 px-1.5 pb-0.5">
                                     <button onClick={handleCancelEdit} className={`p-1 rounded ${isUser ? editControlsUserClasses : editControlsAIClasses}`} title="Cancelar edição (Esc)"> <IoCloseOutline size={18} /> </button>
-                                    <button 
-                                        onClick={handleSaveEdit} 
-                                        className={`p-1 rounded ${isUser ? editControlsUserClasses : editControlsAIClasses}`} 
-                                        title="Salvar edição (Enter)" 
+                                    <button
+                                        onClick={handleSaveEdit}
+                                        className={`p-1 rounded ${isUser ? editControlsUserClasses : editControlsAIClasses}`}
+                                        title="Salvar edição (Enter)"
                                         disabled={isProcessingEditedMessage || (editedText.trim() === '' && !hasAttachedFiles && message.text === '')}
-                                    > 
-                                        <IoCheckmarkOutline size={18} /> 
+                                    >
+                                        <IoCheckmarkOutline size={18} />
                                     </button>
                                 </div>
                             </div>
                         ) : (
-                            <div className={`${isUser ? messageUserClass : messageAIClass} ${(isLoading || isThisUserMessageBeingReprocessed) ? messageLoadingClass : ''}`}>
-                                {isThisUserMessageBeingReprocessed && ( <div className="absolute -top-1.5 -right-1.5 p-0.5 bg-slate-600 rounded-full shadow z-10"> <IoSyncOutline size={12} className="text-slate-300 animate-spin" /> </div> )}
-                            
-                                {(message.text.trim().length > 0 || (isLoading && !hasAttachedFiles && !message.text)) && (
-                                    <div className="message-text-content whitespace-pre-wrap break-words">
-                                        {isLoading && !message.text && !hasAttachedFiles && <span className="inline-block animate-pulseSlow text-transparent">▍</span>}
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                                            {message.text}
-                                        </ReactMarkdown>
+                            <div className={`${isUser ? messageUserClass : messageAIClass} ${isLoading && !showAITypingIndicator ? messageLoadingClass : ''}`}>
+                                {isThisUserMessageBeingReprocessed && (<div className="absolute -top-1.5 -right-1.5 p-0.5 bg-slate-600 rounded-full shadow z-10"> <IoSyncOutline size={12} className="text-slate-300 animate-spin" /> </div>)}
+
+                                {/* Conteúdo do Balão */}
+                                {showAITypingIndicator ? (
+                                    <div className="typing-dots flex items-center space-x-1 h-5"> {/* Ajuste a altura (h-5) conforme necessário */}
+                                        <span className="block w-2 h-2 bg-current rounded-full"></span>
+                                        <span className="block w-2 h-2 bg-current rounded-full"></span>
+                                        <span className="block w-2 h-2 bg-current rounded-full"></span>
                                     </div>
-                                )}
-                                
-                                {isErrorString && (
-                                    <div className={`mt-2 text-xs text-red-300 ${message.text.trim().length > 0 ? 'border-t border-red-500/50 pt-1.5' : ''}`}>
-                                        Erro: {message.metadata?.error}
-                                    </div>
+                                ) : (
+                                    <>
+                                        {(message.text.trim().length > 0) && (
+                                            <div className="message-text-content whitespace-pre-wrap break-words">
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                                                    {message.text}
+                                                </ReactMarkdown>
+                                            </div>
+                                        )}
+
+                                        {isErrorString && (
+                                            <div className={`mt-2 text-xs text-red-300 ${message.text.trim().length > 0 ? 'border-t border-red-500/50 pt-1.5' : ''}`}>
+                                                Erro: {message.metadata?.error}
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         )}
                     </div>
-                    {isUser && ( <div className={`flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-600 flex items-center justify-center text-slate-300 shadow-md mt-px ${isEditing ? 'self-start' : '' }`} > <IoPersonCircleOutline size={20} /> </div> )}
-                    
-                    {/* Botões de ação da mensagem */}
+                    {isUser && (<div className={`flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-600 flex items-center justify-center text-slate-300 shadow-md mt-px ${isEditing ? 'self-start' : ''}`} > <IoPersonCircleOutline size={20} /> </div>)}
+
                     {canPerformActionsOnMessage && showActions && !isEditing && (
-                         <div className={`flex items-center rounded-full shadow-lg bg-slate-750 border border-slate-600/50 p-0.5 absolute transform -translate-y-1/2 transition-all duration-200 ease-out z-20 bg-gray-900/80 
+                        <div className={`flex items-center rounded-full shadow-lg bg-slate-750 border border-slate-600/50 p-0.5 absolute transform -translate-y-1/2 transition-all duration-200 ease-out z-20 bg-gray-900/80 
                          ${isUser ? 'right-0' : 'left-11'} 
-                         ${(hasAttachedFiles && isUser && shouldRenderTextBubble) ? 'top-[calc(-10px - 0.5rem)]' : 'top-[-10px]'}
+                         ${(hasAttachedFiles && isUser && (shouldRenderTextBubbleContent || showAITypingIndicator)) ? 'top-[calc(-10px - 0.5rem)]' : 'top-[-10px]'}
                          ${showActions ? 'opacity-80 scale-100' : 'opacity-20 scale-90 pointer-events-none'}`}>
                             <button onClick={handleEdit} className="p-1.5 text-slate-300 hover:text-blue-400 hover:bg-slate-600/70 rounded-full" title="Editar mensagem" disabled={isProcessingEditedMessage} > <IoPencilOutline size={14} /> </button>
                             <button onClick={handleDelete} className="p-1.5 text-slate-300 hover:text-red-400 hover:bg-slate-600/70 rounded-full" title="Excluir mensagem" disabled={isProcessingEditedMessage} > <IoTrashOutline size={14} /> </button>
@@ -453,7 +463,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                     )}
                 </div>
             )}
-
 
             {/* Renderização de MemoryActions */}
             {!isUser && hasMemoryActions && memoryActions && (

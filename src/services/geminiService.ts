@@ -239,7 +239,9 @@ REGRAS IMPORTANTES:
         temperature: 0.7,
         topK: 1,
         topP: 1,
-        maxOutputTokens: 8192, // Gemini 1.5 suporta contextos maiores, mas maxOutputTokens é para a resposta.
+        // maxOutputTokens: 8192,
+        // maxOutputTokens: 16384,
+        maxOutputTokens: 32768,
         safetySettings,
     };
 
