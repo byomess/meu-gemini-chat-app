@@ -277,6 +277,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 settings.apiKey,
                 historyForAPI.slice(0, -1),
                 newText,
+                [],
                 currentGlobalMemoriesWithObjects
             )) {
                 if (streamResponse.delta) {

@@ -5,10 +5,12 @@ import {
     HarmBlockThreshold,
     type GenerateContentConfig,
     type Content,
+    type Part, // Importar Part
 } from "@google/genai";
 
-const MODEL_NAME = "gemini-2.5-pro-preview-05-06";
-// const MODEL_NAME = "gemini-2.5-flash-preview-04-17";
+// Certifique-se de que este modelo suporta entrada multimodal (texto e imagem)
+// Modelos como "gemini-1.5-pro-latest" (ou "gemini-1.5-pro-preview-MMDD") ou "gemini-1.5-flash-latest" geralmente suportam.
+const MODEL_NAME = "gemini-2.5-pro-preview-05-06"; // Verifique o nome do modelo mais recente e apropriado
 
 export interface StreamedGeminiResponseChunk {
     delta?: string;
@@ -17,15 +19,21 @@ export interface StreamedGeminiResponseChunk {
         action: 'create' | 'update' | 'delete_by_ai_suggestion';
         content?: string;
         targetMemoryContent?: string;
-        idToUpdate?: string; // Ainda não usado pela IA, mas mantido para futuro
+        idToUpdate?: string;
     }[];
     error?: string;
     isFinished: boolean;
 }
 
-// src/services/geminiService.ts
+// Interface para os dados do arquivo que este serviço espera.
+// A conversão de File para base64 e a obtenção do mimeType devem ocorrer no chamador (MessageInput.tsx).
+export interface FileDataPart {
+    mimeType: string;
+    data: string; // String de dados Base64
+}
+
 const buildChatHistory = (
-    conversationMessages: { sender: 'user' | 'ai'; text: string }[], // Este deve ser o histórico COMPLETO
+    priorConversationMessages: { sender: 'user' | 'ai'; text: string }[],
     systemInstruction: string,
     globalMemories: string[]
 ): Content[] => {
@@ -58,14 +66,15 @@ const buildChatHistory = (
         initialSystemBlock = (initialSystemBlock ? initialSystemBlock + "\n" : "") + memoriesTextSegment;
     }
     
-    // Adiciona o bloco de sistema e a resposta curta do modelo
     if (initialSystemBlock.trim()) {
         history.push({ role: "user", parts: [{ text: initialSystemBlock.trim() }] });
-        history.push({ role: "model", parts: [{ text: "Ok." }] }); // Resposta curta e neutra do modelo
+        history.push({ role: "model", parts: [{ text: "Ok." }] }); 
     }
 
-    // Adiciona o histórico de mensagens da conversa ATUAL (usuário e IA)
-    conversationMessages.forEach(msg => {
+    priorConversationMessages.forEach(msg => {
+        // Assume que mensagens históricas são apenas texto.
+        // Se mensagens históricas pudessem ter imagens de forma estruturada,
+        // a estrutura `msg` e esta parte precisariam ser adaptadas.
         history.push({
             role: msg.sender === 'user' ? 'user' : 'model',
             parts: [{ text: msg.text }]
@@ -86,7 +95,6 @@ const parseMemoryOperations = (responseText: string): {
     let cleanedResponse = responseText;
     let match;
 
-    // Parse Updates primeiro
     while ((match = updateMemoryRegex.exec(responseText)) !== null) {
         if (match[1] && match[2]) {
             operations.push({
@@ -98,7 +106,6 @@ const parseMemoryOperations = (responseText: string): {
     }
     cleanedResponse = cleanedResponse.replace(updateMemoryRegex, "").trim();
 
-    // Parse Deletes (depois de updates)
     while ((match = deleteMemoryRegex.exec(cleanedResponse)) !== null) {
         if (match[1]) {
             operations.push({ action: 'delete_by_ai_suggestion', targetMemoryContent: match[1].trim() });
@@ -106,7 +113,6 @@ const parseMemoryOperations = (responseText: string): {
     }
     cleanedResponse = cleanedResponse.replace(deleteMemoryRegex, "").trim();
 
-    // Parse Creates por último
     while ((match = createMemoryRegex.exec(cleanedResponse)) !== null) {
         if (match[1]) {
             operations.push({ action: 'create', content: match[1].trim() });
@@ -120,8 +126,9 @@ const parseMemoryOperations = (responseText: string): {
 
 export async function* streamMessageToGemini(
     apiKey: string,
-    conversationMessages: { sender: 'user' | 'ai'; text: string }[],
-    currentUserMessageText: string,
+    conversationHistory: { sender: 'user' | 'ai'; text: string }[], // Histórico ANTES da mensagem atual
+    currentUserMessageText: string, // Texto da mensagem ATUAL
+    attachedFileDataParts: FileDataPart[], // Arquivos da mensagem ATUAL, já convertidos (base64)
     globalMemoriesObjects: { id: string; content: string }[]
 ): AsyncGenerator<StreamedGeminiResponseChunk, void, undefined> {
     if (!apiKey) {
@@ -134,6 +141,7 @@ export async function* streamMessageToGemini(
 
     const systemInstruction = `
 Você é um assistente de IA prestativo e amigável.
+Se o usuário enviar imagens, você pode descrevê-las ou responder perguntas sobre elas. Se nenhuma imagem for enviada explicitamente com a mensagem atual, não mencione imagens.
 Siga estas instruções RIGOROSAMENTE para gerenciar memórias sobre o usuário.
 
 MEMÓRIAS GLOBAIS:
@@ -141,15 +149,15 @@ MEMÓRIAS GLOBAIS:
 
 INSTRUÇÕES PARA GERENCIAR MEMÓRIAS (use estas tags ao FINAL da sua resposta, se aplicável):
 
-1.  CRIAR NOVA MEMÓRIA: Se a ÚLTIMA MENSAGEM DO USUÁRIO contiver uma informação nova, factual e relevante que precise ser lembrada para o futuro, use a tag:
+1.  CRIAR NOVA MEMÓRIA: Se a ÚLTIMA MENSAGEM DO USUÁRIO (texto ou contexto de imagem) contiver uma informação nova, factual e relevante que precise ser lembrada para o futuro, use a tag:
     [MEMORIZE: "conteúdo da nova memória aqui"]
     Seja muito seletivo. Não memorize perguntas, comentários triviais, ou suas próprias respostas. Foco em fatos sobre o usuário ou suas preferências explícitas.
 
-2.  ATUALIZAR MEMÓRIA EXISTENTE: Se a ÚLTIMA MENSAGEM DO USUÁRIO corrigir ou atualizar diretamente uma memória listada no "CONHECIMENTO PRÉVIO", use a tag:
+2.  ATUALIZAR MEMÓRIA EXISTENTE: Se a ÚLTIMA MENSAGEM DO USUÁRIO (texto ou contexto de imagem) corrigir ou atualizar diretamente uma memória listada no "CONHECIMENTO PRÉVIO", use a tag:
     [UPDATE_MEMORY original:"conteúdo EXATO da memória antiga como listada" new:"novo conteúdo completo para essa memória"]
     É CRUCIAL que o "conteúdo EXATO da memória antiga como listada" seja IDÊNTICO ao texto de uma das memórias fornecidas (sem o prefixo "Memória N:").
 
-3.  REMOVER MEMÓRIA (Use com extrema cautela): Se uma memória se tornar completamente obsoleta ou irrelevante com base na ÚLTIMA MENSAGEM DO USUÁRIO, e não apenas precisar de uma atualização, você PODE sugerir sua remoção usando:
+3.  REMOVER MEMÓRIA (Use com extrema cautela): Se uma memória se tornar completamente obsoleta ou irrelevante com base na ÚLTIMA MENSAGEM DO USUÁRIO (texto ou contexto de imagem), e não apenas precisar de uma atualização, você PODE sugerir sua remoção usando:
     [DELETE_MEMORY: "conteúdo EXATO da memória a ser removida como listada"]
     Esta ação deve ser rara. Prefira atualizar, se possível. Se não tiver certeza, pergunte ao usuário.
 
@@ -159,40 +167,67 @@ REGRAS IMPORTANTES:
 -   Se múltiplas operações de memória forem necessárias (ex: uma atualização e uma nova memória), liste cada tag separadamente, uma após a outra, no final.
 -   Se NÃO houver NADA a memorizar, atualizar ou remover da ÚLTIMA MENSAGEM DO USUÁRIO, NÃO inclua NENHUMA dessas tags.
 -   Sua resposta principal ao usuário deve ser natural, útil e direta. As operações de memória são uma funcionalidade de bastidor.
-
-EXEMPLOS DE USO DAS TAGS DE MEMÓRIA:
-(Suponha que o "CONHECIMENTO PRÉVIO" fornecido contenha: Memória 1: "O nome do tio do usuário é Carlos." e Memória 2: "A cor favorita do usuário é azul.")
-
-Exemplo 1:
-ÚLTIMA MENSAGEM DO USUÁRIO: "Na verdade, o nome do meu tio é Oscar."
-SUA RESPOSTA (final): ...sua resposta normal ao usuário... [UPDATE_MEMORY original:"O nome do tio do usuário é Carlos." new:"O nome do tio do usuário é Oscar."]
-
-Exemplo 2:
-ÚLTIMA MENSAGEM DO USUÁRIO: "Eu gosto de jogar tênis aos sábados."
-SUA RESPOSTA (final): ...sua resposta normal ao usuário... [MEMORIZE: "O usuário gosta de jogar tênis aos sábados."]
-
-Exemplo 3:
-ÚLTIMA MENSAGEM DO USUÁRIO: "Não gosto mais de azul, minha cor favorita agora é verde."
-SUA RESPOSTA (final): ...sua resposta normal ao usuário... [UPDATE_MEMORY original:"A cor favorita do usuário é azul." new:"A cor favorita do usuário é verde."]
-
-Exemplo 4:
-ÚLTIMA MENSAGEM DO USUÁRIO: "Eu moro em São Paulo e meu hobby é cozinhar."
-SUA RESPOSTA (final): ...sua resposta normal ao usuário... [MEMORIZE: "O usuário mora em São Paulo."][MEMORIZE: "O hobby do usuário é cozinhar."]
-
-Exemplo 5 (Deleção):
-(Suponha que o "CONHECIMENTO PRÉVIO" contenha: Memória 3: "O usuário tem um cachorro chamado Rex.")
-ÚLTIMA MENSAGEM DO USUÁRIO: "Infelizmente, meu cachorro Rex faleceu semana passada."
-SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolências... [DELETE_MEMORY: "O usuário tem um cachorro chamado Rex."]
 `;
 
-    const fullConversationHistoryForPrompt = [...conversationMessages, { sender: 'user' as 'user' | 'ai', text: currentUserMessageText }];
-
-    const chatHistoryForAPI = buildChatHistory(
-        fullConversationHistoryForPrompt,
+    const baseHistory = buildChatHistory(
+        conversationHistory,
         systemInstruction,
         globalMemoriesContent
     );
 
+    const currentUserParts: Part[] = [];
+
+    if (currentUserMessageText.trim()) {
+        currentUserParts.push({ text: currentUserMessageText.trim() });
+    }
+
+    // Tipos de MIME de imagem suportados pela API Gemini para inlineData.
+    // Consulte a documentação da API Gemini para a lista mais atualizada.
+    const supportedImageMimeTypes = [
+        "image/png", "image/jpeg", "image/jpg", 
+        "image/webp", "image/heic", "image/heif"
+        // "image/gif" // GIFs podem ser suportados, mas são frequentemente animados. Verificar documentação.
+    ];
+
+    for (const fileData of attachedFileDataParts) {
+        if (supportedImageMimeTypes.includes(fileData.mimeType.toLowerCase())) {
+            currentUserParts.push({
+                inlineData: {
+                    mimeType: fileData.mimeType,
+                    data: fileData.data,
+                },
+            });
+        } else {
+            console.warn(`GEMINI_SERVICE: Tipo de arquivo '${fileData.mimeType}' não é uma imagem suportada para envio direto. O arquivo não será enviado como inlineData.`);
+            // A informação textual sobre o arquivo (nome) já deve estar em currentUserMessageText
+            // se o MessageInput.tsx a adicionou.
+        }
+    }
+
+    const chatHistoryForAPI: Content[] = [...baseHistory];
+
+    if (currentUserParts.length > 0) {
+        chatHistoryForAPI.push({
+            role: "user",
+            parts: currentUserParts,
+        });
+    } else {
+        // Se não houver texto nem arquivos válidos para a mensagem atual do usuário,
+        // e o histórico anterior não terminar com uma mensagem do usuário,
+        // a API pode retornar um erro.
+        // O `MessageInput.tsx` deve garantir que `canSubmit` previna chamadas vazias.
+        if (chatHistoryForAPI.length === 0 || chatHistoryForAPI[chatHistoryForAPI.length -1].role !== 'user') {
+             console.warn("GEMINI_SERVICE: Nenhuma parte de usuário válida para enviar e o histórico não termina com o usuário.");
+             // É crucial que `contents` para `generateContentStream` termine com uma mensagem de 'user'.
+             // Se `baseHistory` já contém o system prompt (user) e model (ok), e `currentUserParts` está vazio,
+             // a última mensagem seria 'model', o que é inválido.
+             // Esta situação deve ser prevenida pelo `MessageInput`.
+             // Se `baseHistory` estiver vazio e `currentUserParts` também, não há o que enviar.
+             yield { error: "Nenhum conteúdo de usuário válido para enviar (nem texto, nem arquivos suportados).", isFinished: true };
+             return;
+        }
+    }
+    
     const safetySettings = [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
         { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -200,12 +235,11 @@ SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolênc
         { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
     ];
 
-    const config: GenerateContentConfig = {
+    const config: GenerateContentConfig = { // Renomeado para evitar conflito com 'config' no escopo
         temperature: 0.7,
         topK: 1,
         topP: 1,
-        // maxOutputTokens: 8192,
-        maxOutputTokens: 65536,
+        maxOutputTokens: 8192, // Gemini 1.5 suporta contextos maiores, mas maxOutputTokens é para a resposta.
         safetySettings,
     };
 
