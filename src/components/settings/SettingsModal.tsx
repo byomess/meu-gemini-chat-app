@@ -45,7 +45,7 @@ const GeneralSettingsTab: React.FC<{
                 <label htmlFor="apiKey" className="block text-sm font-medium text-slate-300 mb-1.5">
                     Chave da API Google Gemini
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                     <input
                         type="password"
                         id="apiKey"
@@ -53,9 +53,9 @@ const GeneralSettingsTab: React.FC<{
                         placeholder="Cole sua chave da API aqui"
                         value={currentApiKey}
                         onChange={(e) => setCurrentApiKey(e.target.value)}
-                        className="flex-grow p-2.5 bg-slate-700/80 border border-slate-600/80 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-slate-500 text-slate-100 shadow-sm"
+                        className="flex-grow p-2.5 bg-slate-700/80 border border-slate-600/80 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-slate-500 text-slate-100 shadow-sm w-full"
                     />
-                    <Button variant="primary" onClick={onSaveApiKey} className="!py-2.5 flex-shrink-0">Salvar Chave</Button>
+                    <Button variant="primary" onClick={onSaveApiKey} className="!py-2.5 flex-shrink-0 w-full sm:w-auto">Salvar Chave</Button>
                 </div>
                 <p className="text-xs text-slate-400 mt-2">
                     Sua chave de API é armazenada localmente.
@@ -187,8 +187,8 @@ const MemoriesSettingsTab: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-wrap justify-between items-center gap-2">
-                <h3 className="text-base font-medium text-slate-300">Gerenciar Memórias</h3>
+            <div className="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-3 mb-4">
+                <h3 className="text-base font-medium text-slate-300 w-full sm:w-auto">Gerenciar Memórias</h3>
                 <div className="flex gap-2 flex-wrap">
                     <Button
                         variant="secondary"
@@ -217,7 +217,7 @@ const MemoriesSettingsTab: React.FC = () => {
                 </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
                 <input
                     ref={newMemoryInputRef}
                     type="text"
@@ -238,7 +238,7 @@ const MemoriesSettingsTab: React.FC = () => {
             </div>
 
             {memories.length > 0 ? (
-                <div className="max-h-48 overflow-y-auto space-y-1.5 p-2 bg-slate-900/50 rounded-md scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent border border-slate-700/40">
+                <div className="overflow-y-auto space-y-1.5 p-2 bg-slate-900/50 rounded-md scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50 border border-slate-700/40">
                     {memories.map((memory) => (
                         <div
                             key={memory.id}
@@ -260,9 +260,9 @@ const MemoriesSettingsTab: React.FC = () => {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex items-center justify-between gap-2">
-                                    <p className="text-xs text-slate-200 flex-grow break-all">{memory.content}</p>
-                                    <div className="flex-shrink-0 flex gap-1">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                                    <p className="text-xs text-slate-200 flex-grow break-all w-full sm:w-auto">{memory.content}</p>
+                                    <div className="flex-shrink-0 flex gap-1 self-end sm:self-center">
                                         <Button
                                             variant="secondary"
                                             className="!p-1 !text-xs text-slate-400 hover:text-blue-400"
@@ -296,11 +296,13 @@ const MemoriesSettingsTab: React.FC = () => {
 };
 
 const DataSettingsTab: React.FC = () => {
-    const { clearAllMemories } = useMemories();
-    const { deleteAllConversations, conversations } = useConversations(); // Obter deleteAllConversations e conversations
+    const { clearAllMemories, memories } = useMemories();
+    const { deleteAllConversations, conversations } = useConversations(); 
 
     const handleLocalClearAllMemories = () => {
-        clearAllMemories();
+        if (window.confirm('Tem certeza de que deseja apagar TODAS as memórias? Esta ação não pode ser desfeita.')) {
+            clearAllMemories();
+        }
     };
 
     const handleLocalDeleteAllConversations = () => {
@@ -314,30 +316,30 @@ const DataSettingsTab: React.FC = () => {
             <div>
                 <h3 className="text-base font-medium text-slate-300 mb-3">Gerenciamento de Dados</h3>
                 <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/50 space-y-4">
-                    <div className="flex items-center justify-between gap-4">
-                        <div>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                        <div className="flex-grow">
                             <p className="text-sm text-slate-200">Apagar todas as memórias</p>
                             <p className="text-xs text-slate-400">Remove todas as memórias armazenadas pela IA.</p>
                         </div>
                         <Button
                             variant="danger"
-                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0"
+                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0 w-full sm:w-auto mt-1 sm:mt-0"
                             onClick={handleLocalClearAllMemories}
-                            disabled={useMemories().memories.length === 0}
+                            disabled={memories.length === 0}
                         >
                             <IoTrashOutline className="mr-1.5 inline" />
                             Limpar Memórias
                         </Button>
                     </div>
                     <hr className="border-slate-600/70" />
-                    <div className="flex items-center justify-between gap-4">
-                        <div>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                        <div className="flex-grow">
                             <p className="text-sm text-slate-200">Apagar todas as conversas</p>
                             <p className="text-xs text-slate-400">Remove todo o seu histórico de conversas.</p>
                         </div>
                         <Button
                             variant="danger"
-                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0"
+                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0 w-full sm:w-auto mt-1 sm:mt-0"
                             onClick={handleLocalDeleteAllConversations}
                             disabled={conversations.length === 0}
                         >
@@ -371,11 +373,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         saveApiKey(currentApiKey);
         alert("Chave de API salva!");
     };
-    
-    const handleFinalSaveAndClose = () => {
-        saveApiKey(currentApiKey);
-        onClose();
-    };
 
     const tabs: Tab[] = [
         { id: 'general', label: 'Geral', icon: <IoKeyOutline size={18} />, component: GeneralSettingsTab },
@@ -387,7 +384,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-            <div className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl text-slate-100 relative animate-modalEnter max-h-[90vh] flex flex-col">
+            <div className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl text-slate-100 relative animate-modalEnter h-[80vh] flex flex-col overflow-hidden">
+                
+                <div className="flex items-center justify-between p-4 border-b border-slate-700/50 flex-shrink-0">
+                    <h2 className="text-lg font-semibold text-slate-200">Configurações</h2>
+                </div>
+                
                 <Button
                     onClick={onClose}
                     className="!absolute top-3.5 right-3.5 !p-1.5 text-slate-400 hover:text-slate-100 rounded-full hover:bg-slate-700/70 z-30"
@@ -397,9 +399,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                     <IoClose size={22} />
                 </Button>
 
-                <div className="flex flex-grow min-h-0">
-                    <nav className="w-48 flex-shrink-0 bg-slate-850 p-4 space-y-2 border-r border-slate-700/50 rounded-l-xl">
-                        <h2 className="text-lg font-semibold mb-4 px-1 text-slate-200">Configurações</h2>
+                <div className="flex flex-col md:flex-row flex-grow min-h-0">
+                    <nav className="hidden md:flex w-48 flex-shrink-0 flex-col bg-slate-850 p-3 md:p-4 space-y-1 md:space-y-2 border-b md:border-b-0 md:border-r border-slate-700/50">
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
@@ -407,7 +408,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                 className={`w-full flex items-center space-x-2.5 p-2.5 rounded-md text-sm font-medium transition-colors
                                             ${activeTab === tab.id
                                                 ? 'bg-blue-600 text-white shadow-sm'
-                                                : 'text-slate-300 hover:bg-slate-700 hover:text-slate-100'
+                                                : 'text-slate-300 hover:bg-slate-700/80 hover:text-slate-100'
                                             }`}
                             >
                                 {tab.icon}
@@ -416,22 +417,34 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                         ))}
                     </nav>
 
-                    <div className="flex-grow p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50">
-                        {ActiveTabComponent && (
-                            <ActiveTabComponent
-                                {...(activeTab === 'general' && { currentApiKey, setCurrentApiKey, onSaveApiKey: handleSaveApiKeyOnly })}
-                            />
-                        )}
+                    <div className="flex flex-col flex-grow min-h-0">
+                        <div className="md:hidden p-2 border-b border-slate-700/50 bg-slate-800">
+                            <div className="flex space-x-1 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50 pb-1.5">
+                                {tabs.map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0
+                                                    ${activeTab === tab.id
+                                                        ? 'bg-blue-600 text-white shadow-sm'
+                                                        : 'text-slate-300 hover:bg-slate-700/80 hover:text-slate-100'
+                                                    }`}
+                                    >
+                                        {tab.icon}
+                                        <span>{tab.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex-grow p-4 sm:p-5 md:p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50">
+                            {ActiveTabComponent && (
+                                <ActiveTabComponent
+                                    {...(activeTab === 'general' && { currentApiKey, setCurrentApiKey, onSaveApiKey: handleSaveApiKeyOnly })}
+                                />
+                            )}
+                        </div>
                     </div>
-                </div>
-                
-                <div className="flex-shrink-0 p-4 border-t border-slate-700/50 flex justify-end space-x-3 bg-slate-800 rounded-b-xl">
-                    <Button variant="secondary" onClick={onClose} className="!py-2">
-                        Cancelar
-                    </Button>
-                    <Button variant="primary" onClick={handleFinalSaveAndClose} className="!py-2">
-                        Concluir
-                    </Button>
                 </div>
             </div>
         </div>
