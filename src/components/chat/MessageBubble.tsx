@@ -117,10 +117,10 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
     // Se a memória foi associada a uma ação ('created' ou 'updated') mas não existe mais no contexto E não foi uma deleção pela IA
     if (!memoryExistsInContext && memoryActionDetail.action !== 'deleted_by_ai' && !isEditingMemory) {
         return (
-            <li className="flex items-center justify-between text-slate-500 italic py-1 px-1 -mx-1 min-h-[28px]">
+            <li className="flex items-center justify-between text-slate-500 italic py-1 px-1 -mx-1 min-h-[28px] max-w-full overflow-hidden">
                 <span className="line-through truncate flex items-center" title={`Memória original: "${memoryActionDetail.content}"`}>
                     <ActionIconComponent className="mr-1 flex-shrink-0" /> 
-                    "{memoryActionDetail.content}" (removida pelo usuário)
+                    <span className="whitespace-pre-wrap break-words">{memoryActionDetail.content}</span> (removida pelo usuário)
                 </span>
             </li>
         );
