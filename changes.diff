@@ -1,0 +1,84 @@
+--- a/src/components/chat/index.ts
++++ b/src/components/chat/index.ts
+@@ -1,2 +1,3 @@
+ export { default as AttachmentButton } from './AttachmentButton';
+ export type { AttachmentOption } from './AttachmentButton';
++export { default as MessageInput } from './MessageInput';
+--- /dev/null
++++ b/src/components/chat/MessageInput.tsx
+@@ -0,0 +1,67 @@
++import React, { useState, useCallback } from 'react';
++import { IoSend } from 'react-icons/io5';
++import { AttachmentButton } from './AttachmentButton'; // Ajuste o caminho se necessário
++
++interface MessageInputProps {
++  onSendMessage: (text: string, files?: File[]) => void; // files será usado futuramente
++  isSending: boolean;
++}
++
++const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, isSending }) => {
++  const [inputText, setInputText] = useState('');
++  // Futuramente, aqui teremos um estado para os arquivos selecionados
++  // const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
++
++  const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
++    setInputText(event.target.value);
++    // Auto-resize textarea (opcional, mas bom para UX)
++    event.target.style.height = 'auto';
++    event.target.style.height = `${event.target.scrollHeight}px`;
++  };
++
++  const handleSubmit = useCallback((event?: React.FormEvent<HTMLFormElement>) => {
++    if (event) {
++      event.preventDefault();
++    }
++    if (inputText.trim() === '' /* && selectedFiles.length === 0 */) return; // Não envia mensagem vazia sem anexos
++
++    onSendMessage(inputText.trim() /*, selectedFiles */);
++    setInputText('');
++    // setSelectedFiles([]); // Limpar arquivos após envio
++    // Reset textarea height
++    const textarea = document.getElementById('chat-input-textarea') as HTMLTextAreaElement;
++    if (textarea) {
++      textarea.style.height = 'auto';
++    }
++  }, [inputText, onSendMessage /*, selectedFiles */]);
++
++  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
++    if (event.key === 'Enter' && !event.shiftKey) {
++      event.preventDefault();
++      handleSubmit();
++    }
++  };
++
++  return (
++    <form
++      onSubmit={handleSubmit}
++      className="flex items-end p-2 md:p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700"
++    >
++      <textarea
++        id="chat-input-textarea"
++        value={inputText}
++        onChange={handleInputChange}
++        onKeyDown={handleKeyDown}
++        placeholder="Digite sua mensagem..."
++        className="flex-grow p-3 border border-gray-300 dark:border-gray-600 rounded-l-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white min-h-[50px] max-h-[150px] overflow-y-auto"
++        rows={1}
++        disabled={isSending}
++      />
++      <div className="flex items-center h-[50px]"> {/* Container para alinhar botões com textarea inicial */}
++        <AttachmentButton />
++        <button
++          type="submit"
++          className="p-3 bg-indigo-600 text-white rounded-r-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800 disabled:opacity-50 h-full flex items-center justify-center"
++          disabled={isSending || inputText.trim() === ''}
++          aria-label="Enviar mensagem"
++        >
++          <IoSend size={22} />
++        </button>
++      </div>
++    </form>
++  );
++};
++
++export default MessageInput;

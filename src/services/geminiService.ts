@@ -204,7 +204,8 @@ SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolênc
         temperature: 0.7,
         topK: 1,
         topP: 1,
-        maxOutputTokens: 8192,
+        // maxOutputTokens: 8192,
+        maxOutputTokens: 65536,
         safetySettings,
     };
 
