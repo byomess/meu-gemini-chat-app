@@ -47,7 +47,6 @@ const buildChatHistory = (
   CONHECIMENTO PRÉVIO SOBRE O USUÁRIO (MEMÓRIAS ATUAIS E EXATAS):
   ${globalMemories.map((mem, index) => `Memória ${index + 1}: "${mem}"`).join("\n")}
   ---
-  (Instruções sobre como usar as memórias...)
   \n`;
     } else {
         memoriesTextSegment = "\n(Nenhuma memória global registrada no momento.)\n";
@@ -132,7 +131,7 @@ export async function* streamMessageToGemini(
     attachedFileDataParts: FileDataPart[],
     globalMemoriesObjects: { id: string; content: string }[],
     modelConfig: GeminiModelConfig,
-    // systemInstruction: string 
+    systemInstruction: string 
 ): AsyncGenerator<StreamedGeminiResponseChunk, void, undefined> {
     if (!apiKey) {
         yield { error: "Chave de API não fornecida.", isFinished: true };
@@ -199,6 +198,7 @@ export async function* streamMessageToGemini(
         topP: modelConfig.topP,
         maxOutputTokens: modelConfig.maxOutputTokens,
         safetySettings,
+        systemInstruction
     };
     
     // Certifique-se de que topK e topP não sejam ambos 0, ou que topK não seja 0 se topP for 1.
