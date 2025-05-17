@@ -1,13 +1,22 @@
-// src/components/chat/MessageInput.tsx
+// src/components/MessageInput/MessageInput.tsx
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Button from '../common/Button';
-import { IoSend, IoPulseOutline, IoWarningOutline, IoAttach, IoCloseCircleOutline } from 'react-icons/io5';
+import {
+    IoWarningOutline,
+    IoAttach,
+    IoMicOutline,
+    IoStopCircleOutline,
+    IoClose,
+    IoStop,
+    IoPaperPlaneOutline, // Alternativa para IoSend
+} from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { useMemories } from '../../contexts/MemoryContext';
 import { streamMessageToGemini, type StreamedGeminiResponseChunk, type FileDataPart } from '../../services/geminiService';
-import type { MessageMetadata, AttachedFileInfo } from '../../types/conversation'; // Certifique-se que o caminho está correto
+import type { MessageMetadata, AttachedFileInfo } from '../../types/conversation';
 import { v4 as uuidv4 } from 'uuid';
+import useIsMobile from '../../hooks/useIsMobile';
 
 interface LocalAttachedFile {
     id: string;
@@ -15,31 +24,29 @@ interface LocalAttachedFile {
     name: string;
     type: string;
     size: number;
-    previewUrl?: string; // URL.createObjectURL() para preview no input
+    previewUrl?: string;
 }
 
-// Função para converter File para string Base64 (apenas os dados)
-const fileToBase64Data = (file: File): Promise<string> => {
+const blobToBase64Data = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(blob);
         reader.onload = () => {
             const base64String = (reader.result as string).split(',')[1];
             if (base64String) {
                 resolve(base64String);
             } else {
-                reject(new Error("Falha ao converter arquivo para Base64: string vazia."));
+                reject(new Error("Falha ao converter blob para Base64: string vazia."));
             }
         };
         reader.onerror = (error) => reject(error);
     });
 };
 
-// Função para converter File para string Data URL completa (data:mime;base64,...)
-const fileToDataURL = (file: File): Promise<string> => {
+const blobToDataURL = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(blob);
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = (error) => reject(error);
     });
@@ -48,11 +55,12 @@ const fileToDataURL = (file: File): Promise<string> => {
 
 const MessageInput: React.FC = () => {
     const {
+        conversations,
         activeConversationId,
         addMessageToConversation,
         updateMessageInConversation,
         isProcessingEditedMessage,
-        conversations,
+        abortEditedMessageResponse
     } = useConversations();
     const { settings } = useAppSettings();
     const { memories: globalMemoriesFromHook, addMemory, updateMemory, deleteMemory: deleteMemoryFromHook } = useMemories();
@@ -61,36 +69,80 @@ const MessageInput: React.FC = () => {
     const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
     const [errorFromAI, setErrorFromAI] = useState<string | null>(null);
     const [attachedFiles, setAttachedFiles] = useState<LocalAttachedFile[]>([]);
+
+    const [isRecording, setIsRecording] = useState<boolean>(false);
+    const [audioError, setAudioError] = useState<string | null>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const wasCancelledRef = useRef<boolean>(false);
+    const mediaStreamRef = useRef<MediaStream | null>(null);
+    const [isTextareaFocused, setIsTextareaFocused] = useState<boolean>(false);
+
+    const isMobile = useIsMobile();
+    const abortStreamControllerRef = useRef<AbortController | null>(null);
+
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const MAX_TEXTAREA_HEIGHT = 160;
+    const UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM = 2.5; // Ajustável
+    const FOCUSED_TEXTAREA_MAX_HEIGHT_VH = 40; // 40vh
     const MAX_THUMBNAIL_SIZE = 80;
+
+    const getPixelValueFromRem = (rem: number) => {
+        if (typeof window !== 'undefined') {
+            return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+        }
+        return rem * 16;
+    };
 
     const adjustTextareaHeight = useCallback(() => {
         if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            const scrollHeight = textareaRef.current.scrollHeight;
-            textareaRef.current.style.height = `${Math.min(scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
-            textareaRef.current.style.overflowY = scrollHeight > MAX_TEXTAREA_HEIGHT ? 'auto' : 'hidden';
+            const currentTextarea = textareaRef.current;
+            currentTextarea.style.height = 'auto';
+            const scrollHeight = currentTextarea.scrollHeight;
+
+            let currentMaxHeight;
+            if (isTextareaFocused) {
+                currentMaxHeight = window.innerHeight * (FOCUSED_TEXTAREA_MAX_HEIGHT_VH / 100);
+            } else {
+                currentMaxHeight = getPixelValueFromRem(UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM);
+            }
+
+            currentTextarea.style.height = `${Math.min(scrollHeight, currentMaxHeight)}px`;
+            currentTextarea.style.overflowY = scrollHeight > currentMaxHeight ? 'auto' : 'hidden';
         }
-    }, []);
+    }, [isTextareaFocused, UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM, FOCUSED_TEXTAREA_MAX_HEIGHT_VH]);
+
+
+    const placeholderText =
+        activeConversationId ?
+            (settings.apiKey ? "Digite sua mensagem..." : "Configure sua API Key.") :
+            "Selecione ou crie uma conversa.";
 
     useEffect(() => {
         adjustTextareaHeight();
-    }, [text, adjustTextareaHeight]);
+    }, [text, adjustTextareaHeight]); // Removido placeholder, activeId, etc., pois já são cobertos pela lógica de isTextareaFocused
+
 
     useEffect(() => {
-        if (activeConversationId && textareaRef.current && text === '' && !isLoadingAI && !isProcessingEditedMessage && attachedFiles.length === 0) {
-            textareaRef.current.focus();
-        }
-    }, [activeConversationId, text, isLoadingAI, isProcessingEditedMessage, attachedFiles]);
+        const handleResize = () => {
+            adjustTextareaHeight();
+        };
+        window.addEventListener('resize', handleResize);
+        adjustTextareaHeight();
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, [adjustTextareaHeight]);
 
     useEffect(() => {
         if (text !== '' && errorFromAI) {
             setErrorFromAI(null);
         }
-    }, [text, errorFromAI]);
+        if (text !== '' && audioError) {
+            setAudioError(null);
+        }
+    }, [text, errorFromAI, audioError]);
 
     useEffect(() => {
         const currentFiles = [...attachedFiles];
@@ -103,8 +155,29 @@ const MessageInput: React.FC = () => {
         };
     }, [attachedFiles]);
 
+    const stopMediaStream = useCallback(() => {
+        if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach(track => track.stop());
+            mediaStreamRef.current = null;
+        }
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+                mediaRecorderRef.current.stop();
+            }
+            stopMediaStream();
+            mediaRecorderRef.current = null;
+            audioChunksRef.current = [];
+            if (abortStreamControllerRef.current && !abortStreamControllerRef.current.signal.aborted) {
+                abortStreamControllerRef.current.abort("Component unmounting");
+            }
+        };
+    }, [stopMediaStream]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (isRecording) return;
         const files = event.target.files;
         if (!files) return;
 
@@ -155,12 +228,141 @@ const MessageInput: React.FC = () => {
         setAttachedFiles([]);
     }
 
-    const handleSubmit = async (e?: React.FormEvent) => {
+    const startRecording = async () => {
+        setAudioError(null);
+        setErrorFromAI(null);
+        wasCancelledRef.current = false;
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            setAudioError("Gravação de áudio não é suportada neste navegador.");
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaStreamRef.current = stream;
+
+            const options = MediaRecorder.isTypeSupported('audio/ogg; codecs=opus')
+                ? { mimeType: 'audio/ogg; codecs=opus' }
+                : MediaRecorder.isTypeSupported('audio/webm; codecs=opus')
+                    ? { mimeType: 'audio/webm; codecs=opus' }
+                    : {};
+
+            mediaRecorderRef.current = new MediaRecorder(stream, options);
+            audioChunksRef.current = [];
+
+            mediaRecorderRef.current.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data);
+                }
+            };
+
+            mediaRecorderRef.current.onstop = async () => {
+                stopMediaStream();
+                setIsRecording(false);
+
+                if (wasCancelledRef.current) {
+                    wasCancelledRef.current = false;
+                    audioChunksRef.current = [];
+                    if (textareaRef.current) textareaRef.current.focus();
+                    return;
+                }
+
+                if (!mediaRecorderRef.current) return;
+                const audioMimeType = mediaRecorderRef.current.mimeType || 'audio/ogg';
+                const audioBlob = new Blob(audioChunksRef.current, { type: audioMimeType });
+                audioChunksRef.current = [];
+
+                if (audioBlob.size === 0) {
+                    setAudioError("Gravação resultou em áudio vazio. Tente novamente.");
+                    return;
+                }
+                await handleSubmit(undefined, audioBlob);
+            };
+
+            mediaRecorderRef.current.onerror = (event: Event) => {
+                console.error("MediaRecorder error:", event);
+                const specificError = (event as unknown as Record<string, unknown>).error;
+                if (specificError instanceof Error) {
+                    setAudioError(`Erro na gravação: ${specificError.name || specificError.message || 'Erro desconhecido'}`);
+                } else {
+                    setAudioError('Erro na gravação: Erro desconhecido');
+                }
+                stopMediaStream();
+                setIsRecording(false);
+            };
+
+            mediaRecorderRef.current.start();
+            setIsRecording(true);
+
+        } catch (err) {
+            console.error("Erro ao acessar microfone:", err);
+            if (err instanceof Error && (err.name === "NotAllowedError" || err.name === "PermissionDeniedError")) {
+                setAudioError("Permissão para microfone negada. Habilite nas configurações do navegador.");
+            } else if (err instanceof Error && err.name === "NotFoundError") {
+                setAudioError("Nenhum dispositivo de áudio encontrado.");
+            } else {
+                setAudioError("Não foi possível acessar o microfone.");
+            }
+            setIsRecording(false);
+            stopMediaStream();
+        }
+    };
+
+    const stopRecordingAndSend = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            wasCancelledRef.current = false;
+            mediaRecorderRef.current.stop();
+        }
+    };
+
+    const handleCancelRecording = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            wasCancelledRef.current = true;
+            mediaRecorderRef.current.stop();
+        } else {
+            stopMediaStream();
+            setIsRecording(false);
+            audioChunksRef.current = [];
+            if (textareaRef.current) textareaRef.current.focus();
+        }
+        setAudioError(null);
+    };
+
+    const handleMicButtonClick = () => {
+        if (isRecording) {
+            stopRecordingAndSend();
+        } else {
+            startRecording();
+        }
+    };
+
+    const handleAbortAIResponse = () => {
+        if (isLoadingAI && abortStreamControllerRef.current && !abortStreamControllerRef.current.signal.aborted) {
+            abortStreamControllerRef.current.abort("User aborted direct stream");
+            setIsLoadingAI(false);
+        } else if (isProcessingEditedMessage) {
+            abortEditedMessageResponse();
+        }
+        if (textareaRef.current) textareaRef.current.focus();
+    };
+
+
+    const handleSubmit = async (e?: React.FormEvent, recordedAudioBlob?: Blob) => {
         if (e) e.preventDefault();
         setErrorFromAI(null);
-        const trimmedText = text.trim();
+        if (!isRecording) setAudioError(null);
 
-        if ((!trimmedText && attachedFiles.length === 0) || !activeConversationId || isLoadingAI || isProcessingEditedMessage) {
+        const trimmedText = text.trim();
+        const hasContentToSend = trimmedText || attachedFiles.length > 0 || recordedAudioBlob;
+
+        if (!hasContentToSend || !activeConversationId || isProcessingEditedMessage) {
+            if (isLoadingAI) return;
+            if (isRecording && !recordedAudioBlob) {
+                return;
+            }
+            if (!hasContentToSend && activeConversationId && !isProcessingEditedMessage) {
+                return;
+            }
             return;
         }
 
@@ -175,52 +377,70 @@ const MessageInput: React.FC = () => {
             if (textareaRef.current) textareaRef.current.style.height = 'auto';
             return;
         }
-        
-        // O texto para a IA é apenas o texto puro.
-        const currentTextForAI = trimmedText;
 
-        const conversationForHistory = conversations.find(c => c.id === activeConversationId);
-        const historyBeforeCurrentUserMessage = conversationForHistory?.messages.map(msg => ({
+        if (abortStreamControllerRef.current && !abortStreamControllerRef.current.signal.aborted) {
+            abortStreamControllerRef.current.abort("New submission started");
+        }
+        abortStreamControllerRef.current = new AbortController();
+        const signal = abortStreamControllerRef.current.signal;
+
+        const currentTextForAI = trimmedText;
+        const currentConversation = conversations.find(c => c.id === activeConversationId);
+        const historyBeforeCurrentUserMessage = currentConversation?.messages.map(msg => ({
             sender: msg.sender,
-            text: msg.text // Histórico para IA não precisa de anexos
+            text: msg.text
         })) || [];
-        
-        // Preparar attachedFilesInfo para os metadados da mensagem do usuário
-        // Importante: Para persistência entre sessões, precisamos do Data URL completo para imagens
-        const filesInfoForUIMessagePromises = attachedFiles.map(async (localFile): Promise<AttachedFileInfo> => {
-            let dataUrlForStorage: string | undefined = undefined;
-            if (localFile.type.startsWith('image/')) {
-                try {
-                    dataUrlForStorage = await fileToDataURL(localFile.file);
-                } catch (err) {
+
+        const filesInfoForUIMessagePromises: Promise<AttachedFileInfo>[] = [];
+
+        attachedFiles.forEach(localFile => {
+            filesInfoForUIMessagePromises.push(
+                blobToDataURL(localFile.file).then(dataUrl => ({
+                    id: localFile.id,
+                    name: localFile.name,
+                    type: localFile.type,
+                    size: localFile.size,
+                    dataUrl: dataUrl,
+                })).catch(err => {
                     console.error(`Falha ao converter ${localFile.name} para Data URL:`, err);
-                    // Usa o previewUrl local (blob) como fallback se a conversão para Data URL falhar,
-                    // mas isso não persistirá entre sessões.
-                    dataUrlForStorage = localFile.previewUrl;
-                }
-            }
-            return {
-                id: localFile.id,
-                name: localFile.name,
-                type: localFile.type,
-                size: localFile.size,
-                dataUrl: dataUrlForStorage, // Salva o Data URL completo para imagens
-            };
+                    return {
+                        id: localFile.id, name: localFile.name, type: localFile.type, size: localFile.size,
+                        dataUrl: localFile.previewUrl
+                    };
+                })
+            );
         });
 
+        if (recordedAudioBlob) {
+            const audioId = uuidv4();
+            const audioFileName = `Áudio Gravado - ${new Date().toISOString().replace(/[.:]/g, '-')}.ogg`;
+            const audioMimeType = recordedAudioBlob.type || 'audio/ogg';
+
+            filesInfoForUIMessagePromises.push(
+                blobToDataURL(recordedAudioBlob).then(dataUrl => ({
+                    id: audioId,
+                    name: audioFileName,
+                    type: audioMimeType,
+                    size: recordedAudioBlob.size,
+                    dataUrl: dataUrl,
+                })).catch(err => {
+                    console.error(`Falha ao converter áudio gravado para Data URL:`, err);
+                    return { id: audioId, name: audioFileName, type: audioMimeType, size: recordedAudioBlob.size, dataUrl: undefined };
+                })
+            );
+        }
+
         const resolvedFilesInfoForUIMessage = await Promise.all(filesInfoForUIMessagePromises);
-        
-        // Adiciona a mensagem do usuário à UI com o texto original e metadados dos anexos
+
         addMessageToConversation(activeConversationId, {
-            text: trimmedText, // APENAS o texto que o usuário digitou
+            text: trimmedText,
             sender: 'user',
             metadata: {
                 attachedFilesInfo: resolvedFilesInfoForUIMessage.length > 0 ? resolvedFilesInfoForUIMessage : undefined
             }
         });
-        
+
         setText('');
-        // Não limpe os anexos do estado local ainda, precisaremos deles para a API
         setIsLoadingAI(true);
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
@@ -236,37 +456,47 @@ const MessageInput: React.FC = () => {
         if (!aiMessageId) {
             console.error("Não foi possível criar a mensagem placeholder da IA.");
             setIsLoadingAI(false);
-            clearAttachmentsFromState(); // Limpa os arquivos do estado local se houver erro precoce
+            clearAttachmentsFromState();
             return;
         }
 
         let memoryOperationsFromServer: StreamedGeminiResponseChunk['memoryOperations'] = [];
         let streamError: string | null = null;
-        let finalCleanedTextForMessage = "";
+        let accumulatedAiText = "";
 
         try {
             const currentGlobalMemoriesWithObjects = globalMemoriesFromHook.map(mem => ({ id: mem.id, content: mem.content }));
-
             const fileDataPartsForAPI: FileDataPart[] = [];
-            for (const localFile of attachedFiles) { // Itera sobre o estado local `attachedFiles`
+            for (const localFile of attachedFiles) {
                 try {
-                    if (localFile.file.type.startsWith("image/")) { // Somente imagens para a API
-                        const base64Data = await fileToBase64Data(localFile.file); // Usa a função que retorna só os dados base64
-                        fileDataPartsForAPI.push({
-                            mimeType: localFile.file.type,
-                            data: base64Data,
-                        });
-                    }
+                    const base64Data = await blobToBase64Data(localFile.file);
+                    const baseMimeType = (localFile.file.type || '').split(';')[0];
+                    fileDataPartsForAPI.push({
+                        mimeType: baseMimeType,
+                        data: base64Data,
+                    });
                 } catch (conversionError) {
                     console.error(`Falha ao converter arquivo ${localFile.name} para Base64 para API:`, conversionError);
                     setErrorFromAI(`Falha ao processar o arquivo para API: ${localFile.name}.`);
                 }
             }
-            
-            // Limpa os arquivos do estado local AGORA, pois já foram processados para UI e API
-            clearAttachmentsFromState();
 
-            for await (const streamResponse of streamMessageToGemini(
+            if (recordedAudioBlob) {
+                try {
+                    const audioBase64Data = await blobToBase64Data(recordedAudioBlob);
+                    const baseMimeType = (recordedAudioBlob.type || 'audio/ogg').split(';')[0];
+                    fileDataPartsForAPI.push({
+                        mimeType: baseMimeType,
+                        data: audioBase64Data,
+                    });
+                } catch (conversionError) {
+                    console.error(`Falha ao converter áudio gravado para Base64 para API:`, conversionError);
+                    setErrorFromAI(`Falha ao processar o áudio gravado para API.`);
+                }
+            }
+
+            clearAttachmentsFromState();
+            const streamGenerator = streamMessageToGemini(
                 settings.apiKey,
                 historyBeforeCurrentUserMessage,
                 currentTextForAI,
@@ -321,166 +551,183 @@ Exemplo 5 (Deleção):
 (Suponha que o "CONHECIMENTO PRÉVIO" contenha: Memória 3: "O usuário tem um cachorro chamado Rex.")
 ÚLTIMA MENSAGEM DO USUÁRIO: "Infelizmente, meu cachorro Rex faleceu semana passada."
 SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolências... [DELETE_MEMORY: "O usuário tem um cachorro chamado Rex."]
-                `
-            )) {
-                // ... (lógica do stream) ...
+                `,
+                signal
+            );
+
+            for await (const streamResponse of streamGenerator) {
+                if (signal.aborted) {
+                    streamError = "Resposta abortada pelo usuário.";
+                    break;
+                }
                 if (streamResponse.delta) {
-                    finalCleanedTextForMessage += streamResponse.delta;
+                    accumulatedAiText += streamResponse.delta;
                     updateMessageInConversation(activeConversationId, aiMessageId, {
-                        text: finalCleanedTextForMessage + "▍",
+                        text: accumulatedAiText + "▍",
                         metadata: { isLoading: true }
                     });
                 }
                 if (streamResponse.error) {
                     streamError = streamResponse.error;
+                    setErrorFromAI(streamError);
                     break;
                 }
                 if (streamResponse.isFinished) {
-                    finalCleanedTextForMessage = streamResponse.finalText || finalCleanedTextForMessage;
+                    accumulatedAiText = streamResponse.finalText || accumulatedAiText;
                     memoryOperationsFromServer = streamResponse.memoryOperations || [];
                     break;
                 }
             }
 
-            // ... (lógica de tratamento de erro do stream e operações de memória) ...
-             if (streamError) {
+            if (streamError) {
                 updateMessageInConversation(activeConversationId, aiMessageId, {
-                    text: (finalCleanedTextForMessage || "") + 
-                          ((finalCleanedTextForMessage) ? '\n\n--- ERRO ---\n' : '') + 
-                          streamError,
-                    metadata: { isLoading: false, error: true } // Marcar como erro
+                    text: accumulatedAiText.replace(/▍$/, ''),
+                    metadata: {
+                        isLoading: false,
+                        error: streamError === "Resposta abortada pelo usuário." ? false : streamError,
+                        abortedByUser: streamError === "Resposta abortada pelo usuário." ? true : undefined,
+                        userFacingError: streamError !== "Resposta abortada pelo usuário." ? streamError : undefined
+                    }
                 });
-                setErrorFromAI(streamError);
-            } else {
+            } else { 
                 const processedMemoryActions: Required<MessageMetadata>['memorizedMemoryActions'] = [];
-
                 if (memoryOperationsFromServer && memoryOperationsFromServer.length > 0) {
                     memoryOperationsFromServer.forEach(op => {
-                         if (op.action === 'create' && op.content) {
+                        if (op.action === 'create' && op.content) {
                             const newMemoryObject = addMemory(op.content);
-                             if (newMemoryObject) {
-                                processedMemoryActions.push({
-                                    id: newMemoryObject.id,
-                                    content: newMemoryObject.content,
-                                    action: 'created'
-                                });
+                            if (newMemoryObject) {
+                                processedMemoryActions.push({ id: newMemoryObject.id, content: newMemoryObject.content, action: 'created' });
                             }
                         } else if (op.action === 'update' && op.targetMemoryContent && op.content) {
-                            const memoryToUpdate = globalMemoriesFromHook.find(
-                                mem => mem.content.toLowerCase() === op.targetMemoryContent?.toLowerCase()
-                            );
+                            const memoryToUpdate = globalMemoriesFromHook.find(mem => mem.content.toLowerCase() === op.targetMemoryContent?.toLowerCase());
                             if (memoryToUpdate) {
                                 updateMemory(memoryToUpdate.id, op.content);
-                                processedMemoryActions.push({
-                                    id: memoryToUpdate.id,
-                                    content: op.content,
-                                    originalContent: memoryToUpdate.content,
-                                    action: 'updated'
-                                });
-                            } else { // Fallback: criar como nova se não encontrar para atualizar
+                                processedMemoryActions.push({ id: memoryToUpdate.id, content: op.content, originalContent: memoryToUpdate.content, action: 'updated' });
+                            } else {
                                 const newMemoryObject = addMemory(op.content);
                                 if (newMemoryObject) {
-                                    processedMemoryActions.push({
-                                        id: newMemoryObject.id,
-                                        content: newMemoryObject.content,
-                                        action: 'created'
-                                    });
+                                    processedMemoryActions.push({ id: newMemoryObject.id, content: newMemoryObject.content, action: 'created' });
                                 }
                             }
                         } else if (op.action === 'delete_by_ai_suggestion' && op.targetMemoryContent) {
-                            const memoryToDelete = globalMemoriesFromHook.find(
-                                mem => mem.content.toLowerCase() === op.targetMemoryContent?.toLowerCase()
-                            );
+                            const memoryToDelete = globalMemoriesFromHook.find(mem => mem.content.toLowerCase() === op.targetMemoryContent?.toLowerCase());
                             if (memoryToDelete) {
                                 deleteMemoryFromHook(memoryToDelete.id);
-                                processedMemoryActions.push({
-                                    id: memoryToDelete.id,
-                                    content: memoryToDelete.content,
-                                    originalContent: memoryToDelete.content,
-                                    action: 'deleted_by_ai'
-                                });
+                                processedMemoryActions.push({ id: memoryToDelete.id, content: memoryToDelete.content, originalContent: memoryToDelete.content, action: 'deleted_by_ai' });
                             }
                         }
                     });
                 }
                 updateMessageInConversation(activeConversationId, aiMessageId, {
-                    text: finalCleanedTextForMessage,
-                    metadata: { 
-                        isLoading: false, 
-                        memorizedMemoryActions: processedMemoryActions.length > 0 ? processedMemoryActions : undefined,
-                    }
+                    text: accumulatedAiText.replace(/▍$/, ''),
+                    metadata: { isLoading: false, memorizedMemoryActions: processedMemoryActions.length > 0 ? processedMemoryActions : undefined }
                 });
             }
 
         } catch (error: unknown) {
             console.error("Falha catastrófica ao processar stream com Gemini:", error);
-            const clientErrorMessage = error instanceof Error ? error.message : "Desculpe, ocorreu uma falha desconhecida no processamento da resposta.";
-            updateMessageInConversation(activeConversationId, aiMessageId, {
-                text: "", // Em caso de falha catastrófica, não mostrar texto parcial da IA
-                metadata: { isLoading: false, error: clientErrorMessage } // Armazenar o erro real
-            });
-            setErrorFromAI(clientErrorMessage);
+            if ((error as Error).name === 'AbortError' || signal.aborted) {
+                updateMessageInConversation(activeConversationId, aiMessageId, {
+                    text: accumulatedAiText.replace(/▍$/, ''),
+                    metadata: { isLoading: false, error: false, abortedByUser: true }
+                });
+            } else {
+                const clientErrorMessage = error instanceof Error ? error.message : "Desculpe, ocorreu uma falha desconhecida no processamento da resposta.";
+                updateMessageInConversation(activeConversationId, aiMessageId, {
+                    text: "",
+                    metadata: { isLoading: false, error: clientErrorMessage, userFacingError: clientErrorMessage }
+                });
+                setErrorFromAI(clientErrorMessage);
+            }
         } finally {
             setIsLoadingAI(false);
-            if (attachedFiles.length > 0) clearAttachmentsFromState(); // Garantir limpeza
-            if (textareaRef.current && settings.apiKey && !streamError && !errorFromAI && !isProcessingEditedMessage) {
+            if (abortStreamControllerRef.current && abortStreamControllerRef.current.signal === signal) {
+                abortStreamControllerRef.current = null;
+            }
+            if (attachedFiles.length > 0) clearAttachmentsFromState();
+            if (textareaRef.current && settings.apiKey && !streamError && !errorFromAI && !isProcessingEditedMessage && !isRecording) {
                 textareaRef.current.focus();
             }
         }
     };
 
-    // ... (o resto do MessageInput.tsx, incluindo handleKeyDown e JSX, permanece como no seu último fornecimento)
-    // A preview local dos anexos (abaixo do textarea) já usa `item.previewUrl` que é o `URL.createObjectURL()`.
-    // A mudança principal é como a mensagem é *salva* via `addMessageToConversation`.
-
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (isLoadingAI || isProcessingEditedMessage) {
+        if (isProcessingEditedMessage || isRecording) {
             if (e.key === 'Enter') e.preventDefault();
             return;
         }
-        if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey && (text.trim().length > 0 || attachedFiles.length > 0)) {
-            e.preventDefault();
-            handleSubmit();
-        } else if (e.key === 'Enter' && e.ctrlKey) {
-             e.preventDefault();
-             handleSubmit();
+
+        const currentIsLoading = isLoadingAI || isProcessingEditedMessage;
+
+        if (currentIsLoading) {
+            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !isMobile) {
+                e.preventDefault();
+            }
+            return;
+        }
+
+        if (isMobile) {
+            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) { // No mobile, enter não submete, apenas quebra linha
+                return;
+            }
+        } else {
+            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+                if (text.trim().length > 0 || attachedFiles.length > 0) {
+                    e.preventDefault();
+                    handleSubmit();
+                }
+            } else if (e.key === 'Enter' && e.ctrlKey) { // Ctrl+Enter para submeter também
+                if (text.trim().length > 0 || attachedFiles.length > 0) {
+                    e.preventDefault();
+                    handleSubmit();
+                }
+            }
         }
     };
 
-    const isOverallBusy = isLoadingAI || isProcessingEditedMessage;
-    const canSubmit = (text.trim().length > 0 || attachedFiles.length > 0) && !!activeConversationId && !isOverallBusy && !!settings.apiKey;
-    const isInputDisabled = !activeConversationId || !settings.apiKey || isOverallBusy;
+    const isCurrentlyLoading = isLoadingAI || isProcessingEditedMessage;
+    const canSubmitEffectively = (text.trim().length > 0 || attachedFiles.length > 0) && !!activeConversationId && !isCurrentlyLoading && !!settings.apiKey && !isRecording;
 
-    const placeholderText =
-        isProcessingEditedMessage ? "Processando edição anterior..." :
-            isLoadingAI ? "Gemini está respondendo..." :
-                activeConversationId ?
-                    (settings.apiKey ? "Digite sua mensagem... (Enter para enviar / Shift+Enter ou Ctrl+Enter para nova linha)" : "Configure sua API Key nas Configurações.") :
-                    "Selecione ou crie uma conversa.";
+    const isTextareaAndAttachDisabled = !activeConversationId || !settings.apiKey || isProcessingEditedMessage || isRecording;
+    const isMicDisabled = !activeConversationId || !settings.apiKey || isProcessingEditedMessage || isLoadingAI;
+
+    const recordingPlaceholder = (
+        <div className="flex items-center text-sm text-slate-400">
+            <span className="inline-block w-2 h-2 bg-red-500 rounded-full mr-2 animate-ping opacity-75"></span>
+            <span className="inline-block w-2 h-2 bg-red-500 rounded-full mr-2 absolute top-1/2 left-3 -translate-y-1/2"></span>
+            Gravando áudio...
+        </div>
+    );
 
     return (
-        <div className="px-3 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-3 border-t border-slate-700/60 bg-slate-800/90 backdrop-blur-sm sticky bottom-0">
+        <div className="px-2 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-3 border-t border-slate-700/60 bg-slate-800/95 backdrop-blur-sm sticky bottom-0 shadow- ऊपर-md z-20">
             {errorFromAI && (
-                <div className="mb-2 p-2 text-xs text-red-400 bg-red-900/30 rounded-md flex items-center gap-2">
-                    <IoWarningOutline className="flex-shrink-0" />
+                <div className="mb-2 p-2 text-xs text-red-400 bg-red-900/40 border border-red-700/50 rounded-md flex items-center gap-2">
+                    <IoWarningOutline className="flex-shrink-0 text-base" />
                     <span>{errorFromAI}</span>
                 </div>
             )}
+            {audioError && (
+                <div className="mb-2 p-2 text-xs text-yellow-500 bg-yellow-900/40 border border-yellow-700/50 rounded-md flex items-center gap-2">
+                    <IoWarningOutline className="flex-shrink-0 text-base" />
+                    <span>{audioError}</span>
+                </div>
+            )}
 
-            {attachedFiles.length > 0 && (
-                <div className="mb-2 p-2 bg-slate-800/70 rounded-md flex flex-wrap gap-2 items-start max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50">
+            {attachedFiles.length > 0 && !isRecording && (
+                <div className="mb-2 p-2 bg-slate-800 border border-slate-700/80 rounded-lg flex flex-wrap gap-2.5 items-start max-h-44 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50 shadow-sm">
                     {attachedFiles.map(item => (
-                        <div key={item.id} className="relative group bg-slate-700 p-1 rounded shadow">
-                            {item.previewUrl && item.type.startsWith('image/') ? ( // Verifica se é imagem para exibir img tag
+                        <div key={item.id} className="relative group bg-slate-700/80 p-1.5 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200">
+                            {item.previewUrl && item.type.startsWith('image/') ? (
                                 <img
                                     src={item.previewUrl}
                                     alt={`Preview ${item.name}`}
-                                    className="object-cover rounded"
+                                    className="object-cover rounded-sm"
                                     style={{ width: `${MAX_THUMBNAIL_SIZE}px`, height: `${MAX_THUMBNAIL_SIZE}px` }}
                                 />
                             ) : (
-                                <div 
-                                    className="flex items-center justify-center bg-slate-600 text-slate-300 rounded text-xs p-2 break-all"
+                                <div
+                                    className="flex items-center justify-center bg-slate-600/70 text-slate-300 rounded-sm text-[11px] p-2 break-all"
                                     style={{ width: `${MAX_THUMBNAIL_SIZE}px`, height: `${MAX_THUMBNAIL_SIZE}px`, overflow: 'hidden' }}
                                     title={item.name}
                                 >
@@ -488,12 +735,13 @@ SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolênc
                                 </div>
                             )}
                             <Button
-                                variant="danger"
-                                className="absolute -top-1 -right-1 !p-0.5 rounded-full opacity-70 group-hover:opacity-100 transition-opacity"
+                                variant="icon"
+                                className="!absolute -top-2 -right-2 !p-1 bg-red-600 hover:!bg-red-700 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 ease-in-out transform group-hover:scale-110 focus:opacity-100 focus:scale-110"
                                 onClick={() => handleRemoveFile(item.id)}
                                 aria-label={`Remover ${item.name}`}
+                                title={`Remover ${item.name}`}
                             >
-                                <IoCloseCircleOutline size={18} />
+                                <IoClose size={16} />
                             </Button>
                         </div>
                     ))}
@@ -501,57 +749,136 @@ SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolênc
             )}
 
             <form
-                onSubmit={handleSubmit}
-                className="flex items-end bg-slate-900/80 rounded-xl p-1.5 pr-2 shadow-md focus-within:ring-2 focus-within:ring-blue-500/70 transition-shadow duration-200"
+                onSubmit={(e) => {
+                    if (isCurrentlyLoading) {
+                        e.preventDefault();
+                        handleAbortAIResponse();
+                    } else {
+                        handleSubmit(e);
+                    }
+                }}
+                className={`flex items-end bg-slate-900/90 border border-slate-700/70 rounded-xl p-1.5 shadow-lg 
+                            focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500/70
+                            transition-all duration-200 ease-in-out 
+                            ${isRecording ? 'ring-2 !ring-red-500/80 !border-red-500/80' : ''}
+                            ${isTextareaFocused ? '!border-blue-500/70 ring-2 ring-blue-500' : ''}`}
             >
-                <Button
-                    type="button"
-                    className="mr-2 !p-2 sm:!p-2.5 rounded-lg text-slate-400 hover:text-slate-200"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isInputDisabled || isOverallBusy}
-                    aria-label="Anexar arquivos"
-                >
-                    <IoAttach size={20} />
-                </Button>
+                <div className="flex-shrink-0 p-0.5">
+                    {isRecording ? (
+                        <Button
+                            type="button"
+                            variant="icon"
+                            className="!p-2.5 text-red-400 hover:text-red-300 !bg-red-900/50 hover:!bg-red-800/60 rounded-lg transform active:scale-90"
+                            onClick={handleCancelRecording}
+                            aria-label="Cancelar gravação"
+                            title="Cancelar gravação"
+                        >
+                            <IoClose size={22} />
+                        </Button>
+                    ) : (
+                        <Button
+                            type="button"
+                            variant="icon"
+                            className="!p-2.5 text-slate-400 hover:text-blue-400 hover:bg-slate-700/60 rounded-lg transform active:scale-90"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isTextareaAndAttachDisabled || isLoadingAI}
+                            aria-label="Anexar arquivos"
+                            title="Anexar arquivos"
+                        >
+                            <IoAttach size={20} />
+                        </Button>
+                    )}
+                </div>
                 <input
                     type="file"
                     ref={fileInputRef}
                     multiple
                     onChange={handleFileChange}
                     className="hidden"
-                    accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/heic,image/heif,application/pdf,text/plain,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                    disabled={isInputDisabled || isOverallBusy}
+                    accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/heic,image/heif,application/pdf,text/plain,.doc,.docx,.xls,.xlsx,.ppt,.pptx" // Adicionar mais tipos se necessário
+                    disabled={isTextareaAndAttachDisabled || isLoadingAI}
                 />
 
-                <textarea
-                    ref={textareaRef}
-                    rows={1}
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={placeholderText}
-                    className="flex-1 bg-transparent text-slate-100 focus:outline-none px-3 py-2.5 resize-none leading-tight scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
-                    style={{ maxHeight: `${MAX_TEXTAREA_HEIGHT}px` }}
-                    disabled={isInputDisabled}
-                    aria-label="Campo de entrada de mensagem"
-                />
-                <Button
-                    type="submit"
-                    variant="primary"
-                    className="ml-2 !p-2 sm:!p-2.5 rounded-lg"
-                    disabled={!canSubmit}
-                    aria-label="Enviar mensagem"
-                >
-                    {isOverallBusy ? (
-                        <IoPulseOutline size={18} className="animate-pulse" />
-                    ) : (
-                        <IoSend size={18} />
+                <div className="flex-1 mx-1.5 relative flex items-center">
+                    {isRecording && (
+                        <div className="absolute inset-0 flex items-center justify-start px-3 pointer-events-none z-10">
+                            {recordingPlaceholder}
+                        </div>
                     )}
-                </Button>
+                    <textarea
+                        ref={textareaRef}
+                        rows={1}
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        onFocus={() => setIsTextareaFocused(true)}
+                        onBlur={() => setIsTextareaFocused(false)}
+                        placeholder={isRecording ? '' : (isCurrentlyLoading ? 'IA respondendo...' : placeholderText)}
+                        className={`w-full bg-transparent text-slate-100 placeholder-slate-500 focus:outline-none px-3 py-2.5 resize-none leading-tight 
+                                    scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent 
+                                    transition-all duration-200 ease-in-out
+                                    ${isRecording ? 'text-transparent caret-transparent' : ''}
+                                    ${isCurrentlyLoading ? 'placeholder-slate-600' : ''}`}
+                        style={{
+                            maxHeight: isTextareaFocused ? `${window.innerHeight * (FOCUSED_TEXTAREA_MAX_HEIGHT_VH / 100)}px` : `${getPixelValueFromRem(UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM)}px`,
+                            minHeight: `${getPixelValueFromRem(UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM)}px`
+                        }}
+                        disabled={isTextareaAndAttachDisabled && !isLoadingAI && !isProcessingEditedMessage}
+                        aria-label="Campo de entrada de mensagem"
+                    />
+                </div>
+
+                <div className="flex-shrink-0 p-0.5 flex items-center space-x-1.5">
+                    <Button
+                        type="button"
+                        variant={isRecording ? "danger" : "icon"}
+                        className={`!p-2.5 rounded-lg transform active:scale-90
+                                    ${isRecording 
+                                        ? '!bg-red-600 hover:!bg-red-700 text-white animate-pulseRing' 
+                                        : 'text-slate-400 hover:text-blue-400 hover:bg-slate-700/60'
+                                    }`}
+                        onClick={handleMicButtonClick}
+                        disabled={isMicDisabled || isProcessingEditedMessage}
+                        aria-label={isRecording ? "Parar gravação e enviar" : "Iniciar gravação de áudio"}
+                        title={isRecording ? "Parar gravação e enviar" : "Iniciar gravação de áudio"}
+                    >
+                        {isRecording ? (
+                            <IoStopCircleOutline size={20} />
+                        ) : (
+                            <IoMicOutline size={20} />
+                        )}
+                    </Button>
+
+                    {(!isRecording) && (
+                        <Button
+                            type={isCurrentlyLoading ? "button" : "submit"}
+                            onClick={isCurrentlyLoading ? handleAbortAIResponse : undefined}
+                            variant={isCurrentlyLoading ? "danger" : "primary"}
+                            className={`!p-2.5 rounded-lg transform active:scale-90 group overflow-hidden 
+                                        ${isCurrentlyLoading 
+                                            ? 'hover:!bg-red-700' // Para o botão de abortar
+                                            : canSubmitEffectively 
+                                                ? 'hover:!bg-blue-700' // Para o botão de enviar
+                                                : '!bg-slate-700 !text-slate-500 cursor-not-allowed' // Desabilitado visualmente
+                                        }`}
+                            disabled={isCurrentlyLoading ? false : !canSubmitEffectively}
+                            aria-label={isCurrentlyLoading ? "Abortar resposta" : "Enviar mensagem"}
+                            title={isCurrentlyLoading ? "Abortar resposta" : "Enviar mensagem"}
+                        >
+                            <span className="block transition-transform duration-200 ease-in-out group-hover:scale-110">
+                                {isCurrentlyLoading ? (
+                                    <IoStop size={20} />
+                                ) : (
+                                    <IoPaperPlaneOutline size={20} /> // Ícone alternativo para Enviar
+                                )}
+                            </span>
+                        </Button>
+                    )}
+                </div>
             </form>
-            {!settings.apiKey && activeConversationId && !isOverallBusy && !errorFromAI && (
-                <p className="text-xs text-yellow-400/90 text-center mt-2 px-2">
-                    Chave de API não configurada. Por favor, adicione sua chave nas <strong className="font-medium">Configurações</strong> para interagir com a IA.
+            {!settings.apiKey && activeConversationId && !isCurrentlyLoading && !isRecording && (
+                <p className="text-xs text-yellow-400/90 text-center mt-2.5 px-2">
+                    Chave de API não configurada. Por favor, adicione sua chave nas <strong className="font-medium text-yellow-300">Configurações</strong> para interagir com a IA.
                 </p>
             )}
         </div>

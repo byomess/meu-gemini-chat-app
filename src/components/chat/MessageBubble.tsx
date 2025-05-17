@@ -1,24 +1,19 @@
-// src/components/chat/MessageBubble.tsx
+// src/components/MessageBubble/MessageBubble.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import type { Message, MessageMetadata, MemoryActionType } from '../../types/conversation'; // Ajuste o caminho se necessário
+import type { Message, MessageMetadata, MemoryActionType } from '../../types/conversation';
 import {
     IoPersonCircleOutline, IoSparklesOutline, IoGitNetworkOutline, IoTrashOutline,
     IoPencilOutline, IoCheckmarkOutline, IoCloseOutline, IoSyncOutline,
     IoCreateOutline, IoInformationCircleOutline, IoRemoveCircleOutline,
-    IoDocumentTextOutline, IoImageOutline,
+    IoDocumentTextOutline, IoImageOutline, IoMusicalNotesOutline,
 } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
 import { useMemories } from '../../contexts/MemoryContext';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import CodeBlock from '../common/CodeBlock';
+import CustomAudioPlayer from './CustomAudioPlayer'; // Verifique se este é o caminho correto
 
-interface MessageBubbleProps {
-    message: Message;
-    conversationId: string;
-}
-
-// ... (MemoryActionItem COMPLETO como fornecido anteriormente)
 interface MemoryActionItemProps {
     memoryActionDetail: NonNullable<MessageMetadata['memorizedMemoryActions']>[0];
 }
@@ -135,8 +130,8 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
                 <>
                     <span
                         className={`truncate text-sm flex items-center ${memoryExistsInContext || memoryActionDetail.action === 'deleted_by_ai'
-                                ? 'text-slate-300'
-                                : 'text-slate-500 line-through'
+                            ? 'text-slate-300'
+                            : 'text-slate-500 line-through'
                             }`}
                         title={itemTitle}
                     >
@@ -167,8 +162,12 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
     );
 };
 
-
 const MAX_THUMBNAIL_SIZE_IN_BUBBLE = 100;
+
+interface MessageBubbleProps {
+    message: Message;
+    conversationId: string;
+}
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }) => {
     const {
@@ -181,8 +180,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
 
     const isUser = message.sender === 'user';
     const isLoading = message.metadata?.isLoading;
-    const isErrorString = typeof message.metadata?.error === 'string' && message.metadata.error.length > 0;
-    const isErrorFlag = Boolean(message.metadata?.error);
+
+    const isActualErrorForStyling =
+        (typeof message.metadata?.error === 'string' && message.metadata.error !== "Resposta abortada pelo usuário.") ||
+        (typeof message.metadata?.error === 'boolean' && message.metadata.error === true);
+
+    const abortedByUser = message.metadata?.abortedByUser;
+
+    const userFacingErrorMessage = message.metadata?.userFacingError ||
+        (typeof message.metadata?.error === 'string' && message.metadata.error !== "Resposta abortada pelo usuário." ? message.metadata.error : undefined);
+
 
     const memoryActions = message.metadata?.memorizedMemoryActions;
     const hasMemoryActions = memoryActions && memoryActions.length > 0;
@@ -231,7 +238,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         const newText = editedText.trim();
         setIsEditing(false);
 
-        if (newText === message.text) return;
+        if (newText === message.text && (!hasAttachedFiles || message.metadata?.attachedFilesInfo === attachedFilesInfo)) return;
+
 
         if (newText === '' && !hasAttachedFiles) {
             if (message.text !== '' && window.confirm('O texto está vazio e não há anexos. Deseja excluir a mensagem?')) {
@@ -274,7 +282,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
             ((activeConversation?.messages.length ?? 1) - 1));
 
     const canPerformActionsOnMessage =
-        !isLoading && !isErrorFlag && !isProcessingEditedMessage && !isThisUserMessageBeingReprocessed;
+        !isLoading && !isActualErrorForStyling && !isProcessingEditedMessage && !isThisUserMessageBeingReprocessed;
 
     const editTextareaBaseClasses = 'w-full p-2.5 text-sm text-white focus:outline-none resize-none rounded-lg scrollbar-thin';
     const editTextareaUserClasses = `${editTextareaBaseClasses} bg-blue-700 scrollbar-thumb-blue-500 scrollbar-track-blue-600`;
@@ -327,16 +335,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
 
     const messageContainerBaseClass = `p-3 sm:p-3.5 rounded-xl sm:rounded-2xl shadow relative prose prose-sm prose-invert max-w-none`;
     const messageUserClass = `${messageContainerBaseClass} bg-blue-600 text-white prose-strong:text-white prose-a:text-blue-200 hover:prose-a:text-blue-100`;
-    const messageAIClass = `${messageContainerBaseClass} bg-slate-700 text-slate-100 prose-a:text-blue-400 hover:prose-a:text-blue-300 ${isErrorFlag ? '!bg-red-800/90 !border !border-red-600 prose-p:text-red-100' : ''}`;
+
+    let aiMessageSpecificClass = "bg-slate-700 text-slate-100 prose-a:text-blue-400 hover:prose-a:text-blue-300";
+    if (isActualErrorForStyling) {
+        aiMessageSpecificClass = '!bg-red-800/90 !border !border-red-600 prose-p:text-red-100';
+    } else if (abortedByUser) {
+        aiMessageSpecificClass = 'border border-dashed border-yellow-600/70 bg-slate-700/80';
+    }
+
+    const messageAIClass = `${messageContainerBaseClass} ${aiMessageSpecificClass}`;
     const messageLoadingClass = `opacity-70 animate-pulse bg-slate-600/50 border border-slate-500/50`;
 
-    // Condição para determinar se o balão de texto principal deve ser renderizado
     const shouldRenderTextBubbleContent =
         message.text.trim().length > 0 ||
-        (!isUser && isErrorString); // Mostra balão para texto ou erro da IA
+        (!isUser && (userFacingErrorMessage || abortedByUser));
 
-    // Condição para mostrar animação de "digitando" da IA
-    const showAITypingIndicator = !isUser && isLoading && message.text.trim() === '';
+    const showAITypingIndicator = !isUser && isLoading && message.text.trim() === '' && !userFacingErrorMessage && !abortedByUser;
+    
+    const hasAnyContentForBubble = hasAttachedFiles || shouldRenderTextBubbleContent || showAITypingIndicator;
 
     return (
         <div
@@ -344,117 +360,142 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
             onMouseEnter={() => canPerformActionsOnMessage && setShowActions(true)}
             onMouseLeave={() => canPerformActionsOnMessage && setShowActions(false)}
         >
-            {/* Container para as miniaturas ANEXADAS, posicionado ACIMA do balão de texto */}
-            {isUser && hasAttachedFiles && attachedFilesInfo && (
-                <div className={`flex flex-wrap gap-2 mb-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`flex flex-wrap gap-2 ${isUser ? 'pl-10 sm:pl-11' : 'pr-10 sm:pr-11'}`}>
-                        {attachedFilesInfo.map(fileInfo => (
-                            <div key={fileInfo.id} className="bg-slate-800/50 border border-slate-700 p-1 rounded-lg shadow-sm overflow-hidden">
-                                {fileInfo.dataUrl && fileInfo.type.startsWith('image/') ? (
-                                    <img
-                                        src={fileInfo.dataUrl}
-                                        alt={`Preview ${fileInfo.name}`}
-                                        className="object-cover rounded"
-                                        style={{
-                                            maxWidth: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE}px`,
-                                            maxHeight: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE}px`,
-                                            display: 'block'
-                                        }}
-                                        title={`${fileInfo.name} (${(fileInfo.size / 1024).toFixed(1)} KB)`}
-                                    />
-                                ) : (
-                                    <div
-                                        className="flex flex-col items-center justify-center text-xs p-2 text-center bg-slate-700/70 rounded"
-                                        style={{
-                                            width: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE * 0.9}px`,
-                                            height: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE * 0.9}px`,
-                                            minWidth: '60px',
-                                        }}
-                                        title={`${fileInfo.name} (${(fileInfo.size / 1024).toFixed(1)} KB)`}
-                                    >
-                                        {fileInfo.type.startsWith('image/') ? <IoImageOutline size={24} className="mb-1 text-slate-400" /> : <IoDocumentTextOutline size={24} className="mb-1 text-slate-400" />}
-                                        <span className="truncate block w-full text-slate-300">{fileInfo.name}</span>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Balão de mensagem principal (texto e avatar) */}
-            {/* Renderiza se houver conteúdo de texto, ou se for IA carregando/com erro */}
-            {(shouldRenderTextBubbleContent || showAITypingIndicator) && (
-                <div className={`flex items-start gap-2.5 sm:gap-3 w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
+            {/* Contêiner principal para alinhar Avatar com o conteúdo da mensagem (anexos e/ou texto) */}
+            {hasAnyContentForBubble && (
+                 <div className={`flex items-start gap-2.5 sm:gap-3 w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
+                    {/* Avatar da IA (renderizado primeiro para aparecer à esquerda) */}
                     {!isUser && (
                         <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-md mt-px">
                             <IoSparklesOutline size={18} />
                         </div>
                     )}
-                    <div
-                        className={`relative w-auto sm:max-w-3xl lg:max-w-5xl xl:max-w-6xl 
-                            ${isEditing && !isThisUserMessageBeingReprocessed ? 'min-w-[300px] sm:min-w-[400px]' : ''}
-                            ${isUser ? 'order-1' : ''}`}
-                    >
-                        {isEditing && !isThisUserMessageBeingReprocessed ? (
-                            <div className={`p-1 rounded-xl shadow-md ${isUser ? 'bg-blue-700' : 'bg-slate-600'}`}>
-                                <textarea
-                                    ref={editTextareaRef}
-                                    value={editedText}
-                                    onChange={(e) => setEditedText(e.target.value)}
-                                    onKeyDown={handleEditKeyDown}
-                                    className={isUser ? editTextareaUserClasses : editTextareaAIClasses}
-                                    rows={1}
-                                    aria-label="Editar mensagem"
-                                />
-                                <div className="flex justify-end gap-2 mt-1.5 px-1.5 pb-0.5">
-                                    <button onClick={handleCancelEdit} className={`p-1 rounded ${isUser ? editControlsUserClasses : editControlsAIClasses}`} title="Cancelar edição (Esc)"> <IoCloseOutline size={18} /> </button>
-                                    <button
-                                        onClick={handleSaveEdit}
-                                        className={`p-1 rounded ${isUser ? editControlsUserClasses : editControlsAIClasses}`}
-                                        title="Salvar edição (Enter)"
-                                        disabled={isProcessingEditedMessage || (editedText.trim() === '' && !hasAttachedFiles && message.text === '')}
-                                    >
-                                        <IoCheckmarkOutline size={18} />
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className={`${isUser ? messageUserClass : messageAIClass} ${isLoading && !showAITypingIndicator ? messageLoadingClass : ''}`}>
-                                {isThisUserMessageBeingReprocessed && (<div className="absolute -top-1.5 -right-1.5 p-0.5 bg-slate-600 rounded-full shadow z-10"> <IoSyncOutline size={12} className="text-slate-300 animate-spin" /> </div>)}
 
-                                {/* Conteúdo do Balão */}
-                                {showAITypingIndicator ? (
-                                    <div className="typing-dots flex items-center space-x-1 h-5"> {/* Ajuste a altura (h-5) conforme necessário */}
-                                        <span className="block w-2 h-2 bg-current rounded-full"></span>
-                                        <span className="block w-2 h-2 bg-current rounded-full"></span>
-                                        <span className="block w-2 h-2 bg-current rounded-full"></span>
+                    {/* Conteúdo da mensagem (anexos e bolha de texto) */}
+                    <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} ${isUser ? 'order-1' : ''} w-auto sm:max-w-3xl lg:max-w-5xl xl:max-w-6xl`}>
+                        {isUser && hasAttachedFiles && attachedFilesInfo && (
+                            <div className={`flex flex-wrap gap-2 mb-1.5 ${isUser ? 'justify-end' : 'justify-start'}`}>
+                                {/* Removido pl-10/pr-10 para que o alinhamento do avatar controle */}
+                                {attachedFilesInfo.map(fileInfo => (
+                                    <div key={fileInfo.id} className="bg-slate-800/70 border border-slate-700/50 p-1 rounded-lg shadow-sm overflow-hidden max-w-xs sm:max-w-sm"> {/* Adicionado max-w para o CustomAudioPlayer */}
+                                        {fileInfo.type.startsWith('image/') && fileInfo.dataUrl ? (
+                                            <img
+                                                src={fileInfo.dataUrl}
+                                                alt={`Preview ${fileInfo.name}`}
+                                                className="object-cover rounded"
+                                                style={{
+                                                    maxWidth: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE}px`,
+                                                    maxHeight: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE}px`,
+                                                    display: 'block'
+                                                }}
+                                                title={`${fileInfo.name} (${(fileInfo.size / 1024).toFixed(1)} KB)`}
+                                            />
+                                        ) : fileInfo.type.startsWith('audio/') && fileInfo.dataUrl ? (
+                                            <div
+                                                className="audio-player-container-in-bubble rounded-md w-full"
+                                                title={`${fileInfo.name} (${(fileInfo.size / 1024).toFixed(1)} KB)`}
+                                            >
+                                                <CustomAudioPlayer src={fileInfo.dataUrl} fileName={fileInfo.name} />
+                                            </div>
+                                        ) : (
+                                            <div
+                                                className="flex flex-col items-center justify-center text-xs p-2 text-center bg-slate-700/70 rounded"
+                                                style={{
+                                                    width: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE * 0.9}px`,
+                                                    height: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE * 0.9}px`,
+                                                    minWidth: '60px',
+                                                }}
+                                                title={`${fileInfo.name} (${(fileInfo.size / 1024).toFixed(1)} KB)`}
+                                            >
+                                                {fileInfo.type.startsWith('image/')
+                                                    ? <IoImageOutline size={24} className="mb-1 text-slate-400" />
+                                                    : fileInfo.type.startsWith('audio/')
+                                                        ? <IoMusicalNotesOutline size={24} className="mb-1 text-slate-400" />
+                                                        : <IoDocumentTextOutline size={24} className="mb-1 text-slate-400" />
+                                                }
+                                                <span className="truncate block w-full text-slate-300">{fileInfo.name}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {(shouldRenderTextBubbleContent || showAITypingIndicator) && (
+                            <div
+                                className={`relative 
+                                    ${isEditing && !isThisUserMessageBeingReprocessed ? 'min-w-[300px] sm:min-w-[400px]' : ''}
+                                    ${isUser && hasAttachedFiles ? 'mt-0' : ''} `} // Sem margem superior se já houver anexos acima
+                            >
+                                {isEditing && !isThisUserMessageBeingReprocessed ? (
+                                    <div className={`p-1 rounded-xl shadow-md ${isUser ? 'bg-blue-700' : 'bg-slate-600'}`}>
+                                        <textarea
+                                            ref={editTextareaRef}
+                                            value={editedText}
+                                            onChange={(e) => setEditedText(e.target.value)}
+                                            onKeyDown={handleEditKeyDown}
+                                            className={isUser ? editTextareaUserClasses : editTextareaAIClasses}
+                                            rows={1}
+                                            aria-label="Editar mensagem"
+                                        />
+                                        <div className="flex justify-end gap-2 mt-1.5 px-1.5 pb-0.5">
+                                            <button onClick={handleCancelEdit} className={`p-1 rounded ${isUser ? editControlsUserClasses : editControlsAIClasses}`} title="Cancelar edição (Esc)"> <IoCloseOutline size={18} /> </button>
+                                            <button
+                                                onClick={handleSaveEdit}
+                                                className={`p-1 rounded ${isUser ? editControlsUserClasses : editControlsAIClasses}`}
+                                                title="Salvar edição (Enter)"
+                                                disabled={isProcessingEditedMessage || (editedText.trim() === '' && !hasAttachedFiles && message.text === '')}
+                                            >
+                                                <IoCheckmarkOutline size={18} />
+                                            </button>
+                                        </div>
                                     </div>
                                 ) : (
-                                    <>
-                                        {(message.text.trim().length > 0) && (
-                                            <div className="message-text-content whitespace-pre-wrap break-words">
-                                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                                                    {message.text}
-                                                </ReactMarkdown>
+                                    <div className={`${isUser ? messageUserClass : messageAIClass} ${isLoading && !showAITypingIndicator && !userFacingErrorMessage && !abortedByUser ? messageLoadingClass : ''}`}>
+                                        {isThisUserMessageBeingReprocessed && (<div className="absolute -top-1.5 -right-1.5 p-0.5 bg-slate-600 rounded-full shadow z-10"> <IoSyncOutline size={12} className="text-slate-300 animate-spin" /> </div>)}
+                                        {showAITypingIndicator ? (
+                                            <div className="typing-dots flex items-center space-x-1 h-5">
+                                                <span className="block w-2 h-2 bg-current rounded-full animate-bounce delay-0"></span>
+                                                <span className="block w-2 h-2 bg-current rounded-full animate-bounce delay-150"></span>
+                                                <span className="block w-2 h-2 bg-current rounded-full animate-bounce delay-300"></span>
                                             </div>
+                                        ) : (
+                                            <>
+                                                {(message.text.trim().length > 0) && (
+                                                    <div className="message-text-content whitespace-pre-wrap break-words">
+                                                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                                                            {message.text}
+                                                        </ReactMarkdown>
+                                                    </div>
+                                                )}
+                                                {userFacingErrorMessage && isActualErrorForStyling && (
+                                                    <div className={`mt-2 text-xs text-red-300 ${message.text.trim().length > 0 ? 'border-t border-red-500/50 pt-1.5' : ''}`}>
+                                                        Erro: {userFacingErrorMessage}
+                                                    </div>
+                                                )}
+                                                {abortedByUser && (
+                                                    <div className={`mt-2 text-xs text-yellow-400/90 ${message.text.trim().length > 0 ? 'border-t border-yellow-700/50 pt-1.5' : ''}`}>
+                                                        Resposta abortada pelo usuário.
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
-
-                                        {isErrorString && (
-                                            <div className={`mt-2 text-xs text-red-300 ${message.text.trim().length > 0 ? 'border-t border-red-500/50 pt-1.5' : ''}`}>
-                                                Erro: {message.metadata?.error}
-                                            </div>
-                                        )}
-                                    </>
+                                    </div>
                                 )}
                             </div>
                         )}
                     </div>
-                    {isUser && (<div className={`flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-600 flex items-center justify-center text-slate-300 shadow-md mt-px ${isEditing ? 'self-start' : ''}`} > <IoPersonCircleOutline size={20} /> </div>)}
 
+                    {/* Avatar do Usuário (renderizado depois para aparecer à direita se for user) */}
+                    {isUser && (
+                        <div className={`flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-600 flex items-center justify-center text-slate-300 shadow-md mt-px ${isEditing ? 'self-start' : ''}`} > 
+                            <IoPersonCircleOutline size={20} /> 
+                        </div>
+                    )}
+
+                    {/* Botões de Ação (Editar/Excluir) - A lógica de posicionamento pode precisar de ajuste fino */}
                     {canPerformActionsOnMessage && showActions && !isEditing && (
-                        <div className={`flex items-center rounded-full shadow-lg bg-slate-750 border border-slate-600/50 p-0.5 absolute transform -translate-y-1/2 transition-all duration-200 ease-out z-20 bg-gray-900/80 
-                         ${isUser ? 'right-0' : 'left-11'} 
+                        <div className={`flex items-center rounded-full shadow-lg bg-slate-750 border border-slate-600/50 p-0.5 absolute transform -translate-y-1/2 transition-all duration-200 ease-out z-20 
+                         ${isUser ? 'right-10 sm:right-11' : 'left-11'}  {/* Ajustado para dar espaço ao avatar do usuário */}
                          ${(hasAttachedFiles && isUser && (shouldRenderTextBubbleContent || showAITypingIndicator)) ? 'top-[calc(-10px - 0.5rem)]' : 'top-[-10px]'}
                          ${showActions ? 'opacity-80 scale-100' : 'opacity-20 scale-90 pointer-events-none'}`}>
                             <button onClick={handleEdit} className="p-1.5 text-slate-300 hover:text-blue-400 hover:bg-slate-600/70 rounded-full" title="Editar mensagem" disabled={isProcessingEditedMessage} > <IoPencilOutline size={14} /> </button>
@@ -464,7 +505,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                 </div>
             )}
 
-            {/* Renderização de MemoryActions */}
+
             {!isUser && hasMemoryActions && memoryActions && (
                 <div className="mt-2.5 ml-10 mr-2 sm:mr-0 animate-fadeInQuick">
                     <div className="flex items-center gap-1.5 text-xs text-purple-400 mb-1.5">

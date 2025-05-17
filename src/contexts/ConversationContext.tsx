@@ -1,12 +1,10 @@
 // src/contexts/ConversationContext.tsx
 import React, { createContext, useContext, type ReactNode, useState, useCallback, useRef, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-// Importe os tipos atualizados, incluindo MemoryActionType
 import type { Conversation, Message, MessageMetadata } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { useAppSettings } from './AppSettingsContext';
 import { useMemories } from './MemoryContext';
-// A interface do chunk de geminiService mudou para incluir memoryOperations
 import { streamMessageToGemini, type StreamedGeminiResponseChunk } from '../services/geminiService';
 
 const CONVERSATIONS_KEY = 'geminiChat_conversations';
@@ -38,6 +36,7 @@ interface ConversationContextType {
         editedMessageId: string,
         newText: string
     ) => Promise<void>;
+    abortEditedMessageResponse: () => void;
 }
 
 const ConversationContext = createContext<ConversationContextType | undefined>(undefined);
@@ -58,6 +57,8 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
     const currentConversationIdRef = useRef<string | null>(null);
     const renderIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const streamHasFinishedRef = useRef<boolean>(false);
+
+    const localAbortEditedMessageControllerRef = useRef<AbortController | null>(null);
 
     const activeConversation = conversations.find(c => c.id === activeId) || null;
 
@@ -173,18 +174,21 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             renderIntervalRef.current = null;
         }
 
-        if (chunkQueueRef.current.length > 0 && currentAiMessageIdRef.current && currentConversationIdRef.current) {
-            const chunkToRender = chunkQueueRef.current.shift();
-            if (chunkToRender) {
-                accumulatedTextRef.current += chunkToRender;
-                updateMessageInConversation(currentConversationIdRef.current, currentAiMessageIdRef.current, {
-                    text: accumulatedTextRef.current + "▍",
-                    metadata: { isLoading: true }
-                });
+        if (currentAiMessageIdRef.current && currentConversationIdRef.current) {
+            if (chunkQueueRef.current.length > 0) {
+                const chunkToRender = chunkQueueRef.current.shift();
+                if (chunkToRender) {
+                    accumulatedTextRef.current += chunkToRender;
+                    updateMessageInConversation(currentConversationIdRef.current, currentAiMessageIdRef.current, {
+                        text: accumulatedTextRef.current + "▍",
+                        metadata: { isLoading: true }
+                    });
+                }
             }
-        }
-        if (chunkQueueRef.current.length > 0 || !streamHasFinishedRef.current) {
-            renderIntervalRef.current = setTimeout(processChunkQueue, CHUNK_RENDER_INTERVAL_MS);
+
+            if (chunkQueueRef.current.length > 0 || !streamHasFinishedRef.current) {
+                renderIntervalRef.current = setTimeout(processChunkQueue, CHUNK_RENDER_INTERVAL_MS);
+            }
         }
     }, [updateMessageInConversation]);
 
@@ -192,22 +196,76 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
     useEffect(() => {
         return () => {
             if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
+            if (localAbortEditedMessageControllerRef.current && localAbortEditedMessageControllerRef.current.signal && !localAbortEditedMessageControllerRef.current.signal.aborted) {
+                localAbortEditedMessageControllerRef.current.abort("Context unmounting");
+            }
         };
     }, []);
+
+    const abortEditedMessageResponse = useCallback(() => {
+        if (localAbortEditedMessageControllerRef.current && !localAbortEditedMessageControllerRef.current.signal.aborted) {
+            localAbortEditedMessageControllerRef.current.abort("User aborted edited message");
+        }
+
+        const convoId = currentConversationIdRef.current;
+        const msgId = currentAiMessageIdRef.current;
+
+        if (convoId && msgId) {
+            const convo = conversations.find(c => c.id === convoId);
+            const messageBeingProcessed = convo?.messages.find(m => m.id === msgId);
+            
+            let textToDisplay = "";
+            if (messageBeingProcessed?.text) {
+                textToDisplay = messageBeingProcessed.text.replace(/▍$/, '');
+            } else if (accumulatedTextRef.current) {
+                 textToDisplay = accumulatedTextRef.current.replace(/▍$/, '');
+            }
+            
+            updateMessageInConversation(convoId, msgId, {
+                text: textToDisplay,
+                metadata: {
+                    isLoading: false,
+                    error: false,
+                    abortedByUser: true
+                }
+            });
+        }
+
+        if (renderIntervalRef.current) {
+            clearTimeout(renderIntervalRef.current);
+            renderIntervalRef.current = null;
+        }
+        setIsProcessingEditedMessage(false);
+        chunkQueueRef.current = [];
+        accumulatedTextRef.current = "";
+        streamHasFinishedRef.current = true; 
+        currentAiMessageIdRef.current = null;
+        currentConversationIdRef.current = null;
+        localAbortEditedMessageControllerRef.current = null;
+    }, [conversations, updateMessageInConversation]);
+
 
     const regenerateResponseForEditedMessage = useCallback(async (
         conversationId: string,
         editedMessageId: string,
         newText: string
     ): Promise<void> => {
-        setIsProcessingEditedMessage(true);
-        // settings e funções do memoryHook já estão desestruturadas no escopo do Provider
 
+        if (localAbortEditedMessageControllerRef.current && !localAbortEditedMessageControllerRef.current.signal.aborted) {
+            localAbortEditedMessageControllerRef.current.abort("New regeneration started");
+        }
+        localAbortEditedMessageControllerRef.current = new AbortController();
+        const signal = localAbortEditedMessageControllerRef.current.signal;
+
+        if (renderIntervalRef.current) {
+            clearTimeout(renderIntervalRef.current);
+            renderIntervalRef.current = null;
+        }
+
+        setIsProcessingEditedMessage(true);
         chunkQueueRef.current = [];
         accumulatedTextRef.current = "";
         streamHasFinishedRef.current = false;
-        if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
-        renderIntervalRef.current = null;
 
         if (!settings.apiKey) {
             addMessageToConversation(conversationId, {
@@ -216,20 +274,21 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 metadata: { error: true }
             });
             setIsProcessingEditedMessage(false);
+            localAbortEditedMessageControllerRef.current = null;
             return;
         }
 
         const conversationToUpdate = conversations.find(c => c.id === conversationId);
         if (!conversationToUpdate) {
-            console.error("Conversa não encontrada para regeneração.");
             setIsProcessingEditedMessage(false);
+            localAbortEditedMessageControllerRef.current = null;
             return;
         }
 
         const messageIndex = conversationToUpdate.messages.findIndex(msg => msg.id === editedMessageId);
         if (messageIndex === -1) {
-            console.error("Mensagem editada não encontrada na conversa.");
             setIsProcessingEditedMessage(false);
+            localAbortEditedMessageControllerRef.current = null;
             return;
         }
 
@@ -253,8 +312,8 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         });
 
         if (!newAiMessageId) {
-            console.error("Falha ao criar ID para nova mensagem da IA.");
             setIsProcessingEditedMessage(false);
+            localAbortEditedMessageControllerRef.current = null;
             return;
         }
 
@@ -265,72 +324,65 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         let streamError: string | null = null;
         let finalCleanedTextForMessage = "";
 
-        if (!renderIntervalRef.current) {
-            renderIntervalRef.current = setTimeout(processChunkQueue, CHUNK_RENDER_INTERVAL_MS);
-        }
+        renderIntervalRef.current = setTimeout(processChunkQueue, CHUNK_RENDER_INTERVAL_MS);
 
         try {
             const historyForAPI = updatedMessages.map(msg => ({ sender: msg.sender, text: msg.text }));
             const currentGlobalMemoriesWithObjects = globalMemoriesFromHook.map(mem => ({ id: mem.id, content: mem.content }));
-
-            for await (const streamResponse of streamMessageToGemini(
+            const streamGenerator = streamMessageToGemini(
                 settings.apiKey,
                 historyForAPI.slice(0, -1),
                 newText,
-                [],
+                [], 
                 currentGlobalMemoriesWithObjects,
-                settings.geminiModelConfig, // Pass the modelConfig from settings
+                settings.geminiModelConfig,
                 `
 Você é um assistente de IA prestativo e amigável.
 Siga estas instruções RIGOROSAMENTE para gerenciar memórias sobre o usuário.
-
 INSTRUÇÕES PARA GERENCIAR MEMÓRIAS (use estas tags ao FINAL da sua resposta, se aplicável):
-
 1.  CRIAR NOVA MEMÓRIA: Se a ÚLTIMA MENSAGEM DO USUÁRIO contiver uma informação nova, factual e relevante que precise ser lembrada para o futuro, use a tag:
     [MEMORIZE: "conteúdo da nova memória aqui"]
     Seja muito seletivo. Não memorize perguntas, comentários triviais, ou suas próprias respostas. Foco em fatos sobre o usuário ou suas preferências explícitas.
-
 2.  ATUALIZAR MEMÓRIA EXISTENTE: Se a ÚLTIMA MENSAGEM DO USUÁRIO corrigir ou atualizar diretamente uma memória listada no "CONHECIMENTO PRÉVIO", use a tag:
     [UPDATE_MEMORY original:"conteúdo EXATO da memória antiga como listada" new:"novo conteúdo completo para essa memória"]
     É CRUCIAL que o "conteúdo EXATO da memória antiga como listada" seja IDÊNTICO ao texto de uma das memórias fornecidas (sem o prefixo "Memória N:").
-
 3.  REMOVER MEMÓRIA (Use com extrema cautela): Se uma memória se tornar completamente obsoleta ou irrelevante com base na ÚLTIMA MENSAGEM DO USUÁRIO, e não apenas precisar de uma atualização, você PODE sugerir sua remoção usando:
     [DELETE_MEMORY: "conteúdo EXATO da memória a ser removida como listada"]
     Esta ação deve ser rara. Prefira atualizar, se possível. Se não tiver certeza, pergunte ao usuário.
-
 REGRAS IMPORTANTES:
 -   As tags de memória ([MEMORIZE:...], [UPDATE_MEMORY:...], [DELETE_MEMORY:...]) DEVEM ser colocadas no final da sua resposta completa.
 -   Essas tags NÃO DEVEM aparecer no texto visível ao usuário. Elas serão processadas internamente.
 -   Se múltiplas operações de memória forem necessárias (ex: uma atualização e uma nova memória), liste cada tag separadamente, uma após a outra, no final.
 -   Se NÃO houver NADA a memorizar, atualizar ou remover da ÚLTIMA MENSAGEM DO USUÁRIO, NÃO inclua NENHUMA dessas tags.
 -   Sua resposta principal ao usuário deve ser natural, útil e direta. As operações de memória são uma funcionalidade de bastidor.
-
 EXEMPLOS DE USO DAS TAGS DE MEMÓRIA:
 (Suponha que o "CONHECIMENTO PRÉVIO" fornecido contenha: Memória 1: "O nome do tio do usuário é Carlos." e Memória 2: "A cor favorita do usuário é azul.")
-
 Exemplo 1:
 ÚLTIMA MENSAGEM DO USUÁRIO: "Na verdade, o nome do meu tio é Oscar."
 SUA RESPOSTA (final): ...sua resposta normal ao usuário... [UPDATE_MEMORY original:"O nome do tio do usuário é Carlos." new:"O nome do tio do usuário é Oscar."]
-
 Exemplo 2:
 ÚLTIMA MENSAGEM DO USUÁRIO: "Eu gosto de jogar tênis aos sábados."
 SUA RESPOSTA (final): ...sua resposta normal ao usuário... [MEMORIZE: "O usuário gosta de jogar tênis aos sábados."]
-
 Exemplo 3:
 ÚLTIMA MENSAGEM DO USUÁRIO: "Não gosto mais de azul, minha cor favorita agora é verde."
 SUA RESPOSTA (final): ...sua resposta normal ao usuário... [UPDATE_MEMORY original:"A cor favorita do usuário é azul." new:"A cor favorita do usuário é verde."]
-
 Exemplo 4:
 ÚLTIMA MENSAGEM DO USUÁRIO: "Eu moro em São Paulo e meu hobby é cozinhar."
 SUA RESPOSTA (final): ...sua resposta normal ao usuário... [MEMORIZE: "O usuário mora em São Paulo."][MEMORIZE: "O hobby do usuário é cozinhar."]
-
 Exemplo 5 (Deleção):
 (Suponha que o "CONHECIMENTO PRÉVIO" contenha: Memória 3: "O usuário tem um cachorro chamado Rex.")
 ÚLTIMA MENSAGEM DO USUÁRIO: "Infelizmente, meu cachorro Rex faleceu semana passada."
 SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolências... [DELETE_MEMORY: "O usuário tem um cachorro chamado Rex."]
-                `
-                // settings.systemInstruction // Pass the systemInstruction from settings
-            )) {
+                `,
+                signal
+            );
+
+            for await (const streamResponse of streamGenerator) {
+                if (signal.aborted) {
+                    streamError = "Resposta abortada pelo usuário."; 
+                    streamHasFinishedRef.current = true;
+                    break;
+                }
                 if (streamResponse.delta) {
                     chunkQueueRef.current.push(streamResponse.delta);
                 }
@@ -346,108 +398,101 @@ SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolênc
                     break;
                 }
             }
-
-            if (streamHasFinishedRef.current && chunkQueueRef.current.length > 0) {
-                await new Promise(resolve => setTimeout(resolve, CHUNK_RENDER_INTERVAL_MS * (chunkQueueRef.current.length + 1.5)));
-            } else if (streamHasFinishedRef.current) {
-                await new Promise(resolve => setTimeout(resolve, CHUNK_RENDER_INTERVAL_MS * 1.5));
+            
+            if (!signal.aborted && streamHasFinishedRef.current && chunkQueueRef.current.length > 0) {
+                 await new Promise(resolve => {
+                    const checkQueue = () => {
+                        if (chunkQueueRef.current.length === 0 || signal.aborted) {
+                            resolve(null);
+                        } else {
+                            setTimeout(checkQueue, CHUNK_RENDER_INTERVAL_MS / 2);
+                        }
+                    };
+                    checkQueue();
+                });
+            }
+            if (!signal.aborted && streamHasFinishedRef.current) {
+                 await new Promise(resolve => setTimeout(resolve, CHUNK_RENDER_INTERVAL_MS));
             }
 
-            if (streamError) {
-                updateMessageInConversation(conversationId, newAiMessageId, {
-                    text: (finalCleanedTextForMessage || accumulatedTextRef.current) +
-                          ((finalCleanedTextForMessage || accumulatedTextRef.current) ? '\n\n--- ERRO ---\n' : '') +
-                          streamError,
-                    metadata: { isLoading: false, error: true }
-                });
-            } else {
-                const processedMemoryActions: Required<MessageMetadata>['memorizedMemoryActions'] = [];
 
-                if (memoryOperationsFromServer && memoryOperationsFromServer.length > 0) {
-                    memoryOperationsFromServer.forEach(op => {
-                        if (op.action === 'create' && op.content) {
-                            const newMemoryObject = addMemory(op.content);
-                            if (newMemoryObject) {
-                                processedMemoryActions.push({
-                                    id: newMemoryObject.id,
-                                    content: newMemoryObject.content,
-                                    action: 'created'
-                                });
-                            }
-                        } else if (op.action === 'update' && op.targetMemoryContent && op.content) {
-                            const memoryToUpdate = globalMemoriesFromHook.find(
-                                mem => mem.content.toLowerCase() === op.targetMemoryContent?.toLowerCase()
-                            );
-                            if (memoryToUpdate) {
-                                updateMemory(memoryToUpdate.id, op.content); // Chama a função do MemoryContext
-                                processedMemoryActions.push({
-                                    id: memoryToUpdate.id,
-                                    content: op.content, // Novo conteúdo
-                                    originalContent: memoryToUpdate.content, // Conteúdo antigo
-                                    action: 'updated'
-                                });
-                            } else {
-                                console.warn(`IA tentou atualizar memória por conteúdo que não foi encontrada: "${op.targetMemoryContent}". Criando como nova memória.`);
-                                // Fallback: criar como nova memória se a original não for encontrada.
-                                const newMemoryObject = addMemory(op.content);
-                                if (newMemoryObject) {
-                                    processedMemoryActions.push({
-                                        id: newMemoryObject.id,
-                                        content: newMemoryObject.content,
-                                        action: 'created' // Tratada como 'created' se a original não for achada
-                                    });
-                                }
-                            }
-                        } else if (op.action === 'delete_by_ai_suggestion' && op.targetMemoryContent) {
-                            const memoryToDelete = globalMemoriesFromHook.find(
-                                mem => mem.content.toLowerCase() === op.targetMemoryContent?.toLowerCase()
-                            );
-                            if (memoryToDelete) {
-                                deleteMemoryFromHook(memoryToDelete.id); // Chama a função do MemoryContext
-                                processedMemoryActions.push({
-                                    id: memoryToDelete.id,
-                                    content: memoryToDelete.content, // Conteúdo que foi deletado
-                                    originalContent: memoryToDelete.content,
-                                    action: 'deleted_by_ai'
-                                });
-                            } else {
-                                console.warn(`IA tentou deletar memória não encontrada pelo conteúdo: "${op.targetMemoryContent}"`);
-                            }
+            if (!signal.aborted) {
+                if (streamError) {
+                    updateMessageInConversation(conversationId, newAiMessageId, {
+                        text: (accumulatedTextRef.current || finalCleanedTextForMessage).replace(/▍$/, ''),
+                        metadata: {
+                            isLoading: false,
+                            error: streamError,
+                            abortedByUser: false, 
+                            userFacingError: streamError
                         }
                     });
-                }
-
-                updateMessageInConversation(conversationId, newAiMessageId, {
-                    text: finalCleanedTextForMessage,
-                    metadata: {
-                        isLoading: false,
-                        memorizedMemoryActions: processedMemoryActions.length > 0 ? processedMemoryActions : undefined,
+                } else { 
+                    const processedMemoryActions: Required<MessageMetadata>['memorizedMemoryActions'] = [];
+                    if (memoryOperationsFromServer && memoryOperationsFromServer.length > 0) {
+                        memoryOperationsFromServer.forEach(op => {
+                            if (op.action === 'create' && op.content) {
+                                const newMemoryObject = addMemory(op.content);
+                                if (newMemoryObject) {
+                                    processedMemoryActions.push({ id: newMemoryObject.id, content: newMemoryObject.content, action: 'created' });
+                                }
+                            } else if (op.action === 'update' && op.targetMemoryContent && op.content) {
+                                const memoryToUpdate = globalMemoriesFromHook.find(mem => mem.content.toLowerCase() === op.targetMemoryContent?.toLowerCase());
+                                if (memoryToUpdate) {
+                                    updateMemory(memoryToUpdate.id, op.content);
+                                    processedMemoryActions.push({ id: memoryToUpdate.id, content: op.content, originalContent: memoryToUpdate.content, action: 'updated' });
+                                } else {
+                                    const newMemoryObject = addMemory(op.content);
+                                    if (newMemoryObject) {
+                                        processedMemoryActions.push({ id: newMemoryObject.id, content: newMemoryObject.content, action: 'created' });
+                                    }
+                                }
+                            } else if (op.action === 'delete_by_ai_suggestion' && op.targetMemoryContent) {
+                                const memoryToDelete = globalMemoriesFromHook.find(mem => mem.content.toLowerCase() === op.targetMemoryContent?.toLowerCase());
+                                if (memoryToDelete) {
+                                    deleteMemoryFromHook(memoryToDelete.id);
+                                    processedMemoryActions.push({ id: memoryToDelete.id, content: memoryToDelete.content, originalContent: memoryToDelete.content, action: 'deleted_by_ai' });
+                                }
+                            }
+                        });
                     }
-                });
+                    updateMessageInConversation(conversationId, newAiMessageId, {
+                        text: finalCleanedTextForMessage.replace(/▍$/, ''),
+                        metadata: { isLoading: false, memorizedMemoryActions: processedMemoryActions.length > 0 ? processedMemoryActions : undefined }
+                    });
+                }
             }
         } catch (error) {
-            console.error("Erro ao regenerar resposta:", error);
-            updateMessageInConversation(conversationId, newAiMessageId, {
-                text: (finalCleanedTextForMessage || accumulatedTextRef.current) + "\n\nErro ao processar a regeneração da resposta.",
-                metadata: { isLoading: false, error: true }
-            });
+            if (!((error as Error).name === 'AbortError' || signal.aborted)) {
+                console.error("Erro ao regenerar resposta:", error);
+                updateMessageInConversation(conversationId, newAiMessageId, {
+                    text: (accumulatedTextRef.current || finalCleanedTextForMessage).replace(/▍$/, '') + "\n\nErro ao processar a regeneração da resposta.",
+                    metadata: { isLoading: false, error: true, userFacingError: (error as Error).message || "Erro desconhecido" }
+                });
+            }
         } finally {
-            if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
-            renderIntervalRef.current = null;
-            currentAiMessageIdRef.current = null;
-            currentConversationIdRef.current = null;
-            chunkQueueRef.current = [];
-            accumulatedTextRef.current = "";
-            setIsProcessingEditedMessage(false);
+            if (renderIntervalRef.current) {
+                clearTimeout(renderIntervalRef.current);
+                renderIntervalRef.current = null;
+            }
+
+            if (!signal.aborted) {
+                currentAiMessageIdRef.current = null;
+                currentConversationIdRef.current = null;
+                chunkQueueRef.current = [];
+                accumulatedTextRef.current = "";
+                if (localAbortEditedMessageControllerRef.current && localAbortEditedMessageControllerRef.current.signal === signal) {
+                    localAbortEditedMessageControllerRef.current = null;
+                }
+                setIsProcessingEditedMessage(false);
+                streamHasFinishedRef.current = true;
+            }
         }
     }, [
-        settings.apiKey,
+        settings.apiKey, settings.geminiModelConfig,
         globalMemoriesFromHook, addMemory, updateMemory, deleteMemoryFromHook,
-        conversations,
-        setConversations,
-        addMessageToConversation,
-        updateMessageInConversation,
-        processChunkQueue // Removido setActiveId pois não é usado diretamente aqui
+        conversations, setConversations, addMessageToConversation, updateMessageInConversation,
+        processChunkQueue, abortEditedMessageResponse
     ]);
 
     return (
@@ -465,6 +510,7 @@ SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolênc
             updateConversationTitle,
             removeMessageById,
             regenerateResponseForEditedMessage,
+            abortEditedMessageResponse,
         }}>
             {children}
         </ConversationContext.Provider>
