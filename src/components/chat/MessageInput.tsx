@@ -207,6 +207,7 @@ const MessageInput: React.FC = () => {
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
+        textareaRef.current?.focus();
     };
 
     const handlePaste = useCallback((event: ClipboardEvent) => {
