@@ -339,7 +339,8 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 settings.geminiModelConfig,
                 systemMessage({ 
                     conversationTitle: conversationToUpdate.title,
-                    messageCountInConversation: conversationToUpdate.messages.length
+                    messageCountInConversation: conversationToUpdate.messages.length,
+                    customPersonalityPrompt: settings.customPersonalityPrompt
                 }),
                 signal
             );

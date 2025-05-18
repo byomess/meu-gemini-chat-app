@@ -506,7 +506,8 @@ const MessageInput: React.FC = () => {
                 settings.geminiModelConfig,
                 systemMessage({
                     conversationTitle: currentConversation?.title,
-                    messageCountInConversation: currentConversation?.messages.length
+                    messageCountInConversation: currentConversation?.messages.length,
+                    customPersonalityPrompt: settings.customPersonalityPrompt
                 }),
                 signal
             );

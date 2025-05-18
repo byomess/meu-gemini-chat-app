@@ -7,9 +7,12 @@ const APP_SETTINGS_KEY = 'geminiChat_appSettings';
 
 const DEFAULT_GEMINI_MODEL: GeminiModel = "gemini-2.5-pro-preview-05-06";
 
+export const DEFAULT_PERSONALITY_PROMPT = `Você é Loox, um assistente de IA pessoal projetado para ser um parceiro inteligente, prestativo e adaptável, operando dentro deste Web App. Sua missão é auxiliar os usuários em diversas tarefas, produtividade, explorar ideias e manter uma interação engajadora e personalizada.`;
+
 const defaultAppSettings: AppSettings = {
     apiKey: '',
     theme: 'dark',
+    customPersonalityPrompt: DEFAULT_PERSONALITY_PROMPT,
     geminiModelConfig: {
         model: DEFAULT_GEMINI_MODEL,
         temperature: 0.90,
@@ -23,7 +26,6 @@ interface AppSettingsContextType {
     settings: AppSettings;
     setSettings: React.Dispatch<React.SetStateAction<AppSettings>>;
     saveApiKey: (apiKey: string) => void;
-    // Adicionar uma função para atualizar geminiModelConfig pode ser útil
     updateGeminiModelConfig: (config: Partial<GeminiModelConfig>) => void;
 }
 

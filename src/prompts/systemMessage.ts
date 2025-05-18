@@ -1,3 +1,7 @@
+// src/prompts/systemMessage.ts
+
+import { DEFAULT_PERSONALITY_PROMPT } from "../contexts/AppSettingsContext";
+
 interface ClientInfo {
     deviceType?: 'Desktop' | 'Mobile' | 'Tablet';
     osName?: string;
@@ -11,6 +15,7 @@ interface ClientInfo {
 interface SystemMessageParams {
     conversationTitle?: string;
     messageCountInConversation?: number;
+    customPersonalityPrompt?: string;
 }
 
 const parseUserAgent = (ua: string): { browserName: string, browserVersion?: string, osName: string, osVersion?: string, deviceType: ClientInfo['deviceType'] } => {
@@ -62,7 +67,7 @@ const parseUserAgent = (ua: string): { browserName: string, browserVersion?: str
         browserName = 'Internet Explorer';
         browserVersion = match[1];
     }
-    
+
     if (deviceType === 'Desktop' && /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(ua)) {
         if (/iPad/i.test(ua)) {
             deviceType = 'Tablet';
@@ -99,7 +104,7 @@ const getClientEnvironmentInfo = (): ClientInfo => {
 };
 
 export const systemMessage = (params: SystemMessageParams = {}) => {
-    const { conversationTitle, messageCountInConversation } = params;
+    const { conversationTitle, messageCountInConversation, customPersonalityPrompt } = params;
     const clientInfo = getClientEnvironmentInfo();
 
     const date = new Date();
@@ -135,8 +140,10 @@ export const systemMessage = (params: SystemMessageParams = {}) => {
         if (clientInfo.isOnline !== undefined) environmentInfo += `\n- Status da Conexão: ${clientInfo.isOnline ? 'Online' : 'Offline (pode afetar sua capacidade de buscar informações externas)'}`;
     }
 
-        return `
-Você é Loox, um assistente de IA pessoal projetado para ser um parceiro inteligente, prestativo e adaptável, operando dentro deste Web App. Sua missão é auxiliar os usuários em diversas tarefas, produtividade, explorar ideias e manter uma interação engajadora e personalizada.
+    const finalPersonalityPrompt = customPersonalityPrompt || DEFAULT_PERSONALITY_PROMPT;
+
+    return `
+${finalPersonalityPrompt}
 
 Informações Globais e da Conversa:
 - Data Atual: ${formattedDate}
