@@ -479,14 +479,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ease-in-out group whitespace-nowrap flex-shrink-0
+                                className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ease-in-out group whitespace-nowrap flex-shrink-0
                                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-800
                                             ${activeTab === tab.id
                                                 ? 'bg-gradient-to-r from-sky-600 to-blue-600 text-white shadow-md scale-[1.02]'
                                                 : 'text-slate-300 hover:bg-slate-700/70 hover:text-slate-50 active:scale-[0.98]'
                                             }`}
+                                style={{ flex: '0 0 auto' }} // Prevent buttons from stretching to 100% width
                             >
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                 {React.cloneElement(tab.icon as React.ReactElement<any>, { className: `transition-transform duration-200 ${activeTab === tab.id ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}` })}
                                 <span>{tab.label}</span>
                             </button>
