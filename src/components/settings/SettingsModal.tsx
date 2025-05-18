@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, type ReactNode } from 'react';
+import React, { useState, useEffect, useRef, Fragment, useMemo } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
 import {
     IoClose,
     IoTrashOutline,
@@ -12,30 +13,26 @@ import {
     IoCheckmarkOutline,
     IoTrashBinOutline,
 } from 'react-icons/io5';
-import Button from '../common/Button';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
-import { useMemories } from '../../contexts/MemoryContext';
-import { useConversations } from '../../contexts/ConversationContext';
-import type { Memory, GeminiModel, GeminiModelConfig } from '../../types';
+import Button from '../common/Button'; // Certifique-se que este caminho está correto
+import { useAppSettings } from '../../contexts/AppSettingsContext'; // Certifique-se que este caminho está correto
+import { useMemories } from '../../contexts/MemoryContext'; // Certifique-se que este caminho está correto
+import { useConversations } from '../../contexts/ConversationContext'; // Certifique-se que este caminho está correto
+import type { Memory, GeminiModel, GeminiModelConfig } from '../../types'; // Certifique-se que este caminho está correto
 import { LuBrain } from 'react-icons/lu';
 import { FiDatabase } from 'react-icons/fi';
 
 const AVAILABLE_GEMINI_MODELS: GeminiModel[] = [
     "gemini-2.5-pro-preview-05-06",
     "gemini-2.5-flash-preview-04-17",
-    "gemini-2.0-flash", // Ajuste esta lista conforme seus tipos
-    // Adicione outros modelos suportados aqui se necessário
-    // "gemini-1.5-pro-latest",
-    // "gemini-1.5-flash-latest",
-    // "gemini-pro",
+    "gemini-2.0-flash",
 ];
 
-type TabId = 'general' | 'model' | 'memories' | 'data'; // Adicionada a aba 'model'
+type TabId = 'general' | 'model' | 'memories' | 'data';
 
 interface Tab {
     id: TabId;
     label: string;
-    icon: ReactNode;
+    icon: React.ReactElement;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     component: React.FC<any>;
 }
@@ -180,14 +177,14 @@ const ModelSettingsTab: React.FC<{
                     id="maxOutputTokens"
                     name="maxOutputTokens"
                     min="1"
-                    max={currentModelConfig.model.includes('flash') ? 8192 : 32768} // Exemplo de limite dinâmico
+                    max={currentModelConfig.model.includes('flash') ? 8192 : (currentModelConfig.model.includes('pro') ? 32768 : 8192)} // Ajuste conforme o modelo
                     step="1024"
                     value={currentModelConfig.maxOutputTokens}
                     onChange={(e) => onModelConfigChange('maxOutputTokens', parseInt(e.target.value, 10) || 1)}
                     className="w-full p-3 bg-slate-700/60 border border-slate-600/70 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-100 shadow-sm"
                 />
                 <p className="text-xs text-slate-400/90 mt-2">
-                    Limite de tokens na resposta da IA. (Ex: 8192 para Flash, 32768 para Pro)
+                    Limite de tokens na resposta da IA. (Ex: 8192 para Flash, até 32768 para Pro)
                 </p>
             </div>
         </div>
@@ -257,7 +254,7 @@ const MemoriesSettingsTab: React.FC = () => {
     };
     
     const handleEditMemoryKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter') { e.preventDefault(); handleSaveMemoryEdit(); }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSaveMemoryEdit(); } // Salvar com Enter
         else if (e.key === 'Escape') { e.preventDefault(); handleCancelMemoryEdit(); }
     };
 
@@ -286,7 +283,7 @@ const MemoriesSettingsTab: React.FC = () => {
                     const importedMemories = JSON.parse(content) as Memory[];
                     if (Array.isArray(importedMemories) && importedMemories.every(mem => typeof mem.id === 'string' && typeof mem.content === 'string' && typeof mem.timestamp === 'string')) {
                         if (window.confirm(`Isso substituirá ${memories.length > 0 ? 'TODAS as memórias atuais' : 'suas memórias (atualmente vazias)'} por ${importedMemories.length} memórias do arquivo. Deseja continuar?`)) {
-                            replaceAllMemories(importedMemories.map(mem => ({...mem, timestamp: new Date(mem.timestamp) }))); // Converte timestamp para Date
+                            replaceAllMemories(importedMemories.map(mem => ({...mem, timestamp: new Date(mem.timestamp) })));
                         }
                     } else { throw new Error("O arquivo JSON não contém um array de memórias válidas (cada memória deve ter 'id', 'content', 'timestamp')."); }
                 }
@@ -315,12 +312,12 @@ const MemoriesSettingsTab: React.FC = () => {
             </div>
 
             {memories.length > 0 ? (
-                <div className="overflow-y-auto space-y-2 p-3 bg-slate-900/60 rounded-lg scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50 border border-slate-700/60 max-h-[calc(100vh-380px)] min-h-[100px]">
-                    {memories.slice().reverse().map((memory) => ( // .slice().reverse() para mostrar as mais recentes primeiro sem mutar o array original
+                <div className="overflow-y-auto space-y-2 p-3 bg-slate-900/60 rounded-lg scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50 border border-slate-700/60 max-h-[calc(100vh-420px)] sm:max-h-[calc(100vh-380px)] min-h-[100px]">
+                    {memories.slice().reverse().map((memory) => (
                         <div key={memory.id} className="p-2.5 bg-slate-700/80 rounded-md shadow transition-shadow hover:shadow-md">
                             {editingMemory?.id === memory.id ? (
                                 <div className="flex flex-col gap-2">
-                                    <textarea value={editedMemoryText} onChange={(e) => setEditedMemoryText(e.target.value)} onKeyDown={handleEditMemoryKeyDown} ref={editMemoryInputRef} rows={2} className="w-full p-2 bg-slate-600/70 border border-slate-500/80 rounded text-xs text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 resize-none scrollbar-thin scrollbar-thumb-slate-500 scrollbar-track-slate-600/50"/>
+                                    <textarea value={editedMemoryText} onChange={(e) => setEditedMemoryText(e.target.value)} onKeyDown={handleEditMemoryKeyDown} ref={editMemoryInputRef} rows={3} className="w-full p-2 bg-slate-600/70 border border-slate-500/80 rounded text-xs text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 resize-y min-h-[40px] scrollbar-thin scrollbar-thumb-slate-500 scrollbar-track-slate-600/50"/>
                                     <div className="flex justify-end gap-1.5">
                                         <Button variant="secondary" onClick={handleCancelMemoryEdit} className="!text-xs !py-1 !px-2.5 !bg-slate-500/80 hover:!bg-slate-500">Cancelar</Button>
                                         <Button variant="primary" onClick={handleSaveMemoryEdit} className="!text-xs !py-1 !px-2.5 !bg-sky-600 hover:!bg-sky-500">Salvar</Button>
@@ -328,7 +325,7 @@ const MemoriesSettingsTab: React.FC = () => {
                                 </div>
                             ) : (
                                 <div className="flex items-start justify-between gap-2">
-                                    <p className="text-xs text-slate-200 flex-grow break-words py-0.5 pr-1">{memory.content}</p>
+                                    <p className="text-xs text-slate-200 flex-grow break-words py-0.5 pr-1 whitespace-pre-wrap">{memory.content}</p>
                                     <div className="flex-shrink-0 flex items-center gap-1">
                                         <Button variant="icon" className="!p-1.5 text-slate-400 hover:!text-sky-400 hover:!bg-slate-600/60" title="Editar memória" onClick={() => handleStartEditMemory(memory)}> <IoPencilOutline size={15} /> </Button>
                                         <Button variant="icon" className="!p-1.5 text-slate-400 hover:!text-red-400 hover:!bg-slate-600/60" title="Excluir memória" onClick={() => handleLocalDeleteMemory(memory.id)}> <IoTrashBinOutline size={15} /> </Button>
@@ -394,19 +391,25 @@ const DataSettingsTab: React.FC = () => {
     );
 };
 
+
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const { settings, setSettings } = useAppSettings();
     const [currentApiKey, setCurrentApiKey] = useState<string>('');
     const [activeTab, setActiveTab] = useState<TabId>('general');
     const modalContentRef = useRef<HTMLDivElement>(null);
+    // Para controlar a direção da animação de slide (opcional)
+    const [previousTab, setPreviousTab] = useState<TabId | null>(null);
 
-    const defaultModelConfig: GeminiModelConfig = {
-        model: AVAILABLE_GEMINI_MODELS[0],
-        temperature: 0.90,
-        topP: 0.95,
-        topK: 8,
-        maxOutputTokens: 32768,
-    };
+    const defaultModelConfig = useMemo((): GeminiModelConfig => {
+        const defaultFirstModel = AVAILABLE_GEMINI_MODELS[0] || "gemini-2.5-flash-preview-04-17";
+        return {
+            model: defaultFirstModel,
+            temperature: 0.90,
+            topP: 0.95,
+            topK: 8,
+            maxOutputTokens: defaultFirstModel.includes('flash') ? 8192 : (defaultFirstModel.includes('pro') ? 32768 : 8192),
+        };
+    }, []);
 
     const [localModelConfig, setLocalModelConfig] = useState<GeminiModelConfig>(
         settings.geminiModelConfig || defaultModelConfig
@@ -416,30 +419,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         if (isOpen) {
             setCurrentApiKey(settings.apiKey || '');
             setLocalModelConfig(settings.geminiModelConfig || defaultModelConfig);
-            setActiveTab('general'); 
-            document.body.style.overflow = 'hidden'; 
-        } else {
-            document.body.style.overflow = '';
         }
-        return () => { document.body.style.overflow = ''; };
-    }, [settings, isOpen]);
-
+    }, [isOpen, settings, defaultModelConfig]);
 
     useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape' && isOpen) {
-                onClose();
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose]);
+        if (isOpen) {
+            setPreviousTab(null); // Reseta o previousTab ao abrir o modal
+            setActiveTab('general');
+        }
+    }, [isOpen]);
 
+    const handleTabChange = (newTabId: TabId) => {
+        setPreviousTab(activeTab); // Guarda a aba atual antes de mudar
+        setActiveTab(newTabId);
+    };
 
-    if (!isOpen) return null;
-
-    const handleLocalModelConfigChange = (field: keyof GeminiModelConfig, value: string | number) => {
-        setLocalModelConfig(prev => ({ ...prev, [field]: field === 'model' ? value : Number(value) }));
+    const handleLocalModelConfigChange = (field: keyof GeminiModelConfig, value: string | number | GeminiModel) => {
+        setLocalModelConfig(prev => ({ ...prev, [field]: value }));
     };
 
     const handleSaveAllSettings = () => {
@@ -459,60 +455,125 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         { id: 'data', label: 'Dados', icon: <FiDatabase size={17} className="opacity-80" />, component: DataSettingsTab },
     ];
 
-    const ActiveTabComponent = tabs.find(tab => tab.id === activeTab)?.component;
+    // Encontra o índice da aba ativa e da aba anterior para determinar a direção do slide
+    const activeTabIndex = tabs.findIndex(tab => tab.id === activeTab);
+    const previousTabIndex = previousTab ? tabs.findIndex(tab => tab.id === previousTab) : -1;
+    const slideDirection = previousTabIndex === -1 || activeTabIndex === previousTabIndex 
+        ? 0 // sem slide ou slide inicial
+        : activeTabIndex > previousTabIndex ? 1 : -1; // 1 para direita, -1 para esquerda
+
 
     return (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[100] p-3 sm:p-4 animate-fadeIn" onClick={onClose}>
-            <div 
-                ref={modalContentRef}
-                className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl shadow-black/50 w-full max-w-3xl text-slate-100 relative animate-modalEnter h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden border border-slate-700/70"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="flex items-center justify-between p-4 pr-12 sm:p-5 sm:pr-14 border-b border-slate-700/60 flex-shrink-0 relative bg-slate-800/50">
-                    <h2 className="text-lg font-semibold text-slate-100">Configurações do Aplicativo</h2>
-                    <Button onClick={onClose} className="!absolute top-1/2 -translate-y-1/2 right-3 !p-2 text-slate-400 hover:text-slate-100 rounded-full hover:!bg-slate-700/80 z-10" variant="icon" aria-label="Fechar modal"> <IoClose size={24} /> </Button>
-                </div>
-                
-                <div className="flex flex-col md:flex-row flex-grow min-h-0">
-                    <nav className="w-full md:w-52 flex-shrink-0 flex md:flex-col bg-slate-800/30 md:bg-slate-850/50 p-2 md:p-3 space-x-1 md:space-x-0 md:space-y-1.5 border-b md:border-b-0 md:border-r border-slate-700/60 overflow-x-auto md:overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
-                        {tabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ease-in-out group whitespace-nowrap flex-shrink-0
-                                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-800
-                                            ${activeTab === tab.id
-                                                ? 'bg-gradient-to-r from-sky-600 to-blue-600 text-white shadow-md scale-[1.02]'
-                                                : 'text-slate-300 hover:bg-slate-700/70 hover:text-slate-50 active:scale-[0.98]'
-                                            }`}
-                                style={{ flex: '0 0 auto' }} // Prevent buttons from stretching to 100% width
-                            >
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-explicit-any */}
-                                {React.cloneElement(tab.icon as React.ReactElement<any>, { className: `transition-transform duration-200 ${activeTab === tab.id ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}` })}
-                                <span>{tab.label}</span>
-                            </button>
-                        ))}
-                    </nav>
+        <Transition appear show={isOpen} as={Fragment}>
+            <Dialog as="div" className="relative z-[100]" onClose={onClose} initialFocus={modalContentRef}>
+                <Transition.Child
+                    as={Fragment}
+                    enter="ease-out duration-300"
+                    enterFrom="opacity-0"
+                    enterTo="opacity-100"
+                    leave="ease-in duration-200"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                >
+                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md" />
+                </Transition.Child>
 
-                    <div className="flex flex-col flex-grow min-h-0 bg-slate-800/20">
-                        <div className="flex-grow p-4 sm:p-5 md:p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600/80 scrollbar-track-slate-700/50 scrollbar-thumb-rounded-full">
-                            {ActiveTabComponent && (
-                                <ActiveTabComponent
-                                    {...(activeTab === 'general' && { currentApiKey, setCurrentApiKey })}
-                                    {...(activeTab === 'model' && { currentModelConfig: localModelConfig, onModelConfigChange: handleLocalModelConfigChange })}
-                                />
-                            )}
-                        </div>
-                        <div className="p-4 border-t border-slate-700/60 flex-shrink-0 bg-slate-800/50 flex justify-end">
-                            <Button variant="primary" onClick={handleSaveAllSettings} className="!py-2.5 !px-5 !font-semibold !bg-sky-600 hover:!bg-sky-500 active:!bg-sky-700 shadow-md hover:shadow-lg transform active:scale-[0.98] transition-all">
-                                <IoCheckmarkOutline size={18} className="mr-1.5"/>
-                                Salvar Configurações
-                            </Button>
-                        </div>
+                <div className="fixed inset-0 overflow-y-auto">
+                    <div className="flex min-h-full items-center justify-center p-3 sm:p-4 text-center">
+                        <Transition.Child
+                            as={Fragment}
+                            enter="ease-out duration-300"
+                            enterFrom="opacity-0 scale-95 translate-y-8 sm:translate-y-4"
+                            enterTo="opacity-100 scale-100 translate-y-0"
+                            leave="ease-in duration-200"
+                            leaveFrom="opacity-100 scale-100 translate-y-0"
+                            leaveTo="opacity-0 scale-95 translate-y-8 sm:translate-y-4"
+                        >
+                            <Dialog.Panel
+                                ref={modalContentRef}
+                                className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl shadow-black/50 w-full max-w-3xl text-slate-100 relative h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden border border-slate-700/70 text-left transform transition-all"
+                            >
+                                <div className="flex items-center justify-between p-4 pr-12 sm:p-5 sm:pr-14 border-b border-slate-700/60 flex-shrink-0 relative bg-slate-800/50">
+                                    <Dialog.Title as="h2" className="text-lg font-semibold text-slate-100">
+                                        Configurações do Aplicativo
+                                    </Dialog.Title>
+                                    <Button onClick={onClose} className="!absolute top-1/2 -translate-y-1/2 right-3 !p-2 text-slate-400 hover:text-slate-100 rounded-full hover:!bg-slate-700/80 z-10" variant="icon" aria-label="Fechar modal"> <IoClose size={24} /> </Button>
+                                </div>
+                                
+                                <div className="flex flex-col md:flex-row flex-grow min-h-0">
+                                    <nav className="w-full md:w-52 flex-shrink-0 flex md:flex-col bg-slate-800/30 md:bg-slate-850/50 p-2 md:p-3 space-x-1 md:space-x-0 md:space-y-1.5 border-b md:border-b-0 md:border-r border-slate-700/60 overflow-x-auto md:overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                                        {tabs.map(tab => (
+                                            <button
+                                                key={tab.id}
+                                                onClick={() => handleTabChange(tab.id)} // Alterado para handleTabChange
+                                                className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ease-in-out group whitespace-nowrap flex-shrink-0
+                                                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-800
+                                                            ${activeTab === tab.id
+                                                                ? 'bg-gradient-to-r from-sky-600 to-blue-600 text-white shadow-md scale-[1.02]'
+                                                                : 'text-slate-300 hover:bg-slate-700/70 hover:text-slate-50 active:scale-[0.98]'
+                                                            }`}
+                                                style={{ flex: '0 0 auto' }}
+                                            >
+                                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                                {React.cloneElement(tab.icon as React.ReactElement<any>, { className: `transition-transform duration-200 ${activeTab === tab.id ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}` })}
+                                                <span>{tab.label}</span>
+                                            </button>
+                                        ))}
+                                    </nav>
+
+                                    <div className="flex flex-col flex-grow min-h-0 bg-slate-800/20 relative overflow-hidden"> {/* Adicionado relative e overflow-hidden aqui */}
+                                        <div className="flex-grow p-4 sm:p-5 md:p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600/80 scrollbar-track-slate-700/50 scrollbar-thumb-rounded-full">
+                                            {/* Animação para a troca de abas */}
+                                            {tabs.map((tab) => {
+                                                const TabComponent = tab.component;
+                                                const isTabActive = activeTab === tab.id;
+                                                
+                                                // Determina a animação de entrada e saída com base na direção do slide
+                                                let enterFromClass = "opacity-0";
+                                                let leaveToClass = "opacity-0";
+
+                                                if (slideDirection !== 0) { // Apenas aplicar slide se houver direção
+                                                    enterFromClass += slideDirection > 0 ? " translate-x-20" : " -translate-x-20";
+                                                    leaveToClass += slideDirection > 0 ? " -translate-x-20" : " translate-x-20";
+                                                }
+                                                
+                                                return (
+                                                    <Transition
+                                                        key={tab.id} // A chave é importante para o Transition identificar a mudança
+                                                        show={isTabActive}
+                                                        as={Fragment} // Para não renderizar um div extra
+                                                        enter="transition-all ease-in-out duration-300 transform"
+                                                        enterFrom={enterFromClass}
+                                                        enterTo="opacity-100 translate-x-0"
+                                                        leave="transition-all ease-in-out duration-300 transform absolute inset-0" // Absolute para sobrepor durante a saída
+                                                        leaveFrom="opacity-100 translate-x-0"
+                                                        leaveTo={leaveToClass}
+                                                    >
+                                                        {/* O div abaixo garante que a transição tenha um elemento para aplicar as classes */}
+                                                        <div className={`w-full h-full ${isTabActive ? '' : 'hidden'}`}>
+                                                            <TabComponent
+                                                                {...(tab.id === 'general' && { currentApiKey, setCurrentApiKey })}
+                                                                {...(tab.id === 'model' && { currentModelConfig: localModelConfig, onModelConfigChange: handleLocalModelConfigChange })}
+                                                            />
+                                                        </div>
+                                                    </Transition>
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="p-4 border-t border-slate-700/60 flex-shrink-0 bg-slate-800/50 flex justify-end">
+                                            <Button variant="primary" onClick={handleSaveAllSettings} className="!py-2.5 !px-5 !font-semibold !bg-sky-600 hover:!bg-sky-500 active:!bg-sky-700 shadow-md hover:shadow-lg transform active:scale-[0.98] transition-all">
+                                                <IoCheckmarkOutline size={18} className="mr-1.5"/>
+                                                Salvar Configurações
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Dialog.Panel>
+                        </Transition.Child>
                     </div>
                 </div>
-            </div>
-        </div>
+            </Dialog>
+        </Transition>
     );
 };
 

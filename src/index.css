@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+/* loox-filters.css */
+@layer utilities {
+  .loox-logo-blue {
+    /* 1) tira a cor original              → grayscale(1)
+       2) escurece um pouco                → brightness(.8)
+       3) dá um tom sépia (traz matiz)     → sepia(1)
+       4) gira para a faixa azul/ciano     → hue-rotate(190deg)
+       5) aumenta a saturação pra “acender”→ saturate(400%)
+    */
+    filter: grayscale(1)
+            brightness(0.6)
+            sepia(1)
+            hue-rotate(170deg)
+            saturate(500%);
+  }
+}
+
+
 body {
     background-color: #0f172a;
     color: #f1f5f9;

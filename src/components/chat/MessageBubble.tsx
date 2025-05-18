@@ -245,7 +245,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const handleSaveEdit = async (): Promise<void> => {
         const newText = editedText.trim();
         setIsEditing(false);
-        if (newText === message.text.replace(/▍$/, '') && (!hasAttachedFiles || message.metadata?.attachedFilesInfo === attachedFilesInfo)) return;
         if (newText === '' && !hasAttachedFiles) {
             if (message.text.replace(/▍$/, '').trim() !== '' && window.confirm('O texto está vazio e não há anexos. Deseja excluir a mensagem?')) {
                 removeMessageById(conversationId, message.id);

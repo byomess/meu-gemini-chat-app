@@ -117,7 +117,7 @@ const MessageInput: React.FC = () => {
     const placeholderText =
         activeConversationId ?
             (settings.apiKey ? "Digite sua mensagem..." : "Configure sua API Key.") :
-            "Selecione ou crie uma conversa.";
+            "Crie uma nova conversa.";
 
     useEffect(() => {
         adjustTextareaHeight();
@@ -828,7 +828,7 @@ SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolênc
                         onFocus={() => setIsTextareaFocused(true)}
                         onBlur={() => setIsTextareaFocused(false)}
                         placeholder={isRecording ? '' : (isCurrentlyLoading ? 'IA respondendo...' : placeholderText)}
-                        className={`w-full bg-transparent text-slate-100 placeholder-slate-500 focus:outline-none px-3 py-2.5 resize-none leading-tight 
+                        className={`w-full bg-transparent text-slate-100 placeholder-slate-500 focus:outline-none py-2.5 resize-none leading-tight 
                                     scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent 
                                     transition-all duration-200 ease-in-out
                                     ${isRecording ? 'text-transparent caret-transparent' : ''}

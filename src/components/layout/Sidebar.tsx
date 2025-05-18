@@ -107,10 +107,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside className={finalAsideClasses}>
-      {isMobile && onCloseMobile && (
+      {isMobile && onCloseMobile && isOpen && (
           <button
             onClick={onCloseMobile}
-            className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-700/50 rounded-full z-[51] transition-colors"
+            className="absolute top-4 -right-12 p-1.5 text-slate-400 hover:text-slate-100 rounded-full z-[51] transition-colors bg-slate-700/50 hover:bg-slate-600/50"
             title="Fechar menu"
             aria-label="Fechar menu"
           >
@@ -118,7 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </button>
       )}
 
-      <div className={`${isMobile ? 'mt-10' : 'mt-1'} mb-3`}>
+      <div className="mb-3">
         <Button
           variant="primary"
           className={`w-full !py-2.5 flex items-center justify-center space-x-2.5 rounded-lg
@@ -237,6 +237,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
       </nav>
+
+    <div className="flex justify-center">
+      <img src="/logo-loox.png" alt="Logo Loox" className={`py-4 w-36 h-auto`} />
+    </div>
 
       <div className={`pt-3 mt-2 border-t border-slate-800/70`}>
         <button

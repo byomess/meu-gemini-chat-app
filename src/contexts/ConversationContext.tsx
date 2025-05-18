@@ -213,14 +213,14 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         if (convoId && msgId) {
             const convo = conversations.find(c => c.id === convoId);
             const messageBeingProcessed = convo?.messages.find(m => m.id === msgId);
-            
+
             let textToDisplay = "";
             if (messageBeingProcessed?.text) {
                 textToDisplay = messageBeingProcessed.text.replace(/▍$/, '');
             } else if (accumulatedTextRef.current) {
-                 textToDisplay = accumulatedTextRef.current.replace(/▍$/, '');
+                textToDisplay = accumulatedTextRef.current.replace(/▍$/, '');
             }
-            
+
             updateMessageInConversation(convoId, msgId, {
                 text: textToDisplay,
                 metadata: {
@@ -238,7 +238,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         setIsProcessingEditedMessage(false);
         chunkQueueRef.current = [];
         accumulatedTextRef.current = "";
-        streamHasFinishedRef.current = true; 
+        streamHasFinishedRef.current = true;
         currentAiMessageIdRef.current = null;
         currentConversationIdRef.current = null;
         localAbortEditedMessageControllerRef.current = null;
@@ -333,42 +333,53 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 settings.apiKey,
                 historyForAPI.slice(0, -1),
                 newText,
-                [], 
+                [],
                 currentGlobalMemoriesWithObjects,
                 settings.geminiModelConfig,
                 `
 Você é um assistente de IA prestativo e amigável.
 Siga estas instruções RIGOROSAMENTE para gerenciar memórias sobre o usuário.
+
 INSTRUÇÕES PARA GERENCIAR MEMÓRIAS (use estas tags ao FINAL da sua resposta, se aplicável):
+
 1.  CRIAR NOVA MEMÓRIA: Se a ÚLTIMA MENSAGEM DO USUÁRIO contiver uma informação nova, factual e relevante que precise ser lembrada para o futuro, use a tag:
     [MEMORIZE: "conteúdo da nova memória aqui"]
     Seja muito seletivo. Não memorize perguntas, comentários triviais, ou suas próprias respostas. Foco em fatos sobre o usuário ou suas preferências explícitas.
+
 2.  ATUALIZAR MEMÓRIA EXISTENTE: Se a ÚLTIMA MENSAGEM DO USUÁRIO corrigir ou atualizar diretamente uma memória listada no "CONHECIMENTO PRÉVIO", use a tag:
     [UPDATE_MEMORY original:"conteúdo EXATO da memória antiga como listada" new:"novo conteúdo completo para essa memória"]
     É CRUCIAL que o "conteúdo EXATO da memória antiga como listada" seja IDÊNTICO ao texto de uma das memórias fornecidas (sem o prefixo "Memória N:").
+
 3.  REMOVER MEMÓRIA (Use com extrema cautela): Se uma memória se tornar completamente obsoleta ou irrelevante com base na ÚLTIMA MENSAGEM DO USUÁRIO, e não apenas precisar de uma atualização, você PODE sugerir sua remoção usando:
     [DELETE_MEMORY: "conteúdo EXATO da memória a ser removida como listada"]
     Esta ação deve ser rara. Prefira atualizar, se possível. Se não tiver certeza, pergunte ao usuário.
+
 REGRAS IMPORTANTES:
 -   As tags de memória ([MEMORIZE:...], [UPDATE_MEMORY:...], [DELETE_MEMORY:...]) DEVEM ser colocadas no final da sua resposta completa.
 -   Essas tags NÃO DEVEM aparecer no texto visível ao usuário. Elas serão processadas internamente.
 -   Se múltiplas operações de memória forem necessárias (ex: uma atualização e uma nova memória), liste cada tag separadamente, uma após a outra, no final.
 -   Se NÃO houver NADA a memorizar, atualizar ou remover da ÚLTIMA MENSAGEM DO USUÁRIO, NÃO inclua NENHUMA dessas tags.
 -   Sua resposta principal ao usuário deve ser natural, útil e direta. As operações de memória são uma funcionalidade de bastidor.
+
 EXEMPLOS DE USO DAS TAGS DE MEMÓRIA:
 (Suponha que o "CONHECIMENTO PRÉVIO" fornecido contenha: Memória 1: "O nome do tio do usuário é Carlos." e Memória 2: "A cor favorita do usuário é azul.")
+
 Exemplo 1:
 ÚLTIMA MENSAGEM DO USUÁRIO: "Na verdade, o nome do meu tio é Oscar."
 SUA RESPOSTA (final): ...sua resposta normal ao usuário... [UPDATE_MEMORY original:"O nome do tio do usuário é Carlos." new:"O nome do tio do usuário é Oscar."]
+
 Exemplo 2:
 ÚLTIMA MENSAGEM DO USUÁRIO: "Eu gosto de jogar tênis aos sábados."
 SUA RESPOSTA (final): ...sua resposta normal ao usuário... [MEMORIZE: "O usuário gosta de jogar tênis aos sábados."]
+
 Exemplo 3:
 ÚLTIMA MENSAGEM DO USUÁRIO: "Não gosto mais de azul, minha cor favorita agora é verde."
 SUA RESPOSTA (final): ...sua resposta normal ao usuário... [UPDATE_MEMORY original:"A cor favorita do usuário é azul." new:"A cor favorita do usuário é verde."]
+
 Exemplo 4:
 ÚLTIMA MENSAGEM DO USUÁRIO: "Eu moro em São Paulo e meu hobby é cozinhar."
 SUA RESPOSTA (final): ...sua resposta normal ao usuário... [MEMORIZE: "O usuário mora em São Paulo."][MEMORIZE: "O hobby do usuário é cozinhar."]
+
 Exemplo 5 (Deleção):
 (Suponha que o "CONHECIMENTO PRÉVIO" contenha: Memória 3: "O usuário tem um cachorro chamado Rex.")
 ÚLTIMA MENSAGEM DO USUÁRIO: "Infelizmente, meu cachorro Rex faleceu semana passada."
@@ -379,7 +390,7 @@ SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolênc
 
             for await (const streamResponse of streamGenerator) {
                 if (signal.aborted) {
-                    streamError = "Resposta abortada pelo usuário."; 
+                    streamError = "Resposta abortada pelo usuário.";
                     streamHasFinishedRef.current = true;
                     break;
                 }
@@ -398,9 +409,9 @@ SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolênc
                     break;
                 }
             }
-            
+
             if (!signal.aborted && streamHasFinishedRef.current && chunkQueueRef.current.length > 0) {
-                 await new Promise(resolve => {
+                await new Promise(resolve => {
                     const checkQueue = () => {
                         if (chunkQueueRef.current.length === 0 || signal.aborted) {
                             resolve(null);
@@ -412,7 +423,7 @@ SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolênc
                 });
             }
             if (!signal.aborted && streamHasFinishedRef.current) {
-                 await new Promise(resolve => setTimeout(resolve, CHUNK_RENDER_INTERVAL_MS));
+                await new Promise(resolve => setTimeout(resolve, CHUNK_RENDER_INTERVAL_MS));
             }
 
 
@@ -423,11 +434,11 @@ SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolênc
                         metadata: {
                             isLoading: false,
                             error: streamError,
-                            abortedByUser: false, 
+                            abortedByUser: false,
                             userFacingError: streamError
                         }
                     });
-                } else { 
+                } else {
                     const processedMemoryActions: Required<MessageMetadata>['memorizedMemoryActions'] = [];
                     if (memoryOperationsFromServer && memoryOperationsFromServer.length > 0) {
                         memoryOperationsFromServer.forEach(op => {
