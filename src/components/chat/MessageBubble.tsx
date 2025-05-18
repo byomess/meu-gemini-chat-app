@@ -7,7 +7,7 @@ import {
     IoCreateOutline, IoInformationCircleOutline, IoRemoveCircleOutline,
     IoDocumentTextOutline, IoImageOutline, IoMusicalNotesOutline,
     IoChevronDownOutline, IoChevronUpOutline,
-    IoTrashBinOutline,
+    IoTrashBinOutline, IoVideocamOutline,
 } from 'react-icons/io5';
 import { Dialog, Transition } from '@headlessui/react';
 import { useConversations } from '../../contexts/ConversationContext';
@@ -178,15 +178,16 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
 
 const MAX_THUMBNAIL_SIZE_IN_BUBBLE = 100;
 
-interface ImageModalProps {
+interface MediaModalProps {
     isOpen: boolean;
     onClose: () => void;
-    imageUrl?: string;
-    imageName?: string;
+    mediaUrl?: string;
+    mediaName?: string;
+    mediaType?: string;
 }
 
-const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, imageUrl, imageName }) => {
-    if (!imageUrl) return null;
+const MediaModal: React.FC<MediaModalProps> = ({ isOpen, onClose, mediaUrl, mediaName, mediaType }) => {
+    if (!mediaUrl) return null;
 
     return (
         <Transition appear show={isOpen} as={Fragment}>
@@ -215,16 +216,27 @@ const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, imageUrl, imag
                             leaveTo="opacity-0 scale-95"
                         >
                             <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-lg bg-transparent p-0 text-left align-middle shadow-xl transition-all">
-                                <img
-                                    src={imageUrl}
-                                    alt={imageName || 'Imagem Ampliada'}
-                                    className="max-h-[90vh] max-w-full mx-auto object-contain rounded-md"
-                                />
+                                {mediaType?.startsWith('image/') && (
+                                    <img
+                                        src={mediaUrl}
+                                        alt={mediaName || 'Imagem Ampliada'}
+                                        className="max-h-[90vh] max-w-full mx-auto object-contain rounded-md"
+                                    />
+                                )}
+                                {mediaType?.startsWith('video/') && (
+                                    <video
+                                        src={mediaUrl}
+                                        controls
+                                        autoPlay
+                                        className="max-h-[90vh] max-w-full mx-auto object-contain rounded-md"
+                                        title={mediaName || 'Vídeo Ampliado'}
+                                    />
+                                )}
                                 <Button
                                     variant="icon"
                                     onClick={onClose}
                                     className="!absolute top-2 right-2 !p-2.5 text-white bg-black/50 hover:!bg-black/70 rounded-full z-10"
-                                    title="Fechar imagem"
+                                    title="Fechar mídia"
                                 >
                                     <IoCloseOutline size={24} />
                                 </Button>
@@ -269,19 +281,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const [showActions, setShowActions] = useState<boolean>(false);
     const editTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-    const [imageModalOpen, setImageModalOpen] = useState(false);
-    const [selectedImage, setSelectedImage] = useState<AttachedFileInfo | null>(null);
+    const [mediaModalOpen, setMediaModalOpen] = useState(false);
+    const [selectedMedia, setSelectedMedia] = useState<AttachedFileInfo | null>(null);
 
-    const openImageModal = (fileInfo: AttachedFileInfo) => {
-        if (fileInfo.type.startsWith('image/') && fileInfo.dataUrl) {
-            setSelectedImage(fileInfo);
-            setImageModalOpen(true);
+    const openMediaModal = (fileInfo: AttachedFileInfo) => {
+        if ((fileInfo.type.startsWith('image/') || fileInfo.type.startsWith('video/')) && fileInfo.dataUrl) {
+            setSelectedMedia(fileInfo);
+            setMediaModalOpen(true);
         }
     };
 
-    const closeImageModal = () => {
-        setImageModalOpen(false);
-        setSelectedImage(null);
+    const closeMediaModal = () => {
+        setMediaModalOpen(false);
+        setSelectedMedia(null);
     };
 
     const adjustEditareaHeight = (): void => {
@@ -444,7 +456,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                 ? (isUser ? 'items-end' : 'items-start')
                                 : (isUser ? 'items-end max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]' : 'items-start max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]')
                             }`}>
-                            {isUser && hasAttachedFiles && attachedFilesInfo && (
+                            {hasAttachedFiles && attachedFilesInfo && (
                                 <div className={`flex flex-wrap gap-2 mb-1.5 ${isUser ? 'justify-end' : 'justify-start'} ${isMobile ? (isUser ? 'w-full justify-end' : 'w-full justify-start') : ''}`}>
                                     {attachedFilesInfo.map(fileInfo => (
                                         <div key={fileInfo.id} className="bg-slate-800/60 border border-slate-700/60 p-1.5 rounded-xl shadow-md overflow-hidden max-w-[260px] sm:max-w-xs backdrop-blur-sm">
@@ -455,15 +467,34 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                                     className="object-cover rounded-md cursor-pointer hover:opacity-80 transition-opacity"
                                                     style={{ maxWidth: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE}px`, maxHeight: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE}px`, display: 'block' }}
                                                     title={`${fileInfo.name} (${(fileInfo.size / 1024).toFixed(1)} KB) - Clique para ampliar`}
-                                                    onClick={() => openImageModal(fileInfo)}
+                                                    onClick={() => openMediaModal(fileInfo)}
                                                 />
+                                            ) : fileInfo.type.startsWith('video/') && fileInfo.dataUrl ? (
+                                                <div
+                                                    className="relative w-full h-full object-cover rounded-md cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center bg-black"
+                                                    style={{ maxWidth: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE}px`, maxHeight: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE}px` }}
+                                                    title={`${fileInfo.name} (${(fileInfo.size / 1024).toFixed(1)} KB) - Clique para reproduzir`}
+                                                    onClick={() => openMediaModal(fileInfo)}
+                                                >
+                                                    <video
+                                                        src={fileInfo.dataUrl}
+                                                        className="object-contain rounded-md pointer-events-none" // pointer-events-none to allow parent click
+                                                        style={{ maxWidth: '100%', maxHeight: '100%' }}
+                                                    />
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity">
+                                                        <IoVideocamOutline size={30} className="text-white/80" />
+                                                    </div>
+                                                </div>
                                             ) : fileInfo.type.startsWith('audio/') && fileInfo.dataUrl ? (
                                                 <div className="audio-player-container-in-bubble rounded-md w-full" title={`${fileInfo.name} (${(fileInfo.size / 1024).toFixed(1)} KB)`}>
                                                     <CustomAudioPlayer src={fileInfo.dataUrl} fileName={fileInfo.name} />
                                                 </div>
                                             ) : (
                                                 <div className="flex flex-col items-center justify-center text-xs p-2 text-center bg-slate-700/50 rounded-md" style={{ width: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE * 0.9}px`, height: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE * 0.9}px`, minWidth: '70px' }} title={`${fileInfo.name} (${(fileInfo.size / 1024).toFixed(1)} KB)`}>
-                                                    {fileInfo.type.startsWith('image/') ? <IoImageOutline size={26} className="mb-1 text-slate-400" /> : fileInfo.type.startsWith('audio/') ? <IoMusicalNotesOutline size={26} className="mb-1 text-slate-400" /> : <IoDocumentTextOutline size={26} className="mb-1 text-slate-400" />}
+                                                    {fileInfo.type.startsWith('image/') ? <IoImageOutline size={26} className="mb-1 text-slate-400" />
+                                                        : fileInfo.type.startsWith('video/') ? <IoVideocamOutline size={26} className="mb-1 text-slate-400" />
+                                                            : fileInfo.type.startsWith('audio/') ? <IoMusicalNotesOutline size={26} className="mb-1 text-slate-400" />
+                                                                : <IoDocumentTextOutline size={26} className="mb-1 text-slate-400" />}
                                                     <span className="truncate block w-full text-slate-300 text-[11px]">{fileInfo.name}</span>
                                                 </div>
                                             )}
@@ -555,11 +586,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                     </div>
                 )}
             </div>
-            <ImageModal
-                isOpen={imageModalOpen}
-                onClose={closeImageModal}
-                imageUrl={selectedImage?.dataUrl}
-                imageName={selectedImage?.name}
+            <MediaModal
+                isOpen={mediaModalOpen}
+                onClose={closeMediaModal}
+                mediaUrl={selectedMedia?.dataUrl}
+                mediaName={selectedMedia?.name}
+                mediaType={selectedMedia?.type}
             />
         </>
     );
