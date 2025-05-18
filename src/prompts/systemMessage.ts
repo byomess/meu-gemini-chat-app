@@ -1,5 +1,3 @@
-// src/prompts/systemMessage.ts
-
 import { DEFAULT_PERSONALITY_PROMPT } from "../contexts/AppSettingsContext";
 
 interface ClientInfo {
