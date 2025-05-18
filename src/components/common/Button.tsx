@@ -26,7 +26,7 @@ const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', classNam
       'bg-slate-600 text-slate-100 hover:bg-slate-700 active:bg-slate-800 focus:ring-slate-500 ' +
       'shadow-sm hover:shadow-md',
     danger: 
-      'px-4 py-2 rounded-md text-sm ' +
+      'px-4 py-2 rounded-md text-sm font-bold ' +
       'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 focus:ring-red-500 ' +
       'shadow-sm hover:shadow-md',
     icon: 

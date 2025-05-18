@@ -1,26 +1,25 @@
-// src/components/settings/SettingsModal.tsx
 import React, { useState, useEffect, useRef, type ReactNode } from 'react';
 import {
     IoClose,
     IoTrashOutline,
-    IoInformationCircleOutline,
     IoPencilOutline,
     IoAddCircleOutline,
     IoKeyOutline,
     IoDownloadOutline,
     IoCloudUploadOutline,
-    IoChatbubblesOutline, // Para apagar conversas
-    IoBuildOutline,       // Novo ícone para a aba de Modelo
+    IoChatbubblesOutline,
+    IoBuildOutline,
+    IoCheckmarkOutline,
+    IoTrashBinOutline,
 } from 'react-icons/io5';
 import Button from '../common/Button';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { useMemories } from '../../contexts/MemoryContext';
 import { useConversations } from '../../contexts/ConversationContext';
-import type { Memory, GeminiModel, GeminiModelConfig } from '../../types'; // Importar AppSettings, GeminiModel, GeminiModelConfig
+import type { Memory, GeminiModel, GeminiModelConfig } from '../../types';
 import { LuBrain } from 'react-icons/lu';
 import { FiDatabase } from 'react-icons/fi';
 
-// Lista de modelos disponíveis (deve corresponder ao seu `types/index.ts` ou similar)
 const AVAILABLE_GEMINI_MODELS: GeminiModel[] = [
     "gemini-2.5-pro-preview-05-06",
     "gemini-2.5-flash-preview-04-17",
@@ -46,7 +45,6 @@ interface SettingsModalProps {
     onClose: () => void;
 }
 
-// Componente reutilizável para input de range
 const RangeInput: React.FC<{
     id: string;
     label: string;
@@ -58,12 +56,12 @@ const RangeInput: React.FC<{
     info?: string;
     disabled?: boolean;
 }> = ({ id, label, min, max, step, value, onChange, info, disabled = false }) => (
-    <div>
-        <div className="flex justify-between items-center mb-1">
-            <label htmlFor={id} className={`block text-sm font-medium ${disabled ? 'text-slate-500' : 'text-slate-300'}`}>
+    <div className="mb-5 last:mb-0">
+        <div className="flex justify-between items-center mb-1.5">
+            <label htmlFor={id} className={`block text-sm font-medium ${disabled ? 'text-slate-500' : 'text-slate-200'}`}>
                 {label}
             </label>
-            <span className={`text-xs px-1.5 py-0.5 rounded-md ${disabled ? 'text-slate-600 bg-slate-800' : 'text-slate-400 bg-slate-700'}`}>{value}</span>
+            <span className={`text-xs px-2 py-1 rounded-md ${disabled ? 'text-slate-600 bg-slate-800/70' : 'text-sky-200 bg-sky-700/50'}`}>{value.toFixed(id === 'temperature' || id === 'topP' ? 2 : 0)}</span>
         </div>
         <input
             type="range"
@@ -75,9 +73,13 @@ const RangeInput: React.FC<{
             value={value}
             onChange={(e) => onChange(parseFloat(e.target.value))}
             disabled={disabled}
-            className={`w-full h-2 rounded-lg appearance-none ${disabled ? 'bg-slate-700 cursor-not-allowed' : 'bg-slate-600 cursor-pointer accent-blue-500'}`}
+            className={`w-full h-2.5 rounded-lg appearance-none cursor-pointer transition-opacity
+                        ${disabled 
+                            ? 'bg-slate-700/70 opacity-60 cursor-not-allowed' 
+                            : 'bg-slate-600/80 accent-sky-500 hover:opacity-90'
+                        }`}
         />
-        {info && <p className={`text-xs mt-1 ${disabled ? 'text-slate-600' : 'text-slate-500'}`}>{info}</p>}
+        {info && <p className={`text-xs mt-1.5 ${disabled ? 'text-slate-600' : 'text-slate-400/90'}`}>{info}</p>}
     </div>
 );
 
@@ -85,45 +87,38 @@ const RangeInput: React.FC<{
 const GeneralSettingsTab: React.FC<{
     currentApiKey: string;
     setCurrentApiKey: (key: string) => void;
-    // onSaveApiKey: () => void; // Será tratado pelo botão Salvar Configurações geral
-}> = ({ currentApiKey, setCurrentApiKey /*, onSaveApiKey */ }) => {
+}> = ({ currentApiKey, setCurrentApiKey }) => {
     return (
         <div className="space-y-6">
             <div>
-                <label htmlFor="apiKey" className="block text-sm font-medium text-slate-300 mb-1.5">
+                <label htmlFor="apiKey" className="block text-sm font-medium text-slate-200 mb-1.5">
                     Chave da API Google Gemini
                 </label>
-                <div className="flex flex-col sm:flex-row gap-2">
-                    <input
-                        type="password"
-                        id="apiKey"
-                        name="apiKey"
-                        placeholder="Cole sua chave da API aqui"
-                        value={currentApiKey}
-                        onChange={(e) => setCurrentApiKey(e.target.value)}
-                        className="flex-grow p-2.5 bg-slate-700/80 border border-slate-600/80 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-slate-500 text-slate-100 shadow-sm w-full"
-                    />
-                    {/* O botão de salvar API Key individual foi removido, pois haverá um Salvar Configurações geral */}
-                    {/* <Button variant="primary" onClick={onSaveApiKey} className="!py-2.5 flex-shrink-0 w-full sm:w-auto">Salvar Chave</Button> */}
-                </div>
-                <p className="text-xs text-slate-400 mt-2">
-                    Sua chave de API é armazenada localmente no seu navegador.
+                <input
+                    type="password"
+                    id="apiKey"
+                    name="apiKey"
+                    placeholder="Cole sua chave da API aqui (ex: AIza...)"
+                    value={currentApiKey}
+                    onChange={(e) => setCurrentApiKey(e.target.value)}
+                    className="w-full p-3 bg-slate-700/60 border border-slate-600/70 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-500 text-slate-100 shadow-sm transition-colors"
+                />
+                <p className="text-xs text-slate-400/90 mt-2">
+                    Sua chave de API é armazenada localmente no seu navegador e nunca é enviada para nossos servidores.
                 </p>
             </div>
-             {/* Você pode adicionar outras configurações gerais aqui, como Tema, etc. */}
         </div>
     );
 };
 
-// Nova aba para configurações do modelo
 const ModelSettingsTab: React.FC<{
-    currentModelConfig: GeminiModelConfig; // Recebe a configuração atual do modelo
-    onModelConfigChange: (field: keyof GeminiModelConfig, value: unknown) => void; // Função para atualizar um campo
+    currentModelConfig: GeminiModelConfig;
+    onModelConfigChange: (field: keyof GeminiModelConfig, value: unknown) => void;
 }> = ({ currentModelConfig, onModelConfigChange }) => {
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             <div>
-                <label htmlFor="modelName" className="block text-sm font-medium text-slate-300 mb-1.5">
+                <label htmlFor="modelName" className="block text-sm font-medium text-slate-200 mb-1.5">
                     Modelo Gemini
                 </label>
                 <select
@@ -131,14 +126,15 @@ const ModelSettingsTab: React.FC<{
                     name="modelName"
                     value={currentModelConfig.model}
                     onChange={(e) => onModelConfigChange('model', e.target.value as GeminiModel)}
-                    className="w-full p-2.5 bg-slate-700/80 border border-slate-600/80 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-100 shadow-sm"
+                    className="w-full p-3 bg-slate-700/60 border border-slate-600/70 rounded-lg focus:ring-2 focus:ring-sky-500/80 focus:border-sky-500 text-slate-100 shadow-sm appearance-none bg-no-repeat bg-right pr-8"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundSize: '1.5em 1.5em', backgroundPosition: 'right 0.5rem center' }}
                 >
                     {AVAILABLE_GEMINI_MODELS.map(model => (
-                        <option key={model} value={model}>{model}</option>
+                        <option key={model} value={model} className="bg-slate-800 text-slate-100">{model}</option>
                     ))}
                 </select>
-                <p className="text-xs text-slate-400 mt-2">
-                    Escolha o modelo Gemini. Verifique a documentação para compatibilidade e capacidades.
+                <p className="text-xs text-slate-400/90 mt-2">
+                    Escolha o modelo Gemini. "Flash" é mais rápido, "Pro" é mais capaz.
                 </p>
             </div>
 
@@ -146,11 +142,11 @@ const ModelSettingsTab: React.FC<{
                 id="temperature"
                 label="Temperatura"
                 min={0.0}
-                max={2.0} // Alguns modelos Gemini 1.5+ suportam até 2.0
-                step={0.01}
+                max={2.0}
+                step={0.05}
                 value={currentModelConfig.temperature}
                 onChange={(value) => onModelConfigChange('temperature', value)}
-                info="Controla a aleatoriedade. Mais alto = mais criativo/aleatório. (Ex: 0.7)"
+                info="Controla a aleatoriedade. Mais alto = mais criativo/aleatório."
             />
 
             <RangeInput
@@ -161,22 +157,22 @@ const ModelSettingsTab: React.FC<{
                 step={0.01}
                 value={currentModelConfig.topP}
                 onChange={(value) => onModelConfigChange('topP', value)}
-                info="Considera tokens com probabilidade cumulativa até este valor. (Ex: 0.95)"
+                info="Considera tokens com probabilidade cumulativa até este valor."
             />
             
             <RangeInput
                 id="topK"
                 label="Top K"
-                min={0} // 0 ou 1 geralmente desativa Top K se Top P estiver ativo.
-                max={100} 
+                min={0} 
+                max={120} 
                 step={1}
                 value={currentModelConfig.topK}
                 onChange={(value) => onModelConfigChange('topK', value)}
-                info="Considera os K tokens mais prováveis. (Ex: 40, ou 1 se Top P é usado)"
+                info="Considera os K tokens mais prováveis. (0 desativa)"
             />
 
             <div>
-                 <label htmlFor="maxOutputTokens" className="block text-sm font-medium text-slate-300 mb-1.5">
+                 <label htmlFor="maxOutputTokens" className="block text-sm font-medium text-slate-200 mb-1.5">
                     Máximo de Tokens de Saída
                 </label>
                 <input
@@ -184,32 +180,27 @@ const ModelSettingsTab: React.FC<{
                     id="maxOutputTokens"
                     name="maxOutputTokens"
                     min="1"
-                    // O limite real pode variar por modelo, mas 8192 é comum para Pro, e Flash pode ser menos.
-                    // Gemini 1.5 pode ter limites muito maiores (ex: 32768, 65536 ou até mais para contexto)
-                    // Max Output Tokens é diferente de Context Window.
-                    max={65536} // Um limite superior razoável para o input
-                    step="128" // Passos maiores podem ser úteis
+                    max={currentModelConfig.model.includes('flash') ? 8192 : 32768} // Exemplo de limite dinâmico
+                    step="1024"
                     value={currentModelConfig.maxOutputTokens}
-                    onChange={(e) => onModelConfigChange('maxOutputTokens', parseInt(e.target.value, 10) || 1)} // Evita NaN
-                    className="w-full p-2.5 bg-slate-700/80 border border-slate-600/80 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-100 shadow-sm"
+                    onChange={(e) => onModelConfigChange('maxOutputTokens', parseInt(e.target.value, 10) || 1)}
+                    className="w-full p-3 bg-slate-700/60 border border-slate-600/70 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-100 shadow-sm"
                 />
-                <p className="text-xs text-slate-400 mt-2">
-                    Limite de tokens na resposta da IA. (Ex: 8192)
+                <p className="text-xs text-slate-400/90 mt-2">
+                    Limite de tokens na resposta da IA. (Ex: 8192 para Flash, 32768 para Pro)
                 </p>
             </div>
         </div>
     );
 };
 
-
 const MemoriesSettingsTab: React.FC = () => {
-    // ... (código do MemoriesSettingsTab como no seu último fornecimento - sem alterações aqui)
     const { memories, addMemory, deleteMemory, updateMemory, replaceAllMemories } = useMemories();
     const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
     const [editedMemoryText, setEditedMemoryText] = useState<string>('');
     const [newMemoryText, setNewMemoryText] = useState<string>('');
     const newMemoryInputRef = useRef<HTMLInputElement>(null);
-    const editMemoryInputRef = useRef<HTMLInputElement>(null);
+    const editMemoryInputRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -235,12 +226,14 @@ const MemoriesSettingsTab: React.FC = () => {
     };
 
     const handleSaveMemoryEdit = () => {
-        if (editingMemory) {
+        if (editingMemory && editedMemoryText.trim()) {
             if (editedMemoryText.trim() !== editingMemory.content) {
                 updateMemory(editingMemory.id, editedMemoryText.trim());
             }
             setEditingMemory(null);
             setEditedMemoryText('');
+        } else if (editingMemory && !editedMemoryText.trim()) {
+            alert("O conteúdo da memória não pode ser vazio.");
         }
     };
     
@@ -260,28 +253,17 @@ const MemoriesSettingsTab: React.FC = () => {
     };
 
     const handleNewMemoryKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            handleAddNewMemory();
-        }
+        if (e.key === 'Enter') { e.preventDefault(); handleAddNewMemory(); }
     };
     
-    const handleEditMemoryKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            handleSaveMemoryEdit();
-        } else if (e.key === 'Escape') {
-            e.preventDefault();
-            handleCancelMemoryEdit();
-        }
+    const handleEditMemoryKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter') { e.preventDefault(); handleSaveMemoryEdit(); }
+        else if (e.key === 'Escape') { e.preventDefault(); handleCancelMemoryEdit(); }
     };
 
     const handleExportMemories = () => {
-        if (memories.length === 0) {
-            alert("Nenhuma memória para exportar.");
-            return;
-        }
-        const jsonString = JSON.stringify(memories, null, 4);
+        if (memories.length === 0) { alert("Nenhuma memória para exportar."); return; }
+        const jsonString = JSON.stringify(memories, null, 2);
         const blob = new Blob([jsonString], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -296,127 +278,60 @@ const MemoriesSettingsTab: React.FC = () => {
     const handleImportMemories = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
                 const content = e.target?.result;
                 if (typeof content === 'string') {
                     const importedMemories = JSON.parse(content) as Memory[];
-                    if (Array.isArray(importedMemories)) {
-                        if (window.confirm(`Isso substituirá todas as memórias atuais por ${importedMemories.length} memórias do arquivo. Deseja continuar?`)) {
-                            replaceAllMemories(importedMemories);
+                    if (Array.isArray(importedMemories) && importedMemories.every(mem => typeof mem.id === 'string' && typeof mem.content === 'string' && typeof mem.timestamp === 'string')) {
+                        if (window.confirm(`Isso substituirá ${memories.length > 0 ? 'TODAS as memórias atuais' : 'suas memórias (atualmente vazias)'} por ${importedMemories.length} memórias do arquivo. Deseja continuar?`)) {
+                            replaceAllMemories(importedMemories.map(mem => ({...mem, timestamp: new Date(mem.timestamp) }))); // Converte timestamp para Date
                         }
-                    } else {
-                        throw new Error("O arquivo JSON não contém um array de memórias.");
-                    }
+                    } else { throw new Error("O arquivo JSON não contém um array de memórias válidas (cada memória deve ter 'id', 'content', 'timestamp')."); }
                 }
             } catch (error) {
                 console.error("Erro ao importar memórias:", error);
                 alert(`Erro ao importar memórias: ${error instanceof Error ? error.message : "Formato de arquivo inválido."}`);
-            } finally {
-                if (fileInputRef.current) {
-                    fileInputRef.current.value = "";
-                }
-            }
+            } finally { if (fileInputRef.current) { fileInputRef.current.value = ""; } }
         };
         reader.readAsText(file);
     };
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-3 mb-4">
-                <h3 className="text-base font-medium text-slate-300 w-full sm:w-auto">Gerenciar Memórias</h3>
-                <div className="flex gap-2 flex-wrap">
-                    <Button
-                        variant="secondary"
-                        className="!text-xs !py-1.5 !px-3 !font-normal"
-                        onClick={handleExportMemories}
-                        disabled={memories.length === 0}
-                    >
-                        <IoDownloadOutline className="mr-1.5 inline" />
-                        Exportar
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        className="!text-xs !py-1.5 !px-3 !font-normal"
-                        onClick={() => fileInputRef.current?.click()}
-                    >
-                        <IoCloudUploadOutline className="mr-1.5 inline" />
-                        Importar
-                    </Button>
-                    <input
-                        type="file"
-                        accept=".json"
-                        ref={fileInputRef}
-                        onChange={handleImportMemories}
-                        className="hidden"
-                    />
+            <div className="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-3 mb-1">
+                <h3 className="text-base font-semibold text-slate-100 w-full sm:w-auto">Gerenciar Memórias</h3>
+                <div className="flex gap-2.5 flex-wrap">
+                    <Button variant="secondary" className="!text-xs !py-2 !px-3.5 !font-medium !bg-slate-600/70 hover:!bg-slate-600" onClick={handleExportMemories} disabled={memories.length === 0}> <IoDownloadOutline className="mr-1.5" /> Exportar </Button>
+                    <Button variant="secondary" className="!text-xs !py-2 !px-3.5 !font-medium !bg-slate-600/70 hover:!bg-slate-600" onClick={() => fileInputRef.current?.click()}> <IoCloudUploadOutline className="mr-1.5" /> Importar </Button>
+                    <input type="file" accept=".json" ref={fileInputRef} onChange={handleImportMemories} className="hidden"/>
                 </div>
             </div>
 
-            <div className="flex items-center gap-2">
-                <input
-                    ref={newMemoryInputRef}
-                    type="text"
-                    value={newMemoryText}
-                    onChange={(e) => setNewMemoryText(e.target.value)}
-                    onKeyDown={handleNewMemoryKeyDown}
-                    placeholder="Adicionar nova memória personalizada..."
-                    className="flex-grow p-2 bg-slate-700/60 border border-slate-600/70 rounded-md focus:ring-1 focus:ring-teal-500 placeholder-slate-500 text-sm"
-                />
-                <Button
-                    variant="secondary"
-                    onClick={handleAddNewMemory}
-                    className="!py-2 !px-2.5 bg-teal-600 hover:bg-teal-500 text-white flex-shrink-0"
-                    disabled={!newMemoryText.trim()}
-                >
-                    <IoAddCircleOutline size={18} />
-                </Button>
+            <div className="flex items-center gap-2.5">
+                <input ref={newMemoryInputRef} type="text" value={newMemoryText} onChange={(e) => setNewMemoryText(e.target.value)} onKeyDown={handleNewMemoryKeyDown} placeholder="Adicionar nova memória..." className="flex-grow p-2.5 bg-slate-700/60 border border-slate-600/70 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 placeholder-slate-400 text-sm text-slate-100 transition-colors"/>
+                <Button variant="primary" onClick={handleAddNewMemory} className="!py-2.5 !px-3 !bg-teal-600 hover:!bg-teal-500 active:!bg-teal-700 text-white flex-shrink-0" disabled={!newMemoryText.trim()}> <IoAddCircleOutline size={20} /> </Button>
             </div>
 
             {memories.length > 0 ? (
-                <div className="overflow-y-auto space-y-1.5 p-2 bg-slate-900/50 rounded-md scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50 border border-slate-700/40 max-h-[calc(50vh-180px)] sm:max-h-[calc(60vh-200px)]">
-                    {memories.map((memory) => (
-                        <div
-                            key={memory.id}
-                            className="p-2 bg-slate-700/70 rounded"
-                        >
+                <div className="overflow-y-auto space-y-2 p-3 bg-slate-900/60 rounded-lg scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50 border border-slate-700/60 max-h-[calc(100vh-380px)] min-h-[100px]">
+                    {memories.slice().reverse().map((memory) => ( // .slice().reverse() para mostrar as mais recentes primeiro sem mutar o array original
+                        <div key={memory.id} className="p-2.5 bg-slate-700/80 rounded-md shadow transition-shadow hover:shadow-md">
                             {editingMemory?.id === memory.id ? (
-                                <div className="flex flex-col gap-1.5">
-                                    <input
-                                        ref={editMemoryInputRef}
-                                        type="text"
-                                        value={editedMemoryText}
-                                        onChange={(e) => setEditedMemoryText(e.target.value)}
-                                        onKeyDown={handleEditMemoryKeyDown}
-                                        className="w-full p-1.5 bg-slate-600 border border-slate-500 rounded text-xs text-slate-100"
-                                    />
-                                    <div className="flex justify-end gap-1">
-                                        <Button variant="secondary" onClick={handleCancelMemoryEdit} className="!text-xs !py-0.5 !px-1.5">Cancelar</Button>
-                                        <Button variant="primary" onClick={handleSaveMemoryEdit} className="!text-xs !py-0.5 !px-1.5">Salvar</Button>
+                                <div className="flex flex-col gap-2">
+                                    <textarea value={editedMemoryText} onChange={(e) => setEditedMemoryText(e.target.value)} onKeyDown={handleEditMemoryKeyDown} ref={editMemoryInputRef} rows={2} className="w-full p-2 bg-slate-600/70 border border-slate-500/80 rounded text-xs text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 resize-none scrollbar-thin scrollbar-thumb-slate-500 scrollbar-track-slate-600/50"/>
+                                    <div className="flex justify-end gap-1.5">
+                                        <Button variant="secondary" onClick={handleCancelMemoryEdit} className="!text-xs !py-1 !px-2.5 !bg-slate-500/80 hover:!bg-slate-500">Cancelar</Button>
+                                        <Button variant="primary" onClick={handleSaveMemoryEdit} className="!text-xs !py-1 !px-2.5 !bg-sky-600 hover:!bg-sky-500">Salvar</Button>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                                    <p className="text-xs text-slate-200 flex-grow break-all w-full sm:w-auto">{memory.content}</p>
-                                    <div className="flex-shrink-0 flex gap-1 self-end sm:self-center">
-                                        <Button
-                                            variant="secondary"
-                                            className="!p-1 !text-xs text-slate-400 hover:text-blue-400"
-                                            title="Editar memória"
-                                            onClick={() => handleStartEditMemory(memory)}
-                                        >
-                                            <IoPencilOutline size={14} />
-                                        </Button>
-                                        <Button
-                                            variant="secondary"
-                                            className="!p-1 !text-xs text-slate-400 hover:text-red-400"
-                                            title="Excluir memória"
-                                            onClick={() => handleLocalDeleteMemory(memory.id)}
-                                        >
-                                            <IoTrashOutline size={14} />
-                                        </Button>
+                                <div className="flex items-start justify-between gap-2">
+                                    <p className="text-xs text-slate-200 flex-grow break-words py-0.5 pr-1">{memory.content}</p>
+                                    <div className="flex-shrink-0 flex items-center gap-1">
+                                        <Button variant="icon" className="!p-1.5 text-slate-400 hover:!text-sky-400 hover:!bg-slate-600/60" title="Editar memória" onClick={() => handleStartEditMemory(memory)}> <IoPencilOutline size={15} /> </Button>
+                                        <Button variant="icon" className="!p-1.5 text-slate-400 hover:!text-red-400 hover:!bg-slate-600/60" title="Excluir memória" onClick={() => handleLocalDeleteMemory(memory.id)}> <IoTrashBinOutline size={15} /> </Button>
                                     </div>
                                 </div>
                             )}
@@ -424,9 +339,10 @@ const MemoriesSettingsTab: React.FC = () => {
                     ))}
                 </div>
             ) : (
-                <div className="p-3 text-center bg-slate-900/50 rounded-md border border-slate-700/40">
-                    <IoInformationCircleOutline size={24} className="mx-auto text-slate-500 mb-1.5" />
-                    <p className="text-xs text-slate-400">Nenhuma memória armazenada.</p>
+                <div className="p-4 text-center bg-slate-900/60 rounded-lg border border-slate-700/60">
+                    <LuBrain size={28} className="mx-auto text-slate-500 mb-2" />
+                    <p className="text-sm text-slate-400">Nenhuma memória armazenada.</p>
+                    <p className="text-xs text-slate-500 mt-1">Adicione memórias para personalizar suas interações.</p>
                 </div>
             )}
         </div>
@@ -434,7 +350,6 @@ const MemoriesSettingsTab: React.FC = () => {
 };
 
 const DataSettingsTab: React.FC = () => {
-    // ... (código do DataSettingsTab como no seu último fornecimento - sem alterações aqui)
     const { clearAllMemories, memories } = useMemories();
     const { deleteAllConversations, conversations } = useConversations(); 
 
@@ -453,208 +368,144 @@ const DataSettingsTab: React.FC = () => {
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-base font-medium text-slate-300 mb-3">Gerenciamento de Dados</h3>
-                <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/50 space-y-4">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                <h3 className="text-base font-semibold text-slate-100 mb-3">Gerenciamento de Dados</h3>
+                <div className="p-4 bg-slate-700/60 rounded-lg border border-slate-600/70 space-y-4 shadow">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                         <div className="flex-grow">
-                            <p className="text-sm text-slate-200">Apagar todas as memórias</p>
-                            <p className="text-xs text-slate-400">Remove todas as memórias armazenadas pela IA.</p>
+                            <p className="text-sm font-medium text-slate-100">Apagar todas as memórias</p>
+                            <p className="text-xs text-slate-400/90 mt-0.5">Remove todas as memórias armazenadas pela IA.</p>
                         </div>
-                        <Button
-                            variant="danger"
-                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0 w-full sm:w-auto mt-1 sm:mt-0"
-                            onClick={handleLocalClearAllMemories}
-                            disabled={memories.length === 0}
-                        >
-                            <IoTrashOutline className="mr-1.5 inline" />
-                            Limpar Memórias
-                        </Button>
+                        <Button variant="danger" className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0 w-full sm:w-auto" onClick={handleLocalClearAllMemories} disabled={memories.length === 0}> <IoTrashOutline className="mr-1.5" /> Limpar Memórias </Button>
                     </div>
-                    <hr className="border-slate-600/70" />
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                    <hr className="border-slate-600/80 my-3" />
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                         <div className="flex-grow">
-                            <p className="text-sm text-slate-200">Apagar todas as conversas</p>
-                            <p className="text-xs text-slate-400">Remove todo o seu histórico de conversas.</p>
+                            <p className="text-sm font-medium text-slate-100">Apagar todas as conversas</p>
+                            <p className="text-xs text-slate-400/90 mt-0.5">Remove todo o seu histórico de conversas.</p>
                         </div>
-                        <Button
-                            variant="danger"
-                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0 w-full sm:w-auto mt-1 sm:mt-0"
-                            onClick={handleLocalDeleteAllConversations}
-                            disabled={conversations.length === 0}
-                        >
-                            <IoChatbubblesOutline className="mr-1.5 inline" />
-                            Limpar Conversas
-                        </Button>
+                        <Button variant="danger" className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0 w-full sm:w-auto" onClick={handleLocalDeleteAllConversations} disabled={conversations.length === 0}> <IoChatbubblesOutline className="mr-1.5" /> Limpar Conversas </Button>
                     </div>
                 </div>
+                 <p className="text-xs text-slate-500 mt-4 text-center">
+                    Todas as ações de exclusão de dados são irreversíveis.
+                </p>
             </div>
         </div>
     );
 };
 
-
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
-    const { settings, setSettings } = useAppSettings(); // Removido saveApiKey pois setSettings é mais geral
+    const { settings, setSettings } = useAppSettings();
     const [currentApiKey, setCurrentApiKey] = useState<string>('');
     const [activeTab, setActiveTab] = useState<TabId>('general');
+    const modalContentRef = useRef<HTMLDivElement>(null);
 
-    // Estado local para as configurações do modelo, inicializado com os valores do contexto
+    const defaultModelConfig: GeminiModelConfig = {
+        model: AVAILABLE_GEMINI_MODELS[0],
+        temperature: 0.90,
+        topP: 0.95,
+        topK: 8,
+        maxOutputTokens: 32768,
+    };
+
     const [localModelConfig, setLocalModelConfig] = useState<GeminiModelConfig>(
-        // Garante que geminiModelConfig exista e tenha valores padrão
-        settings.geminiModelConfig || {
-            model: AVAILABLE_GEMINI_MODELS[0],
-            temperature: 0.7,
-            topP: 1.0,
-            topK: 1,
-            maxOutputTokens: 32768,
-        }
+        settings.geminiModelConfig || defaultModelConfig
     );
 
     useEffect(() => {
         if (isOpen) {
             setCurrentApiKey(settings.apiKey || '');
-            // Atualizar localModelConfig com os valores atuais de settings.geminiModelConfig quando o modal abrir
-            // ou com defaults se settings.geminiModelConfig não estiver definido (para migração)
-            setLocalModelConfig(
-                settings.geminiModelConfig || {
-                    model: AVAILABLE_GEMINI_MODELS[0],
-                    temperature: 0.7,
-                    topP: 1.0,
-                    topK: 1,
-                    maxOutputTokens: 32768,
-                }
-            );
-            setActiveTab('general');
+            setLocalModelConfig(settings.geminiModelConfig || defaultModelConfig);
+            setActiveTab('general'); 
+            document.body.style.overflow = 'hidden'; 
+        } else {
+            document.body.style.overflow = '';
         }
-    }, [settings, isOpen]); // Depender de settings completo
+        return () => { document.body.style.overflow = ''; };
+    }, [settings, isOpen]);
 
-    if (!isOpen) {
-        return null;
-    }
 
-    // Handler para quando um campo de configuração do modelo muda na aba "Modelo"
-    const handleLocalModelConfigChange = (
-        field: keyof GeminiModelConfig,
-        value: string | number // Aceita string ou número, pois o select retorna string
-    ) => {
-        setLocalModelConfig(prev => ({
-            ...prev,
-            [field]: field === 'model' ? value : Number(value) // Converte para número se não for 'model'
-        }));
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && isOpen) {
+                onClose();
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
+
+    if (!isOpen) return null;
+
+    const handleLocalModelConfigChange = (field: keyof GeminiModelConfig, value: string | number) => {
+        setLocalModelConfig(prev => ({ ...prev, [field]: field === 'model' ? value : Number(value) }));
     };
 
-    // Handler para salvar todas as configurações (API Key + Modelo)
     const handleSaveAllSettings = () => {
-        // Validação básica antes de salvar
-        if (localModelConfig.temperature < 0 || localModelConfig.temperature > 2) {
-            alert("A temperatura deve estar entre 0.0 e 2.0.");
-            return;
-        }
-        if (localModelConfig.topP < 0 || localModelConfig.topP > 1) {
-            alert("Top P deve estar entre 0.0 e 1.0.");
-            return;
-        }
-        if (localModelConfig.topK < 0) {
-            alert("Top K não pode ser negativo.");
-            return;
-        }
-        if (localModelConfig.maxOutputTokens < 1) {
-            alert("Máximo de Tokens de Saída deve ser pelo menos 1.");
-            return;
-        }
+        if (localModelConfig.temperature < 0 || localModelConfig.temperature > 2) { alert("A temperatura deve estar entre 0.0 e 2.0."); return; }
+        if (localModelConfig.topP < 0 || localModelConfig.topP > 1) { alert("Top P deve estar entre 0.0 e 1.0."); return; }
+        if (localModelConfig.topK < 0) { alert("Top K não pode ser negativo."); return; }
+        if (localModelConfig.maxOutputTokens < 1) { alert("Máximo de Tokens de Saída deve ser pelo menos 1."); return; }
 
-        setSettings(prevSettings => ({
-            ...prevSettings,
-            apiKey: currentApiKey,
-            geminiModelConfig: localModelConfig, // Salva o estado local do modelConfig
-        }));
-        alert("Configurações salvas!");
-        // onClose(); // Opcional: fechar modal após salvar
+        setSettings(prevSettings => ({ ...prevSettings, apiKey: currentApiKey, geminiModelConfig: localModelConfig }));
+        alert("Configurações salvas com sucesso!");
     };
 
     const tabs: Tab[] = [
-        { id: 'general', label: 'Geral', icon: <IoKeyOutline size={18} />, component: GeneralSettingsTab },
-        { id: 'model', label: 'Modelo', icon: <IoBuildOutline size={18} />, component: ModelSettingsTab }, // Nova aba
-        { id: 'memories', label: 'Memórias', icon: <LuBrain size={18} />, component: MemoriesSettingsTab },
-        { id: 'data', label: 'Dados', icon: <FiDatabase size={18} />, component: DataSettingsTab },
+        { id: 'general', label: 'Geral', icon: <IoKeyOutline size={18} className="opacity-80" />, component: GeneralSettingsTab },
+        { id: 'model', label: 'Modelo IA', icon: <IoBuildOutline size={18} className="opacity-80" />, component: ModelSettingsTab },
+        { id: 'memories', label: 'Memórias', icon: <LuBrain size={18} className="opacity-80" />, component: MemoriesSettingsTab },
+        { id: 'data', label: 'Dados', icon: <FiDatabase size={17} className="opacity-80" />, component: DataSettingsTab },
     ];
 
     const ActiveTabComponent = tabs.find(tab => tab.id === activeTab)?.component;
 
     return (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-            <div className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl text-slate-100 relative animate-modalEnter h-[85vh] sm:h-[80vh] flex flex-col overflow-hidden">
-                
-                <div className="flex items-center justify-between p-4 border-b border-slate-700/50 flex-shrink-0">
-                    <h2 className="text-lg font-semibold text-slate-200">Configurações</h2>
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[100] p-3 sm:p-4 animate-fadeIn" onClick={onClose}>
+            <div 
+                ref={modalContentRef}
+                className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl shadow-black/50 w-full max-w-3xl text-slate-100 relative animate-modalEnter h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden border border-slate-700/70"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex items-center justify-between p-4 pr-12 sm:p-5 sm:pr-14 border-b border-slate-700/60 flex-shrink-0 relative bg-slate-800/50">
+                    <h2 className="text-lg font-semibold text-slate-100">Configurações do Aplicativo</h2>
+                    <Button onClick={onClose} className="!absolute top-1/2 -translate-y-1/2 right-3 !p-2 text-slate-400 hover:text-slate-100 rounded-full hover:!bg-slate-700/80 z-10" variant="icon" aria-label="Fechar modal"> <IoClose size={24} /> </Button>
                 </div>
                 
-                <Button
-                    onClick={onClose}
-                    className="!absolute top-3.5 right-3.5 !p-1.5 text-slate-400 hover:text-slate-100 rounded-full hover:bg-slate-700/70 z-30"
-                    variant="secondary"
-                    aria-label="Fechar modal de configurações"
-                >
-                    <IoClose size={22} />
-                </Button>
-
                 <div className="flex flex-col md:flex-row flex-grow min-h-0">
-                    <nav className="hidden md:flex w-48 flex-shrink-0 flex-col bg-slate-850 p-3 md:p-4 space-y-1 md:space-y-2 border-b md:border-b-0 md:border-r border-slate-700/50">
+                    <nav className="w-full md:w-52 flex-shrink-0 flex md:flex-col bg-slate-800/30 md:bg-slate-850/50 p-2 md:p-3 space-x-1 md:space-x-0 md:space-y-1.5 border-b md:border-b-0 md:border-r border-slate-700/60 overflow-x-auto md:overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`w-full flex items-center space-x-2.5 p-2.5 rounded-md text-sm font-medium transition-colors
+                                className={`w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ease-in-out group whitespace-nowrap flex-shrink-0
+                                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-800
                                             ${activeTab === tab.id
-                                                ? 'bg-blue-600 text-white shadow-sm'
-                                                : 'text-slate-300 hover:bg-slate-700/80 hover:text-slate-100'
+                                                ? 'bg-gradient-to-r from-sky-600 to-blue-600 text-white shadow-md scale-[1.02]'
+                                                : 'text-slate-300 hover:bg-slate-700/70 hover:text-slate-50 active:scale-[0.98]'
                                             }`}
                             >
-                                {tab.icon}
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                {React.cloneElement(tab.icon as React.ReactElement<any>, { className: `transition-transform duration-200 ${activeTab === tab.id ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}` })}
                                 <span>{tab.label}</span>
                             </button>
                         ))}
                     </nav>
 
-                    <div className="flex flex-col flex-grow min-h-0">
-                        <div className="md:hidden p-2 border-b border-slate-700/50 bg-slate-800">
-                            <div className="flex space-x-1 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50 pb-1.5">
-                                {tabs.map(tab => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0
-                                                    ${activeTab === tab.id
-                                                        ? 'bg-blue-600 text-white shadow-sm'
-                                                        : 'text-slate-300 hover:bg-slate-700/80 hover:text-slate-100'
-                                                    }`}
-                                    >
-                                        {tab.icon}
-                                        <span>{tab.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="flex-grow p-4 sm:p-5 md:p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50">
+                    <div className="flex flex-col flex-grow min-h-0 bg-slate-800/20">
+                        <div className="flex-grow p-4 sm:p-5 md:p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600/80 scrollbar-track-slate-700/50 scrollbar-thumb-rounded-full">
                             {ActiveTabComponent && (
                                 <ActiveTabComponent
-                                    // Passa props específicas para cada aba
                                     {...(activeTab === 'general' && { currentApiKey, setCurrentApiKey })}
                                     {...(activeTab === 'model' && { currentModelConfig: localModelConfig, onModelConfigChange: handleLocalModelConfigChange })}
-                                    // As abas MemoriesSettingsTab e DataSettingsTab não precisam de props extras aqui,
-                                    // pois usam seus próprios hooks de contexto.
                                 />
                             )}
                         </div>
-                        {/* Botão de Salvar Configurações no rodapé do modal */}
-                        <div className="p-4 border-t border-slate-700/50 flex-shrink-0 bg-slate-800/70">
-                            <Button
-                                variant="primary"
-                                onClick={handleSaveAllSettings}
-                                className="w-full sm:w-auto !py-2.5"
-                            >
-                                Salvar Todas as Configurações
+                        <div className="p-4 border-t border-slate-700/60 flex-shrink-0 bg-slate-800/50 flex justify-end">
+                            <Button variant="primary" onClick={handleSaveAllSettings} className="!py-2.5 !px-5 !font-semibold !bg-sky-600 hover:!bg-sky-500 active:!bg-sky-700 shadow-md hover:shadow-lg transform active:scale-[0.98] transition-all">
+                                <IoCheckmarkOutline size={18} className="mr-1.5"/>
+                                Salvar Configurações
                             </Button>
                         </div>
                     </div>

@@ -12,9 +12,9 @@ const defaultAppSettings: AppSettings = {
     theme: 'dark',
     geminiModelConfig: {
         model: DEFAULT_GEMINI_MODEL,
-        temperature: 0.7,
-        topP: 1.0,
-        topK: 1,
+        temperature: 0.90,
+        topP: 0.95,
+        topK: 8,
         maxOutputTokens: 32768,
     },
 };
