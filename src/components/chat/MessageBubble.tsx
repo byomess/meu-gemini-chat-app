@@ -7,7 +7,7 @@ import {
     IoCreateOutline, IoInformationCircleOutline, IoRemoveCircleOutline,
     IoDocumentTextOutline, IoImageOutline, IoMusicalNotesOutline,
     IoChevronDownOutline, IoChevronUpOutline,
-    IoTrashBinOutline, // Corrigido aqui, estava duplicado IoTrashOutline
+    IoTrashBinOutline, 
 } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
 import { useMemories } from '../../contexts/MemoryContext';
@@ -16,7 +16,7 @@ import remarkGfm from 'remark-gfm';
 import CodeBlock from '../common/CodeBlock';
 import CustomAudioPlayer from './CustomAudioPlayer';
 import Button from '../common/Button';
-import useIsMobile from '../../hooks/useIsMobile'; // Importado
+import useIsMobile from '../../hooks/useIsMobile';
 
 
 interface MemoryActionItemProps {
@@ -101,8 +101,8 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
         return (
             <li className="flex items-start text-slate-500/80 italic py-1.5 px-2 -mx-1 text-xs border-l-2 border-slate-700/50 pl-3">
                 <ActionIconComponent className={`mr-2 mt-0.5 flex-shrink-0 ${colorClass}`} size={15}/>
-                <div className="flex-1 min-w-0"> {/* Adicionado min-w-0 */}
-                    <span className="font-medium block">{actionLabel}</span> {/* Adicionado block */}
+                <div className="flex-1 min-w-0"> 
+                    <span className="font-medium block">{actionLabel}</span> 
                     <p className="line-through whitespace-pre-wrap break-words opacity-80">
                         "{baseMemoryText}" (removida pelo usuário)
                     </p>
@@ -114,12 +114,12 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
     return (
         <li className="group/memory-item flex flex-col py-1.5 hover:bg-slate-700/40 rounded-md px-2 -mx-2 border-l-2 border-slate-700/50 pl-3 transition-colors">
             <div className="flex items-start justify-between w-full">
-                 <div className={`flex items-start text-xs ${colorClass} flex-grow min-w-0`}> {/* Adicionado min-w-0 */}
+                 <div className={`flex items-start text-xs ${colorClass} flex-grow min-w-0`}> 
                     <ActionIconComponent className="mr-2 mt-0.5 flex-shrink-0" size={15}/>
-                    <div className="flex-1 min-w-0"> {/* Adicionado min-w-0 aqui também */}
-                        <span className="font-semibold block">{actionLabel}</span> {/* Adicionado block para o rótulo ficar acima */}
+                    <div className="flex-1 min-w-0"> 
+                        <span className="font-semibold block">{actionLabel}</span> 
                         {!showDetails && !isEditingMemory && (
-                            <p className="truncate whitespace-nowrap"> {/* Removido break-all, pois truncate e whitespace-nowrap devem cuidar disso */}
+                            <p className="truncate whitespace-nowrap"> 
                                 {memoryActionDetail.action === 'updated' ? `De: "${memoryActionDetail.originalContent}" Para: "${finalDisplayText}"` : `"${finalDisplayText}"`}
                             </p>
                         )}
@@ -131,7 +131,7 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
                         <Button variant="icon" onClick={handleDeleteUserMemory} className="!p-1 text-red-500 hover:!text-red-400 hover:!bg-slate-600/50" title="Excluir esta memória do sistema"> <IoTrashBinOutline size={14} /> </Button>
                     </div>
                 )}
-                {!isEditingMemory && (
+                {!isEditingMemory && ( 
                     <Button variant='icon' onClick={() => setShowDetails(!showDetails)} className='!p-1 text-slate-400 hover:!text-slate-200 hover:!bg-slate-600/50 ml-1 flex-shrink-0' title={showDetails ? "Esconder detalhes" : "Mostrar detalhes"}>
                         {showDetails ? <IoChevronUpOutline size={16}/> : <IoChevronDownOutline size={16}/>}
                     </Button>
@@ -139,8 +139,8 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
             </div>
 
             {(showDetails || isEditingMemory) && (
-                <div className="mt-1.5 pl-[23px] w-full"> {/* Ajuste o pl se necessário com base no tamanho do ícone + mr */}
-                    {isEditingMemory && currentMemoryInContext ? (
+                <div className="mt-1.5 pl-[23px] w-full"> 
+                    {isEditingMemory && currentMemoryInContext ? ( 
                         <div className="flex-grow flex items-center gap-1.5 w-full bg-slate-700/50 p-2 rounded-md border border-slate-600">
                             <input
                                 type="text"
@@ -156,7 +156,7 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
                             <Button variant='icon' onClick={handleSaveMemoryEdit} className="!p-1.5 text-green-400 hover:!text-green-300 !bg-slate-600 hover:!bg-slate-500" title="Salvar (Enter)"> <IoCheckmarkOutline size={16} /> </Button>
                             <Button variant='icon' onClick={handleCancelMemoryEdit} className="!p-1.5 text-slate-300 hover:!text-slate-100 !bg-slate-600 hover:!bg-slate-500" title="Cancelar (Esc)"> <IoCloseOutline size={16} /> </Button>
                         </div>
-                    ) : (
+                    ) : ( 
                         <div className="text-xs text-slate-300/90 whitespace-pre-wrap break-words bg-slate-700/30 p-2 rounded-md">
                            {memoryActionDetail.action === 'updated' && (
                                 <>
@@ -164,7 +164,7 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
                                 <p><strong className='text-slate-400 font-medium'>Atualizado para:</strong> "{finalDisplayText}"</p>
                                 </>
                            )}
-                           {memoryActionDetail.action !== 'updated' && (
+                           {memoryActionDetail.action !== 'updated' && ( 
                                 <p>"{finalDisplayText}"</p>
                            )}
                         </div>
@@ -325,10 +325,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                    ${isUser ? userBubbleClasses : aiBubbleBaseClasses}
                                    ${isActualErrorForStyling ? errorBubbleClasses : ''}
                                    ${abortedByUser && !isEditing ? abortedBubbleClasses : ''}
-                                   ${isLoading && !showAITypingIndicator && !userFacingErrorMessage && !abortedByUser && !isEditing ? loadingBubbleClasses : ''}`;
+                                   ${isLoading && !showAITypingIndicator && !userFacingErrorMessage && !abortedByUser && !isEditing ? loadingBubbleClasses : ''}
+                                   ${isMobile ? 'w-full' : ''}`;
 
     const editContainerClasses = `p-2 rounded-xl shadow-xl border-2 border-blue-500/70 
-                                 ${isUser ? 'bg-blue-700/90' : 'bg-slate-700/90'} backdrop-blur-md`;
+                                 ${isUser ? 'bg-blue-700/90' : 'bg-slate-700/90'} backdrop-blur-md
+                                 ${isMobile ? 'w-full' : ''}`;
     const editTextareaClasses = `w-full p-2.5 text-sm bg-transparent text-white focus:outline-none resize-none scrollbar-thin 
                                  placeholder-slate-400/70
                                  ${isUser ? 'scrollbar-thumb-blue-400 scrollbar-track-blue-600/50' 
@@ -344,15 +346,33 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
             onMouseLeave={() => setShowActions(false)}
         >
             {hasAnyContentForBubble && (
-                 <div className={`flex items-end gap-2 sm:gap-2.5 w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
+                 <div className={`flex w-full ${
+                                isMobile 
+                                    ? (isUser ? 'flex-col items-end' : 'flex-col items-start') 
+                                    : (isUser ? 'flex-row items-end justify-end' : 'flex-row items-end justify-start') 
+                                } gap-2 sm:gap-2.5`}>
+                    
                     {!isUser && (
-                        <div className="flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200">
+                        <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${
+                            isMobile ? 'self-start' : '' 
+                        }`}>
                             <IoSparklesOutline size={isMobile ? 16 : 18} />
                         </div>
                     )}
-                    <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} ${isUser ? 'order-1' : ''} w-auto max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]`}>
-                        {isUser && hasAttachedFiles && attachedFilesInfo && (
-                            <div className={`flex flex-wrap gap-2 mb-1.5 ${isUser ? 'justify-end' : 'justify-start'}`}>
+
+                    {isUser && isMobile && (
+                        <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-blue-500 to-sky-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isEditing ? '!-mb-1' : ''} self-end order-first`} > 
+                            <IoPersonCircleOutline size={isMobile? 18 : 20} /> 
+                        </div>
+                    )}
+                    
+                    <div className={`flex flex-col w-auto ${
+                                    isMobile 
+                                        ? 'w-full' 
+                                        : (isUser ? 'items-end max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]' : 'items-start max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]') // REMOVIDO order-1 de isUser
+                                    }`}>
+                        {isUser && hasAttachedFiles && attachedFilesInfo && ( 
+                            <div className={`flex flex-wrap gap-2 mb-1.5 ${isUser ? 'justify-end' : 'justify-start'} ${isMobile ? (isUser ? 'w-full justify-end' : 'w-full justify-start') : ''}`}>
                                 {attachedFilesInfo.map(fileInfo => (
                                     <div key={fileInfo.id} className="bg-slate-800/60 border border-slate-700/60 p-1.5 rounded-xl shadow-md overflow-hidden max-w-[260px] sm:max-w-xs backdrop-blur-sm">
                                         {fileInfo.type.startsWith('image/') && fileInfo.dataUrl ? (
@@ -373,7 +393,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                         )}
 
                         {(shouldRenderTextContent || showAITypingIndicator || (isEditing && !isUser && abortedByUser)) && (
-                            <div className={`relative w-full ${isEditing && !isThisUserMessageBeingReprocessed ? (isUser ? 'min-w-[200px]' : 'min-w-[250px]') : ''} ${isUser && hasAttachedFiles ? 'mt-0' : ''} `}>
+                             <div className={`relative ${isMobile ? 'w-full' : (isEditing && !isThisUserMessageBeingReprocessed ? (isUser ? 'min-w-[200px]' : 'min-w-[250px]') : '')} ${isUser && hasAttachedFiles ? 'mt-0' : ''} `}>
                                 {isEditing && !isThisUserMessageBeingReprocessed ? (
                                     <div className={editContainerClasses}>
                                         <textarea ref={editTextareaRef} value={editedText} onChange={(e) => setEditedText(e.target.value)} onKeyDown={handleEditKeyDown} className={editTextareaClasses} rows={1} aria-label="Editar mensagem"/>
@@ -417,7 +437,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                             </div>
                         )}
                     </div>
-                    {isUser && (
+
+                    {isUser && !isMobile && (
                         <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-blue-500 to-sky-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 self-end transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isEditing ? '!-mb-1' : ''}`} > 
                             <IoPersonCircleOutline size={isMobile? 18 : 20} /> 
                         </div>
@@ -425,7 +446,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                     
                     {((canPerformActionsOnMessage || (!isUser && abortedByUser)) && showActions && !isEditing) && (
                         <div className={`flex items-center rounded-xl shadow-xl bg-slate-800/70 border border-slate-700/80 p-1 absolute transform transition-all duration-150 ease-out z-10 backdrop-blur-sm
-                                        ${isUser ? 'right-0 -top-6' : 'left-11 sm:left-12 -top-6'}
+                                        ${isUser ? 
+                                            (isMobile ? 'right-0 top-9 sm:top-10' : 'right-0 -top-6') : 
+                                            (isMobile ? 'left-0 top-9 sm:top-10' : 'left-11 sm:left-12 -top-6') 
+                                        }
                                         ${showActions ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 -translate-y-2 pointer-events-none'}`}>
                             <Button variant='icon' onClick={handleEdit} className="!p-1.5 text-slate-300 hover:!text-sky-400 hover:!bg-slate-700/70" title="Editar mensagem" disabled={isProcessingEditedMessage || (!isUser && isThisUserMessageBeingReprocessed)}> <IoPencilOutline size={16} /> </Button>
                             <Button variant='icon' onClick={handleDelete} className="!p-1.5 text-slate-300 hover:!text-red-400 hover:!bg-slate-700/70" title="Excluir mensagem" disabled={isProcessingEditedMessage}> <IoTrashOutline size={16} /> </Button>
@@ -434,8 +458,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                 </div>
             )}
 
-            {!isUser && hasMemoryActions && memoryActions && (
-                <div className="mt-3 ml-11 sm:ml-12 mr-2 sm:mr-0 animate-fadeInQuick max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]">
+            {!isUser && hasMemoryActions && memoryActions && ( 
+                 <div className={`mt-3 ${isMobile ? 'w-full' : 'ml-11 sm:ml-12 mr-2 sm:mr-0 max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]'} animate-fadeInQuick`}>
                     <div className="flex items-center gap-1.5 text-xs text-purple-400 mb-1">
                         <MainActionIcon size={15}/>
                         <span className="font-medium">{mainMemoryActionLabel}</span>
