@@ -8,7 +8,7 @@ import {
     IoStopCircleOutline,
     IoClose,
     IoStop,
-    IoPaperPlaneOutline, // Alternativa para IoSend
+    IoPaperPlaneOutline,
 } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
@@ -85,8 +85,8 @@ const MessageInput: React.FC = () => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM = 2.5; // Ajustável
-    const FOCUSED_TEXTAREA_MAX_HEIGHT_VH = 40; // 40vh
+    const UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM = 2.5;
+    const FOCUSED_TEXTAREA_MAX_HEIGHT_VH = 40;
     const MAX_THUMBNAIL_SIZE = 80;
 
     const getPixelValueFromRem = (rem: number) => {
@@ -122,7 +122,7 @@ const MessageInput: React.FC = () => {
 
     useEffect(() => {
         adjustTextareaHeight();
-    }, [text, adjustTextareaHeight]); // Removido placeholder, activeId, etc., pois já são cobertos pela lógica de isTextareaFocused
+    }, [text, adjustTextareaHeight]);
 
 
     useEffect(() => {
@@ -177,10 +177,8 @@ const MessageInput: React.FC = () => {
         };
     }, [stopMediaStream]);
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const addFilesToState = (files: FileList | File[]) => {
         if (isRecording) return;
-        const files = event.target.files;
-        if (!files) return;
 
         const newFiles: LocalAttachedFile[] = [];
         for (let i = 0; i < files.length; i++) {
@@ -199,12 +197,48 @@ const MessageInput: React.FC = () => {
             }
             newFiles.push(newAttachedFile);
         }
-
         setAttachedFiles(prevFiles => [...prevFiles, ...newFiles]);
+    }
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files) return;
+        addFilesToState(files);
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
     };
+
+    const handlePaste = useCallback((event: ClipboardEvent) => {
+        if (isRecording || !isTextareaFocused) return;
+        const items = event.clipboardData?.items;
+        if (items) {
+            const filesToPaste: File[] = [];
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].kind === 'file') {
+                    const file = items[i].getAsFile();
+                    if (file) {
+                        filesToPaste.push(file);
+                    }
+                }
+            }
+            if (filesToPaste.length > 0) {
+                event.preventDefault();
+                addFilesToState(filesToPaste);
+            }
+        }
+    }, [isRecording, isTextareaFocused]);
+
+    useEffect(() => {
+        const textareaElement = textareaRef.current;
+        if (textareaElement) {
+            textareaElement.addEventListener('paste', handlePaste as EventListener);
+            return () => {
+                textareaElement.removeEventListener('paste', handlePaste as EventListener);
+            };
+        }
+    }, [handlePaste]);
+
 
     const handleRemoveFile = (fileIdToRemove: string) => {
         setAttachedFiles(prevFiles =>
@@ -610,15 +644,13 @@ const MessageInput: React.FC = () => {
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (isProcessingEditedMessage || isRecording) {
-            if (e.key === 'Enter') e.preventDefault(); // Impede quebra de linha/envio durante esses processos
+            if (e.key === 'Enter') e.preventDefault();
             return;
         }
 
         const currentIsLoading = isLoadingAI || isProcessingEditedMessage;
 
         if (currentIsLoading) {
-            // Se estiver carregando, impede que Enter envie a mensagem (para evitar envios múltiplos acidentais)
-            // Permitir Shift+Enter para quebra de linha não faz muito sentido aqui, pois o envio está bloqueado.
             if (e.key === 'Enter') {
                 e.preventDefault();
             }
@@ -628,31 +660,19 @@ const MessageInput: React.FC = () => {
         const hasContent = text.trim().length > 0 || attachedFiles.length > 0;
 
         if (isMobile) {
-            // Mobile:
-            // - Enter: quebra linha (comportamento padrão, não precisa de e.preventDefault() nem return explícito aqui, a menos que Shift+Enter também quebre)
-            // - Ctrl + Enter: envia mensagem
             if (e.key === 'Enter' && e.ctrlKey && hasContent) {
                 e.preventDefault();
                 handleSubmit();
             } else if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
-                // Permite o comportamento padrão de quebra de linha do Enter no mobile
-                // Se você quisesse que apenas Shift+Enter quebrasse linha e Enter normal não fizesse nada (até o Ctrl+Enter),
-                // você adicionaria um `e.preventDefault()` aqui também.
-                // Mas o comportamento desejado é Enter = quebra de linha.
                 return;
             }
         } else {
-            // Desktop:
-            // - Enter: envia mensagem
-            // - Shift + Enter: quebra linha
             if (e.key === 'Enter' && !e.shiftKey && hasContent) {
                 e.preventDefault();
                 handleSubmit();
             } else if (e.key === 'Enter' && e.shiftKey) {
-                // Permite o comportamento padrão de quebra de linha do Shift+Enter no desktop
                 return;
             }
-            // Se for Enter sem Shift e sem conteúdo, ou qualquer outra tecla, permite o comportamento padrão.
         }
     };
 
@@ -728,9 +748,9 @@ const MessageInput: React.FC = () => {
                         handleSubmit(e);
                     }
                 }}
-                className={`flex items-end bg-slate-900/90 border border-slate-700/70 rounded-xl p-1.5 shadow-lg 
+                className={`flex items-end bg-slate-900/90 border border-slate-700/70 rounded-xl p-1.5 shadow-lg
                             focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500/70
-                            transition-all duration-200 ease-in-out 
+                            transition-all duration-200 ease-in-out
                             ${isRecording ? 'ring-2 !ring-red-500/80 !border-red-500/80' : ''}
                             ${isTextareaFocused ? '!border-blue-500/70 ring-2 ring-blue-500' : ''}`}
             >
@@ -766,7 +786,7 @@ const MessageInput: React.FC = () => {
                     multiple
                     onChange={handleFileChange}
                     className="hidden"
-                    accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/heic,image/heif,application/pdf,text/plain,.doc,.docx,.xls,.xlsx,.ppt,.pptx" // Adicionar mais tipos se necessário
+                    accept="image/*,audio/*,video/*,application/pdf,text/plain,.doc,.docx,.xls,.xlsx,.ppt,.pptx,application/zip,application/x-rar-compressed"
                     disabled={isTextareaAndAttachDisabled || isLoadingAI}
                 />
 
@@ -785,8 +805,8 @@ const MessageInput: React.FC = () => {
                         onFocus={() => setIsTextareaFocused(true)}
                         onBlur={() => setIsTextareaFocused(false)}
                         placeholder={isRecording ? '' : (isCurrentlyLoading ? 'IA respondendo...' : placeholderText)}
-                        className={`w-full bg-transparent text-slate-100 placeholder-slate-500 focus:outline-none py-2.5 resize-none leading-tight 
-                                    scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent 
+                        className={`w-full bg-transparent text-slate-100 placeholder-slate-500 focus:outline-none py-2.5 resize-none leading-tight
+                                    scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent
                                     transition-all duration-200 ease-in-out
                                     ${isRecording ? 'text-transparent caret-transparent' : ''}
                                     ${isCurrentlyLoading ? 'placeholder-slate-600' : ''}`}
@@ -825,12 +845,12 @@ const MessageInput: React.FC = () => {
                             type={isCurrentlyLoading ? "button" : "submit"}
                             onClick={isCurrentlyLoading ? handleAbortAIResponse : undefined}
                             variant={isCurrentlyLoading ? "danger" : "primary"}
-                            className={`!p-2.5 rounded-lg transform active:scale-90 group overflow-hidden 
+                            className={`!p-2.5 rounded-lg transform active:scale-90 group overflow-hidden
                                         ${isCurrentlyLoading
-                                    ? 'hover:!bg-red-700' // Para o botão de abortar
+                                    ? 'hover:!bg-red-700'
                                     : canSubmitEffectively
-                                        ? 'hover:!bg-blue-700' // Para o botão de enviar
-                                        : '!bg-slate-700 !text-slate-500 cursor-not-allowed' // Desabilitado visualmente
+                                        ? 'hover:!bg-blue-700'
+                                        : '!bg-slate-700 !text-slate-500 cursor-not-allowed'
                                 }`}
                             disabled={isCurrentlyLoading ? false : !canSubmitEffectively}
                             aria-label={isCurrentlyLoading ? "Abortar resposta" : "Enviar mensagem"}
@@ -840,7 +860,7 @@ const MessageInput: React.FC = () => {
                                 {isCurrentlyLoading ? (
                                     <IoStop size={20} />
                                 ) : (
-                                    <IoPaperPlaneOutline size={20} /> // Ícone alternativo para Enviar
+                                    <IoPaperPlaneOutline size={20} />
                                 )}
                             </span>
                         </Button>
