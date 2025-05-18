@@ -13,6 +13,7 @@ import {
     IoBuildOutline,
     IoCheckmarkOutline,
     IoTrashBinOutline,
+    IoSearchOutline,
 } from 'react-icons/io5';
 import Button from '../common/Button';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
@@ -28,7 +29,6 @@ const AVAILABLE_GEMINI_MODELS: GeminiModel[] = [
     "gemini-2.0-flash",
 ];
 
-// Usado como placeholder no textarea
 const DEFAULT_PERSONALITY_FOR_PLACEHOLDER = `Você é Loox, um assistente de IA pessoal projetado para ser um parceiro inteligente, prestativo e adaptável, operando dentro deste Web App. Sua missão é auxiliar os usuários em diversas tarefas, produtividade, explorar ideias e manter uma interação engajadora e personalizada.`;
 
 
@@ -88,8 +88,8 @@ const RangeInput: React.FC<{
 const GeneralSettingsTab: React.FC<{
     currentApiKey: string;
     setCurrentApiKey: (key: string) => void;
-    currentCustomPersonalityPrompt: string; // <--- NOVA PROP
-    setCurrentCustomPersonalityPrompt: (prompt: string) => void; // <--- NOVA PROP
+    currentCustomPersonalityPrompt: string;
+    setCurrentCustomPersonalityPrompt: (prompt: string) => void;
 }> = ({ currentApiKey, setCurrentApiKey, currentCustomPersonalityPrompt, setCurrentCustomPersonalityPrompt }) => {
     return (
         <div className="space-y-6">
@@ -220,6 +220,7 @@ const MemoriesSettingsTab: React.FC = () => {
     const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
     const [editedMemoryText, setEditedMemoryText] = useState<string>('');
     const [newMemoryText, setNewMemoryText] = useState<string>('');
+    const [searchTerm, setSearchTerm] = useState<string>('');
     const newMemoryInputRef = useRef<HTMLInputElement>(null);
     const editMemoryInputRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -319,10 +320,17 @@ const MemoriesSettingsTab: React.FC = () => {
         reader.readAsText(file);
     };
 
+    const filteredMemories = useMemo(() => {
+        const lowercasedSearchTerm = searchTerm.toLowerCase();
+        return memories.filter(memory =>
+            memory.content.toLowerCase().includes(lowercasedSearchTerm)
+        ).slice().reverse(); // Reverse after filtering to maintain newest first
+    }, [memories, searchTerm]);
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-3 mb-1">
-                <h3 className="text-base font-semibold text-slate-100 w-full sm:w-auto">Gerenciar Memórias</h3>
+                <h3 className="text-base font-semibold text-slate-100 w-full sm:w-auto">Gerenciar Memórias ({memories.length})</h3>
                 <div className="flex gap-2.5 flex-wrap">
                     <Button variant="secondary" className="!text-xs !py-2 !px-3.5 !font-medium !bg-slate-600/70 hover:!bg-slate-600" onClick={handleExportMemories} disabled={memories.length === 0}> <IoDownloadOutline className="mr-1.5" /> Exportar </Button>
                     <Button variant="secondary" className="!text-xs !py-2 !px-3.5 !font-medium !bg-slate-600/70 hover:!bg-slate-600" onClick={() => fileInputRef.current?.click()}> <IoCloudUploadOutline className="mr-1.5" /> Importar </Button>
@@ -330,35 +338,54 @@ const MemoriesSettingsTab: React.FC = () => {
                 </div>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 mt-2">
                 <input ref={newMemoryInputRef} type="text" value={newMemoryText} onChange={(e) => setNewMemoryText(e.target.value)} onKeyDown={handleNewMemoryKeyDown} placeholder="Adicionar nova memória..." className="flex-grow p-2.5 bg-slate-700/60 border border-slate-600/70 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 placeholder-slate-400 text-sm text-slate-100 transition-colors" />
                 <Button variant="primary" onClick={handleAddNewMemory} className="!py-2.5 !px-3 !bg-teal-600 hover:!bg-teal-500 active:!bg-teal-700 text-white flex-shrink-0" disabled={!newMemoryText.trim()}> <IoAddCircleOutline size={20} /> </Button>
             </div>
 
+            <div className="relative">
+                <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400/80 pointer-events-none" size={18} />
+                <input
+                    type="text"
+                    placeholder="Buscar memórias..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full px-2.5 py-1.5 pl-10 bg-slate-700/60 border border-slate-600/70 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 text-sm text-slate-100 transition-colors"
+                />
+            </div>
+
             {memories.length > 0 ? (
-                <div className="overflow-y-auto space-y-2 p-3 bg-slate-900/60 rounded-lg scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50 border border-slate-700/60 max-h-[calc(100vh-420px)] sm:max-h-[calc(100vh-380px)] min-h-[100px]">
-                    {memories.slice().reverse().map((memory) => (
-                        <div key={memory.id} className="p-2.5 bg-slate-700/80 rounded-md shadow transition-shadow hover:shadow-md">
-                            {editingMemory?.id === memory.id ? (
-                                <div className="flex flex-col gap-2">
-                                    <textarea value={editedMemoryText} onChange={(e) => setEditedMemoryText(e.target.value)} onKeyDown={handleEditMemoryKeyDown} ref={editMemoryInputRef} rows={3} className="w-full p-2 bg-slate-600/70 border border-slate-500/80 rounded text-xs text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 resize-y min-h-[40px] scrollbar-thin scrollbar-thumb-slate-500 scrollbar-track-slate-600/50" />
-                                    <div className="flex justify-end gap-1.5">
-                                        <Button variant="secondary" onClick={handleCancelMemoryEdit} className="!text-xs !py-1 !px-2.5 !bg-slate-500/80 hover:!bg-slate-500">Cancelar</Button>
-                                        <Button variant="primary" onClick={handleSaveMemoryEdit} className="!text-xs !py-1 !px-2.5 !bg-sky-600 hover:!bg-sky-500">Salvar</Button>
+                filteredMemories.length > 0 ? (
+                    <div className="overflow-y-auto space-y-2 p-3 bg-slate-900/60 rounded-lg scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50 border border-slate-700/60 max-h-[calc(100vh-480px)] sm:max-h-[calc(100vh-450px)] min-h-[100px]">
+                        {filteredMemories.map((memory) => (
+                            <div key={memory.id} className="p-2.5 bg-slate-700/80 rounded-md shadow transition-shadow hover:shadow-md">
+                                {editingMemory?.id === memory.id ? (
+                                    <div className="flex flex-col gap-2">
+                                        <textarea value={editedMemoryText} onChange={(e) => setEditedMemoryText(e.target.value)} onKeyDown={handleEditMemoryKeyDown} ref={editMemoryInputRef} rows={3} className="w-full p-2 bg-slate-600/70 border border-slate-500/80 rounded text-xs text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 resize-y min-h-[40px] scrollbar-thin scrollbar-thumb-slate-500 scrollbar-track-slate-600/50" />
+                                        <div className="flex justify-end gap-1.5">
+                                            <Button variant="secondary" onClick={handleCancelMemoryEdit} className="!text-xs !py-1 !px-2.5 !bg-slate-500/80 hover:!bg-slate-500">Cancelar</Button>
+                                            <Button variant="primary" onClick={handleSaveMemoryEdit} className="!text-xs !py-1 !px-2.5 !bg-sky-600 hover:!bg-sky-500">Salvar</Button>
+                                        </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="flex items-start justify-between gap-2">
-                                    <p className="text-xs text-slate-200 flex-grow break-words py-0.5 pr-1 whitespace-pre-wrap">{memory.content}</p>
-                                    <div className="flex-shrink-0 flex items-center gap-1">
-                                        <Button variant="icon" className="!p-1.5 text-slate-400 hover:!text-sky-400 hover:!bg-slate-600/60" title="Editar memória" onClick={() => handleStartEditMemory(memory)}> <IoPencilOutline size={15} /> </Button>
-                                        <Button variant="icon" className="!p-1.5 text-slate-400 hover:!text-red-400 hover:!bg-slate-600/60" title="Excluir memória" onClick={() => handleLocalDeleteMemory(memory.id)}> <IoTrashBinOutline size={15} /> </Button>
+                                ) : (
+                                    <div className="flex items-start justify-between gap-2">
+                                        <p className="text-xs text-slate-200 flex-grow break-words py-0.5 pr-1 whitespace-pre-wrap">{memory.content}</p>
+                                        <div className="flex-shrink-0 flex items-center gap-1">
+                                            <Button variant="icon" className="!p-1.5 text-slate-400 hover:!text-sky-400 hover:!bg-slate-600/60" title="Editar memória" onClick={() => handleStartEditMemory(memory)}> <IoPencilOutline size={15} /> </Button>
+                                            <Button variant="icon" className="!p-1.5 text-slate-400 hover:!text-red-400 hover:!bg-slate-600/60" title="Excluir memória" onClick={() => handleLocalDeleteMemory(memory.id)}> <IoTrashBinOutline size={15} /> </Button>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="p-4 text-center bg-slate-900/60 rounded-lg border border-slate-700/60">
+                        <IoSearchOutline size={28} className="mx-auto text-slate-500 mb-2" />
+                        <p className="text-sm text-slate-400">Nenhuma memória encontrada para "{searchTerm}".</p>
+                        <p className="text-xs text-slate-500 mt-1">Tente um termo de busca diferente ou limpe a busca.</p>
+                    </div>
+                )
             ) : (
                 <div className="p-4 text-center bg-slate-900/60 rounded-lg border border-slate-700/60">
                     <LuBrain size={28} className="mx-auto text-slate-500 mb-2" />
@@ -443,7 +470,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         if (isOpen) {
             setCurrentApiKey(settings.apiKey || '');
             setLocalModelConfig(settings.geminiModelConfig || defaultModelConfig);
-            setCurrentCustomPersonalityPrompt(settings.customPersonalityPrompt || ''); // <--- INICIALIZAR ESTADO
+            setCurrentCustomPersonalityPrompt(settings.customPersonalityPrompt || '');
         }
     }, [isOpen, settings, defaultModelConfig]);
 
@@ -473,10 +500,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             ...prevSettings,
             apiKey: currentApiKey,
             geminiModelConfig: localModelConfig,
-            customPersonalityPrompt: currentCustomPersonalityPrompt.trim() // <--- SALVAR NO CONTEXTO
+            customPersonalityPrompt: currentCustomPersonalityPrompt.trim()
         }));
         alert("Configurações salvas com sucesso!");
-        // onClose(); // Opcional: fechar modal ao salvar
     };
 
     const tabs: Tab[] = [
@@ -581,8 +607,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                                 {...(tab.id === 'general' && {
                                                                     currentApiKey,
                                                                     setCurrentApiKey,
-                                                                    currentCustomPersonalityPrompt, // <--- PASSAR PROP
-                                                                    setCurrentCustomPersonalityPrompt, // <--- PASSAR PROP
+                                                                    currentCustomPersonalityPrompt,
+                                                                    setCurrentCustomPersonalityPrompt,
                                                                 })}
                                                                 {...(tab.id === 'model' && { currentModelConfig: localModelConfig, onModelConfigChange: handleLocalModelConfigChange })}
                                                             />
