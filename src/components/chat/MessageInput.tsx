@@ -589,7 +589,7 @@ SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolênc
                         userFacingError: streamError !== "Resposta abortada pelo usuário." ? streamError : undefined
                     }
                 });
-            } else { 
+            } else {
                 const processedMemoryActions: Required<MessageMetadata>['memorizedMemoryActions'] = [];
                 if (memoryOperationsFromServer && memoryOperationsFromServer.length > 0) {
                     memoryOperationsFromServer.forEach(op => {
@@ -653,35 +653,49 @@ SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolênc
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (isProcessingEditedMessage || isRecording) {
-            if (e.key === 'Enter') e.preventDefault();
+            if (e.key === 'Enter') e.preventDefault(); // Impede quebra de linha/envio durante esses processos
             return;
         }
 
         const currentIsLoading = isLoadingAI || isProcessingEditedMessage;
 
         if (currentIsLoading) {
-            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !isMobile) {
+            // Se estiver carregando, impede que Enter envie a mensagem (para evitar envios múltiplos acidentais)
+            // Permitir Shift+Enter para quebra de linha não faz muito sentido aqui, pois o envio está bloqueado.
+            if (e.key === 'Enter') {
                 e.preventDefault();
             }
             return;
         }
 
+        const hasContent = text.trim().length > 0 || attachedFiles.length > 0;
+
         if (isMobile) {
-            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) { // No mobile, enter não submete, apenas quebra linha
+            // Mobile:
+            // - Enter: quebra linha (comportamento padrão, não precisa de e.preventDefault() nem return explícito aqui, a menos que Shift+Enter também quebre)
+            // - Ctrl + Enter: envia mensagem
+            if (e.key === 'Enter' && e.ctrlKey && hasContent) {
+                e.preventDefault();
+                handleSubmit();
+            } else if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+                // Permite o comportamento padrão de quebra de linha do Enter no mobile
+                // Se você quisesse que apenas Shift+Enter quebrasse linha e Enter normal não fizesse nada (até o Ctrl+Enter),
+                // você adicionaria um `e.preventDefault()` aqui também.
+                // Mas o comportamento desejado é Enter = quebra de linha.
                 return;
             }
         } else {
-            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
-                if (text.trim().length > 0 || attachedFiles.length > 0) {
-                    e.preventDefault();
-                    handleSubmit();
-                }
-            } else if (e.key === 'Enter' && e.ctrlKey) { // Ctrl+Enter para submeter também
-                if (text.trim().length > 0 || attachedFiles.length > 0) {
-                    e.preventDefault();
-                    handleSubmit();
-                }
+            // Desktop:
+            // - Enter: envia mensagem
+            // - Shift + Enter: quebra linha
+            if (e.key === 'Enter' && !e.shiftKey && hasContent) {
+                e.preventDefault();
+                handleSubmit();
+            } else if (e.key === 'Enter' && e.shiftKey) {
+                // Permite o comportamento padrão de quebra de linha do Shift+Enter no desktop
+                return;
             }
+            // Se for Enter sem Shift e sem conteúdo, ou qualquer outra tecla, permite o comportamento padrão.
         }
     };
 
@@ -833,10 +847,10 @@ SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolênc
                         type="button"
                         variant={isRecording ? "danger" : "icon"}
                         className={`!p-2.5 rounded-lg transform active:scale-90
-                                    ${isRecording 
-                                        ? '!bg-red-600 hover:!bg-red-700 text-white animate-pulseRing' 
-                                        : 'text-slate-400 hover:text-blue-400 hover:bg-slate-700/60'
-                                    }`}
+                                    ${isRecording
+                                ? '!bg-red-600 hover:!bg-red-700 text-white animate-pulseRing'
+                                : 'text-slate-400 hover:text-blue-400 hover:bg-slate-700/60'
+                            }`}
                         onClick={handleMicButtonClick}
                         disabled={isMicDisabled || isProcessingEditedMessage}
                         aria-label={isRecording ? "Parar gravação e enviar" : "Iniciar gravação de áudio"}
@@ -855,12 +869,12 @@ SUA RESPOSTA (final): ...sua resposta normal ao usuário, expressando condolênc
                             onClick={isCurrentlyLoading ? handleAbortAIResponse : undefined}
                             variant={isCurrentlyLoading ? "danger" : "primary"}
                             className={`!p-2.5 rounded-lg transform active:scale-90 group overflow-hidden 
-                                        ${isCurrentlyLoading 
-                                            ? 'hover:!bg-red-700' // Para o botão de abortar
-                                            : canSubmitEffectively 
-                                                ? 'hover:!bg-blue-700' // Para o botão de enviar
-                                                : '!bg-slate-700 !text-slate-500 cursor-not-allowed' // Desabilitado visualmente
-                                        }`}
+                                        ${isCurrentlyLoading
+                                    ? 'hover:!bg-red-700' // Para o botão de abortar
+                                    : canSubmitEffectively
+                                        ? 'hover:!bg-blue-700' // Para o botão de enviar
+                                        : '!bg-slate-700 !text-slate-500 cursor-not-allowed' // Desabilitado visualmente
+                                }`}
                             disabled={isCurrentlyLoading ? false : !canSubmitEffectively}
                             aria-label={isCurrentlyLoading ? "Abortar resposta" : "Enviar mensagem"}
                             title={isCurrentlyLoading ? "Abortar resposta" : "Enviar mensagem"}
