@@ -487,6 +487,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                             }`}
                                 style={{ flex: '0 0 auto' }} // Prevent buttons from stretching to 100% width
                             >
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-explicit-any */}
                                 {React.cloneElement(tab.icon as React.ReactElement<any>, { className: `transition-transform duration-200 ${activeTab === tab.id ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}` })}
                                 <span>{tab.label}</span>
                             </button>
