@@ -241,7 +241,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     <div className="flex flex-col justify-center items-center pt-4">
       <img src="/logo-loox.png" alt="Logo Loox" className={`w-36 h-auto`} />
       <span className="text-xs text-slate-500/80 mb-2.5 px-1.5 tracking-wider whitespace-nowrap">
-        by Doublewave
+        by Doublewave ®
       </span>
     </div>
 

@@ -9,6 +9,7 @@ import {
     IoClose,
     IoStop,
     IoPaperPlaneOutline,
+    IoEarthOutline,
 } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
@@ -22,7 +23,7 @@ import type { MessageMetadata, AttachedFileInfo } from '../../types/conversation
 import { v4 as uuidv4 } from 'uuid';
 import useIsMobile from '../../hooks/useIsMobile';
 import { systemMessage } from '../../prompts';
-import type { Part } from '@google/genai'; // Necessário para o tipo do histórico
+import type { Part } from '@google/genai';
 
 interface LocalAttachedFile {
     id: string;
@@ -58,6 +59,7 @@ const MessageInput: React.FC = () => {
     const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
     const [errorFromAI, setErrorFromAI] = useState<string | null>(null);
     const [attachedFiles, setAttachedFiles] = useState<LocalAttachedFile[]>([]);
+    const [isWebSearchEnabledForNextMessage, setIsWebSearchEnabledForNextMessage] = useState<boolean>(false);
 
     const [isRecording, setIsRecording] = useState<boolean>(false);
     const [audioError, setAudioError] = useState<string | null>(null);
@@ -102,7 +104,7 @@ const MessageInput: React.FC = () => {
 
     const placeholderText =
         activeConversationId ?
-            (settings.apiKey ? "Digite sua mensagem..." : "Configure sua API Key.") :
+            (settings.apiKey ? "Digite a mensagem..." : "Configure sua API Key.") :
             "Crie uma nova conversa.";
 
     useEffect(() => { adjustTextareaHeight(); }, [text, adjustTextareaHeight]);
@@ -352,11 +354,14 @@ const MessageInput: React.FC = () => {
         const currentTextForAI = trimmedText;
         const currentConversation = conversations.find(c => c.id === activeConversationId);
 
-        // Prepare history for geminiService, ensuring Part[] compatibility
+        const webSearchActiveForThisSubmission = isWebSearchEnabledForNextMessage;
+        if (webSearchActiveForThisSubmission) {
+            setIsWebSearchEnabledForNextMessage(false);
+        }
+
         const historyBeforeCurrentUserMessage: { sender: 'user' | 'model' | 'function'; text?: string; parts?: Part[] }[] =
             currentConversation?.messages.map(msg => {
                 if (msg.metadata?.rawParts) {
-                    // Ensure rawParts are indeed Part[] or can be safely cast
                     return { sender: msg.sender, parts: msg.metadata.rawParts as Part[] };
                 }
                 return { sender: msg.sender, text: msg.text };
@@ -420,10 +425,6 @@ const MessageInput: React.FC = () => {
         let memoryOperationsFromServer: StreamedGeminiResponseChunk['memoryOperations'] = [];
         let streamError: string | null = null;
         let accumulatedAiText = "";
-        // rawPartsForNextHistoryEntry removed as its population logic was unclear here
-        // and geminiService handles intermediate history for function calls internally.
-        // The final AI message will primarily store 'text'. If 'rawParts' for the *final*
-        // AI message are needed, geminiService's final chunk should explicitly provide them.
 
         try {
             const currentGlobalMemoriesWithObjects = globalMemoriesFromHook.map(mem => ({ id: mem.id, content: mem.content }));
@@ -458,7 +459,8 @@ const MessageInput: React.FC = () => {
                 settings.geminiModelConfig,
                 systemInstructionText,
                 settings.functionDeclarations || [],
-                signal
+                signal,
+                webSearchActiveForThisSubmission
             );
 
             for await (const streamResponse of streamGenerator) {
@@ -508,7 +510,6 @@ const MessageInput: React.FC = () => {
             const finalMetadata: Partial<MessageMetadata> = {
                 isLoading: false,
                 abortedByUser: streamError === "Resposta abortada pelo usuário." || streamError?.includes("abortado") ? true : undefined,
-                // rawParts: undefined, // If we decide geminiService provides final parts, populate here
             };
 
             if (streamError && !finalMetadata.abortedByUser) {
@@ -614,6 +615,7 @@ const MessageInput: React.FC = () => {
     const canSubmitEffectively = (text.trim().length > 0 || attachedFiles.length > 0) && !!activeConversationId && !isCurrentlyLoading && !!settings.apiKey && !isRecording;
     const isTextareaAndAttachDisabled = !activeConversationId || !settings.apiKey || isProcessingEditedMessage || isRecording;
     const isMicDisabled = !activeConversationId || !settings.apiKey || isProcessingEditedMessage || isLoadingAI;
+    const isWebSearchButtonDisabled = !activeConversationId || !settings.apiKey || isCurrentlyLoading || isRecording;
 
     const recordingPlaceholder = (
         <div className="flex items-center text-sm text-slate-400">
@@ -683,7 +685,23 @@ const MessageInput: React.FC = () => {
                             ${isRecording ? 'ring-2 !ring-red-500/80 !border-red-500/80' : ''}
                             ${isTextareaFocused ? '!border-blue-500/70 ring-2 ring-blue-500' : ''}`}
             >
-                <div className="flex-shrink-0 p-0.5">
+                <div className="flex-shrink-0 p-0.5 flex items-center space-x-1">
+                    <Button
+                        type="button"
+                        variant="icon"
+                        className={`!p-2.5 rounded-lg transform active:scale-90 transition-colors duration-150
+                                    ${isWebSearchEnabledForNextMessage
+                                        ? 'bg-blue-600/80 text-sky-100 hover:bg-blue-500/90 focus:bg-blue-500/90'
+                                        : 'text-slate-400 hover:text-blue-400 hover:bg-slate-700/60'
+                                    }`}
+                        onClick={() => setIsWebSearchEnabledForNextMessage(prev => !prev)}
+                        disabled={isWebSearchButtonDisabled}
+                        aria-label={isWebSearchEnabledForNextMessage ? "Desativar busca na web para a próxima mensagem" : "Ativar busca na web para a próxima mensagem"}
+                        title={isWebSearchEnabledForNextMessage ? "Busca na web ATIVADA para a próxima mensagem. Clique para desativar." : "Ativar busca na web para a próxima mensagem."}
+                    >
+                        <IoEarthOutline size={20} />
+                    </Button>
+
                     {isRecording ? (
                         <Button type="button" variant="icon"
                             className="!p-2.5 text-red-400 hover:text-red-300 !bg-red-900/50 hover:!bg-red-800/60 rounded-lg transform active:scale-90"
@@ -767,4 +785,4 @@ const MessageInput: React.FC = () => {
     );
 };
 
-export default MessageInput;    
+export default MessageInput;
