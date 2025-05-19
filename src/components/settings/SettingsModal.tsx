@@ -704,7 +704,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             model: defaultFirstModel,
             temperature: 0.90,
             topP: 0.95,
-            topK: 8,
+            topK: 0,
             maxOutputTokens: defaultFirstModel.includes('flash') ? 8192 : (defaultFirstModel.includes('pro') ? 32768 : 8192),
         };
     }, []);

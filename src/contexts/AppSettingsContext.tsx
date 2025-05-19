@@ -17,7 +17,7 @@ const defaultAppSettings: AppSettings = {
         model: DEFAULT_GEMINI_MODEL,
         temperature: 0.90,
         topP: 0.95,
-        topK: 8,
+        topK: 0,
         maxOutputTokens: 32768,
     },
     functionDeclarations: [], // Adicionado
