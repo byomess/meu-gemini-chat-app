@@ -10,8 +10,11 @@
 - [ ] Personalização de configurações de interface
   - [ ] Esconder barra histórico de conversas
   - [ ] Esconder modal de configuração
-  - [ ] Desabilitar memórias
-  - [ ] Desabilitar chamadas de funções
+  - [ ] Desabilitar memórias (manter pro Aulapp)
+  - [ ] Desabilitar chamadas de funções (manter pro Aulapp)
+
+- [ ] Alterações específicas pro Aulapp
+  - [ ] Criar tema personalizado
 
 - [ ] Configuração de web component
   - [ ] Configuração de tema
@@ -22,6 +25,7 @@
 ## Backlog
 - [ ] Busca na web
 - [ ] Geração de imagens
+- [ ] Bolar uma forma do agente saber sobre conversas passadas
 - [ ] Funções de IA de banco de dados local (IndexedDB)
 - [ ] Funções de IA de scripts JavaScript
 - [ ] Funções de IA de Service Workers
