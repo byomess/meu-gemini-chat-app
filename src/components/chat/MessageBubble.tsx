@@ -17,7 +17,7 @@ import { useMemories } from '../../contexts/MemoryContext';
 import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
-import CodeBlock from '../common/CodeBlock';
+import CodeBlock from '../common/CodeBlock'; // Assumindo que este caminho está correto
 import CustomAudioPlayer from './CustomAudioPlayer';
 import Button from '../common/Button';
 import useIsMobile from '../../hooks/useIsMobile';
@@ -545,8 +545,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                             </div>
                         )}
 
+                        {/* CORREÇÃO APLICADA AQUI */}
                         <div className={`flex flex-col ${isMobile
-                            ? (isUser || isFunctionRole ? 'items-end' : 'items-start')
+                            ? (isUser || isFunctionRole ? 'items-end w-full max-w-full' : 'items-start w-full max-w-full') // Adicionado w-full max-w-full
                             : (isUser || isFunctionRole ? 'items-end max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]' : 'items-start max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]')
                             }`}>
                             {hasAttachedFiles && attachedFilesInfo && (
@@ -597,7 +598,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                             )}
 
                             {(shouldRenderTextContent || showAITypingIndicator || functionCallPart || functionResponsePart || (isEditing && !isUser && abortedByUser)) && (
-                                <div className={`relative ${isMobile ? '' : (isEditing && !isThisUserMessageBeingReprocessed ? (isUser ? 'min-w-[200px]' : 'min-w-[250px]') : '')} ${isUser && hasAttachedFiles ? 'mt-0' : ''} `}>
+                                // CORREÇÃO APLICADA AQUI
+                                <div className={`relative ${isMobile ? 'w-full' : (isEditing && !isThisUserMessageBeingReprocessed ? (isUser ? 'min-w-[200px]' : 'min-w-[250px]') : '')} ${isUser && hasAttachedFiles ? 'mt-0' : ''} `}>
                                     {isEditing && !isThisUserMessageBeingReprocessed ? (
                                         <div className={editContainerClasses}>
                                             <textarea ref={editTextareaRef} value={editedText} onChange={(e) => setEditedText(e.target.value)} onKeyDown={handleEditKeyDown} className={editTextareaClasses} rows={1} aria-label="Editar mensagem" />

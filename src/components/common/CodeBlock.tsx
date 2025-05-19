@@ -35,7 +35,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ inline, className, children, enab
     }
 
     return (
-        <div className="code-block-wrapper relative my-3 rounded-lg shadow-md bg-[#1e1e1e]">
+        <div className="code-block-wrapper relative my-3 rounded-lg shadow-md bg-[#1e1e1e] w-full">
             <div className="flex justify-between items-center px-3 py-1.5 bg-slate-800/70 border-b border-slate-700/50 rounded-t-lg">
                 <span className="text-xs text-slate-400 font-mono select-none">
                     {language || 'código'}
@@ -53,20 +53,27 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ inline, className, children, enab
                 <SyntaxHighlighter
                     style={vscDarkPlus}
                     language={language}
-                    PreTag="div"
+                    PreTag="div" // PreTag como div é importante para que o customStyle com overflow funcione
                     showLineNumbers={false}
-                    wrapLines={true}
-                    wrapLongLines={true}
+                    wrapLines={false} // CORREÇÃO: Para permitir rolagem horizontal
+                    wrapLongLines={false} // CORREÇÃO: Para permitir rolagem horizontal
                     customStyle={{
                         margin: 0,
                         padding: '1rem',
                         fontSize: '0.875rem',
                         lineHeight: '1.6',
                         borderRadius: '0 0 0.5rem 0.5rem',
-                        overflowX: 'auto',
+                        overflowX: 'auto', // Isto permitirá a rolagem
+                        // whiteSpace: 'pre' // Adicionado para garantir que não quebre, SyntaxHighlighter deve lidar com isso internamente
+                                         // mas pode ser útil se houver problemas com algumas linguagens ou configurações.
+                                         // Normalmente, wrapLines=false e wrapLongLines=false são suficientes.
                     }}
                     codeTagProps={{
-                        style: { fontFamily: 'var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace)' }
+                        style: { 
+                            fontFamily: 'var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace)',
+                            // whiteSpace: 'pre' // Garante que o conteúdo interno da tag code não quebre as linhas
+                                               // Esta propriedade na tag code é crucial.
+                        }
                     }}
                 >
                     {codeString}
@@ -74,7 +81,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ inline, className, children, enab
             ) : (
                 <pre
                     className="m-0 p-4 text-[0.875rem] leading-[1.6] rounded-b-lg overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50"
-                    style={{ fontFamily: 'var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace)', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}
+                    style={{ 
+                        fontFamily: 'var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace)', 
+                        whiteSpace: 'pre', // CORREÇÃO: Permite preservar espaços e causa overflow para scroll
+                        // wordWrap: 'break-word' // REMOVIDO: Isso quebraria as palavras
+                    }}
                 >
                     <code>
                         {codeString}
