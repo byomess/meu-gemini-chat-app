@@ -238,8 +238,11 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </nav>
 
-    <div className="flex justify-center">
-      <img src="/logo-loox.png" alt="Logo Loox" className={`py-4 w-36 h-auto`} />
+    <div className="flex flex-col justify-center items-center pt-4">
+      <img src="/logo-loox.png" alt="Logo Loox" className={`w-36 h-auto`} />
+      <span className="text-xs text-slate-500/80 mb-2.5 px-1.5 tracking-wider whitespace-nowrap">
+        by Doublewave
+      </span>
     </div>
 
       <div className={`pt-3 mt-2 border-t border-slate-800/70`}>

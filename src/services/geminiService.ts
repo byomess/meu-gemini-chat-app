@@ -18,6 +18,29 @@ import type { GeminiModelConfig, FunctionDeclaration as AppFunctionDeclaration }
 const FILE_STATE_ACTIVE = "ACTIVE";
 const FILE_STATE_FAILED = "FAILED";
 
+const WEB_SEARCH_FUNCTION_NAME = "perform_web_search";
+const WEB_SEARCH_INTERNAL_HANDLER_ID = "INTERNAL_WEB_SEARCH_HANDLER";
+const WEB_SEARCH_INTERNAL_METHOD = "INTERNAL_METHOD" as any; // Certifique-se que AppFunctionDeclaration['httpMethod'] pode acomodar isso
+
+export const webSearchAppFunctionDeclaration: AppFunctionDeclaration = {
+    id: WEB_SEARCH_INTERNAL_HANDLER_ID,
+    name: WEB_SEARCH_FUNCTION_NAME,
+    description: "Searches the web for up-to-date information, news, or answers to general knowledge questions. Use this when information is likely not in current knowledge, needs to be recent, or for broad factual queries.",
+    parametersSchema: JSON.stringify({
+        type: GeminiType.OBJECT,
+        properties: {
+            query: {
+                type: GeminiType.STRING,
+                description: "The search query string to find information on the web."
+            }
+        },
+        required: ["query"]
+    }),
+    endpointUrl: WEB_SEARCH_INTERNAL_HANDLER_ID,
+    httpMethod: WEB_SEARCH_INTERNAL_METHOD as any, // Cast para 'any' se AppFunctionDeclaration for restritivo e não incluir 'INTERNAL_METHOD'
+};
+
+
 export interface StreamedGeminiResponseChunk {
     delta?: string;
     finalText?: string;
@@ -155,8 +178,9 @@ export async function* streamMessageToGemini(
     globalMemoriesObjects: { id: string; content: string }[],
     modelConfig: GeminiModelConfig,
     systemInstructionString: string,
-    functionDeclarations: AppFunctionDeclaration[],
-    abortSignal?: AbortSignal
+    functionDeclarationsFromUser: AppFunctionDeclaration[],
+    abortSignal?: AbortSignal,
+    searchApiKey?: string
 ): AsyncGenerator<StreamedGeminiResponseChunk, void, undefined> {
     if (!apiKey) {
         yield { error: "Chave de API não fornecida.", isFinished: true };
@@ -218,7 +242,7 @@ export async function* streamMessageToGemini(
                 }
             } catch (uploadError: unknown) {
                 if (uploadError instanceof DOMException && uploadError.name === "AbortError") {
-                     yield { error: "Processamento de anexos abortado.", isFinished: true }; return;
+                    yield { error: "Processamento de anexos abortado.", isFinished: true }; return;
                 }
                 const errorMessage = uploadError instanceof Error ? uploadError.message : "Erro upload/verificação";
                 yield { error: `Falha com arquivo '${fileNameForUpload}': ${errorMessage}`, isFinished: false };
@@ -227,11 +251,11 @@ export async function* streamMessageToGemini(
         currentUserParts.push(...uploadedFileParts);
         if (attachedRawFiles.length > 0) {
             if (uploadedFileParts.length === attachedRawFiles.length && !uploadedFileParts.some(p => !p.fileData?.fileUri)) {
-                 yield { delta: "Anexos processados com sucesso... Aguardando resposta... ", isFinished: false };
+                yield { delta: "Anexos processados com sucesso... Aguardando resposta... ", isFinished: false };
             } else if (uploadedFileParts.length > 0) {
-                 yield { delta: "Alguns anexos processados... Aguardando resposta... ", isFinished: false };
+                yield { delta: "Alguns anexos processados... Aguardando resposta... ", isFinished: false };
             } else {
-                 yield { delta: "Falha ao processar todos os anexos... Aguardando resposta... ", isFinished: false };
+                yield { delta: "Falha ao processar todos os anexos... Aguardando resposta... ", isFinished: false };
             }
         }
     }
@@ -246,8 +270,8 @@ export async function* streamMessageToGemini(
             c => c.role === 'user' && (c.parts ?? []).some(p => (p.text && p.text.trim() !== "" && !p.text.startsWith("---")) || p.fileData || p.inlineData)
         );
         if (userMessagesInHistory.length === 0 && !currentUserMessageText.trim() && attachedRawFiles.length === 0) {
-             yield { error: "Nenhum conteúdo de usuário válido para enviar.", isFinished: true };
-             return;
+            yield { error: "Nenhum conteúdo de usuário válido para enviar.", isFinished: true };
+            return;
         }
     }
 
@@ -269,24 +293,32 @@ export async function* streamMessageToGemini(
         maxOutputTokens: modelConfig.maxOutputTokens,
     };
 
-    let toolsForApiNextTurn = functionDeclarations.length > 0
-        ? [{
-            functionDeclarations: functionDeclarations.map((fd): GeminiFunctionDeclaration => {
-                let parameters: GeminiSchema | undefined = undefined;
-                try {
-                    if (fd.parametersSchema && fd.parametersSchema.trim() !== "") {
-                        parameters = JSON.parse(fd.parametersSchema) as GeminiSchema;
+    const effectiveFunctionDeclarations: AppFunctionDeclaration[] = [...functionDeclarationsFromUser];
+    if (searchApiKey && !effectiveFunctionDeclarations.find(fd => fd.name === WEB_SEARCH_FUNCTION_NAME)) {
+        effectiveFunctionDeclarations.push(webSearchAppFunctionDeclaration);
+    }
+
+    let toolsForApiNextTurn = effectiveFunctionDeclarations.length > 0
+        ? [
+            {
+                functionDeclarations: effectiveFunctionDeclarations.map((fd): GeminiFunctionDeclaration => {
+                    let parameters: GeminiSchema | undefined = undefined;
+                    try {
+                        if (fd.parametersSchema && fd.parametersSchema.trim() !== "") {
+                            parameters = JSON.parse(fd.parametersSchema) as GeminiSchema;
+                        }
+                    } catch (e) {
+                        console.warn(`[Gemini Service] Falha ao analisar JSON para parametersSchema da função '${fd.name}'. Usando schema vazio. Erro:`, e instanceof Error ? e.message : String(e));
+                        parameters = { type: GeminiType.OBJECT, properties: {} };
                     }
-                } catch {
-                    parameters = { type: GeminiType.OBJECT, properties: {} };
-                }
-                return {
-                    name: fd.name,
-                    description: fd.description,
-                    parameters: parameters,
-                };
-            })
-        }]
+                    return {
+                        name: fd.name,
+                        description: fd.description,
+                        parameters: parameters,
+                    };
+                })
+            }
+        ]
         : undefined;
 
     let accumulatedTextForFinalResponse = "";
@@ -301,6 +333,9 @@ export async function* streamMessageToGemini(
                 model: modelConfig.model,
                 config: {
                     ...generationConfig,
+                    thinkingConfig: {
+                        thinkingBudget: 0,
+                    },
                     safetySettings: safetySettings,
                     systemInstruction: systemInstructionForAPI,
                     tools: toolsForApiNextTurn,
@@ -336,11 +371,11 @@ export async function* streamMessageToGemini(
             }
 
             if (hasFunctionCallInThisTurn) {
-                toolsForApiNextTurn = undefined; // Omitir tools na próxima chamada
+                toolsForApiNextTurn = undefined;
                 const finalFunctionCallPart = modelResponsePartsAggregatedThisTurn.find(p => p.functionCall);
                 if (finalFunctionCallPart && finalFunctionCallPart.functionCall) {
                     const { name: funcName, args: funcArgs } = finalFunctionCallPart.functionCall;
-                    
+
                     const textBeforeFunctionCall = modelResponsePartsAggregatedThisTurn
                         .filter(p => p.text && !p.functionCall).map(p => p.text).join("");
                     if (textBeforeFunctionCall) {
@@ -351,27 +386,101 @@ export async function* streamMessageToGemini(
                     currentChatHistory.push({ role: "model", parts: modelResponsePartsAggregatedThisTurn });
 
                     let functionExecutionResultData: unknown;
-                    const declaredFunction = functionDeclarations.find(df => df.name === funcName);
+                    const declaredFunction = effectiveFunctionDeclarations.find(df => df.name === funcName);
 
-                    if (declaredFunction) {
+                    if (declaredFunction && declaredFunction.name === WEB_SEARCH_FUNCTION_NAME && declaredFunction.endpointUrl === WEB_SEARCH_INTERNAL_HANDLER_ID && declaredFunction.httpMethod === WEB_SEARCH_INTERNAL_METHOD) {
+                        if (!searchApiKey) {
+                             functionExecutionResultData = {
+                                status: "error",
+                                error_message: `A chave da API de busca não foi configurada para a função '${funcName}'.`,
+                            };
+                            yield { delta: `\n[Loox: Erro de configuração para '${funcName}'.]\n`, isFinished: false };
+                        } else {
+                            try {
+                                const searchQuery = (funcArgs as { query?: string })?.query;
+                                if (!searchQuery || typeof searchQuery !== 'string' || searchQuery.trim() === "") {
+                                    throw new Error("A consulta (query) para a busca na web não foi fornecida ou é inválida.");
+                                }
+                                yield { delta: `[Loox: Buscando na web por "${searchQuery}"...]\n`, isFinished: false };
+
+                                const searchServiceUrl = `https://google.serper.dev/search`;
+                                const response = await fetch(searchServiceUrl, {
+                                    method: 'POST',
+                                    signal: abortSignal,
+                                    headers: {
+                                        'X-API-KEY': searchApiKey,
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({ q: searchQuery, num: 5 })
+                                });
+
+                                if (abortSignal?.aborted) throw new DOMException("Aborted by user during web search API call", "AbortError");
+
+                                if (!response.ok) {
+                                    const errorBody = await response.text();
+                                    throw new Error(`Erro na API de busca (${response.status}): ${errorBody}`);
+                                }
+                                const searchResults = await response.json();
+
+                                const organicResults = (searchResults.organic || []).slice(0, 3).map((item: any) => ({
+                                    title: item.title,
+                                    link: item.link,
+                                    snippet: item.snippet
+                                }));
+
+                                if (organicResults.length === 0 && searchResults.answerBox) {
+                                     functionExecutionResultData = {
+                                        answer_box: searchResults.answerBox,
+                                        message: "Informação direta encontrada."
+                                     };
+                                } else if (organicResults.length > 0) {
+                                    functionExecutionResultData = {
+                                        search_results: organicResults,
+                                        summary: `Encontrados ${organicResults.length} resultados relevantes para "${searchQuery}".`
+                                    };
+                                } else {
+                                     functionExecutionResultData = {
+                                        message: `Nenhum resultado direto encontrado para "${searchQuery}".`,
+                                        search_results: []
+                                     };
+                                }
+                                yield { delta: `[Loox: Busca na web para '${funcName}' concluída.]\n`, isFinished: false };
+
+                            } catch (executionError: unknown) {
+                                if (executionError instanceof DOMException && executionError.name === "AbortError") {
+                                   throw executionError;
+                                }
+                                console.error(`[Gemini Service] Erro ao executar ${WEB_SEARCH_FUNCTION_NAME}:`, executionError instanceof Error ? executionError.message : String(executionError));
+                                functionExecutionResultData = {
+                                    status: "error",
+                                    error_message: `Erro ao realizar busca na web para '${funcName}': ${executionError instanceof Error ? executionError.message : "Erro desconhecido na busca."}`,
+                                };
+                                yield { delta: `\n[Loox: Erro ao executar busca na web para '${funcName}'.]\n`, isFinished: false };
+                            }
+                        }
+                    } else if (declaredFunction) {
                         try {
                             let targetUrl = declaredFunction.endpointUrl;
                             const requestOptions: RequestInit = {
                                 method: declaredFunction.httpMethod,
                                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                                signal: abortSignal,
                             };
 
-                            if (declaredFunction.httpMethod === 'GET') {
+                            if (declaredFunction.httpMethod.toUpperCase() === 'GET') {
                                 const queryParams = new URLSearchParams(funcArgs as Record<string, string>).toString();
                                 if (queryParams) {
                                     targetUrl += (targetUrl.includes('?') ? '&' : '?') + queryParams;
                                 }
-                            } else if (declaredFunction.httpMethod === 'POST') {
+                            } else if (declaredFunction.httpMethod.toUpperCase() === 'POST') {
                                 requestOptions.body = JSON.stringify(funcArgs);
+                            } else {
+                                 throw new Error(`Método HTTP '${declaredFunction.httpMethod}' não suportado ou não é um método interno conhecido para a função '${funcName}'.`);
                             }
-                            
+
                             const apiResponse = await fetch(targetUrl, requestOptions);
-                            
+                            if (abortSignal?.aborted) throw new DOMException("Aborted by user during function API call", "AbortError");
+
                             if (!apiResponse.ok) {
                                 let errorBody = `Erro HTTP: ${apiResponse.status} ${apiResponse.statusText}`;
                                 try { const errJson = await apiResponse.json(); errorBody += ` - ${JSON.stringify(errJson)}`; } catch { /* no json body */ }
@@ -386,6 +495,9 @@ export async function* streamMessageToGemini(
                             }
                             yield { delta: `[Loox: API para '${funcName}' respondeu.]\n`, isFinished: false };
                         } catch (executionError: unknown) {
+                            if (executionError instanceof DOMException && executionError.name === "AbortError") {
+                                throw executionError;
+                            }
                             functionExecutionResultData = {
                                 status: "error",
                                 error_message: `Erro ao chamar API para '${funcName}': ${executionError instanceof Error ? executionError.message : "Erro desconhecido na chamada da API externa."}`,
@@ -429,7 +541,7 @@ export async function* streamMessageToGemini(
             detailedErrorForLog = { name: error.name, message: error.message, stack: error.stack };
         } else if (typeof error === 'string') { detailedErrorForLog = error; }
         console.error("GEMINI_SERVICE: Erro ao chamar API Gemini (stream):", detailedErrorForLog);
-        
+
         let errorMessage = "Ocorreu um erro ao contatar a IA.";
         if (error instanceof Error && 'message' in error) {
             const apiErrorMessage = (error as Error).message;

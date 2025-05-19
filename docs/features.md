@@ -137,5 +137,3 @@ O Loox pode ser integrado a outras aplicações como um Web Component, permitind
 </body>
 </html>
 ```
-
-## 

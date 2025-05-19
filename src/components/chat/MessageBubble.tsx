@@ -91,7 +91,7 @@ const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail 
         colorClass = "text-sky-400";
     } else if (memoryActionDetail.action === 'deleted_by_ai') {
         ActionIconComponent = IoRemoveCircleOutline;
-        actionLabel = "Memória sugerida para remoção (IA):";
+        actionLabel = "Memória removida:";
         colorClass = "text-amber-400";
     }
 
