@@ -7,7 +7,8 @@ import {
     IoCreateOutline, IoInformationCircleOutline, IoRemoveCircleOutline,
     IoDocumentTextOutline, IoImageOutline, IoMusicalNotesOutline,
     IoChevronDownOutline, IoChevronUpOutline,
-    IoTrashBinOutline, IoVideocamOutline,
+    IoTrashBinOutline, IoVideocamOutline, IoTerminalOutline, // Ícone para function call
+    IoGitCommitOutline, // Ícone para function response
 } from 'react-icons/io5';
 import { Dialog, Transition } from '@headlessui/react';
 import { useConversations } from '../../contexts/ConversationContext';
@@ -18,7 +19,7 @@ import CodeBlock from '../common/CodeBlock';
 import CustomAudioPlayer from './CustomAudioPlayer';
 import Button from '../common/Button';
 import useIsMobile from '../../hooks/useIsMobile';
-
+import type { Part, FunctionCall, FunctionResponse } from '@google/genai'; // Importar tipos da SDK
 
 interface MemoryActionItemProps {
     memoryActionDetail: NonNullable<MessageMetadata['memorizedMemoryActions']>[0];
@@ -249,7 +250,6 @@ const MediaModal: React.FC<MediaModalProps> = ({ isOpen, onClose, mediaUrl, medi
     );
 };
 
-
 interface MessageBubbleProps {
     message: Message;
     conversationId: string;
@@ -267,6 +267,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const isMobile = useIsMobile();
 
     const isUser = message.sender === 'user';
+    const isFunctionRole = message.sender === 'function'; // Added for function role messages
     const isLoading = message.metadata?.isLoading;
     const isActualErrorForStyling = (typeof message.metadata?.error === 'string' && message.metadata.error !== "Resposta abortada pelo usuário.") || (typeof message.metadata?.error === 'boolean' && message.metadata.error === true);
     const abortedByUser = message.metadata?.abortedByUser;
@@ -275,6 +276,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const hasMemoryActions = memoryActions && memoryActions.length > 0;
     const attachedFilesInfo = message.metadata?.attachedFilesInfo;
     const hasAttachedFiles = !!(attachedFilesInfo && attachedFilesInfo.length > 0);
+    const rawParts = message.metadata?.rawParts;
 
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [editedText, setEditedText] = useState<string>(message.text);
@@ -316,12 +318,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     }, [isEditing]);
 
     const handleDelete = (): void => {
+        // Function role messages might not be deletable by user directly
+        if (isFunctionRole && !window.confirm('Tem certeza que deseja excluir esta mensagem de função? Isso pode afetar a continuidade da IA.')) {
+            return;
+        }
         if (window.confirm('Tem certeza que deseja excluir esta mensagem?')) {
             removeMessageById(conversationId, message.id);
         }
     };
 
     const handleEdit = (): void => {
+        if (isFunctionRole) return; // Don't allow editing function role messages
         if (!isUser && abortedByUser && message.text.trim() === "Resposta abortada pelo usuário.") {
             setEditedText("");
         } else {
@@ -341,7 +348,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         }
         if (isUser) {
             await regenerateResponseForEditedMessage(conversationId, message.id, newText);
-        } else {
+        } else { // AI message
             const newMetadata: Partial<MessageMetadata> = { ...message.metadata, abortedByUser: false, error: false, userFacingError: undefined };
             if (isLoading) newMetadata.isLoading = false;
             updateMessageInConversation(conversationId, message.id, { text: newText, metadata: newMetadata });
@@ -359,7 +366,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     };
 
     const isThisUserMessageBeingReprocessed = isUser && isProcessingEditedMessage && (activeConversation?.messages.some((m) => m.id === message.id) ?? false) && Boolean(activeConversation?.messages[activeConversation.messages.length - 1]?.metadata?.isLoading) && ((activeConversation?.messages.findIndex((m) => m.id === message.id) ?? 0) < ((activeConversation?.messages.length ?? 1) - 1));
-    const canPerformActionsOnMessage = !isLoading && !isActualErrorForStyling && !isProcessingEditedMessage && !isThisUserMessageBeingReprocessed;
+    const canPerformActionsOnMessage = !isFunctionRole && !isLoading && !isActualErrorForStyling && !isProcessingEditedMessage && !isThisUserMessageBeingReprocessed;
+
 
     const markdownComponents: Components = {
         code: ({ children, ...props }) => <CodeBlock {...props}>{String(children)}</CodeBlock>,
@@ -398,22 +406,34 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         }
     }
 
-    const shouldRenderTextContent = message.text.trim().length > 0 || (!isUser && (userFacingErrorMessage || (abortedByUser && !isEditing)));
-    const showAITypingIndicator = !isUser && isLoading && !shouldRenderTextContent;
-    const hasAnyContentForBubble = hasAttachedFiles || shouldRenderTextContent || showAITypingIndicator;
+    const functionCallPart = rawParts?.find((p): p is Part & { functionCall: FunctionCall } => {
+        const part = p as Part;
+        return !!part.functionCall;
+    });
+    const functionResponsePart = rawParts?.find((p): p is Part & { functionResponse: FunctionResponse } => {
+        return (p as Part).functionResponse !== undefined;
+    });
+
+    const shouldRenderTextContent = message.text.trim().length > 0 ||
+        (!isUser && !isFunctionRole && (userFacingErrorMessage || (abortedByUser && !isEditing))) ||
+        (isFunctionRole && !functionResponsePart); // Show text for function role if no specific response part
+
+    const showAITypingIndicator = !isUser && !isFunctionRole && isLoading && !shouldRenderTextContent && !functionCallPart;
+    const hasAnyContentForBubble = hasAttachedFiles || shouldRenderTextContent || showAITypingIndicator || functionCallPart || functionResponsePart;
 
     const userBubbleClasses = "bg-gradient-to-br from-sky-600 to-blue-700 text-white shadow-lg backdrop-blur-sm bg-opacity-90";
     const aiBubbleBaseClasses = "bg-gradient-to-br from-slate-700 to-slate-800 text-slate-200 shadow-lg backdrop-blur-sm bg-opacity-90";
+    const functionRoleBubbleClasses = "bg-gradient-to-br from-indigo-700 to-purple-800 text-indigo-100 shadow-lg backdrop-blur-sm bg-opacity-90 border-2 border-indigo-500/50";
     const errorBubbleClasses = "!bg-gradient-to-br !from-red-700/90 !to-red-800/90 !border-2 !border-red-500/70 text-red-100";
     const abortedBubbleClasses = "border-2 border-dashed border-amber-500/80 !bg-slate-700/70 shadow-amber-500/10 shadow-md";
     const loadingBubbleClasses = "opacity-60 animate-pulse !bg-slate-600/70 border border-slate-500/60";
 
     const messageContainerClasses = `py-3 px-4 rounded-2xl relative prose prose-sm prose-invert max-w-none
                                    transition-all duration-200 ease-in-out prose-p:text-slate-200 prose-headings:text-slate-50
-                                   ${isUser ? userBubbleClasses : aiBubbleBaseClasses}
+                                   ${isUser ? userBubbleClasses : (isFunctionRole ? functionRoleBubbleClasses : aiBubbleBaseClasses)}
                                    ${isActualErrorForStyling ? errorBubbleClasses : ''}
                                    ${abortedByUser && !isEditing ? abortedBubbleClasses : ''}
-                                   ${isLoading && !showAITypingIndicator && !userFacingErrorMessage && !abortedByUser && !isEditing ? loadingBubbleClasses : ''}`;
+                                   ${isLoading && !showAITypingIndicator && !userFacingErrorMessage && !abortedByUser && !isEditing && !functionCallPart && !functionResponsePart ? loadingBubbleClasses : ''}`;
 
     const editContainerClasses = `p-2 rounded-xl shadow-xl border-2 border-blue-500/70
                                  ${isUser ? 'bg-blue-700/90' : 'bg-slate-700/90'} backdrop-blur-md`;
@@ -430,19 +450,23 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         <>
             <div
                 className="group/messageBubble relative flex flex-col mb-5 sm:mb-6 last:mb-2"
-                onMouseEnter={() => { if (canPerformActionsOnMessage || (!isUser && abortedByUser)) { setShowActions(true); } }}
+                onMouseEnter={() => { if (canPerformActionsOnMessage || (!isUser && !isFunctionRole && abortedByUser)) { setShowActions(true); } }}
                 onMouseLeave={() => setShowActions(false)}
             >
                 {hasAnyContentForBubble && (
                     <div className={`flex w-full ${isMobile
-                            ? (isUser ? 'flex-col items-end' : 'flex-col items-start')
-                            : (isUser ? 'flex-row items-end justify-end' : 'flex-row items-end justify-start')
+                        ? (isUser || isFunctionRole ? 'flex-col items-end' : 'flex-col items-start') // function role aligned like user for now
+                        : (isUser || isFunctionRole ? 'flex-row items-end justify-end' : 'flex-row items-end justify-start')
                         } gap-2 sm:gap-2.5`}>
 
-                        {!isUser && (
-                            <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isMobile ? 'self-start' : ''
-                                }`}>
+                        {(!isUser && !isFunctionRole) && ( // Standard AI avatar
+                            <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isMobile ? 'self-start' : ''}`}>
                                 <IoSparklesOutline size={isMobile ? 16 : 18} />
+                            </div>
+                        )}
+                        {isFunctionRole && ( // Avatar for Function Role messages
+                            <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isMobile ? 'self-end order-first' : ''}`}>
+                                <IoGitCommitOutline size={isMobile ? 16 : 18} />
                             </div>
                         )}
 
@@ -453,11 +477,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                         )}
 
                         <div className={`flex flex-col ${isMobile
-                                ? (isUser ? 'items-end' : 'items-start')
-                                : (isUser ? 'items-end max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]' : 'items-start max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]')
+                            ? (isUser || isFunctionRole ? 'items-end' : 'items-start')
+                            : (isUser || isFunctionRole ? 'items-end max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]' : 'items-start max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]')
                             }`}>
                             {hasAttachedFiles && attachedFilesInfo && (
-                                <div className={`flex flex-wrap gap-2 mb-1.5 ${isUser ? 'justify-end' : 'justify-start'} ${isMobile ? (isUser ? 'w-full justify-end' : 'w-full justify-start') : ''}`}>
+                                <div className={`flex flex-wrap gap-2 mb-1.5 ${isUser || isFunctionRole ? 'justify-end' : 'justify-start'} ${isMobile ? (isUser || isFunctionRole ? 'w-full justify-end' : 'w-full justify-start') : ''}`}>
                                     {attachedFilesInfo.map(fileInfo => (
                                         <div key={fileInfo.id} className="bg-slate-800/60 border border-slate-700/60 p-1.5 rounded-xl shadow-md overflow-hidden max-w-[260px] sm:max-w-xs backdrop-blur-sm">
                                             {fileInfo.type.startsWith('image/') && fileInfo.dataUrl ? (
@@ -478,7 +502,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                                 >
                                                     <video
                                                         src={fileInfo.dataUrl}
-                                                        className="object-contain rounded-md pointer-events-none" // pointer-events-none to allow parent click
+                                                        className="object-contain rounded-md pointer-events-none"
                                                         style={{ maxWidth: '100%', maxHeight: '100%' }}
                                                     />
                                                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity">
@@ -503,7 +527,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                 </div>
                             )}
 
-                            {(shouldRenderTextContent || showAITypingIndicator || (isEditing && !isUser && abortedByUser)) && (
+                            {(shouldRenderTextContent || showAITypingIndicator || functionCallPart || functionResponsePart || (isEditing && !isUser && abortedByUser)) && (
                                 <div className={`relative ${isMobile ? '' : (isEditing && !isThisUserMessageBeingReprocessed ? (isUser ? 'min-w-[200px]' : 'min-w-[250px]') : '')} ${isUser && hasAttachedFiles ? 'mt-0' : ''} `}>
                                     {isEditing && !isThisUserMessageBeingReprocessed ? (
                                         <div className={editContainerClasses}>
@@ -516,7 +540,38 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                     ) : (
                                         <div className={messageContainerClasses}>
                                             {isThisUserMessageBeingReprocessed && (<div className="absolute -top-1.5 -right-1.5 p-0.5 bg-slate-600 rounded-full shadow z-10"> <IoSyncOutline size={12} className="text-slate-300 animate-spin" /> </div>)}
-                                            {showAITypingIndicator ? (
+
+                                            {functionCallPart ? (
+                                                <div className="function-call-content p-1">
+                                                    <div className="flex items-center text-xs text-amber-300 mb-1.5">
+                                                        <IoTerminalOutline size={16} className="mr-1.5 flex-shrink-0" />
+                                                        <span className="font-semibold">Chamada de Função Solicitada:</span>
+                                                    </div>
+                                                    <p className="text-sm font-medium text-amber-100 mb-1">{functionCallPart.functionCall.name}</p>
+                                                    {functionCallPart.functionCall.args && Object.keys(functionCallPart.functionCall.args).length > 0 && (
+                                                        <>
+                                                            <p className="text-xs text-amber-300/80 mb-0.5">Argumentos:</p>
+                                                            <CodeBlock className="language-json !text-xs !my-0 !p-0">
+                                                                {JSON.stringify(functionCallPart.functionCall.args, null, 2)}
+                                                            </CodeBlock>
+                                                        </>
+                                                    )}
+                                                    {/* className="mt-2 pt-2 border-t border-amber-500/30 text-sm" */}
+                                                    {message.text.trim() && <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{message.text.replace(/▍$/, '')}</ReactMarkdown>}
+                                                </div>
+                                            ) : functionResponsePart ? (
+                                                <div className="function-response-content p-1">
+                                                    <div className="flex items-center text-xs text-indigo-300 mb-1.5">
+                                                        <IoGitCommitOutline size={16} className="mr-1.5 flex-shrink-0" />
+                                                        <span className="font-semibold">Resposta da Função:</span>
+                                                    </div>
+                                                    <p className="text-sm font-medium text-indigo-100 mb-1">{functionResponsePart.functionResponse.name}</p>
+                                                    <p className="text-xs text-indigo-300/80 mb-0.5">Conteúdo da Resposta:</p>
+                                                    <CodeBlock className="language-json !text-xs !my-0 !p-0">
+                                                        {JSON.stringify(functionResponsePart.functionResponse.response?.content ?? {}, null, 2)}
+                                                    </CodeBlock>
+                                                </div>
+                                            ) : showAITypingIndicator ? (
                                                 <div className="typing-dots flex items-center space-x-1.5 h-6">
                                                     <span className="block w-2.5 h-2.5 bg-current rounded-full animate-bounce delay-0"></span>
                                                     <span className="block w-2.5 h-2.5 bg-current rounded-full animate-bounce delay-200"></span>
@@ -555,21 +610,21 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                             </div>
                         )}
 
-                        {((canPerformActionsOnMessage || (!isUser && abortedByUser)) && showActions && !isEditing) && (
+                        {((canPerformActionsOnMessage || (!isUser && !isFunctionRole && abortedByUser)) && showActions && !isEditing) && (
                             <div className={`flex items-center rounded-xl shadow-xl bg-slate-800/70 border border-slate-700/80 p-1 absolute transform transition-all duration-150 ease-out z-10 backdrop-blur-sm
                                             ${isUser ?
                                     (isMobile ? 'right-0 top-9 sm:top-10' : 'right-0 -top-6') :
-                                    (isMobile ? 'left-0 top-9 sm:top-10' : 'left-11 sm:left-12 -top-6')
+                                    (isMobile ? 'left-0 top-9 sm:top-10' : 'left-11 sm:left-12 -top-6') // AI or Function Role
                                 }
                                             ${showActions ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 -translate-y-2 pointer-events-none'}`}>
-                                <Button variant='icon' onClick={handleEdit} className="!p-1.5 text-slate-300 hover:!text-sky-400 hover:!bg-slate-700/70" title="Editar mensagem" disabled={isProcessingEditedMessage || (!isUser && isThisUserMessageBeingReprocessed)}> <IoPencilOutline size={16} /> </Button>
+                                {!isFunctionRole && <Button variant='icon' onClick={handleEdit} className="!p-1.5 text-slate-300 hover:!text-sky-400 hover:!bg-slate-700/70" title="Editar mensagem" disabled={isProcessingEditedMessage || (!isUser && isThisUserMessageBeingReprocessed)}> <IoPencilOutline size={16} /> </Button>}
                                 <Button variant='icon' onClick={handleDelete} className="!p-1.5 text-slate-300 hover:!text-red-400 hover:!bg-slate-700/70" title="Excluir mensagem" disabled={isProcessingEditedMessage}> <IoTrashOutline size={16} /> </Button>
                             </div>
                         )}
                     </div>
                 )}
 
-                {!isUser && hasMemoryActions && memoryActions && (
+                {!isUser && !isFunctionRole && hasMemoryActions && memoryActions && (
                     <div className={`mt-3 ${isMobile ? 'w-full' : 'ml-11 sm:ml-12 mr-2 sm:mr-0 max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]'} animate-fadeInQuick`}>
                         <div className="flex items-center gap-1.5 text-xs text-purple-400 mb-1">
                             <MainActionIcon size={15} />

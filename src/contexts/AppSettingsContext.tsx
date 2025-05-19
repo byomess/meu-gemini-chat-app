@@ -1,7 +1,7 @@
 // src/contexts/AppSettingsContext.tsx
 import React, { createContext, useContext, type ReactNode } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import type { AppSettings, GeminiModelConfig, GeminiModel } from '../types';
+import type { AppSettings, GeminiModelConfig, GeminiModel, FunctionDeclaration } from '../types';
 
 const APP_SETTINGS_KEY = 'geminiChat_appSettings';
 
@@ -20,6 +20,7 @@ const defaultAppSettings: AppSettings = {
         topK: 8,
         maxOutputTokens: 32768,
     },
+    functionDeclarations: [], // Adicionado
 };
 
 interface AppSettingsContextType {
@@ -27,6 +28,7 @@ interface AppSettingsContextType {
     setSettings: React.Dispatch<React.SetStateAction<AppSettings>>;
     saveApiKey: (apiKey: string) => void;
     updateGeminiModelConfig: (config: Partial<GeminiModelConfig>) => void;
+    updateFunctionDeclarations: (declarations: FunctionDeclaration[]) => void; // Adicionado
 }
 
 const AppSettingsContext = createContext<AppSettingsContextType | undefined>(undefined);
@@ -45,14 +47,27 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
         setSettings((prevSettings) => ({
             ...prevSettings,
             geminiModelConfig: {
-                ...prevSettings.geminiModelConfig, // Preserva as configurações existentes
-                ...configUpdate,                   // Aplica as atualizações
+                ...prevSettings.geminiModelConfig,
+                ...configUpdate,
             },
         }));
     };
 
+    const updateFunctionDeclarations = (declarations: FunctionDeclaration[]) => { // Adicionado
+        setSettings((prevSettings) => ({
+            ...prevSettings,
+            functionDeclarations: declarations,
+        }));
+    };
+
     return (
-        <AppSettingsContext.Provider value={{ settings, setSettings, saveApiKey, updateGeminiModelConfig }}>
+        <AppSettingsContext.Provider value={{
+            settings,
+            setSettings,
+            saveApiKey,
+            updateGeminiModelConfig,
+            updateFunctionDeclarations // Adicionado
+        }}>
             {children}
         </AppSettingsContext.Provider>
     );

@@ -1,4 +1,4 @@
-// src/services/geminiService.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
     GoogleGenAI,
     HarmCategory,
@@ -7,15 +7,15 @@ import {
     type Content,
     type Part,
     type GenerateContentResponse,
-    // FileMetadataResponse pode não ser exportado, vamos usar o tipo inferido ou um mais genérico.
-    // A resposta de upload e get é geralmente o objeto de metadados do arquivo.
+    type FunctionDeclaration as GeminiFunctionDeclaration,
+    type Schema as GeminiSchema,
+    Type as GeminiType,
+    type GenerateContentParameters,
 } from "@google/genai";
 
-import type { GeminiModelConfig } from '../types';
+import type { GeminiModelConfig, FunctionDeclaration as AppFunctionDeclaration } from '../types';
 
-// CONSULTE A DOCUMENTAÇÃO OFICIAL DO GEMINI PARA OS VALORES EXATOS DESTES ESTADOS!
 const FILE_STATE_ACTIVE = "ACTIVE";
-const FILE_STATE_PROCESSING = "PROCESSING";
 const FILE_STATE_FAILED = "FAILED";
 
 export interface StreamedGeminiResponseChunk {
@@ -35,25 +35,21 @@ export interface RawFileAttachment {
     file: File;
 }
 
-// Tipagem para o objeto de metadados do arquivo retornado pela API
-// Adapte conforme a estrutura real da resposta da SDK
 interface GeminiFileMetadata {
-    name: string; // Ex: "files/file-id"
+    name: string;
     displayName?: string;
     mimeType: string;
-    sizeBytes?: string | number; // Pode ser string ou number
-    createTime?: string; // Formato de data ISO
-    updateTime?: string; // Formato de data ISO
-    expirationTime?: string; // Formato de data ISO
+    sizeBytes?: string | number;
+    createTime?: string;
+    updateTime?: string;
+    expirationTime?: string;
     sha256Hash?: string;
-    uri: string; // O URI para referenciar o arquivo
-    state?: string; // O estado do arquivo (ACTIVE, PROCESSING, FAILED)
-    // Outras propriedades podem existir
+    uri: string;
+    state?: string;
 }
 
-
 const buildChatHistory = (
-    priorConversationMessages: { sender: 'user' | 'ai'; text: string }[],
+    priorConversationMessages: { sender: 'user' | 'model' | 'function'; text?: string; parts?: Part[] }[],
     globalMemories: string[]
 ): Content[] => {
     const history: Content[] = [];
@@ -70,11 +66,19 @@ const buildChatHistory = (
     }
     history.push({ role: "user", parts: [{ text: memoriesTextSegment.trim() }] });
     history.push({ role: "model", parts: [{ text: "Ok, entendi o conhecimento prévio." }] });
+
     priorConversationMessages.forEach(msg => {
-        history.push({
-            role: msg.sender === 'user' ? 'user' : 'model',
-            parts: [{ text: msg.text }]
-        });
+        if (msg.parts) {
+            history.push({
+                role: msg.sender as 'user' | 'model' | 'function',
+                parts: msg.parts
+            });
+        } else if (msg.text !== undefined) {
+            history.push({
+                role: msg.sender as 'user' | 'model',
+                parts: [{ text: msg.text }]
+            });
+        }
     });
     return history;
 };
@@ -126,52 +130,32 @@ async function waitForFileActive(
 ): Promise<GeminiFileMetadata | null> {
     for (let i = 0; i < maxRetries; i++) {
         if (abortSignal?.aborted) {
-            console.log(`GEMINI_SERVICE: Verificação de estado do arquivo '${fileNameFromAPI}' abortada.`);
             throw new DOMException("Aborted during file state check", "AbortError");
         }
         try {
-            console.log(`GEMINI_SERVICE: Verificando estado do arquivo '${fileNameFromAPI}', tentativa ${i + 1}/${maxRetries}...`);
             const fileMetadata = await genAI.files.get({ name: fileNameFromAPI }) as GeminiFileMetadata;
-            
-            if (fileMetadata && fileMetadata.state) {
-                 if (fileMetadata.state.toUpperCase() === FILE_STATE_ACTIVE) {
-                    console.log(`GEMINI_SERVICE: Arquivo '${fileNameFromAPI}' está ATIVO.`);
-                    return fileMetadata;
-                } else if (fileMetadata.state.toUpperCase() === FILE_STATE_FAILED) {
-                    console.error(`GEMINI_SERVICE: Arquivo '${fileNameFromAPI}' falhou no processamento (estado: ${fileMetadata.state}).`);
-                    return null;
-                } else if (fileMetadata.state.toUpperCase() !== FILE_STATE_PROCESSING) {
-                     console.warn(`GEMINI_SERVICE: Arquivo '${fileNameFromAPI}' em estado inesperado: ${fileMetadata.state}. Continuando a verificar.`);
-                }
-            } else {
-                console.warn(`GEMINI_SERVICE: Metadados do arquivo '${fileNameFromAPI}' inválidos ou estado ausente na tentativa ${i+1}. Resposta:`, fileMetadata);
-            }
-
-            if (i < maxRetries - 1) {
-                await new Promise(resolve => setTimeout(resolve, delayMs));
-            }
-        } catch (error) {
-            console.error(`GEMINI_SERVICE: Erro ao obter metadados do arquivo '${fileNameFromAPI}' na tentativa ${i+1}:`, error);
-            if (abortSignal?.aborted) throw new DOMException("Aborted during file state check retry", "AbortError");
-            if (i < maxRetries - 1) {
-                 await new Promise(resolve => setTimeout(resolve, delayMs));
-            } else {
+            if (fileMetadata?.state?.toUpperCase() === FILE_STATE_ACTIVE) return fileMetadata;
+            if (fileMetadata?.state?.toUpperCase() === FILE_STATE_FAILED) {
                 return null;
             }
+            if (i < maxRetries - 1) await new Promise(resolve => setTimeout(resolve, delayMs));
+        } catch {
+            if (abortSignal?.aborted) throw new DOMException("Aborted during file state check retry", "AbortError");
+            if (i < maxRetries - 1) await new Promise(resolve => setTimeout(resolve, delayMs)); else return null;
         }
     }
-    console.warn(`GEMINI_SERVICE: Arquivo '${fileNameFromAPI}' não ficou ativo após ${maxRetries} tentativas.`);
     return null;
 }
 
 export async function* streamMessageToGemini(
     apiKey: string,
-    conversationHistory: { sender: 'user' | 'ai'; text: string }[],
+    conversationHistory: { sender: 'user' | 'model' | 'function'; text?: string; parts?: Part[] }[],
     currentUserMessageText: string,
     attachedRawFiles: RawFileAttachment[],
     globalMemoriesObjects: { id: string; content: string }[],
     modelConfig: GeminiModelConfig,
     systemInstructionString: string,
+    functionDeclarations: AppFunctionDeclaration[],
     abortSignal?: AbortSignal
 ): AsyncGenerator<StreamedGeminiResponseChunk, void, undefined> {
     if (!apiKey) {
@@ -185,7 +169,8 @@ export async function* streamMessageToGemini(
 
     const genAI = new GoogleGenAI({ apiKey: apiKey });
     const globalMemoriesContent = globalMemoriesObjects.map(mem => mem.content);
-    const baseHistory = buildChatHistory(conversationHistory, globalMemoriesContent);
+
+    const currentChatHistory: Content[] = buildChatHistory(conversationHistory, globalMemoriesContent);
     const currentUserParts: Part[] = [];
 
     if (currentUserMessageText.trim()) {
@@ -193,87 +178,55 @@ export async function* streamMessageToGemini(
     }
 
     const uploadedFileParts: Part[] = [];
-    let someUploadsFailed = false;
     if (attachedRawFiles && attachedRawFiles.length > 0) {
         yield { delta: "Processando anexos... ", isFinished: false };
-
         for (const rawFileAttachment of attachedRawFiles) {
             if (abortSignal?.aborted) {
                 yield { error: "Processamento de anexos abortado.", isFinished: true };
                 return;
             }
-            
             const file = rawFileAttachment.file;
             if (!file || !(typeof File !== "undefined" && file instanceof File || typeof Blob !== "undefined" && file instanceof Blob)) {
-                console.warn(`GEMINI_SERVICE: Anexo inválido encontrado. Pulando.`);
                 yield { error: `Anexo inválido detectado.`, isFinished: false };
-                someUploadsFailed = true;
                 continue;
             }
-
             const baseFileName = (file.name || `file-${Date.now()}`)
-                .toLowerCase()
-                .replace(/[^a-z0-9-]/g, '-') // Replace invalid characters with dashes
-                .replace(/^-+|-+$/g, '') // Remove leading or trailing dashes
-                .substring(0, 20); // Ensure the base name is short enough to fit within the limit
+                .toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '').substring(0, 20);
             const fileNameForUpload = `${baseFileName}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.substring(0, 40);
 
             try {
-                console.log(`GEMINI_SERVICE: Iniciando upload de '${fileNameForUpload}' (tipo: ${file.type})...`);
-
-                
                 const initialUploadMetadata = await genAI.files.upload({
                     file: file,
-                    config: {
-                        mimeType: file.type,
-                        displayName: fileNameForUpload,
-                        name: fileNameForUpload
-                    }
+                    config: { mimeType: file.type, displayName: fileNameForUpload, name: fileNameForUpload }
                 }) as GeminiFileMetadata;
 
                 if (!initialUploadMetadata || !initialUploadMetadata.name) {
-                    console.error(`GEMINI_SERVICE: Upload de '${fileNameForUpload}' não retornou um nome/ID de arquivo válido. Resposta:`, initialUploadMetadata);
-                    yield { error: `Falha no upload de '${fileNameForUpload}': ID do arquivo ausente.`, isFinished: false };
-                    someUploadsFailed = true;
+                    yield { error: `Falha no upload de '${fileNameForUpload}': ID ausente.`, isFinished: false };
                     continue;
                 }
-                console.log(`GEMINI_SERVICE: Upload inicial de '${initialUploadMetadata.displayName || fileNameForUpload}' concluído. Name/ID: ${initialUploadMetadata.name}. Verificando estado...`);
-
                 const activeFileMetadata = await waitForFileActive(genAI, initialUploadMetadata.name, abortSignal);
 
                 if (abortSignal?.aborted) {
-                    yield { error: "Verificação de estado de arquivo abortada.", isFinished: true };
-                    return;
+                    yield { error: "Verificação de estado de arquivo abortada.", isFinished: true }; return;
                 }
-
                 if (activeFileMetadata) {
-                    console.log(`GEMINI_SERVICE: Arquivo '${activeFileMetadata.displayName || fileNameForUpload}' pronto para uso. URI: ${activeFileMetadata.uri}`);
                     uploadedFileParts.push({
-                        fileData: {
-                            mimeType: activeFileMetadata.mimeType,
-                            fileUri: activeFileMetadata.uri,
-                        },
+                        fileData: { mimeType: activeFileMetadata.mimeType, fileUri: activeFileMetadata.uri },
                     });
                 } else {
-                    yield { error: `Arquivo '${fileNameForUpload}' não pôde ser ativado ou falhou no processamento.`, isFinished: false };
-                    someUploadsFailed = true;
+                    yield { error: `Arquivo '${fileNameForUpload}' não pôde ser ativado.`, isFinished: false };
                 }
-
             } catch (uploadError: unknown) {
-                console.error(`GEMINI_SERVICE: Falha no processo de upload/verificação do arquivo '${fileNameForUpload}':`, uploadError);
                 if (uploadError instanceof DOMException && uploadError.name === "AbortError") {
-                     yield { error: "Processamento de anexos abortado pelo usuário.", isFinished: true };
-                     return;
+                     yield { error: "Processamento de anexos abortado.", isFinished: true }; return;
                 }
-                const errorMessage = uploadError instanceof Error ? uploadError.message : "Erro desconhecido durante o upload/verificação";
+                const errorMessage = uploadError instanceof Error ? uploadError.message : "Erro upload/verificação";
                 yield { error: `Falha com arquivo '${fileNameForUpload}': ${errorMessage}`, isFinished: false };
-                someUploadsFailed = true;
             }
         }
         currentUserParts.push(...uploadedFileParts);
-        
         if (attachedRawFiles.length > 0) {
-            if (uploadedFileParts.length === attachedRawFiles.length && !someUploadsFailed) {
+            if (uploadedFileParts.length === attachedRawFiles.length && !uploadedFileParts.some(p => !p.fileData?.fileUri)) {
                  yield { delta: "Anexos processados com sucesso... Aguardando resposta... ", isFinished: false };
             } else if (uploadedFileParts.length > 0) {
                  yield { delta: "Alguns anexos processados... Aguardando resposta... ", isFinished: false };
@@ -283,19 +236,18 @@ export async function* streamMessageToGemini(
         }
     }
 
-    const chatHistoryForAPI: Content[] = [...baseHistory];
     if (currentUserParts.length > 0) {
-        chatHistoryForAPI.push({
+        currentChatHistory.push({
             role: "user",
             parts: currentUserParts,
         });
     } else {
-        const isHistoryEffectivelyEmptyForNewMessage =
-            chatHistoryForAPI.length <= 2 &&
-            (chatHistoryForAPI.length === 0 || chatHistoryForAPI[chatHistoryForAPI.length - 1].role !== 'user');
-        if (isHistoryEffectivelyEmptyForNewMessage) {
-            yield { error: "Nenhum conteúdo de usuário válido para enviar.", isFinished: true };
-            return;
+        const userMessagesInHistory = currentChatHistory.filter(
+            c => c.role === 'user' && (c.parts ?? []).some(p => (p.text && p.text.trim() !== "" && !p.text.startsWith("---")) || p.fileData || p.inlineData)
+        );
+        if (userMessagesInHistory.length === 0 && !currentUserMessageText.trim() && attachedRawFiles.length === 0) {
+             yield { error: "Nenhum conteúdo de usuário válido para enviar.", isFinished: true };
+             return;
         }
     }
 
@@ -317,60 +269,179 @@ export async function* streamMessageToGemini(
         maxOutputTokens: modelConfig.maxOutputTokens,
     };
 
-    const requestPayloadForAPI = {
-        model: modelConfig.model,
-        generationConfig: generationConfig,
-        safetySettings: safetySettings,
-        systemInstruction: systemInstructionForAPI,
-        contents: chatHistoryForAPI,
-    };
+    let toolsForApiNextTurn = functionDeclarations.length > 0
+        ? [{
+            functionDeclarations: functionDeclarations.map((fd): GeminiFunctionDeclaration => {
+                let parameters: GeminiSchema | undefined = undefined;
+                try {
+                    if (fd.parametersSchema && fd.parametersSchema.trim() !== "") {
+                        parameters = JSON.parse(fd.parametersSchema) as GeminiSchema;
+                    }
+                } catch {
+                    parameters = { type: GeminiType.OBJECT, properties: {} };
+                }
+                return {
+                    name: fd.name,
+                    description: fd.description,
+                    parameters: parameters,
+                };
+            })
+        }]
+        : undefined;
+
+    let accumulatedTextForFinalResponse = "";
 
     try {
-        const streamResult: AsyncIterable<GenerateContentResponse> = await genAI.models.generateContentStream(requestPayloadForAPI);
-
-        let accumulatedText = "";
-        for await (const chunk of streamResult) {
+        while (true) {
             if (abortSignal?.aborted) {
-                throw new DOMException("Aborted by user in service", "AbortError");
+                throw new DOMException("Aborted by user during API interaction", "AbortError");
             }
-            const textFromChunk = chunk?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            if (textFromChunk) {
-                accumulatedText += textFromChunk;
-                yield { delta: textFromChunk, isFinished: false };
+
+            const requestPayloadForAPI: GenerateContentParameters = {
+                model: modelConfig.model,
+                config: {
+                    ...generationConfig,
+                    safetySettings: safetySettings,
+                    systemInstruction: systemInstructionForAPI,
+                    tools: toolsForApiNextTurn,
+                },
+                contents: currentChatHistory,
+            };
+
+            const streamResult: AsyncIterable<GenerateContentResponse> = await genAI.models.generateContentStream(requestPayloadForAPI);
+
+            let modelResponsePartsAggregatedThisTurn: Part[] = [];
+            let hasFunctionCallInThisTurn = false;
+            let currentTurnTextDelta = "";
+
+            for await (const chunk of streamResult) {
+                if (abortSignal?.aborted) {
+                    throw new DOMException("Aborted by user in service stream", "AbortError");
+                }
+
+                const candidate = chunk.candidates?.[0];
+                if (!candidate || !candidate.content || !candidate.content.parts) continue;
+
+                candidate.content.parts.forEach(part => {
+                    modelResponsePartsAggregatedThisTurn.push(part);
+                    if (part.functionCall) hasFunctionCallInThisTurn = true;
+                    if (part.text) currentTurnTextDelta += part.text;
+                });
+
+                if (!hasFunctionCallInThisTurn && currentTurnTextDelta) {
+                    yield { delta: currentTurnTextDelta, isFinished: false };
+                    accumulatedTextForFinalResponse += currentTurnTextDelta;
+                    currentTurnTextDelta = "";
+                }
+            }
+
+            if (hasFunctionCallInThisTurn) {
+                toolsForApiNextTurn = undefined; // Omitir tools na próxima chamada
+                const finalFunctionCallPart = modelResponsePartsAggregatedThisTurn.find(p => p.functionCall);
+                if (finalFunctionCallPart && finalFunctionCallPart.functionCall) {
+                    const { name: funcName, args: funcArgs } = finalFunctionCallPart.functionCall;
+                    
+                    const textBeforeFunctionCall = modelResponsePartsAggregatedThisTurn
+                        .filter(p => p.text && !p.functionCall).map(p => p.text).join("");
+                    if (textBeforeFunctionCall) {
+                        yield { delta: textBeforeFunctionCall, isFinished: false };
+                        accumulatedTextForFinalResponse += textBeforeFunctionCall;
+                    }
+                    yield { delta: `\n\n[Loox: Chamando API externa para a função '${funcName}'...]\n`, isFinished: false };
+                    currentChatHistory.push({ role: "model", parts: modelResponsePartsAggregatedThisTurn });
+
+                    let functionExecutionResultData: unknown;
+                    const declaredFunction = functionDeclarations.find(df => df.name === funcName);
+
+                    if (declaredFunction) {
+                        try {
+                            let targetUrl = declaredFunction.endpointUrl;
+                            const requestOptions: RequestInit = {
+                                method: declaredFunction.httpMethod,
+                                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                            };
+
+                            if (declaredFunction.httpMethod === 'GET') {
+                                const queryParams = new URLSearchParams(funcArgs as Record<string, string>).toString();
+                                if (queryParams) {
+                                    targetUrl += (targetUrl.includes('?') ? '&' : '?') + queryParams;
+                                }
+                            } else if (declaredFunction.httpMethod === 'POST') {
+                                requestOptions.body = JSON.stringify(funcArgs);
+                            }
+                            
+                            const apiResponse = await fetch(targetUrl, requestOptions);
+                            
+                            if (!apiResponse.ok) {
+                                let errorBody = `Erro HTTP: ${apiResponse.status} ${apiResponse.statusText}`;
+                                try { const errJson = await apiResponse.json(); errorBody += ` - ${JSON.stringify(errJson)}`; } catch { /* no json body */ }
+                                throw new Error(errorBody);
+                            }
+
+                            const contentType = apiResponse.headers.get("content-type");
+                            if (contentType && contentType.includes("application/json")) {
+                                functionExecutionResultData = await apiResponse.json();
+                            } else {
+                                functionExecutionResultData = await apiResponse.text();
+                            }
+                            yield { delta: `[Loox: API para '${funcName}' respondeu.]\n`, isFinished: false };
+                        } catch (executionError: unknown) {
+                            functionExecutionResultData = {
+                                status: "error",
+                                error_message: `Erro ao chamar API para '${funcName}': ${executionError instanceof Error ? executionError.message : "Erro desconhecido na chamada da API externa."}`,
+                            };
+                            yield { delta: `\n[Loox: Erro ao chamar API para '${funcName}'.]\n`, isFinished: false };
+                        }
+                    } else {
+                        functionExecutionResultData = {
+                            status: "error",
+                            error_message: `Função '${funcName}' solicitada pela IA, mas não encontrada nas declarações configuradas.`,
+                        };
+                        yield { delta: `\n[Loox: Função '${funcName}' não encontrada.]\n`, isFinished: false };
+                    }
+
+                    const functionResponsePart: Part = {
+                        functionResponse: { name: funcName, response: { name: funcName, content: functionExecutionResultData } }
+                    };
+                    currentChatHistory.push({ role: "function", parts: [functionResponsePart] });
+                    modelResponsePartsAggregatedThisTurn = [];
+                    currentTurnTextDelta = "";
+                } else {
+                    const { cleanedResponse, operations } = parseMemoryOperations(accumulatedTextForFinalResponse);
+                    yield { finalText: cleanedResponse, memoryOperations: operations, isFinished: true };
+                    return;
+                }
+            } else {
+                const { cleanedResponse, operations } = parseMemoryOperations(accumulatedTextForFinalResponse);
+                yield { finalText: cleanedResponse, memoryOperations: operations, isFinished: true };
+                return;
             }
         }
-
-        const { cleanedResponse, operations } = parseMemoryOperations(accumulatedText);
-        yield { finalText: cleanedResponse, memoryOperations: operations, isFinished: true };
 
     } catch (error: unknown) {
         if (error instanceof DOMException && error.name === "AbortError") {
-            yield { error: "Resposta abortada pelo usuário.", isFinished: true };
-            return;
+            yield { error: "Resposta abortada pelo usuário.", isFinished: true }; return;
         }
-        
         let detailedErrorForLog: string | object = "Detalhes do erro indisponíveis";
-        if (error && typeof error === 'object' && 'toJSON' in error && typeof (error as { toJSON: () => object }).toJSON === 'function') {
-            detailedErrorForLog = (error as { toJSON: () => object }).toJSON();
+        if (error && typeof error === 'object' && 'toJSON' in error && typeof (error as any).toJSON === 'function') {
+            detailedErrorForLog = (error as any).toJSON();
         } else if (error instanceof Error) {
             detailedErrorForLog = { name: error.name, message: error.message, stack: error.stack };
-        } else if (typeof error === 'string') {
-            detailedErrorForLog = error;
-        }
-        console.error("Erro ao chamar API Gemini (stream):", detailedErrorForLog);
-
-        let errorMessage = "Ocorreu um erro ao contatar a IA. Tente novamente mais tarde.";
+        } else if (typeof error === 'string') { detailedErrorForLog = error; }
+        console.error("GEMINI_SERVICE: Erro ao chamar API Gemini (stream):", detailedErrorForLog);
+        
+        let errorMessage = "Ocorreu um erro ao contatar a IA.";
         if (error instanceof Error && 'message' in error) {
             const apiErrorMessage = (error as Error).message;
             errorMessage = `Erro da API: ${apiErrorMessage}`;
             if (apiErrorMessage.toLowerCase().includes("api key") || apiErrorMessage.toLowerCase().includes("permission denied")) {
-                errorMessage = "Chave de API inválida ou não autorizada. Verifique suas configurações.";
+                errorMessage = "Chave de API inválida ou não autorizada.";
             } else if (apiErrorMessage.toLowerCase().includes("model not found")) {
-                errorMessage = `Modelo "${modelConfig.model}" não encontrado ou não acessível. Verifique o nome do modelo.`;
+                errorMessage = `Modelo "${modelConfig.model}" não encontrado.`;
             } else if (apiErrorMessage.toLowerCase().includes("quota")) {
-                errorMessage = `Erro de quota da API. Você excedeu o limite de uso. Detalhes: ${apiErrorMessage}`;
+                errorMessage = `Erro de quota da API: ${apiErrorMessage}`;
             } else if (apiErrorMessage.toLowerCase().includes("user location is not supported")) {
-                errorMessage = `Erro da API: A sua localização não é suportada para uso desta API. Detalhes: ${apiErrorMessage}`;
+                errorMessage = `Erro da API: Localização não suportada. ${apiErrorMessage}`;
             }
         }
         yield { error: errorMessage, isFinished: true };

@@ -14,14 +14,30 @@ import {
     IoCheckmarkOutline,
     IoTrashBinOutline,
     IoSearchOutline,
+    IoTerminalOutline,
+    IoLinkOutline, // Ícone para URL
 } from 'react-icons/io5';
 import Button from '../common/Button';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { useMemories } from '../../contexts/MemoryContext';
 import { useConversations } from '../../contexts/ConversationContext';
-import type { Memory, GeminiModel, GeminiModelConfig } from '../../types';
+import type { Memory, GeminiModel, GeminiModelConfig, FunctionDeclaration as AppFunctionDeclaration } from '../../types'; // Importa AppFunctionDeclaration
 import { LuBrain } from 'react-icons/lu';
 import { FiDatabase } from 'react-icons/fi';
+import { v4 as uuidv4 } from 'uuid';
+
+// A interface FunctionDeclaration aqui é a que usamos internamente no App/Settings.
+// Ela será atualizada em src/types/index.ts (ou settings.ts) em breve.
+// Por agora, vamos defini-la localmente com os novos campos.
+interface LocalFunctionDeclaration {
+    id: string;
+    name: string;
+    description: string;
+    parametersSchema: string;
+    endpointUrl: string; // Novo campo
+    httpMethod: 'GET' | 'POST'; // Novo campo
+}
+
 
 const AVAILABLE_GEMINI_MODELS: GeminiModel[] = [
     "gemini-2.5-pro-preview-05-06",
@@ -31,8 +47,18 @@ const AVAILABLE_GEMINI_MODELS: GeminiModel[] = [
 
 const DEFAULT_PERSONALITY_FOR_PLACEHOLDER = `Você é Loox, um assistente de IA pessoal projetado para ser um parceiro inteligente, prestativo e adaptável, operando dentro deste Web App. Sua missão é auxiliar os usuários em diversas tarefas, produtividade, explorar ideias e manter uma interação engajadora e personalizada.`;
 
+const DEFAULT_FUNCTION_PARAMS_SCHEMA_PLACEHOLDER = `{
+  "type": "object",
+  "properties": {
+    "paramName": {
+      "type": "string",
+      "description": "Description of the parameter."
+    }
+  },
+  "required": ["paramName"]
+}`;
 
-type TabId = 'general' | 'model' | 'memories' | 'data';
+type TabId = 'general' | 'model' | 'memories' | 'functionCalling' | 'data';
 
 interface Tab {
     id: TabId;
@@ -324,7 +350,7 @@ const MemoriesSettingsTab: React.FC = () => {
         const lowercasedSearchTerm = searchTerm.toLowerCase();
         return memories.filter(memory =>
             memory.content.toLowerCase().includes(lowercasedSearchTerm)
-        ).slice().reverse(); // Reverse after filtering to maintain newest first
+        ).slice().reverse();
     }, [memories, searchTerm]);
 
     return (
@@ -397,6 +423,226 @@ const MemoriesSettingsTab: React.FC = () => {
     );
 };
 
+const FunctionCallingSettingsTab: React.FC<{
+    currentFunctionDeclarations: LocalFunctionDeclaration[]; // Usando LocalFunctionDeclaration
+    setCurrentFunctionDeclarations: (declarations: LocalFunctionDeclaration[]) => void;
+}> = ({ currentFunctionDeclarations, setCurrentFunctionDeclarations }) => {
+    const [isEditing, setIsEditing] = useState<string | null>(null);
+    const [editName, setEditName] = useState('');
+    const [editDescription, setEditDescription] = useState('');
+    const [editParamsSchema, setEditParamsSchema] = useState('');
+    const [editEndpointUrl, setEditEndpointUrl] = useState(''); // Novo estado
+    const [editHttpMethod, setEditHttpMethod] = useState<'GET' | 'POST'>('GET'); // Novo estado
+
+    const nameInputRef = useRef<HTMLInputElement>(null);
+
+    const isValidUrl = (urlString: string): boolean => {
+        try {
+            new URL(urlString);
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
+    const resetForm = () => {
+        setIsEditing(null);
+        setEditName('');
+        setEditDescription('');
+        setEditParamsSchema('');
+        setEditEndpointUrl('');
+        setEditHttpMethod('GET');
+    };
+
+    const handleStartAddNew = () => {
+        resetForm();
+        setIsEditing('new');
+        setEditParamsSchema(DEFAULT_FUNCTION_PARAMS_SCHEMA_PLACEHOLDER);
+        setTimeout(() => nameInputRef.current?.focus(), 0);
+    };
+
+    const handleStartEdit = (declaration: LocalFunctionDeclaration) => {
+        setIsEditing(declaration.id);
+        setEditName(declaration.name);
+        setEditDescription(declaration.description);
+        setEditParamsSchema(declaration.parametersSchema);
+        setEditEndpointUrl(declaration.endpointUrl);
+        setEditHttpMethod(declaration.httpMethod);
+        setTimeout(() => nameInputRef.current?.focus(), 0);
+    };
+
+    const handleDelete = (id: string) => {
+        if (window.confirm(`Tem certeza que deseja excluir a função "${currentFunctionDeclarations.find(d => d.id === id)?.name || 'esta função'}"?`)) {
+            setCurrentFunctionDeclarations(currentFunctionDeclarations.filter(d => d.id !== id));
+            if (isEditing === id) {
+                resetForm();
+            }
+        }
+    };
+
+    const handleSave = () => {
+        if (!editName.trim()) {
+            alert("O nome da função é obrigatório."); return;
+        }
+        if (!editDescription.trim()) {
+            alert("A descrição da função é obrigatória."); return;
+        }
+        if (!editEndpointUrl.trim()) {
+            alert("A URL do Endpoint da API é obrigatória."); return;
+        }
+        if (!isValidUrl(editEndpointUrl.trim())) {
+            alert("A URL do Endpoint da API fornecida não é válida."); return;
+        }
+        try {
+            if (editParamsSchema.trim()) {
+                JSON.parse(editParamsSchema);
+            }
+        } catch {
+            alert("O esquema de parâmetros não é um JSON válido. Verifique a sintaxe."); return;
+        }
+
+        const declarationData: Omit<LocalFunctionDeclaration, 'id'> = {
+            name: editName.trim(),
+            description: editDescription.trim(),
+            parametersSchema: editParamsSchema.trim(),
+            endpointUrl: editEndpointUrl.trim(),
+            httpMethod: editHttpMethod,
+        };
+
+        if (isEditing === 'new') {
+            setCurrentFunctionDeclarations([
+                ...currentFunctionDeclarations,
+                { id: uuidv4(), ...declarationData }
+            ]);
+        } else if (isEditing) {
+            setCurrentFunctionDeclarations(
+                currentFunctionDeclarations.map(d =>
+                    d.id === isEditing
+                        ? { ...d, ...declarationData }
+                        : d
+                )
+            );
+        }
+        resetForm();
+    };
+
+    const formTitle = isEditing === 'new' ? "Adicionar Nova Função (API Endpoint)" : isEditing ? "Editar Função (API Endpoint)" : "";
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h3 className="text-base font-semibold text-slate-100">Funções Externas (API Endpoints) ({currentFunctionDeclarations.length})</h3>
+                {!isEditing && (
+                    <Button variant="primary" onClick={handleStartAddNew} className="!text-sm !py-2 !px-3.5 !bg-teal-600 hover:!bg-teal-500">
+                        <IoAddCircleOutline className="mr-1.5" size={18} /> Adicionar Nova
+                    </Button>
+                )}
+            </div>
+            <p className="text-xs text-slate-400 -mt-4">
+                Declare APIs externas que a IA pode chamar. O Loox atuará como um proxy para essas chamadas.
+            </p>
+
+            {isEditing && (
+                <div className="p-4 bg-slate-700/60 rounded-lg border border-slate-600/70 shadow-md space-y-4">
+                    <h4 className="text-sm font-semibold text-sky-300">{formTitle}</h4>
+                    <div>
+                        <label htmlFor="funcName" className="block text-xs font-medium text-slate-300 mb-1">Nome da Função (para a IA)</label>
+                        <input
+                            ref={nameInputRef}
+                            type="text" id="funcName" value={editName} onChange={e => setEditName(e.target.value)}
+                            placeholder="ex: getCurrentWeather, searchProducts"
+                            className="w-full p-2.5 bg-slate-600/80 border border-slate-500/70 rounded-md focus:ring-1 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 text-sm text-slate-100"
+                        />
+                        <p className="text-xs text-slate-400/80 mt-1">Nome que a IA usará para chamar esta API. Use camelCase ou snake_case.</p>
+                    </div>
+                    <div>
+                        <label htmlFor="funcDesc" className="block text-xs font-medium text-slate-300 mb-1">Descrição (para a IA)</label>
+                        <textarea
+                            id="funcDesc" value={editDescription} onChange={e => setEditDescription(e.target.value)}
+                            rows={2} placeholder="ex: Obtém o clima atual para uma localidade. Os argumentos são passados como query params para GET ou no corpo JSON para POST."
+                            className="w-full p-2.5 bg-slate-600/80 border border-slate-500/70 rounded-md focus:ring-1 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 text-sm text-slate-100 resize-y scrollbar-thin scrollbar-thumb-slate-500"
+                        />
+                        <p className="text-xs text-slate-400/80 mt-1">Descreva o que a API faz e como os parâmetros são usados. Isso ajuda a IA a decidir quando e como usá-la.</p>
+                    </div>
+                    <div>
+                        <label htmlFor="funcEndpointUrl" className="block text-xs font-medium text-slate-300 mb-1">URL do Endpoint da API</label>
+                        <input
+                            type="url" id="funcEndpointUrl" value={editEndpointUrl} onChange={e => setEditEndpointUrl(e.target.value)}
+                            placeholder="ex: https://api.example.com/weather"
+                            className="w-full p-2.5 bg-slate-600/80 border border-slate-500/70 rounded-md focus:ring-1 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 text-sm text-slate-100"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="funcHttpMethod" className="block text-xs font-medium text-slate-300 mb-1">Método HTTP</label>
+                        <select
+                            id="funcHttpMethod" value={editHttpMethod} onChange={e => setEditHttpMethod(e.target.value as 'GET' | 'POST')}
+                            className="w-full p-2.5 bg-slate-600/80 border border-slate-500/70 rounded-md focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-sm text-slate-100 appearance-none bg-no-repeat bg-right pr-8"
+                            style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundSize: '1.5em 1.5em', backgroundPosition: 'right 0.5rem center' }}
+                        >
+                            <option value="GET" className="bg-slate-700">GET</option>
+                            <option value="POST" className="bg-slate-700">POST</option>
+                            <option value="PUT" className="bg-slate-700">PUT</option>
+                            <option value="PATCH" className="bg-slate-700">PATCH</option>
+                            <option value="DELETE" className="bg-slate-700">DELETE</option>
+                        </select>
+                        <p className="text-xs text-slate-400/80 mt-1">
+                            Para GET, os parâmetros da função serão adicionados como query strings. Para POST, serão enviados como corpo JSON.
+                        </p>
+                    </div>
+                    <div>
+                        <label htmlFor="funcParams" className="block text-xs font-medium text-slate-300 mb-1">Esquema de Parâmetros (JSON - para a IA)</label>
+                        <textarea
+                            id="funcParams" value={editParamsSchema} onChange={e => setEditParamsSchema(e.target.value)}
+                            rows={6} placeholder={DEFAULT_FUNCTION_PARAMS_SCHEMA_PLACEHOLDER}
+                            className="w-full p-2.5 bg-slate-600/80 border border-slate-500/70 rounded-md focus:ring-1 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 text-sm text-slate-100 font-mono resize-y scrollbar-thin scrollbar-thumb-slate-500"
+                        />
+                        <p className="text-xs text-slate-400/80 mt-1">Define os parâmetros que a IA pode enviar para esta API. Deve ser um JSON Schema válido.</p>
+                    </div>
+                    <div className="flex justify-end gap-2.5">
+                        <Button variant="secondary" onClick={resetForm} className="!text-xs !py-1.5 !px-3">Cancelar</Button>
+                        <Button variant="primary" onClick={handleSave} className="!text-xs !py-1.5 !px-3 !bg-sky-600 hover:!bg-sky-500">Salvar Função</Button>
+                    </div>
+                </div>
+            )}
+
+            {currentFunctionDeclarations.length > 0 ? (
+                <div className="space-y-2 p-3 bg-slate-900/60 rounded-lg scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50 border border-slate-700/60 max-h-[calc(100vh-480px)] sm:max-h-[calc(100vh-450px)] min-h-[100px]">
+                    {currentFunctionDeclarations.map(declaration => (
+                        <div key={declaration.id} className={`p-2.5 bg-slate-700/80 rounded-md shadow ${isEditing === declaration.id ? 'ring-2 ring-sky-500' : 'hover:shadow-md'}`}>
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="flex-grow">
+                                    <p className="text-sm font-semibold text-sky-400 break-words">{declaration.name}</p>
+                                    <p className="text-xs text-slate-300/90 mt-0.5 break-words whitespace-pre-wrap" title={declaration.description}>{declaration.description.substring(0, 100)}{declaration.description.length > 100 ? '...' : ''}</p>
+                                    <div className="mt-1.5 flex items-center text-xs text-slate-400">
+                                        <IoLinkOutline size={14} className="mr-1 flex-shrink-0" />
+                                        <span className="truncate" title={declaration.endpointUrl}>{declaration.endpointUrl}</span>
+                                        <span className="ml-2 px-1.5 py-0.5 bg-slate-600 text-slate-300 rounded text-[10px] font-medium">{declaration.httpMethod}</span>
+                                    </div>
+                                </div>
+                                {!isEditing && (
+                                    <div className="flex-shrink-0 flex items-center gap-1">
+                                        <Button variant="icon" className="!p-1.5 text-slate-400 hover:!text-sky-400 hover:!bg-slate-600/60" title="Editar função" onClick={() => handleStartEdit(declaration)}> <IoPencilOutline size={15} /> </Button>
+                                        <Button variant="icon" className="!p-1.5 text-slate-400 hover:!text-red-400 hover:!bg-slate-600/60" title="Excluir função" onClick={() => handleDelete(declaration.id)}> <IoTrashBinOutline size={15} /> </Button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                !isEditing && (
+                    <div className="p-4 text-center bg-slate-900/60 rounded-lg border border-slate-700/60">
+                        <IoTerminalOutline size={28} className="mx-auto text-slate-500 mb-2" />
+                        <p className="text-sm text-slate-400">Nenhuma API externa configurada.</p>
+                        <p className="text-xs text-slate-500 mt-1">Adicione APIs para que a IA possa interagir com serviços externos.</p>
+                    </div>
+                )
+            )}
+        </div>
+    );
+};
+
+
 const DataSettingsTab: React.FC = () => {
     const { clearAllMemories, memories } = useMemories();
     const { deleteAllConversations, conversations } = useConversations();
@@ -447,6 +693,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const { settings, setSettings } = useAppSettings();
     const [currentApiKey, setCurrentApiKey] = useState<string>('');
     const [currentCustomPersonalityPrompt, setCurrentCustomPersonalityPrompt] = useState<string>(DEFAULT_PERSONALITY_FOR_PLACEHOLDER);
+    const [currentFunctionDeclarations, setCurrentFunctionDeclarations] = useState<LocalFunctionDeclaration[]>([]); // Usando LocalFunctionDeclaration
     const [activeTab, setActiveTab] = useState<TabId>('general');
     const modalContentRef = useRef<HTMLDivElement>(null);
     const [previousTab, setPreviousTab] = useState<TabId | null>(null);
@@ -471,6 +718,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             setCurrentApiKey(settings.apiKey || '');
             setLocalModelConfig(settings.geminiModelConfig || defaultModelConfig);
             setCurrentCustomPersonalityPrompt(settings.customPersonalityPrompt || '');
+            // Garantir que as functionDeclarations do settings sejam compatíveis com LocalFunctionDeclaration
+            const loadedFuncDeclarations = (settings.functionDeclarations || []).map(fd => ({
+                id: fd.id,
+                name: fd.name,
+                description: fd.description,
+                parametersSchema: fd.parametersSchema,
+                endpointUrl: fd.endpointUrl || '', // Default para string vazia se não existir
+                httpMethod: fd.httpMethod || 'GET', // Default para GET se não existir
+            }));
+            setCurrentFunctionDeclarations(loadedFuncDeclarations);
         }
     }, [isOpen, settings, defaultModelConfig]);
 
@@ -496,11 +753,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         if (localModelConfig.topK < 0) { alert("Top K não pode ser negativo."); return; }
         if (localModelConfig.maxOutputTokens < 1) { alert("Máximo de Tokens de Saída deve ser pelo menos 1."); return; }
 
+        // Mapear LocalFunctionDeclaration de volta para AppFunctionDeclaration antes de salvar
+        const appFuncDeclarations: AppFunctionDeclaration[] = currentFunctionDeclarations.map(lfd => ({
+            id: lfd.id,
+            name: lfd.name,
+            description: lfd.description,
+            parametersSchema: lfd.parametersSchema,
+            endpointUrl: lfd.endpointUrl,
+            httpMethod: lfd.httpMethod,
+        }));
+
+
         setSettings(prevSettings => ({
             ...prevSettings,
             apiKey: currentApiKey,
             geminiModelConfig: localModelConfig,
-            customPersonalityPrompt: currentCustomPersonalityPrompt.trim()
+            customPersonalityPrompt: currentCustomPersonalityPrompt.trim(),
+            functionDeclarations: appFuncDeclarations, // Salva o tipo correto
         }));
         alert("Configurações salvas com sucesso!");
     };
@@ -509,6 +778,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         { id: 'general', label: 'Geral', icon: <IoKeyOutline size={18} className="opacity-80" />, component: GeneralSettingsTab },
         { id: 'model', label: 'Modelo IA', icon: <IoBuildOutline size={18} className="opacity-80" />, component: ModelSettingsTab },
         { id: 'memories', label: 'Memórias', icon: <LuBrain size={18} className="opacity-80" />, component: MemoriesSettingsTab },
+        { id: 'functionCalling', label: 'Funções (API)', icon: <IoTerminalOutline size={18} className="opacity-80" />, component: FunctionCallingSettingsTab },
         { id: 'data', label: 'Dados', icon: <FiDatabase size={17} className="opacity-80" />, component: DataSettingsTab },
     ];
 
@@ -611,6 +881,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                                     setCurrentCustomPersonalityPrompt,
                                                                 })}
                                                                 {...(tab.id === 'model' && { currentModelConfig: localModelConfig, onModelConfigChange: handleLocalModelConfigChange })}
+                                                                {...(tab.id === 'functionCalling' && { currentFunctionDeclarations, setCurrentFunctionDeclarations })}
                                                             />
                                                         </div>
                                                     </Transition>

@@ -22,6 +22,7 @@ import type { MessageMetadata, AttachedFileInfo } from '../../types/conversation
 import { v4 as uuidv4 } from 'uuid';
 import useIsMobile from '../../hooks/useIsMobile';
 import { systemMessage } from '../../prompts';
+import type { Part } from '@google/genai'; // Necessário para o tipo do histórico
 
 interface LocalAttachedFile {
     id: string;
@@ -334,7 +335,7 @@ const MessageInput: React.FC = () => {
 
         if (!settings.apiKey) {
             addMessageToConversation(activeConversationId, {
-                text: "Erro: Chave de API não configurada.", sender: 'ai', metadata: { error: true }
+                text: "Erro: Chave de API não configurada.", sender: 'model', metadata: { error: true }
             });
             setText('');
             clearAttachmentsFromState();
@@ -350,9 +351,17 @@ const MessageInput: React.FC = () => {
 
         const currentTextForAI = trimmedText;
         const currentConversation = conversations.find(c => c.id === activeConversationId);
-        const historyBeforeCurrentUserMessage = currentConversation?.messages.map(msg => ({
-            sender: msg.sender, text: msg.text
-        })) || [];
+
+        // Prepare history for geminiService, ensuring Part[] compatibility
+        const historyBeforeCurrentUserMessage: { sender: 'user' | 'model' | 'function'; text?: string; parts?: Part[] }[] =
+            currentConversation?.messages.map(msg => {
+                if (msg.metadata?.rawParts) {
+                    // Ensure rawParts are indeed Part[] or can be safely cast
+                    return { sender: msg.sender, parts: msg.metadata.rawParts as Part[] };
+                }
+                return { sender: msg.sender, text: msg.text };
+            }) || [];
+
 
         const filesInfoForUIMessagePromises: Promise<AttachedFileInfo>[] = attachedFiles.map(localFile =>
             blobToDataURL(localFile.file).then(dataUrl => ({
@@ -397,7 +406,9 @@ const MessageInput: React.FC = () => {
         }
 
         const aiMessageId = addMessageToConversation(activeConversationId, {
-            text: "", sender: 'ai', metadata: { isLoading: true }
+            text: "",
+            sender: 'model',
+            metadata: { isLoading: true }
         });
         if (!aiMessageId) {
             console.error("Não foi possível criar a mensagem placeholder da IA.");
@@ -409,6 +420,10 @@ const MessageInput: React.FC = () => {
         let memoryOperationsFromServer: StreamedGeminiResponseChunk['memoryOperations'] = [];
         let streamError: string | null = null;
         let accumulatedAiText = "";
+        // rawPartsForNextHistoryEntry removed as its population logic was unclear here
+        // and geminiService handles intermediate history for function calls internally.
+        // The final AI message will primarily store 'text'. If 'rawParts' for the *final*
+        // AI message are needed, geminiService's final chunk should explicitly provide them.
 
         try {
             const currentGlobalMemoriesWithObjects = globalMemoriesFromHook.map(mem => ({ id: mem.id, content: mem.content }));
@@ -442,6 +457,7 @@ const MessageInput: React.FC = () => {
                 currentGlobalMemoriesWithObjects,
                 settings.geminiModelConfig,
                 systemInstructionText,
+                settings.functionDeclarations || [],
                 signal
             );
 
@@ -450,19 +466,24 @@ const MessageInput: React.FC = () => {
                     streamError = "Resposta abortada pelo usuário.";
                     break;
                 }
+
                 if (streamResponse.delta) {
                     const isStatusMessage = streamResponse.delta.startsWith("Processando anexos...") ||
                         streamResponse.delta.startsWith("Anexos processados") ||
                         streamResponse.delta.startsWith("Alguns anexos processados") ||
-                        streamResponse.delta.startsWith("Falha ao processar anexos");
+                        streamResponse.delta.startsWith("Falha ao processar anexos") ||
+                        streamResponse.delta.includes("[Loox: Executando a função") ||
+                        streamResponse.delta.includes("[Loox: Função") ||
+                        streamResponse.delta.includes("[Loox: Erro ao processar a função");
+
+                    accumulatedAiText += streamResponse.delta;
 
                     if (isStatusMessage) {
                         updateMessageInConversation(activeConversationId, aiMessageId, {
-                            text: accumulatedAiText + streamResponse.delta, // Adiciona status ao texto existente
+                            text: accumulatedAiText,
                             metadata: { isLoading: true }
                         });
                     } else {
-                        accumulatedAiText += streamResponse.delta;
                         updateMessageInConversation(activeConversationId, aiMessageId, {
                             text: accumulatedAiText + "▍",
                             metadata: { isLoading: true }
@@ -474,16 +495,11 @@ const MessageInput: React.FC = () => {
                     if (!streamResponse.delta) {
                         setErrorFromAI(streamError);
                     } else {
-                        console.warn("Erro parcial durante o stream (anexo?):", streamError);
-                        updateMessageInConversation(activeConversationId, aiMessageId, {
-                            text: accumulatedAiText + `\n\n⚠️ ${streamError}`,
-                            metadata: { isLoading: true }
-                        });
+                        console.warn("Erro parcial durante o stream:", streamError);
                     }
-                    if (streamResponse.isFinished) break;
                 }
                 if (streamResponse.isFinished) {
-                    accumulatedAiText = streamResponse.finalText || accumulatedAiText;
+                    accumulatedAiText = streamResponse.finalText || accumulatedAiText.replace(/▍$/, '');
                     memoryOperationsFromServer = streamResponse.memoryOperations || [];
                     break;
                 }
@@ -492,6 +508,7 @@ const MessageInput: React.FC = () => {
             const finalMetadata: Partial<MessageMetadata> = {
                 isLoading: false,
                 abortedByUser: streamError === "Resposta abortada pelo usuário." || streamError?.includes("abortado") ? true : undefined,
+                // rawParts: undefined, // If we decide geminiService provides final parts, populate here
             };
 
             if (streamError && !finalMetadata.abortedByUser) {
@@ -499,9 +516,9 @@ const MessageInput: React.FC = () => {
                 finalMetadata.userFacingError = streamError;
             }
 
-            if (!streamError || finalMetadata.abortedByUser || accumulatedAiText) {
+            if (!streamError || finalMetadata.abortedByUser) {
                 const processedMemoryActions: Required<MessageMetadata>['memorizedMemoryActions'] = [];
-                if (memoryOperationsFromServer && memoryOperationsFromServer.length > 0 && !streamError) {
+                if (memoryOperationsFromServer && memoryOperationsFromServer.length > 0) {
                     memoryOperationsFromServer.forEach(op => {
                         if (op.action === 'create' && op.content) {
                             const newMemoryObject = addMemory(op.content);
@@ -531,16 +548,19 @@ const MessageInput: React.FC = () => {
                         finalMetadata.memorizedMemoryActions = processedMemoryActions;
                     }
                 }
-                updateMessageInConversation(activeConversationId, aiMessageId, {
-                    text: accumulatedAiText.replace(/▍$/, '').replace(/\n\n⚠️ .+$/, ''), // Remove o cursor e erros parciais se houver texto final
-                    metadata: finalMetadata
-                });
-            } else if (streamError) { // Erro ocorreu e não há texto acumulado para mostrar
-                updateMessageInConversation(activeConversationId, aiMessageId, {
-                    text: "",
-                    metadata: finalMetadata
-                });
             }
+
+            let finalDisplayableText = accumulatedAiText.replace(/▍$/, '');
+            if (streamError && !finalMetadata.abortedByUser && !finalDisplayableText.includes(streamError)) {
+                finalDisplayableText = finalDisplayableText.trim() ? `${finalDisplayableText}\n\n⚠️ ${streamError}` : `⚠️ ${streamError}`;
+            } else if (finalDisplayableText.includes('\n\n⚠️ ') && !streamError && !finalMetadata.abortedByUser) {
+                finalDisplayableText = finalDisplayableText.replace(/\n\n⚠️ .+$/, '').trim();
+            }
+
+            updateMessageInConversation(activeConversationId, aiMessageId, {
+                text: finalDisplayableText,
+                metadata: finalMetadata
+            });
 
         } catch (error: unknown) {
             console.error("Falha catastrófica ao processar stream com Gemini:", error);
@@ -562,7 +582,7 @@ const MessageInput: React.FC = () => {
             if (abortStreamControllerRef.current && abortStreamControllerRef.current.signal === signal) {
                 abortStreamControllerRef.current = null;
             }
-            if (textareaRef.current && settings.apiKey && !streamError && !errorFromAI && !isProcessingEditedMessage && !isRecording) {
+            if (textareaRef.current && settings.apiKey && !streamError && !errorFromAI && !isProcessingEditedMessage && !isRecording && !(isLoadingAI)) {
                 textareaRef.current.focus();
             }
         }
@@ -747,4 +767,4 @@ const MessageInput: React.FC = () => {
     );
 };
 
-export default MessageInput;
+export default MessageInput;    

@@ -1,3 +1,7 @@
+// src/types/conversation.ts
+// Adicione 'Part' da SDK do Gemini se quiser ser mais específico, ou use any[]
+// import type { Part } from '@google/genai'; // Opcional, para tipagem mais forte
+
 export type MemoryActionType = 'created' | 'updated' | 'deleted_by_ai';
 
 export interface AttachedFileInfo {
@@ -21,12 +25,15 @@ export interface MessageMetadata {
         originalContent?: string;
         action: MemoryActionType;
     }[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rawParts?: unknown[]; // Alterado de 'any[]' para Part[] se você importar 'Part'
+                      // Ou mantenha any[] para simplicidade se não quiser importar Part aqui.
 }
 
 export interface Message {
     id: string;
-    text: string;
-    sender: 'user' | 'ai';
+    text: string; // Pode ser o texto renderizável ou um resumo/placeholder se rawParts existir
+    sender: 'user' | 'model' | 'function'; // Adicionado 'function'
     timestamp: Date;
     metadata?: MessageMetadata;
 }
