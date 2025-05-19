@@ -22,7 +22,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
     const {
         activeConversation,
         activeConversationId,
-        isGeneratingResponse
+        // isGeneratingResponse // Não é mais usado diretamente para auto-scroll
     } = useConversations()
     const { settings } = useAppSettings()
     const isMobile = useIsMobile()
@@ -31,7 +31,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
     const [isUserScrolledUp, setIsUserScrolledUp] = useState(false)
-    const [userHasManuallyScrolledUp, setUserHasManuallyScrolledUp] = useState(false)
+    // const [userHasManuallyScrolledUp, setUserHasManuallyScrolledUp] = useState(false) // Não é mais necessário
 
     const messages = activeConversation?.messages || []
     const conversationTitle = activeConversation?.title || 'Chat'
@@ -40,12 +40,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
         messagesEndRef.current?.scrollIntoView({ behavior })
     }, [])
 
-    useEffect(() => {
-        if (isGeneratingResponse && !userHasManuallyScrolledUp && chatContainerRef.current) {
-            scrollToBottom('auto')
-        }
-    }, [activeConversation?.messages, isGeneratingResponse, userHasManuallyScrolledUp, scrollToBottom])
+    // REMOVIDO: useEffect para auto-scroll durante a geração de resposta
+    // useEffect(() => {
+    //     if (isGeneratingResponse && !userHasManuallyScrolledUp && chatContainerRef.current) {
+    //         scrollToBottom('auto')
+    //     }
+    // }, [activeConversation?.messages, isGeneratingResponse, userHasManuallyScrolledUp, scrollToBottom])
 
+    // Mantido: useEffect para detectar scroll manual do usuário e mostrar/esconder o botão
     useEffect(() => {
         const container = chatContainerRef.current
         if (!container) return
@@ -57,56 +59,65 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
             scrollDebounceTimer = setTimeout(() => {
                 if (!chatContainerRef.current) return
                 const currentContainer = chatContainerRef.current
-                const threshold = 80;
+                const threshold = 80; // Quão longe do fundo para considerar que o usuário rolou para cima
                 
                 const atBottom = currentContainer.scrollHeight - currentContainer.scrollTop - currentContainer.clientHeight < threshold
 
                 setIsUserScrolledUp(!atBottom)
 
-                if (isGeneratingResponse) {
-                    if (!atBottom) {
-                        setUserHasManuallyScrolledUp(true)
-                    } else {
-                        setUserHasManuallyScrolledUp(false)
-                    }
-                } else {
-                    if (atBottom) {
-                        setUserHasManuallyScrolledUp(false)
-                    }
-                }
+                // A lógica de userHasManuallyScrolledUp não é mais necessária aqui
+                // pois não estamos mais fazendo auto-scroll baseado nisso.
             }, 60)
         }
 
         container.addEventListener('scroll', handleScroll, { passive: true })
         
+        // Verifica a posição inicial do scroll para o botão
         handleScroll()
 
         return () => {
             container.removeEventListener('scroll', handleScroll)
             clearTimeout(scrollDebounceTimer)
         }
-    }, [isGeneratingResponse])
+    }, []) // Dependência de isGeneratingResponse removida pois não afeta mais esta lógica diretamente
 
+    // REMOVIDO: useEffect para auto-scroll ao mudar de conversa
+    // (a menos que você queira um scroll inicial para o fundo ao abrir uma conversa pela primeira vez,
+    // nesse caso, ele pode ser adaptado)
+    // Se você quiser que ao abrir a conversa ele vá para o final automaticamente UMA VEZ:
     useEffect(() => {
-        if (activeConversationId) {
-            setUserHasManuallyScrolledUp(false)
-            setTimeout(() => {
-                scrollToBottom('auto')
-                const container = chatContainerRef.current
-                if (container) {
-                    const threshold = 5
-                    const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold
-                    setIsUserScrolledUp(!atBottom)
-                }
-            }, 50)
+        if (activeConversationId && chatContainerRef.current) {
+             // Verifica se a conversa acabou de carregar e está vazia ou se o scroll está no topo
+             const container = chatContainerRef.current;
+             const isNewConversationJustLoaded = messages.length > 0 && container.scrollTop === 0;
+             const isNearTopAndNotEmpty = messages.length > 0 && container.scrollTop < container.clientHeight / 2;
+
+
+            if (isNewConversationJustLoaded || isNearTopAndNotEmpty) {
+                setTimeout(() => {
+                     // Rola para o final apenas se não estiver já lá
+                    const isCurrentlyAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+                    if (!isCurrentlyAtBottom) {
+                        scrollToBottom('auto');
+                    }
+                     // Atualiza o estado do botão após o scroll
+                    const atBottomAfterScroll = container.scrollHeight - container.scrollTop - container.clientHeight < 5;
+                    setIsUserScrolledUp(!atBottomAfterScroll);
+                }, 50);
+            } else {
+                // Se a conversa já estava aberta e rolada, apenas verifica a posição para o botão
+                const threshold = 80;
+                const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+                setIsUserScrolledUp(!atBottom);
+            }
         }
-    }, [activeConversationId, scrollToBottom])
+    }, [activeConversationId, messages.length, scrollToBottom]);
 
 
     const handleScrollToBottomButtonClick = () => {
         scrollToBottom('smooth')
-        setUserHasManuallyScrolledUp(false)
-        setIsUserScrolledUp(false)
+        // setUserHasManuallyScrolledUp(false) // Não é mais necessário
+        setIsUserScrolledUp(false) // Esconde o botão imediatamente
     }
 
     const showWelcome = !activeConversationId
