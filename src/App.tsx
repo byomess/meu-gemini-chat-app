@@ -4,6 +4,7 @@ import Sidebar from './components/layout/Sidebar';
 import ChatArea from './components/layout/ChatArea';
 import SettingsModal from './components/settings/SettingsModal';
 import useIsMobile from './hooks/useIsMobile';
+import React from 'react';
 
 function App() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);

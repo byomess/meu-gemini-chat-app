@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/components/MessageBubble/MessageBubble.tsx
 import React, { useState, useRef, useEffect, Fragment } from 'react';
 import type { Message, MessageMetadata, MemoryActionType, AttachedFileInfo } from '../../types/conversation';
@@ -7,19 +8,20 @@ import {
     IoCreateOutline, IoInformationCircleOutline, IoRemoveCircleOutline,
     IoDocumentTextOutline, IoImageOutline, IoMusicalNotesOutline,
     IoChevronDownOutline, IoChevronUpOutline,
-    IoTrashBinOutline, IoVideocamOutline, IoTerminalOutline, // Ícone para function call
-    IoGitCommitOutline, // Ícone para function response
+    IoTrashBinOutline, IoVideocamOutline, IoTerminalOutline,
+    IoGitCommitOutline,
 } from 'react-icons/io5';
 import { Dialog, Transition } from '@headlessui/react';
 import { useConversations } from '../../contexts/ConversationContext';
 import { useMemories } from '../../contexts/MemoryContext';
-import ReactMarkdown, { type Components } from 'react-markdown';
+import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import CodeBlock from '../common/CodeBlock';
 import CustomAudioPlayer from './CustomAudioPlayer';
 import Button from '../common/Button';
 import useIsMobile from '../../hooks/useIsMobile';
-import type { Part, FunctionCall, FunctionResponse } from '@google/genai'; // Importar tipos da SDK
+import type { Part, FunctionCall, FunctionResponse } from '@google/genai';
 
 interface MemoryActionItemProps {
     memoryActionDetail: NonNullable<MessageMetadata['memorizedMemoryActions']>[0];
@@ -255,6 +257,13 @@ interface MessageBubbleProps {
     conversationId: string;
 }
 
+interface CustomCodeRendererProps extends React.HTMLAttributes<HTMLElement>, ExtraProps {
+    inline?: boolean;
+    children?: React.ReactNode;
+    className?: string;
+    node?: any;
+}
+
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }) => {
     const {
         removeMessageById,
@@ -262,12 +271,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         regenerateResponseForEditedMessage,
         isProcessingEditedMessage,
         activeConversation,
+        isGeneratingResponse,
     } = useConversations();
 
     const isMobile = useIsMobile();
 
     const isUser = message.sender === 'user';
-    const isFunctionRole = message.sender === 'function'; // Added for function role messages
+    const isFunctionRole = message.sender === 'function';
     const isLoading = message.metadata?.isLoading;
     const isActualErrorForStyling = (typeof message.metadata?.error === 'string' && message.metadata.error !== "Resposta abortada pelo usuário.") || (typeof message.metadata?.error === 'boolean' && message.metadata.error === true);
     const abortedByUser = message.metadata?.abortedByUser;
@@ -318,7 +328,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     }, [isEditing]);
 
     const handleDelete = (): void => {
-        // Function role messages might not be deletable by user directly
         if (isFunctionRole && !window.confirm('Tem certeza que deseja excluir esta mensagem de função? Isso pode afetar a continuidade da IA.')) {
             return;
         }
@@ -328,7 +337,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     };
 
     const handleEdit = (): void => {
-        if (isFunctionRole) return; // Don't allow editing function role messages
+        if (isFunctionRole) return;
         if (!isUser && abortedByUser && message.text.trim() === "Resposta abortada pelo usuário.") {
             setEditedText("");
         } else {
@@ -348,7 +357,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         }
         if (isUser) {
             await regenerateResponseForEditedMessage(conversationId, message.id, newText);
-        } else { // AI message
+        } else {
             const newMetadata: Partial<MessageMetadata> = { ...message.metadata, abortedByUser: false, error: false, userFacingError: undefined };
             if (isLoading) newMetadata.isLoading = false;
             updateMessageInConversation(conversationId, message.id, { text: newText, metadata: newMetadata });
@@ -368,16 +377,77 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const isThisUserMessageBeingReprocessed = isUser && isProcessingEditedMessage && (activeConversation?.messages.some((m) => m.id === message.id) ?? false) && Boolean(activeConversation?.messages[activeConversation.messages.length - 1]?.metadata?.isLoading) && ((activeConversation?.messages.findIndex((m) => m.id === message.id) ?? 0) < ((activeConversation?.messages.length ?? 1) - 1));
     const canPerformActionsOnMessage = !isFunctionRole && !isLoading && !isActualErrorForStyling && !isProcessingEditedMessage && !isThisUserMessageBeingReprocessed;
 
+    const syntaxHighlightEnabledGlobally = !isGeneratingResponse;
 
     const markdownComponents: Components = {
-        code: ({ children, ...props }) => <CodeBlock {...props}>{String(children)}</CodeBlock>,
+        code: ({ inline, className, children, ...props }: CustomCodeRendererProps) => {
+            const codeString = React.Children.toArray(children).join('');
+            let isLikelyInline = !!inline;
+
+            if (typeof inline !== 'boolean' || !inline) {
+                isLikelyInline = (!className || !className.startsWith('language-')) && !codeString.includes('\n');
+            }
+            
+            if (!isUser && isLoading) {
+                if (isLikelyInline) {
+                    return (
+                        <code {...props} className={`font-mono text-inherit px-1 bg-slate-700/40 rounded-sm ${className || ''}`}>
+                            {children}
+                        </code>
+                    );
+                } else {
+                    return (
+                        <pre className="bg-slate-800/30 p-3 my-2 rounded-md overflow-x-auto border border-slate-700/50">
+                            <code className={`whitespace-pre-wrap break-words text-slate-300 ${className || ''}`} {...props}>
+                                {codeString.replace(/\n$/, '')}
+                            </code>
+                        </pre>
+                    );
+                }
+            } else {
+                if (isLikelyInline) {
+                    return (
+                        <code
+                            className={`bg-slate-800/80 text-purple-300 px-1.5 py-0.5 rounded-md font-mono text-xs sm:text-sm mx-0.5 align-baseline shadow-sm border border-slate-600 ${className || ''}`}
+                            {...props}
+                        >
+                            {children}
+                        </code>
+                    );
+                }
+
+                return (
+                    <CodeBlock
+                        className={className}
+                        enableSynthaxHighlight={syntaxHighlightEnabledGlobally}
+                        {...props}
+                    >
+                        {codeString.replace(/\n$/, '')}
+                    </CodeBlock>
+                );
+            }
+        },
+        p: ({ node, children, ...props }: { node?: any; children?: React.ReactNode;[key: string]: any }) => {
+            if (node && node.children && node.children.length === 1) {
+                const childNode = node.children[0];
+                if (childNode && childNode.type === 'element' && childNode.tagName === 'code') {
+                    const codeContent = React.Children.toArray(childNode.children).join('');
+                    const isChildInline = (!childNode.properties?.className || !String(childNode.properties.className).startsWith('language-')) && !codeContent.includes('\n');
+
+                    if (!isChildInline) {
+                        return <>{children}</>;
+                    }
+                }
+            }
+            return <p className="mb-2 last:mb-0 leading-relaxed" {...props}>{children}</p>;
+        },
         h1: (props) => <h1 className="text-2xl font-semibold mt-4 mb-2" {...props} />,
         h2: (props) => <h2 className="text-xl font-semibold mt-3 mb-1.5" {...props} />,
         h3: (props) => <h3 className="text-lg font-semibold mt-2 mb-1" {...props} />,
         ul: (props) => <ul className="list-disc list-inside my-2 pl-5 space-y-1" {...props} />,
         ol: (props) => <ol className="list-decimal list-inside my-2 pl-5 space-y-1" {...props} />,
         li: (props) => <li className="pb-0.5" {...props} />,
-        a: (props) => <a className="text-sky-400 hover:text-sky-300 underline hover:no-underline" target="_blank" rel="noopener noreferrer" {...props} />,
+        a: (props) => <a className="text-sky-400 hover:!text-sky-300 underline hover:no-underline" target="_blank" rel="noopener noreferrer" {...props} />,
         blockquote: (props) => <blockquote className="border-l-4 border-slate-500 pl-4 my-2 italic text-slate-300" {...props} />,
         table: (props) => <div className="overflow-x-auto my-3 shadow-md rounded-md border border-slate-600"><table className="table-auto w-full border-collapse" {...props} /></div>,
         thead: (props) => <thead className="bg-slate-700/50" {...props} />,
@@ -385,7 +455,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         td: (props) => <td className="border border-slate-600 px-3 py-2 text-sm text-slate-300" {...props} />,
         strong: (props) => <strong className="font-semibold text-slate-100" {...props} />,
         em: (props) => <em className="italic" {...props} />,
-        p: (props) => <p className="mb-2 last:mb-0 leading-relaxed" {...props} />,
     };
 
     let mainMemoryActionLabel = "Operações de memória:";
@@ -416,7 +485,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
 
     const shouldRenderTextContent = message.text.trim().length > 0 ||
         (!isUser && !isFunctionRole && (userFacingErrorMessage || (abortedByUser && !isEditing))) ||
-        (isFunctionRole && !functionResponsePart); // Show text for function role if no specific response part
+        (isFunctionRole && !functionResponsePart);
 
     const showAITypingIndicator = !isUser && !isFunctionRole && isLoading && !shouldRenderTextContent && !functionCallPart;
     const hasAnyContentForBubble = hasAttachedFiles || shouldRenderTextContent || showAITypingIndicator || functionCallPart || functionResponsePart;
@@ -433,7 +502,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                    ${isUser ? userBubbleClasses : (isFunctionRole ? functionRoleBubbleClasses : aiBubbleBaseClasses)}
                                    ${isActualErrorForStyling ? errorBubbleClasses : ''}
                                    ${abortedByUser && !isEditing ? abortedBubbleClasses : ''}
-                                   ${isLoading && !showAITypingIndicator && !userFacingErrorMessage && !abortedByUser && !isEditing && !functionCallPart && !functionResponsePart ? loadingBubbleClasses : ''}`;
+                                   ${isLoading && !isUser && !showAITypingIndicator && !userFacingErrorMessage && !abortedByUser && !isEditing && !functionCallPart && !functionResponsePart ? loadingBubbleClasses : ''}`;
 
     const editContainerClasses = `p-2 rounded-xl shadow-xl border-2 border-blue-500/70
                                  ${isUser ? 'bg-blue-700/90' : 'bg-slate-700/90'} backdrop-blur-md`;
@@ -455,16 +524,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
             >
                 {hasAnyContentForBubble && (
                     <div className={`flex w-full ${isMobile
-                        ? (isUser || isFunctionRole ? 'flex-col items-end' : 'flex-col items-start') // function role aligned like user for now
+                        ? (isUser || isFunctionRole ? 'flex-col items-end' : 'flex-col items-start')
                         : (isUser || isFunctionRole ? 'flex-row items-end justify-end' : 'flex-row items-end justify-start')
                         } gap-2 sm:gap-2.5`}>
 
-                        {(!isUser && !isFunctionRole) && ( // Standard AI avatar
+                        {(!isUser && !isFunctionRole) && (
                             <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isMobile ? 'self-start' : ''}`}>
                                 <IoSparklesOutline size={isMobile ? 16 : 18} />
                             </div>
                         )}
-                        {isFunctionRole && ( // Avatar for Function Role messages
+                        {isFunctionRole && (
                             <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isMobile ? 'self-end order-first' : ''}`}>
                                 <IoGitCommitOutline size={isMobile ? 16 : 18} />
                             </div>
@@ -551,13 +620,22 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                                     {functionCallPart.functionCall.args && Object.keys(functionCallPart.functionCall.args).length > 0 && (
                                                         <>
                                                             <p className="text-xs text-amber-300/80 mb-0.5">Argumentos:</p>
-                                                            <CodeBlock className="language-json !text-xs !my-0 !p-0">
+                                                            <CodeBlock
+                                                                className="language-json !text-xs !my-0 !p-0"
+                                                                enableSynthaxHighlight={syntaxHighlightEnabledGlobally}
+                                                            >
                                                                 {JSON.stringify(functionCallPart.functionCall.args, null, 2)}
                                                             </CodeBlock>
                                                         </>
                                                     )}
-                                                    {/* className="mt-2 pt-2 border-t border-amber-500/30 text-sm" */}
-                                                    {message.text.trim() && <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{message.text.replace(/▍$/, '')}</ReactMarkdown>}
+                                                    {message.text.trim() &&
+                                                        <ReactMarkdown
+                                                            remarkPlugins={[remarkGfm, remarkBreaks]}
+                                                            components={markdownComponents}
+                                                        >
+                                                            {message.text.replace(/▍$/, '')}
+                                                        </ReactMarkdown>
+                                                    }
                                                 </div>
                                             ) : functionResponsePart ? (
                                                 <div className="function-response-content p-1">
@@ -567,7 +645,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                                     </div>
                                                     <p className="text-sm font-medium text-indigo-100 mb-1">{functionResponsePart.functionResponse.name}</p>
                                                     <p className="text-xs text-indigo-300/80 mb-0.5">Conteúdo da Resposta:</p>
-                                                    <CodeBlock className="language-json !text-xs !my-0 !p-0">
+                                                    <CodeBlock
+                                                        className="language-json !text-xs !my-0 !p-0"
+                                                        enableSynthaxHighlight={syntaxHighlightEnabledGlobally}
+                                                    >
                                                         {JSON.stringify(functionResponsePart.functionResponse.response?.content ?? {}, null, 2)}
                                                     </CodeBlock>
                                                 </div>
@@ -581,7 +662,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                                 <>
                                                     {(message.text.trim().length > 0) && (
                                                         <div className="message-text-content">
-                                                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                                                            <ReactMarkdown
+                                                                remarkPlugins={[remarkGfm, remarkBreaks]}
+                                                                components={markdownComponents}
+                                                            >
                                                                 {message.text.replace(/▍$/, '')}
                                                             </ReactMarkdown>
                                                         </div>
@@ -614,7 +698,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                             <div className={`flex items-center rounded-xl shadow-xl bg-slate-800/70 border border-slate-700/80 p-1 absolute transform transition-all duration-150 ease-out z-10 backdrop-blur-sm
                                             ${isUser ?
                                     (isMobile ? 'right-0 top-9 sm:top-10' : 'right-0 -top-6') :
-                                    (isMobile ? 'left-0 top-9 sm:top-10' : 'left-11 sm:left-12 -top-6') // AI or Function Role
+                                    (isMobile ? 'left-0 top-9 sm:top-10' : 'left-11 sm:left-12 -top-6')
                                 }
                                             ${showActions ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 -translate-y-2 pointer-events-none'}`}>
                                 {!isFunctionRole && <Button variant='icon' onClick={handleEdit} className="!p-1.5 text-slate-300 hover:!text-sky-400 hover:!bg-slate-700/70" title="Editar mensagem" disabled={isProcessingEditedMessage || (!isUser && isThisUserMessageBeingReprocessed)}> <IoPencilOutline size={16} /> </Button>}

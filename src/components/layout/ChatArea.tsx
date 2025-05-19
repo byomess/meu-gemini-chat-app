@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/components/ChatArea/ChatArea.tsx
 import {
     IoChatbubblesOutline,
     IoArrowDownCircleOutline,
@@ -10,79 +12,112 @@ import { useConversations } from '../../contexts/ConversationContext'
 import { useAppSettings } from '../../contexts/AppSettingsContext'
 import useIsMobile from '../../hooks/useIsMobile'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import React from 'react'
 
 interface ChatAreaProps {
     onOpenMobileSidebar: () => void
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
-    // ---------- lógica original ----------
-    const { activeConversation, activeConversationId, isProcessingEditedMessage } =
-        useConversations()
+    const {
+        activeConversation,
+        activeConversationId,
+        isGeneratingResponse
+    } = useConversations()
     const { settings } = useAppSettings()
     const isMobile = useIsMobile()
 
     const chatContainerRef = useRef<HTMLDivElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
+
     const [isUserScrolledUp, setIsUserScrolledUp] = useState(false)
-    const [forceScrollDown, setForceScrollDown] = useState(false)
+    const [userHasManuallyScrolledUp, setUserHasManuallyScrolledUp] = useState(false)
 
     const messages = activeConversation?.messages || []
     const conversationTitle = activeConversation?.title || 'Chat'
 
-    const scrollToBottom = useCallback(
-        (behavior: ScrollBehavior = 'smooth') => {
-            messagesEndRef.current?.scrollIntoView({ behavior })
-            setIsUserScrolledUp(false)
-            setForceScrollDown(false)
-        },
-        []
-    )
-
-    useEffect(() => {
-        const container = chatContainerRef.current
-        if (!container) return
-
-        const threshold = 200
-        const nearBottom =
-            container.scrollHeight - container.scrollTop - container.clientHeight <
-            threshold
-
-        if (forceScrollDown || (nearBottom && !isUserScrolledUp)) {
-            scrollToBottom()
-        }
-    }, [messages, isProcessingEditedMessage, forceScrollDown, isUserScrolledUp, scrollToBottom])
-
-    useEffect(() => {
-        const container = chatContainerRef.current
-        if (!container) return
-        const onScroll = () => {
-            const atBottom =
-                container.scrollHeight - container.scrollTop - container.clientHeight < 50
-            setIsUserScrolledUp(!atBottom)
-        }
-        container.addEventListener('scroll', onScroll, { passive: true })
-        return () => container.removeEventListener('scroll', onScroll)
+    const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+        messagesEndRef.current?.scrollIntoView({ behavior })
     }, [])
 
     useEffect(() => {
+        if (isGeneratingResponse && !userHasManuallyScrolledUp && chatContainerRef.current) {
+            scrollToBottom('auto')
+        }
+    }, [activeConversation?.messages, isGeneratingResponse, userHasManuallyScrolledUp, scrollToBottom])
+
+    useEffect(() => {
+        const container = chatContainerRef.current
+        if (!container) return
+
+        let scrollDebounceTimer: NodeJS.Timeout
+
+        const handleScroll = () => {
+            clearTimeout(scrollDebounceTimer)
+            scrollDebounceTimer = setTimeout(() => {
+                if (!chatContainerRef.current) return
+                const currentContainer = chatContainerRef.current
+                const threshold = 80;
+                
+                const atBottom = currentContainer.scrollHeight - currentContainer.scrollTop - currentContainer.clientHeight < threshold
+
+                setIsUserScrolledUp(!atBottom)
+
+                if (isGeneratingResponse) {
+                    if (!atBottom) {
+                        setUserHasManuallyScrolledUp(true)
+                    } else {
+                        setUserHasManuallyScrolledUp(false)
+                    }
+                } else {
+                    if (atBottom) {
+                        setUserHasManuallyScrolledUp(false)
+                    }
+                }
+            }, 60)
+        }
+
+        container.addEventListener('scroll', handleScroll, { passive: true })
+        
+        handleScroll()
+
+        return () => {
+            container.removeEventListener('scroll', handleScroll)
+            clearTimeout(scrollDebounceTimer)
+        }
+    }, [isGeneratingResponse])
+
+    useEffect(() => {
         if (activeConversationId) {
-            setTimeout(() => scrollToBottom('auto'), 0)
-            setIsUserScrolledUp(false)
+            setUserHasManuallyScrolledUp(false)
+            setTimeout(() => {
+                scrollToBottom('auto')
+                const container = chatContainerRef.current
+                if (container) {
+                    const threshold = 5
+                    const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold
+                    setIsUserScrolledUp(!atBottom)
+                }
+            }, 50)
         }
     }, [activeConversationId, scrollToBottom])
+
+
+    const handleScrollToBottomButtonClick = () => {
+        scrollToBottom('smooth')
+        setUserHasManuallyScrolledUp(false)
+        setIsUserScrolledUp(false)
+    }
 
     const showWelcome = !activeConversationId
     const showApiKeyMissing = activeConversationId && !settings.apiKey
 
-    // ---------- UI ----------
     return (
         <main className="
         flex flex-col h-screen relative text-slate-100
         bg-slate-950 bg-gradient-to-b from-slate-950 to-slate-900
       ">
 
-            {/* HEADER com glass-morphism */}
             <div className="
           sticky top-0 z-20
           flex items-center gap-3
@@ -107,10 +142,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
                 <h2 className="truncate text-base sm:text-lg font-semibold">{conversationTitle}</h2>
             </div>
 
-            {/* BOTÃO flutuante scroll-down */}
             {isUserScrolledUp && messages.length > 0 && (
                 <button
-                    onClick={() => setForceScrollDown(true)}
+                    onClick={handleScrollToBottomButtonClick}
                     className="
             fixed bottom-24 right-6 sm:right-8 z-30
             p-3 rounded-full
@@ -127,7 +161,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
                 </button>
             )}
 
-            {/* LISTA de mensagens / estados vazios */}
             <div
                 ref={chatContainerRef}
                 className="

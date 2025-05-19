@@ -252,7 +252,7 @@ export async function* streamMessageToGemini(
         }
     }
 
-    const safetySettings = [
+    const safetySettings: { category: HarmCategory; threshold: HarmBlockThreshold }[] = [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
         { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
         { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -304,7 +304,7 @@ export async function* streamMessageToGemini(
                 model: modelConfig.model,
                 config: {
                     ...generationConfig,
-                    safetySettings: safetySettings,
+                    ...(!process.env.NODE_ENV || process.env.NODE_ENV !== 'development' ? { safetySettings: safetySettings } : {}),
                     systemInstruction: systemInstructionForAPI,
                     tools: toolsForApiNextTurn,
                 },
