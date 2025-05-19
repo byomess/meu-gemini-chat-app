@@ -211,7 +211,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
                         <p className="text-sm max-w-xs">Envie uma mensagem abaixo para iniciar a conversa.</p>
                     </div>
                 ) : (
-                    <div className="space-y-4 sm:space-y-5">
+                    <div className="space-y-4 sm:space-y-5 w-full"> {/* Adicionado w-full para garantir que os filhos tenham um contexto de largura total */}
                         {messages.map(msg => (
                             <MessageBubble key={msg.id} message={msg} conversationId={activeConversationId!} />
                         ))}

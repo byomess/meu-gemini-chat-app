@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/components/MessageBubble/MessageBubble.tsx
+// src/components/chat/MessageBubble.tsx
 import React, { useState, useRef, useEffect, Fragment } from 'react';
 import type { Message, MessageMetadata, MemoryActionType, AttachedFileInfo } from '../../types/conversation';
 import {
@@ -17,7 +17,7 @@ import { useMemories } from '../../contexts/MemoryContext';
 import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
-import CodeBlock from '../common/CodeBlock'; // Assumindo que este caminho está correto
+import CodeBlock from '../common/CodeBlock';
 import CustomAudioPlayer from './CustomAudioPlayer';
 import Button from '../common/Button';
 import useIsMobile from '../../hooks/useIsMobile';
@@ -497,14 +497,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const abortedBubbleClasses = "border-2 border-dashed border-amber-500/80 !bg-slate-700/70 shadow-amber-500/10 shadow-md";
     const loadingBubbleClasses = "opacity-60 animate-pulse !bg-slate-600/70 border border-slate-500/60";
 
-    const messageContainerClasses = `py-3 px-4 rounded-2xl relative prose prose-sm prose-invert max-w-none
+    const messageContainerClasses = `py-3 px-4 rounded-2xl relative prose prose-sm prose-invert max-w-none w-full
                                    transition-all duration-200 ease-in-out prose-p:text-slate-200 prose-headings:text-slate-50
                                    ${isUser ? userBubbleClasses : (isFunctionRole ? functionRoleBubbleClasses : aiBubbleBaseClasses)}
                                    ${isActualErrorForStyling ? errorBubbleClasses : ''}
                                    ${abortedByUser && !isEditing ? abortedBubbleClasses : ''}
                                    ${isLoading && !isUser && !showAITypingIndicator && !userFacingErrorMessage && !abortedByUser && !isEditing && !functionCallPart && !functionResponsePart ? loadingBubbleClasses : ''}`;
 
-    const editContainerClasses = `p-2 rounded-xl shadow-xl border-2 border-blue-500/70
+    const editContainerClasses = `p-2 rounded-xl shadow-xl border-2 border-blue-500/70 w-full
                                  ${isUser ? 'bg-blue-700/90' : 'bg-slate-700/90'} backdrop-blur-md`;
 
     const editTextareaClasses = `w-full p-2.5 text-sm bg-transparent text-white focus:outline-none resize-none scrollbar-thin
@@ -515,6 +515,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                ${isUser ? 'text-blue-100 hover:text-white hover:!bg-blue-500/70'
             : 'text-slate-200 hover:text-white hover:!bg-slate-500/70'}`;
 
+    const desktopMaxWidthClasses = 'max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]';
+
     return (
         <>
             <div
@@ -523,9 +525,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                 onMouseLeave={() => setShowActions(false)}
             >
                 {hasAnyContentForBubble && (
-                    <div className={`flex w-full ${isMobile
-                        ? (isUser || isFunctionRole ? 'flex-col items-end' : 'flex-col items-start')
-                        : (isUser || isFunctionRole ? 'flex-row items-end justify-end' : 'flex-row items-end justify-start')
+                    <div className={`flex w-full ${
+                        isMobile
+                            ? (isUser || isFunctionRole ? 'flex-col items-end' : 'flex-col items-start')
+                            : (isUser || isFunctionRole
+                                ? `flex-row items-end justify-end ${desktopMaxWidthClasses} ml-auto`
+                                : `flex-row items-end justify-start ${desktopMaxWidthClasses} mr-auto`
+                              )
                         } gap-2 sm:gap-2.5`}>
 
                         {(!isUser && !isFunctionRole) && (
@@ -545,13 +551,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                             </div>
                         )}
 
-                        {/* CORREÇÃO APLICADA AQUI */}
-                        <div className={`flex flex-col ${isMobile
-                            ? (isUser || isFunctionRole ? 'items-end w-full max-w-full' : 'items-start w-full max-w-full') // Adicionado w-full max-w-full
-                            : (isUser || isFunctionRole ? 'items-end max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]' : 'items-start max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]')
-                            }`}>
+                        <div className={`flex flex-col w-full ${isMobile ? (isUser || isFunctionRole ? 'items-end' : 'items-start') : (isUser || isFunctionRole ? 'items-end' : 'items-start')}`}>
                             {hasAttachedFiles && attachedFilesInfo && (
-                                <div className={`flex flex-wrap gap-2 mb-1.5 ${isUser || isFunctionRole ? 'justify-end' : 'justify-start'} ${isMobile ? (isUser || isFunctionRole ? 'w-full justify-end' : 'w-full justify-start') : ''}`}>
+                                <div className={`flex flex-wrap gap-2 mb-1.5 ${isUser || isFunctionRole ? 'justify-end' : 'justify-start'}`}>
                                     {attachedFilesInfo.map(fileInfo => (
                                         <div key={fileInfo.id} className="bg-slate-800/60 border border-slate-700/60 p-1.5 rounded-xl shadow-md overflow-hidden max-w-[260px] sm:max-w-xs backdrop-blur-sm">
                                             {fileInfo.type.startsWith('image/') && fileInfo.dataUrl ? (
@@ -598,8 +600,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                             )}
 
                             {(shouldRenderTextContent || showAITypingIndicator || functionCallPart || functionResponsePart || (isEditing && !isUser && abortedByUser)) && (
-                                // CORREÇÃO APLICADA AQUI
-                                <div className={`relative ${isMobile ? 'w-full' : (isEditing && !isThisUserMessageBeingReprocessed ? (isUser ? 'min-w-[200px]' : 'min-w-[250px]') : '')} ${isUser && hasAttachedFiles ? 'mt-0' : ''} `}>
+                                <div className={`relative w-full ${isUser && hasAttachedFiles ? 'mt-0' : ''} `}>
                                     {isEditing && !isThisUserMessageBeingReprocessed ? (
                                         <div className={editContainerClasses}>
                                             <textarea ref={editTextareaRef} value={editedText} onChange={(e) => setEditedText(e.target.value)} onKeyDown={handleEditKeyDown} className={editTextareaClasses} rows={1} aria-label="Editar mensagem" />
@@ -711,7 +712,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                 )}
 
                 {!isUser && !isFunctionRole && hasMemoryActions && memoryActions && (
-                    <div className={`mt-3 ${isMobile ? 'w-full' : 'ml-11 sm:ml-12 mr-2 sm:mr-0 max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]'} animate-fadeInQuick`}>
+                     <div className={`mt-3 animate-fadeInQuick ${
+                        isMobile
+                            ? 'w-full'
+                            : (isUser || isFunctionRole
+                                ? `${desktopMaxWidthClasses} ml-auto`
+                                : `ml-11 sm:ml-12 ${desktopMaxWidthClasses} mr-auto`
+                              )
+                        }`}>
                         <div className="flex items-center gap-1.5 text-xs text-purple-400 mb-1">
                             <MainActionIcon size={15} />
                             <span className="font-medium">{mainMemoryActionLabel}</span>

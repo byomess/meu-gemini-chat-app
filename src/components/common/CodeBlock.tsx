@@ -84,7 +84,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ inline, className, children, enab
                     style={{ 
                         fontFamily: 'var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace)', 
                         whiteSpace: 'pre', // CORREÇÃO: Permite preservar espaços e causa overflow para scroll
-                        // wordWrap: 'break-word' // REMOVIDO: Isso quebraria as palavras
+                        wordWrap: 'break-word' // REMOVIDO: Isso quebraria as palavras
                     }}
                 >
                     <code>
