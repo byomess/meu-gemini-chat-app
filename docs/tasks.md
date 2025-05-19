@@ -22,10 +22,11 @@
 ## Backlog
 - [ ] Busca na web
 - [ ] Geração de imagens
-- [ ] Chamada de vóz
-- [ ] Modelo de NLP local
 - [ ] Funções de IA de banco de dados local (IndexedDB)
 - [ ] Funções de IA de scripts JavaScript
 - [ ] Funções de IA de Service Workers
 - [ ] Sincronização de dados entre dispositivos
 - [ ] Refatoração geral do código
+- [ ] Criação de agentes personalizados
+- [ ] Chamada de vóz
+- [ ] Modelo de NLP local
