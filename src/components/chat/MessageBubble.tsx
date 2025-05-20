@@ -497,7 +497,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const abortedBubbleClasses = "border-2 border-dashed border-amber-500/80 !bg-slate-700/70 shadow-amber-500/10 shadow-md";
     const loadingBubbleClasses = "opacity-60 animate-pulse !bg-slate-600/70 border border-slate-500/60";
 
-    const messageContainerClasses = `py-3 px-4 rounded-2xl relative prose prose-sm prose-invert max-w-none w-full
+    const messageContainerClasses = `py-3 px-4 rounded-2xl relative prose prose-sm prose-invert w-full
                                    transition-all duration-200 ease-in-out prose-p:text-slate-200 prose-headings:text-slate-50
                                    ${isUser ? userBubbleClasses : (isFunctionRole ? functionRoleBubbleClasses : aiBubbleBaseClasses)}
                                    ${isActualErrorForStyling ? errorBubbleClasses : ''}
@@ -600,7 +600,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                             )}
 
                             {(shouldRenderTextContent || showAITypingIndicator || functionCallPart || functionResponsePart || (isEditing && !isUser && abortedByUser)) && (
-                                <div className={`relative w-full ${isUser && hasAttachedFiles ? 'mt-0' : ''} `}>
+                                <div className={`relative flex ${isUser || isFunctionRole ? 'justify-end' : 'justify-start'} max-w-full ${isUser && hasAttachedFiles ? 'mt-0' : ''} `}>
                                     {isEditing && !isThisUserMessageBeingReprocessed ? (
                                         <div className={editContainerClasses}>
                                             <textarea ref={editTextareaRef} value={editedText} onChange={(e) => setEditedText(e.target.value)} onKeyDown={handleEditKeyDown} className={editTextareaClasses} rows={1} aria-label="Editar mensagem" />
@@ -700,8 +700,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                         {((canPerformActionsOnMessage || (!isUser && !isFunctionRole && abortedByUser)) && showActions && !isEditing) && (
                             <div className={`flex items-center rounded-xl shadow-xl bg-slate-800/70 border border-slate-700/80 p-1 absolute transform transition-all duration-150 ease-out z-10 backdrop-blur-sm
                                             ${isUser ?
-                                    (isMobile ? 'right-0 top-9 sm:top-10' : 'right-0 -top-6') :
-                                    (isMobile ? 'left-0 top-9 sm:top-10' : 'left-11 sm:left-12 -top-6')
+                                    (isMobile ? 'right-0 top-4' : 'right-11 -top-6') :
+                                    (isMobile ? 'left-0 top-4' : 'left-11 sm:left-12 -top-6')
                                 }
                                             ${showActions ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 -translate-y-2 pointer-events-none'}`}>
                                 {!isFunctionRole && <Button variant='icon' onClick={handleEdit} className="!p-1.5 text-slate-300 hover:!text-sky-400 hover:!bg-slate-700/70" title="Editar mensagem" disabled={isProcessingEditedMessage || (!isUser && isThisUserMessageBeingReprocessed)}> <IoPencilOutline size={16} /> </Button>}
