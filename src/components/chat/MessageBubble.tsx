@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/components/chat/MessageBubble.tsx
 import React, { useState, useRef, useEffect, Fragment } from 'react';
-import type { Message, MessageMetadata, MemoryActionType, AttachedFileInfo } from '../../types/conversation';
+import type { Message, MessageMetadata, MemoryActionType, AttachedFileInfo } from '../../types';
 import {
     IoPersonCircleOutline, IoSparklesOutline, IoGitNetworkOutline, IoTrashOutline,
     IoPencilOutline, IoCheckmarkOutline, IoCloseOutline, IoSyncOutline,
@@ -284,7 +284,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const userFacingErrorMessage = message.metadata?.userFacingError || (typeof message.metadata?.error === 'string' && message.metadata.error !== "Resposta abortada pelo usuário." ? message.metadata.error : undefined);
     const memoryActions = message.metadata?.memorizedMemoryActions;
     const hasMemoryActions = memoryActions && memoryActions.length > 0;
-    const attachedFilesInfo = message.metadata?.attachedFilesInfo;
+    const attachedFilesInfo: AttachedFileInfo[] | undefined = message.metadata?.attachedFilesInfo;
     const hasAttachedFiles = !!(attachedFilesInfo && attachedFilesInfo.length > 0);
     const rawParts = message.metadata?.rawParts;
 
@@ -554,7 +554,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                         <div className={`flex flex-col w-full ${isMobile ? (isUser || isFunctionRole ? 'items-end' : 'items-start') : (isUser || isFunctionRole ? 'items-end' : 'items-start')}`}>
                             {hasAttachedFiles && attachedFilesInfo && (
                                 <div className={`flex flex-wrap gap-2 mb-1.5 ${isUser || isFunctionRole ? 'justify-end' : 'justify-start'}`}>
-                                    {attachedFilesInfo.map(fileInfo => (
+                                    {attachedFilesInfo.map((fileInfo: AttachedFileInfo) => (
                                         <div key={fileInfo.id} className="bg-slate-800/60 border border-slate-700/60 p-1.5 rounded-xl shadow-md overflow-hidden max-w-[260px] sm:max-w-xs backdrop-blur-sm">
                                             {fileInfo.type.startsWith('image/') && fileInfo.dataUrl ? (
                                                 <img

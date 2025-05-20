@@ -19,7 +19,7 @@ import {
     type StreamedGeminiResponseChunk,
     type RawFileAttachment
 } from '../../services/geminiService';
-import type { MessageMetadata, AttachedFileInfo } from '../../types/conversation';
+import type { MessageMetadata, AttachedFileInfo } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
 import useIsMobile from '../../hooks/useIsMobile';
 import { systemMessage } from '../../prompts';
@@ -149,7 +149,7 @@ const MessageInput: React.FC = () => {
         };
     }, [stopMediaStream]);
 
-    const addFilesToState = (files: FileList | File[]) => {
+    const addFilesToState = useCallback((files: FileList | File[]) => {
         if (isRecording) return;
         const newFiles: LocalAttachedFile[] = [];
         for (let i = 0; i < files.length; i++) {
@@ -169,7 +169,8 @@ const MessageInput: React.FC = () => {
             newFiles.push(newAttachedFile);
         }
         setAttachedFiles(prevFiles => [...prevFiles, ...newFiles]);
-    }
+    }, [isRecording]);
+
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
@@ -195,7 +196,7 @@ const MessageInput: React.FC = () => {
                 addFilesToState(filesToPaste);
             }
         }
-    }, [isRecording, isTextareaFocused]);
+    }, [isRecording, isTextareaFocused, addFilesToState]);
 
     useEffect(() => {
         const textareaElement = textareaRef.current;
@@ -244,7 +245,7 @@ const MessageInput: React.FC = () => {
             mediaRecorderRef.current.ondataavailable = (event) => {
                 if (event.data.size > 0) { audioChunksRef.current.push(event.data); }
             };
-            mediaRecorderRef.current.onstop = async () => {
+            mediaRecorderRef.current.onstop = () => {
                 stopMediaStream();
                 setIsRecording(false);
                 if (wasCancelledRef.current) {
@@ -254,14 +255,24 @@ const MessageInput: React.FC = () => {
                     return;
                 }
                 if (!mediaRecorderRef.current) return;
+
                 const audioMimeType = mediaRecorderRef.current.mimeType || 'audio/ogg';
                 const audioBlob = new Blob(audioChunksRef.current, { type: audioMimeType });
                 audioChunksRef.current = [];
+
                 if (audioBlob.size === 0) {
                     setAudioError("Gravação resultou em áudio vazio. Tente novamente.");
+                    if (textareaRef.current) textareaRef.current.focus();
                     return;
                 }
-                await handleSubmit(undefined, audioBlob);
+
+                const audioExtension = audioMimeType.split('/')[1]?.split(';')[0] || 'ogg';
+                const audioFileName = `audio_gravado_${Date.now()}.${audioExtension}`;
+                const audioFile = new File([audioBlob], audioFileName, { type: audioMimeType });
+
+                addFilesToState([audioFile]);
+
+                if (textareaRef.current) textareaRef.current.focus();
             };
             mediaRecorderRef.current.onerror = (event: Event) => {
                 console.error("MediaRecorder error:", event);
@@ -286,7 +297,7 @@ const MessageInput: React.FC = () => {
         }
     };
 
-    const stopRecordingAndSend = () => {
+    const stopRecordingAndAttach = () => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
             wasCancelledRef.current = false;
             mediaRecorderRef.current.stop();
@@ -307,7 +318,7 @@ const MessageInput: React.FC = () => {
     };
 
     const handleMicButtonClick = () => {
-        if (isRecording) { stopRecordingAndSend(); } else { startRecording(); }
+        if (isRecording) { stopRecordingAndAttach(); } else { startRecording(); }
     };
 
     const handleAbortAIResponse = () => {
@@ -320,17 +331,17 @@ const MessageInput: React.FC = () => {
         if (textareaRef.current) textareaRef.current.focus();
     };
 
-    const handleSubmit = async (e?: React.FormEvent, recordedAudioBlob?: Blob) => {
+    const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         setErrorFromAI(null);
         if (!isRecording) setAudioError(null);
 
         const trimmedText = text.trim();
-        const hasContentToSend = trimmedText || attachedFiles.length > 0 || recordedAudioBlob;
+        const hasContentToSend = trimmedText || attachedFiles.length > 0;
 
         if (!hasContentToSend || !activeConversationId || isProcessingEditedMessage) {
             if (isLoadingAI) return;
-            if (isRecording && !recordedAudioBlob) return;
+            if (isRecording) return;
             if (!hasContentToSend && activeConversationId && !isProcessingEditedMessage) return;
             return;
         }
@@ -379,20 +390,6 @@ const MessageInput: React.FC = () => {
             })
         );
 
-        if (recordedAudioBlob) {
-            const audioId = uuidv4();
-            const audioMimeTypeForUI = recordedAudioBlob.type || 'audio/ogg';
-            const audioExtension = audioMimeTypeForUI.split('/')[1] || 'ogg';
-            const audioFileNameForUI = `audio_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${audioExtension}`;
-            filesInfoForUIMessagePromises.push(
-                blobToDataURL(recordedAudioBlob).then(dataUrl => ({
-                    id: audioId, name: audioFileNameForUI, type: audioMimeTypeForUI, size: recordedAudioBlob.size, dataUrl: dataUrl,
-                })).catch(err => {
-                    console.error(`Falha ao converter áudio gravado para Data URL:`, err);
-                    return { id: audioId, name: audioFileNameForUI, type: audioMimeTypeForUI, size: recordedAudioBlob.size, dataUrl: undefined };
-                })
-            );
-        }
         const resolvedFilesInfoForUIMessage = await Promise.all(filesInfoForUIMessagePromises);
 
         addMessageToConversation(activeConversationId, {
@@ -432,14 +429,6 @@ const MessageInput: React.FC = () => {
             const rawFilesForAPI: RawFileAttachment[] = [];
             for (const localFile of attachedFiles) {
                 rawFilesForAPI.push({ file: localFile.file });
-            }
-
-            if (recordedAudioBlob) {
-                const audioMimeTypeForFile = recordedAudioBlob.type || 'audio/ogg';
-                const audioExtensionForFile = audioMimeTypeForFile.split('/')[1] || 'ogg';
-                const audioFileNameForFile = `recorded_audio_${Date.now()}.${audioExtensionForFile}`;
-                const audioFileForAPI = new File([recordedAudioBlob], audioFileNameForFile, { type: audioMimeTypeForFile });
-                rawFilesForAPI.push({ file: audioFileForAPI });
             }
 
             const systemInstructionText = systemMessage({
@@ -691,9 +680,9 @@ const MessageInput: React.FC = () => {
                         variant="icon"
                         className={`!p-2.5 rounded-lg transform active:scale-90 transition-colors duration-150
                                     ${isWebSearchEnabledForNextMessage
-                                        ? 'bg-blue-600/80 text-sky-100 hover:bg-blue-500/90 focus:bg-blue-500/90'
-                                        : 'text-slate-400 hover:text-blue-400 hover:bg-slate-700/60'
-                                    }`}
+                                ? 'bg-blue-600/80 text-sky-100 hover:bg-blue-500/90 focus:bg-blue-500/90'
+                                : 'text-slate-400 hover:text-blue-400 hover:bg-slate-700/60'
+                            }`}
                         onClick={() => setIsWebSearchEnabledForNextMessage(prev => !prev)}
                         disabled={isWebSearchButtonDisabled}
                         aria-label={isWebSearchEnabledForNextMessage ? "Desativar busca na web para a próxima mensagem" : "Ativar busca na web para a próxima mensagem"}
@@ -751,8 +740,8 @@ const MessageInput: React.FC = () => {
                                     ${isRecording ? '!bg-red-600 hover:!bg-red-700 text-white animate-pulseRing'
                                 : 'text-slate-400 hover:text-blue-400 hover:bg-slate-700/60'}`}
                         onClick={handleMicButtonClick} disabled={isMicDisabled || isProcessingEditedMessage}
-                        aria-label={isRecording ? "Parar gravação e enviar" : "Iniciar gravação de áudio"}
-                        title={isRecording ? "Parar gravação e enviar" : "Iniciar gravação de áudio"}
+                        aria-label={isRecording ? "Parar gravação e anexar áudio" : "Iniciar gravação de áudio"}
+                        title={isRecording ? "Parar gravação e anexar áudio" : "Iniciar gravação de áudio"}
                     >
                         {isRecording ? <IoStopCircleOutline size={20} /> : <IoMicOutline size={20} />}
                     </Button>

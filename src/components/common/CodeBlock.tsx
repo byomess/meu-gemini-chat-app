@@ -28,7 +28,7 @@ interface CodeBlockProps {
     inline?: boolean;
     className?: string;
     children?: React.ReactNode;
-    enableSyntaxHighlight?: boolean; 
+    enableSynthaxHighlight?: boolean; 
 }
 
 const CodeBlockComponent: React.FC<CodeBlockProps> = ({ 
