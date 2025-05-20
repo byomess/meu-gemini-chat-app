@@ -1,3 +1,4 @@
+// src/services/geminiService.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
     GoogleGenAI,
@@ -13,7 +14,7 @@ import {
     type GenerateContentParameters,
 } from "@google/genai";
 
-import type { GeminiModelConfig, FunctionDeclaration as AppFunctionDeclaration } from '../types';
+import type { GeminiModelConfig, FunctionDeclaration as AppFunctionDeclaration, SafetySetting } from '../types'; // Adicionado SafetySetting
 
 const FILE_STATE_ACTIVE = "ACTIVE";
 const FILE_STATE_FAILED = "FAILED";
@@ -136,14 +137,17 @@ async function waitForFileActive(
             const fileMetadata = await genAI.files.get({ name: fileNameFromAPI }) as GeminiFileMetadata;
             if (fileMetadata?.state?.toUpperCase() === FILE_STATE_ACTIVE) return fileMetadata;
             if (fileMetadata?.state?.toUpperCase() === FILE_STATE_FAILED) {
+                console.warn(`File ${fileNameFromAPI} processing failed on API side.`);
                 return null;
             }
             if (i < maxRetries - 1) await new Promise(resolve => setTimeout(resolve, delayMs));
-        } catch {
+        } catch (error: unknown) {
+            console.warn(`Error checking file state for ${fileNameFromAPI}, retry ${i + 1}/${maxRetries}:`, error);
             if (abortSignal?.aborted) throw new DOMException("Aborted during file state check retry", "AbortError");
             if (i < maxRetries - 1) await new Promise(resolve => setTimeout(resolve, delayMs)); else return null;
         }
     }
+    console.warn(`File ${fileNameFromAPI} did not become active after ${maxRetries} retries.`);
     return null;
 }
 
@@ -219,7 +223,7 @@ export async function* streamMessageToGemini(
                 }
             } catch (uploadError: unknown) {
                 if (uploadError instanceof DOMException && uploadError.name === "AbortError") {
-                     yield { error: "Processamento de anexos abortado.", isFinished: true }; return;
+                    yield { error: "Processamento de anexos abortado.", isFinished: true }; return;
                 }
                 const errorMessage = uploadError instanceof Error ? uploadError.message : "Erro upload/verificação";
                 yield { error: `Falha com arquivo '${fileNameForUpload}': ${errorMessage}`, isFinished: false };
@@ -228,11 +232,11 @@ export async function* streamMessageToGemini(
         currentUserParts.push(...uploadedFileParts);
         if (attachedRawFiles.length > 0) {
             if (uploadedFileParts.length === attachedRawFiles.length && !uploadedFileParts.some(p => !p.fileData?.fileUri)) {
-                 yield { delta: "Anexos processados com sucesso... Aguardando resposta... ", isFinished: false };
+                yield { delta: "Anexos processados com sucesso... Aguardando resposta... ", isFinished: false };
             } else if (uploadedFileParts.length > 0) {
-                 yield { delta: "Alguns anexos processados... Aguardando resposta... ", isFinished: false };
+                yield { delta: "Alguns anexos processados... Aguardando resposta... ", isFinished: false };
             } else {
-                 yield { delta: "Falha ao processar todos os anexos... Aguardando resposta... ", isFinished: false };
+                yield { delta: "Falha ao processar todos os anexos... Aguardando resposta... ", isFinished: false };
             }
         }
     }
@@ -243,21 +247,30 @@ export async function* streamMessageToGemini(
             parts: currentUserParts,
         });
     } else {
+        // Verifica se há conteúdo de usuário válido na mensagem atual ou no histórico,
+        // desconsiderando a mensagem inicial de memórias.
         const userMessagesInHistory = currentChatHistory.filter(
-            c => c.role === 'user' && (c.parts ?? []).some(p => (p.text && p.text.trim() !== "" && !p.text.startsWith("---")) || p.fileData || p.inlineData)
+            c => c.role === 'user' &&
+                (c.parts ?? []).some(p =>
+                    (p.text && p.text.trim() !== "" && !p.text.startsWith("---") && !p.text.startsWith("(Nenhuma memória global")) || // Não é a mensagem de memória
+                    p.fileData ||
+                    p.inlineData
+                )
         );
         if (userMessagesInHistory.length === 0 && !currentUserMessageText.trim() && attachedRawFiles.length === 0) {
-             yield { error: "Nenhum conteúdo de usuário válido para enviar.", isFinished: true };
-             return;
+            yield { error: "Nenhum conteúdo de usuário válido para enviar.", isFinished: true };
+            return;
         }
     }
 
-    const safetySettings: { category: HarmCategory; threshold: HarmBlockThreshold }[] = [
-        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-    ];
+    // MODIFICAÇÃO PRINCIPAL AQUI: Usa os safetySettings do modelConfig
+    // Se modelConfig.safetySettings não estiver definido, usa um array vazio (a API usará os defaults dela)
+    // ou um default mais restritivo, se preferir. Aqui, estou priorizando o que vem da config.
+    const safetySettingsForAPI: SafetySetting[] | undefined = modelConfig.safetySettings?.map(s => ({
+        category: s.category as HarmCategory, // Cast para o tipo HarmCategory do SDK @google/genai
+        threshold: s.threshold as HarmBlockThreshold, // Cast para o tipo HarmBlockThreshold do SDK @google/genai
+    })) as SafetySetting[];
+
 
     const systemInstructionForAPI: Part | undefined = systemInstructionString.trim()
         ? { text: systemInstructionString.trim() }
@@ -265,7 +278,7 @@ export async function* streamMessageToGemini(
 
     const generationConfig: GenerateContentConfig = {
         temperature: modelConfig.temperature,
-        topK: modelConfig.topK === 0 ? undefined : modelConfig.topK,
+        topK: modelConfig.topK === 0 ? undefined : modelConfig.topK, // API espera undefined para topK=0
         topP: modelConfig.topP,
         maxOutputTokens: modelConfig.maxOutputTokens,
     };
@@ -280,8 +293,9 @@ export async function* streamMessageToGemini(
                         if (fd.parametersSchema && fd.parametersSchema.trim() !== "") {
                             parameters = JSON.parse(fd.parametersSchema) as GeminiSchema;
                         }
-                    } catch {
-                        parameters = { type: GeminiType.OBJECT, properties: {} };
+                    } catch (e) {
+                        console.warn(`Erro ao parsear parametersSchema para função ${fd.name}:`, e);
+                        parameters = { type: GeminiType.OBJECT, properties: {} }; // Fallback seguro
                     }
                     return {
                         name: fd.name,
@@ -300,16 +314,19 @@ export async function* streamMessageToGemini(
                 throw new DOMException("Aborted by user during API interaction", "AbortError");
             }
 
+            const requestConfig: Omit<GenerateContentConfig, 'model' | 'contents'> = {
+                ...generationConfig,
+                ...(safetySettingsForAPI && { safetySettings: safetySettingsForAPI }),
+                systemInstruction: systemInstructionForAPI,
+                tools: toolsForApiNextTurn,
+            };
+
             const requestPayloadForAPI: GenerateContentParameters = {
                 model: modelConfig.model,
-                config: {
-                    ...generationConfig,
-                    ...(!process.env.NODE_ENV || process.env.NODE_ENV !== 'development' ? { safetySettings: safetySettings } : {}),
-                    systemInstruction: systemInstructionForAPI,
-                    tools: toolsForApiNextTurn,
-                },
                 contents: currentChatHistory,
+                config: requestConfig
             };
+
 
             const streamResult: AsyncIterable<GenerateContentResponse> = await genAI.models.generateContentStream(requestPayloadForAPI);
 
@@ -339,11 +356,11 @@ export async function* streamMessageToGemini(
             }
 
             if (hasFunctionCallInThisTurn) {
-                toolsForApiNextTurn = undefined; // Omitir tools na próxima chamada
+                toolsForApiNextTurn = undefined;
                 const finalFunctionCallPart = modelResponsePartsAggregatedThisTurn.find(p => p.functionCall);
                 if (finalFunctionCallPart && finalFunctionCallPart.functionCall) {
                     const { name: funcName, args: funcArgs } = finalFunctionCallPart.functionCall;
-                    
+
                     const textBeforeFunctionCall = modelResponsePartsAggregatedThisTurn
                         .filter(p => p.text && !p.functionCall).map(p => p.text).join("");
                     if (textBeforeFunctionCall) {
@@ -362,6 +379,7 @@ export async function* streamMessageToGemini(
                             const requestOptions: RequestInit = {
                                 method: declaredFunction.httpMethod,
                                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                                signal: abortSignal, // Passa o abortSignal para a chamada fetch
                             };
 
                             if (declaredFunction.httpMethod === 'GET') {
@@ -369,12 +387,14 @@ export async function* streamMessageToGemini(
                                 if (queryParams) {
                                     targetUrl += (targetUrl.includes('?') ? '&' : '?') + queryParams;
                                 }
-                            } else if (declaredFunction.httpMethod === 'POST') {
+                            } else if (['POST', 'PUT', 'PATCH'].includes(declaredFunction.httpMethod)) {
                                 requestOptions.body = JSON.stringify(funcArgs);
                             }
-                            
+
                             const apiResponse = await fetch(targetUrl, requestOptions);
-                            
+
+                            if (abortSignal?.aborted) throw new DOMException("Aborted during function call fetch", "AbortError");
+
                             if (!apiResponse.ok) {
                                 let errorBody = `Erro HTTP: ${apiResponse.status} ${apiResponse.statusText}`;
                                 try { const errJson = await apiResponse.json(); errorBody += ` - ${JSON.stringify(errJson)}`; } catch { /* no json body */ }
@@ -389,6 +409,9 @@ export async function* streamMessageToGemini(
                             }
                             yield { delta: `[Loox: API para '${funcName}' respondeu.]\n`, isFinished: false };
                         } catch (executionError: unknown) {
+                            if (executionError instanceof DOMException && executionError.name === "AbortError") {
+                                throw executionError; // Re-throw para ser pego pelo catch principal
+                            }
                             functionExecutionResultData = {
                                 status: "error",
                                 error_message: `Erro ao chamar API para '${funcName}': ${executionError instanceof Error ? executionError.message : "Erro desconhecido na chamada da API externa."}`,
@@ -409,12 +432,12 @@ export async function* streamMessageToGemini(
                     currentChatHistory.push({ role: "function", parts: [functionResponsePart] });
                     modelResponsePartsAggregatedThisTurn = [];
                     currentTurnTextDelta = "";
-                } else {
+                } else { // Caso estranho: hasFunctionCallInThisTurn é true, mas não achou functionCall
                     const { cleanedResponse, operations } = parseMemoryOperations(accumulatedTextForFinalResponse);
                     yield { finalText: cleanedResponse, memoryOperations: operations, isFinished: true };
                     return;
                 }
-            } else {
+            } else { // Não houve function call, finaliza o turno.
                 const { cleanedResponse, operations } = parseMemoryOperations(accumulatedTextForFinalResponse);
                 yield { finalText: cleanedResponse, memoryOperations: operations, isFinished: true };
                 return;
@@ -432,10 +455,10 @@ export async function* streamMessageToGemini(
             detailedErrorForLog = { name: error.name, message: error.message, stack: error.stack };
         } else if (typeof error === 'string') { detailedErrorForLog = error; }
         console.error("GEMINI_SERVICE: Erro ao chamar API Gemini (stream):", detailedErrorForLog);
-        
+
         let errorMessage = "Ocorreu um erro ao contatar a IA.";
         if (error instanceof Error && 'message' in error) {
-            const apiErrorMessage = (error as Error).message;
+            const apiErrorMessage = (error as any).message || (error as any).toString(); // Adicionado fallback para toString
             errorMessage = `Erro da API: ${apiErrorMessage}`;
             if (apiErrorMessage.toLowerCase().includes("api key") || apiErrorMessage.toLowerCase().includes("permission denied")) {
                 errorMessage = "Chave de API inválida ou não autorizada.";
@@ -445,6 +468,8 @@ export async function* streamMessageToGemini(
                 errorMessage = `Erro de quota da API: ${apiErrorMessage}`;
             } else if (apiErrorMessage.toLowerCase().includes("user location is not supported")) {
                 errorMessage = `Erro da API: Localização não suportada. ${apiErrorMessage}`;
+            } else if (apiErrorMessage.toLowerCase().includes("safety settings")) { // Erro específico de safety settings
+                errorMessage = `Erro da API relacionado às configurações de segurança: ${apiErrorMessage}`;
             }
         }
         yield { error: errorMessage, isFinished: true };
