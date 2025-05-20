@@ -5,6 +5,7 @@ import {
     IoArrowDownCircleOutline,
     IoLockClosedOutline,
     IoMenuOutline,
+    IoCheckmarkCircleOutline, // Ícone para auto-scroll ativado
 } from 'react-icons/io5'
 import MessageInput from '../chat/MessageInput'
 import MessageBubble from '../chat/MessageBubble'
@@ -14,6 +15,8 @@ import useIsMobile from '../../hooks/useIsMobile'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import React from 'react'
 
+const AUTO_SCROLL_INTERVAL = 500;
+
 interface ChatAreaProps {
     onOpenMobileSidebar: () => void
 }
@@ -22,106 +25,203 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
     const {
         activeConversation,
         activeConversationId,
-        // isGeneratingResponse // Não é mais usado diretamente para auto-scroll
+        // isGeneratingResponse // Poderia ser usado para refinar ainda mais, se necessário
     } = useConversations()
     const { settings } = useAppSettings()
     const isMobile = useIsMobile()
 
     const chatContainerRef = useRef<HTMLDivElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
+    const userManuallyScrolledRef = useRef(false) // Flag para detectar scroll manual
+    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null) // Para debounce do scroll
 
     const [isUserScrolledUp, setIsUserScrolledUp] = useState(false)
-    // const [userHasManuallyScrolledUp, setUserHasManuallyScrolledUp] = useState(false) // Não é mais necessário
+    const [isAutoScrollActive, setIsAutoScrollActive] = useState(false)
+    const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
     const messages = activeConversation?.messages || []
     const conversationTitle = activeConversation?.title || 'Chat'
 
     const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+        // Se o scroll for programático, não queremos que seja interpretado como manual
+        userManuallyScrolledRef.current = false
         messagesEndRef.current?.scrollIntoView({ behavior })
     }, [])
 
-    // REMOVIDO: useEffect para auto-scroll durante a geração de resposta
-    // useEffect(() => {
-    //     if (isGeneratingResponse && !userHasManuallyScrolledUp && chatContainerRef.current) {
-    //         scrollToBottom('auto')
-    //     }
-    // }, [activeConversation?.messages, isGeneratingResponse, userHasManuallyScrolledUp, scrollToBottom])
+    const stopAutoScrollInterval = useCallback(() => {
+        if (autoScrollIntervalRef.current) {
+            clearInterval(autoScrollIntervalRef.current)
+            autoScrollIntervalRef.current = null
+        }
+    }, [])
 
-    // Mantido: useEffect para detectar scroll manual do usuário e mostrar/esconder o botão
+    const startAutoScrollInterval = useCallback(() => {
+        stopAutoScrollInterval()
+        autoScrollIntervalRef.current = setInterval(() => {
+            if (chatContainerRef.current && !userManuallyScrolledRef.current) { // Só auto-scrolla se não houve scroll manual recente
+                const container = chatContainerRef.current
+                const threshold = 10
+                const atBottom =
+                    container.scrollHeight -
+                    container.scrollTop -
+                    container.clientHeight <
+                    threshold
+                if (!atBottom) {
+                    scrollToBottom('smooth')
+                }
+            }
+        }, AUTO_SCROLL_INTERVAL);
+    }, [scrollToBottom, stopAutoScrollInterval])
+
+    useEffect(() => {
+        if (isAutoScrollActive) {
+            startAutoScrollInterval()
+        } else {
+            stopAutoScrollInterval()
+        }
+        return () => {
+            stopAutoScrollInterval()
+        }
+    }, [isAutoScrollActive, startAutoScrollInterval, stopAutoScrollInterval])
+
+    // Efeito para detectar INTERAÇÃO do usuário que causa scroll
     useEffect(() => {
         const container = chatContainerRef.current
         if (!container) return
 
-        let scrollDebounceTimer: NodeJS.Timeout
+        const setUserScrolledManually = () => {
+            userManuallyScrolledRef.current = true
+        }
+
+        // Eventos que indicam uma intenção de scroll pelo usuário
+        container.addEventListener('wheel', setUserScrolledManually, { passive: true })
+        container.addEventListener('touchstart', setUserScrolledManually, { passive: true })
+        // Keydown é mais complexo porque precisamos checar teclas específicas
+        // e o evento pode ser no document ou input, não só no container.
+        // Por simplicidade, focaremos no wheel e touch no container primeiro.
+        // Se o scroll por teclado for um problema, podemos adicionar um listener mais global.
+
+        return () => {
+            container.removeEventListener('wheel', setUserScrolledManually)
+            container.removeEventListener('touchstart', setUserScrolledManually)
+        }
+    }, [])
+
+
+    // Efeito para lidar com o evento de SCROLL e atualizar estados
+    useEffect(() => {
+        const container = chatContainerRef.current
+        if (!container) return
 
         const handleScroll = () => {
-            clearTimeout(scrollDebounceTimer)
-            scrollDebounceTimer = setTimeout(() => {
-                if (!chatContainerRef.current) return
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current)
+            }
+            scrollTimeoutRef.current = setTimeout(() => {
+                if (!chatContainerRef.current) return // Container pode ter sido desmontado
+
                 const currentContainer = chatContainerRef.current
-                const threshold = 80; // Quão longe do fundo para considerar que o usuário rolou para cima
-                
+                const threshold = 80
                 const atBottom = currentContainer.scrollHeight - currentContainer.scrollTop - currentContainer.clientHeight < threshold
 
                 setIsUserScrolledUp(!atBottom)
 
-                // A lógica de userHasManuallyScrolledUp não é mais necessária aqui
-                // pois não estamos mais fazendo auto-scroll baseado nisso.
-            }, 60)
+                // Se o auto-scroll estiver ativo E o usuário scrollou manualmente para cima
+                if (isAutoScrollActive && userManuallyScrolledRef.current && !atBottom) {
+                    setIsAutoScrollActive(false)
+                }
+
+                // Importante: Resetar o flag APÓS a lógica de decisão
+                // para que o próximo scroll programático não seja afetado.
+                // Fazemos isso aqui, pois este handleScroll é o consumidor final da informação
+                // de "scroll manual" para esta iteração.
+                userManuallyScrolledRef.current = false
+
+            }, 60) // Debounce
         }
 
         container.addEventListener('scroll', handleScroll, { passive: true })
-        
-        // Verifica a posição inicial do scroll para o botão
-        handleScroll()
+        handleScroll() // Chamada inicial
 
         return () => {
             container.removeEventListener('scroll', handleScroll)
-            clearTimeout(scrollDebounceTimer)
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current)
+            }
         }
-    }, []) // Dependência de isGeneratingResponse removida pois não afeta mais esta lógica diretamente
+    }, [isAutoScrollActive]) // Depende de isAutoScrollActive para reavaliar a desativação
 
-    // REMOVIDO: useEffect para auto-scroll ao mudar de conversa
-    // (a menos que você queira um scroll inicial para o fundo ao abrir uma conversa pela primeira vez,
-    // nesse caso, ele pode ser adaptado)
-    // Se você quiser que ao abrir a conversa ele vá para o final automaticamente UMA VEZ:
+
+    // Efeito para scroll inicial e resetar auto-scroll ao mudar de conversa
     useEffect(() => {
-        if (activeConversationId && chatContainerRef.current) {
-             // Verifica se a conversa acabou de carregar e está vazia ou se o scroll está no topo
-             const container = chatContainerRef.current;
-             const isNewConversationJustLoaded = messages.length > 0 && container.scrollTop === 0;
-             const isNearTopAndNotEmpty = messages.length > 0 && container.scrollTop < container.clientHeight / 2;
+        if (isAutoScrollActive) {
+            setIsAutoScrollActive(false)
+        }
+        userManuallyScrolledRef.current = false // Reseta ao mudar de conversa também
 
+        const container = chatContainerRef.current
+        if (!container) {
+            if (!activeConversationId) setIsUserScrolledUp(false)
+            return
+        }
 
-            if (isNewConversationJustLoaded || isNearTopAndNotEmpty) {
+        if (activeConversationId) {
+            const isNewConversationJustLoadedAndAtTop = messages.length > 0 && container.scrollTop < 50
+
+            if (isNewConversationJustLoadedAndAtTop) {
                 setTimeout(() => {
-                     // Rola para o final apenas se não estiver já lá
-                    const isCurrentlyAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
-                    if (!isCurrentlyAtBottom) {
-                        scrollToBottom('auto');
+                    if (chatContainerRef.current) {
+                        const currentContainer = chatContainerRef.current
+                        // Só scrolla para o final se o usuário não tiver scrollado manualmente para cima
+                        // entre o carregamento da conversa e este timeout.
+                        if (!userManuallyScrolledRef.current) {
+                            const stillNearTop = currentContainer.scrollTop < currentContainer.clientHeight / 2
+                            if (stillNearTop) {
+                                scrollToBottom('auto')
+                            }
+                        }
+                        const atBottomAfterPossibleScroll = currentContainer.scrollHeight - currentContainer.scrollTop - currentContainer.clientHeight < 5
+                        setIsUserScrolledUp(!atBottomAfterPossibleScroll)
                     }
-                     // Atualiza o estado do botão após o scroll
-                    const atBottomAfterScroll = container.scrollHeight - container.scrollTop - container.clientHeight < 5;
-                    setIsUserScrolledUp(!atBottomAfterScroll);
-                }, 50);
+                }, 50)
             } else {
-                // Se a conversa já estava aberta e rolada, apenas verifica a posição para o botão
+                const threshold = 80
+                const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold
+                setIsUserScrolledUp(!atBottom)
+            }
+        } else {
+            setIsUserScrolledUp(false)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeConversationId, messages.length, scrollToBottom])
+
+
+    const handleFloatingButtonClick = () => {
+        userManuallyScrolledRef.current = false // Clique no botão não é scroll manual do conteúdo
+        if (isAutoScrollActive) {
+            setIsAutoScrollActive(false)
+            if (chatContainerRef.current) {
+                const container = chatContainerRef.current;
                 const threshold = 80;
                 const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
                 setIsUserScrolledUp(!atBottom);
             }
+        } else {
+            scrollToBottom('auto')
+            setIsUserScrolledUp(false)
+            setIsAutoScrollActive(true)
         }
-    }, [activeConversationId, messages.length, scrollToBottom]);
-
-
-    const handleScrollToBottomButtonClick = () => {
-        scrollToBottom('smooth')
-        // setUserHasManuallyScrolledUp(false) // Não é mais necessário
-        setIsUserScrolledUp(false) // Esconde o botão imediatamente
     }
 
     const showWelcome = !activeConversationId
     const showApiKeyMissing = activeConversationId && !settings.apiKey
+    // O botão só deve aparecer se houver mensagens e não estivermos na tela de boas-vindas/API key
+    // E também, só faz sentido se houver conteúdo scrollável ou se o usuário estiver scrollado para cima.
+    // A lógica de `isUserScrolledUp` OU `isAutoScrollActive` define se o botão é necessário.
+    // Se não estiver scrollado pra cima e o auto scroll estiver desligado, não precisa do botão para "ir para o fim".
+    // Mas o botão AGORA também ATIVA o auto-scroll, então ele deve aparecer se há mensagens.
+    const showFloatingButton = !showWelcome && !showApiKeyMissing && messages.length > 0;
+
 
     return (
         <main className="
@@ -153,22 +253,30 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
                 <h2 className="truncate text-base sm:text-lg font-semibold">{conversationTitle}</h2>
             </div>
 
-            {isUserScrolledUp && messages.length > 0 && (
+            {showFloatingButton && (
                 <button
-                    onClick={handleScrollToBottomButtonClick}
-                    className="
-            fixed bottom-24 right-6 sm:right-8 z-30
-            p-3 rounded-full
-            bg-gradient-to-br from-cyan-500 to-indigo-600
-            shadow-lg shadow-indigo-800/40
-            text-white
-            hover:scale-105 active:scale-95
-            transition-transform
-          "
-                    title="Rolar para o fim"
-                    aria-label="Rolar para o fim"
+                    onClick={handleFloatingButtonClick}
+                    className={`
+                        fixed bottom-24 right-6 sm:right-8 z-30
+                        p-3 rounded-full
+                        shadow-lg shadow-indigo-800/40
+                        text-white
+                        hover:scale-105 active:scale-95
+                        transition-all duration-150 ease-in-out
+                        ${isAutoScrollActive
+                            ? 'bg-gradient-to-br from-green-500 to-emerald-600'
+                            : 'bg-gradient-to-br from-cyan-500 to-indigo-600'}
+                    `}
+                    title={isAutoScrollActive
+                        ? "Desativar rolagem automática"
+                        : (isUserScrolledUp ? "Rolar para o fim e ativar rolagem automática" : "Ativar rolagem automática")}
+                    aria-label={isAutoScrollActive
+                        ? "Desativar rolagem automática"
+                        : (isUserScrolledUp ? "Rolar para o fim e ativar rolagem automática" : "Ativar rolagem automática")}
                 >
-                    <IoArrowDownCircleOutline size={24} />
+                    {isAutoScrollActive
+                        ? <IoCheckmarkCircleOutline size={24} />
+                        : <IoArrowDownCircleOutline size={24} />}
                 </button>
             )}
 
@@ -187,7 +295,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
                             alt="Logo Loox"
                             className="py-4 w-36 h-auto opacity-40 loox-logo-blue"
                         />
-                        <p className="text-lg font-medium text-slate-500">Bem-vindo, usuário!</p>
+                        <p className="text-lg font-medium text-slate-500">Faaala Felipão!</p>
                         <p className="text-sm max-w-xs text-slate-600 mt-4">
                             {isMobile
                                 ? "Toque no ícone de menu no canto superior esquerdo para ver suas conversas ou iniciar uma nova."
@@ -211,7 +319,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
                         <p className="text-sm max-w-xs">Envie uma mensagem abaixo para iniciar a conversa.</p>
                     </div>
                 ) : (
-                    <div className="space-y-4 sm:space-y-5 w-full"> {/* Adicionado w-full para garantir que os filhos tenham um contexto de largura total */}
+                    <div className="space-y-4 sm:space-y-5 w-full">
                         {messages.map(msg => (
                             <MessageBubble key={msg.id} message={msg} conversationId={activeConversationId!} />
                         ))}

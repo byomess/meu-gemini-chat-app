@@ -18,7 +18,7 @@ import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown'
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import CodeBlock from '../common/CodeBlock';
-import CustomAudioPlayer from './CustomAudioPlayer';
+import CustomAudioPlayer from '../common/CustomAudioPlayer';
 import Button from '../common/Button';
 import useIsMobile from '../../hooks/useIsMobile';
 import type { Part, FunctionCall, FunctionResponse } from '@google/genai';
