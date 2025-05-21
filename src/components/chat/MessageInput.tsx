@@ -766,7 +766,7 @@ const MessageInput: React.FC = () => {
                                         <CustomAudioPlayer src={item.previewUrl} fileName={item.name} />
                                         <Button
                                             variant="icon"
-                                            className="!absolute top-2 right-2 !p-1.5 bg-red-600 hover:!bg-red-700 text-white rounded-full shadow-lg opacity-60 hover:opacity-100 group-hover:opacity-100 transition-all duration-200 ease-in-out transform hover:scale-110 focus:opacity-100 focus:scale-110 z-20"
+                                            className="!absolute -top-2 -right-2 !p-1.5 bg-red-600 hover:!bg-red-700 text-white rounded-full shadow-lg opacity-60 hover:opacity-100 group-hover:opacity-100 transition-all duration-200 ease-in-out transform hover:scale-110 focus:opacity-100 focus:scale-110 z-20"
                                             onClick={() => handleRemoveFile(item.id)}
                                             aria-label={`Remover ${item.name}`} title={`Remover ${item.name}`}
                                         > <IoClose size={14} /> </Button>
