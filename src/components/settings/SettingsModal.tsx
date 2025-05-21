@@ -19,7 +19,10 @@ import {
     IoLinkOutline,
     IoShieldCheckmarkOutline,
     IoColorPaletteOutline,
-    IoImageOutline as IoAvatarImageOutline, // Renomeado para evitar conflito se IoImageOutline for usado em outro lugar
+    IoImageOutline as IoAvatarImageOutline,
+    IoEarthOutline,
+    IoAttachOutline,
+    IoEyeOffOutline, // Icon for hide navigation
 } from "react-icons/io5";
 import Button from "../common/Button";
 import { useAppSettings } from "../../contexts/AppSettingsContext";
@@ -30,12 +33,10 @@ import type {
     GeminiModel,
     GeminiModelConfig,
     FunctionDeclaration as AppFunctionDeclaration,
-    // Importando os tipos reexportados de src/types
     SafetySetting,
     HarmCategory,
     HarmBlockThreshold,
 } from "../../types";
-// Importando os ENUMS/VALORES do SDK para usar nas constantes
 import {
     HarmCategory as GenaiHarmCategoryEnum,
     HarmBlockThreshold as GenaiHarmBlockThresholdEnum,
@@ -59,7 +60,7 @@ const AVAILABLE_GEMINI_MODELS: GeminiModel[] = [
     "gemini-2.0-flash",
 ];
 
-const DEFAULT_PERSONALITY_FOR_PLACEHOLDER = `Você é Loox, um assistente de IA pessoal projetado para ser um parceiro inteligente, prestativo e adaptável, operando dentro deste Web App. Sua missão é auxiliar os usuários em diversas tarefas, produtividade, explorar ideias e manter uma interação engajadora e personalizada.`;
+const DEFAULT_PERSONALITY_FOR_PLACEHOLDER = `Você é uma IA professora / tutora de alunos que estão fazendo cursos na plataforma de ensino à distância Aulapp, e seu papel é ajudar os alunos a entenderem melhor o conteúdo do curso, responder perguntas e fornecer feedback sobre a evolução deles. Você deve ser amigável, paciente e encorajador, sempre buscando ajudar os alunos a aprenderem e se desenvolverem.`;
 
 const DEFAULT_FUNCTION_PARAMS_SCHEMA_PLACEHOLDER = `{
   "type": "object",
@@ -72,7 +73,6 @@ const DEFAULT_FUNCTION_PARAMS_SCHEMA_PLACEHOLDER = `{
   "required": ["paramName"]
 }`;
 
-// Constantes para Safety Settings usando os valores do SDK
 const HARM_CATEGORIES_CONFIG: { id: HarmCategory; label: string }[] = [
     { id: GenaiHarmCategoryEnum.HARM_CATEGORY_HARASSMENT, label: "Assédio" },
     {
@@ -109,7 +109,6 @@ const HARM_BLOCK_THRESHOLDS_CONFIG: {
             id: GenaiHarmBlockThresholdEnum.BLOCK_LOW_AND_ABOVE,
             label: "Bloquear Baixo Risco e Acima",
         },
-        // { id: GenaiHarmBlockThresholdEnum.HARM_BLOCK_THRESHOLD_UNSPECIFIED, label: "Padrão do Modelo" } // Se quiser esta opção
     ];
 
 const appDefaultSafetySettings: SafetySetting[] = [
@@ -170,15 +169,15 @@ const RangeInput: React.FC<{
             <div className="flex justify-between items-center mb-1.5">
                 <label
                     htmlFor={id}
-                    className={`block text-sm font-medium ${disabled ? "text-slate-500" : "text-slate-200"
+                    className={`block text-sm font-medium ${disabled ? "text-gray-400" : "text-gray-700"
                         }`}
                 >
                     {label}
                 </label>
                 <span
                     className={`text-xs px-2 py-1 rounded-md ${disabled
-                        ? "text-slate-600 bg-slate-800/70"
-                        : "text-sky-200 bg-sky-700/50"
+                        ? "text-gray-500 bg-gray-100"
+                        : "text-[#e04579] bg-pink-100"
                         }`}
                 >
                     {value.toFixed(id === "temperature" || id === "topP" ? 2 : 0)}
@@ -195,13 +194,13 @@ const RangeInput: React.FC<{
                 onChange={(e) => onChange(parseFloat(e.target.value))}
                 disabled={disabled}
                 className={`w-full h-2.5 rounded-lg appearance-none cursor-pointer transition-opacity ${disabled
-                    ? "bg-slate-700/70 opacity-60 cursor-not-allowed"
-                    : "bg-slate-600/80 accent-sky-500 hover:opacity-90"
+                    ? "bg-gray-300 opacity-60 cursor-not-allowed"
+                    : "bg-pink-100 accent-[#e04579] hover:opacity-90"
                     }`}
             />
             {info && (
                 <p
-                    className={`text-xs mt-1.5 ${disabled ? "text-slate-600" : "text-slate-400/90"
+                    className={`text-xs mt-1.5 ${disabled ? "text-gray-400" : "text-gray-500"
                         }`}
                 >
                     {info}
@@ -226,7 +225,7 @@ const GeneralSettingsTab: React.FC<{
                 <div>
                     <label
                         htmlFor="apiKey"
-                        className="block text-sm font-medium text-slate-200 mb-1.5"
+                        className="block text-sm font-medium text-gray-700 mb-1.5"
                     >
                         Chave da API Google Gemini
                     </label>
@@ -237,9 +236,9 @@ const GeneralSettingsTab: React.FC<{
                         placeholder="Cole sua chave da API aqui (ex: AIza...)"
                         value={currentApiKey}
                         onChange={(e) => setCurrentApiKey(e.target.value)}
-                        className="w-full p-3 bg-slate-700/60 border border-slate-600/70 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-500 text-slate-100 shadow-sm transition-colors"
+                        className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-gray-800 shadow-sm transition-colors"
                     />
-                    <p className="text-xs text-slate-400/90 mt-2">
+                    <p className="text-xs text-gray-500 mt-2">
                         Sua chave de API é armazenada localmente no seu navegador e nunca é
                         enviada para nossos servidores.
                     </p>
@@ -247,7 +246,7 @@ const GeneralSettingsTab: React.FC<{
                 <div>
                     <label
                         htmlFor="customPersonalityPrompt"
-                        className="block text-sm font-medium text-slate-200 mb-1.5"
+                        className="block text-sm font-medium text-gray-700 mb-1.5"
                     >
                         Papel / Personalidade da IA (Prompt de Sistema)
                     </label>
@@ -261,9 +260,9 @@ const GeneralSettingsTab: React.FC<{
                         )}..." (Deixe em branco para usar o padrão).`}
                         value={currentCustomPersonalityPrompt}
                         onChange={(e) => setCurrentCustomPersonalityPrompt(e.target.value)}
-                        className="w-full p-3 bg-slate-700/60 border border-slate-600/70 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-500 text-slate-100 shadow-sm transition-colors resize-y scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50"
+                        className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-gray-800 shadow-sm transition-colors resize-y"
                     />
-                    <p className="text-xs text-slate-400/90 mt-2">
+                    <p className="text-xs text-gray-500 mt-2">
                         Define a persona base da IA. Isso será incluído no início da mensagem
                         de sistema. Se deixado em branco, um prompt padrão será usado.
                     </p>
@@ -277,7 +276,7 @@ const ModelSettingsTab: React.FC<{
     onModelConfigChange: (
         field: keyof GeminiModelConfig | "safetySettings",
         value: unknown
-    ) => void; // Removido 'category' de onModelConfigChange
+    ) => void;
 }> = ({ currentModelConfig, onModelConfigChange }) => {
     const handleSafetySettingChange = (
         categoryToUpdate: HarmCategory,
@@ -313,7 +312,7 @@ const ModelSettingsTab: React.FC<{
             <div>
                 <label
                     htmlFor="modelName"
-                    className="block text-sm font-medium text-slate-200 mb-1.5"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
                 >
                     Modelo Gemini
                 </label>
@@ -324,7 +323,7 @@ const ModelSettingsTab: React.FC<{
                     onChange={(e) =>
                         onModelConfigChange("model", e.target.value as GeminiModel)
                     }
-                    className="w-full p-3 bg-slate-700/60 border border-slate-600/70 rounded-lg focus:ring-2 focus:ring-sky-500/80 focus:border-sky-500 text-slate-100 shadow-sm appearance-none bg-no-repeat bg-right pr-8"
+                    className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e04579]/80 focus:border-[#e04579] text-gray-800 shadow-sm appearance-none bg-no-repeat bg-right pr-8"
                     style={{
                         backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                         backgroundSize: "1.5em 1.5em",
@@ -335,13 +334,13 @@ const ModelSettingsTab: React.FC<{
                         <option
                             key={model}
                             value={model}
-                            className="bg-slate-800 text-slate-100"
+                            className="bg-white text-gray-800"
                         >
                             {model}
                         </option>
                     ))}
                 </select>
-                <p className="text-xs text-slate-400/90 mt-2">
+                <p className="text-xs text-gray-500 mt-2">
                     Escolha o modelo Gemini. "Flash" é mais rápido, "Pro" é mais capaz.
                 </p>
             </div>
@@ -380,7 +379,7 @@ const ModelSettingsTab: React.FC<{
             <div>
                 <label
                     htmlFor="maxOutputTokens"
-                    className="block text-sm font-medium text-slate-200 mb-1.5"
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
                 >
                     Máximo de Tokens de Saída
                 </label>
@@ -406,29 +405,28 @@ const ModelSettingsTab: React.FC<{
                             parseInt(e.target.value, 10) || 1
                         )
                     }
-                    className="w-full p-3 bg-slate-700/60 border border-slate-600/70 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-slate-100 shadow-sm"
+                    className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e04579] focus:border-[#e04579] text-gray-800 shadow-sm"
                 />
-                <p className="text-xs text-slate-400/90 mt-2">
+                <p className="text-xs text-gray-500 mt-2">
                     Limite de tokens na resposta da IA. (Ex: 8192 para Flash, até 32768
                     para Pro Preview)
                 </p>
             </div>
 
-            <div className="pt-3 mt-3 border-t border-slate-700/60">
-                <h4 className="text-sm font-semibold text-slate-100 mb-3 flex items-center">
+            <div className="pt-3 mt-3 border-t border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
                     <IoShieldCheckmarkOutline
                         size={18}
-                        className="mr-2 text-sky-400 opacity-90"
+                        className="mr-2 text-[#e04579] opacity-90"
                     />
                     Configurações de Segurança de Conteúdo
                 </h4>
-                <p className="text-xs text-slate-400/90 mb-4">
+                <p className="text-xs text-gray-500 mb-4">
                     Define o quão estrito o modelo deve ser ao bloquear conteúdo
                     potencialmente prejudicial. "Bloquear Nenhum" é o mais permissivo.
                 </p>
                 <div className="space-y-3">
                     {activeSafetySettings.map((setting) => {
-                        // `setting.category` aqui deve ser sempre definido por causa da lógica em `activeSafetySettings`
                         const categoryInfo = HARM_CATEGORIES_CONFIG.find(
                             (cat) => cat.id === setting.category
                         );
@@ -438,7 +436,7 @@ const ModelSettingsTab: React.FC<{
                             <div key={setting.category}>
                                 <label
                                     htmlFor={`safety-${setting.category}`}
-                                    className="block text-sm font-medium text-slate-200 mb-1"
+                                    className="block text-sm font-medium text-gray-700 mb-1"
                                 >
                                     {categoryInfo.label}
                                 </label>
@@ -447,13 +445,12 @@ const ModelSettingsTab: React.FC<{
                                     name={`safety-${setting.category}`}
                                     value={setting.threshold}
                                     onChange={(e) => {
-                                        // setting.category aqui é garantido que não é undefined.
                                         handleSafetySettingChange(
                                             setting.category!,
                                             e.target.value as HarmBlockThreshold
                                         );
                                     }}
-                                    className="w-full p-2.5 bg-slate-700/60 border border-slate-600/70 rounded-lg focus:ring-2 focus:ring-sky-500/80 focus:border-sky-500 text-slate-100 shadow-sm appearance-none bg-no-repeat bg-right pr-8 text-xs"
+                                    className="w-full p-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e04579]/80 focus:border-[#e04579] text-gray-800 shadow-sm appearance-none bg-no-repeat bg-right pr-8 text-xs"
                                     style={{
                                         backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                                         backgroundSize: "1.5em 1.5em",
@@ -464,7 +461,7 @@ const ModelSettingsTab: React.FC<{
                                         <option
                                             key={thresholdConfig.id}
                                             value={thresholdConfig.id}
-                                            className="bg-slate-800 text-slate-100"
+                                            className="bg-white text-gray-800"
                                         >
                                             {thresholdConfig.label}
                                         </option>
@@ -642,13 +639,13 @@ const MemoriesSettingsTab: React.FC = () => {
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-3 mb-1">
-                <h3 className="text-base font-semibold text-slate-100 w-full sm:w-auto">
+                <h3 className="text-base font-semibold text-gray-800 w-full sm:w-auto">
                     Gerenciar Memórias ({memories.length})
                 </h3>
                 <div className="flex gap-2.5 flex-wrap">
                     <Button
                         variant="secondary"
-                        className="!text-xs !py-2 !px-3.5 !font-medium !bg-slate-600/70 hover:!bg-slate-600"
+                        className="!text-xs !py-2 !px-3.5 !font-medium"
                         onClick={handleExportMemories}
                         disabled={memories.length === 0}
                     >
@@ -657,7 +654,7 @@ const MemoriesSettingsTab: React.FC = () => {
                     </Button>
                     <Button
                         variant="secondary"
-                        className="!text-xs !py-2 !px-3.5 !font-medium !bg-slate-600/70 hover:!bg-slate-600"
+                        className="!text-xs !py-2 !px-3.5 !font-medium"
                         onClick={() => fileInputRef.current?.click()}
                     >
                         {" "}
@@ -680,12 +677,12 @@ const MemoriesSettingsTab: React.FC = () => {
                     onChange={(e) => setNewMemoryText(e.target.value)}
                     onKeyDown={handleNewMemoryKeyDown}
                     placeholder="Adicionar nova memória..."
-                    className="flex-grow p-2.5 bg-slate-700/60 border border-slate-600/70 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 placeholder-slate-400 text-sm text-slate-100 transition-colors"
+                    className="flex-grow p-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-sm text-gray-800 transition-colors"
                 />
                 <Button
                     variant="primary"
                     onClick={handleAddNewMemory}
-                    className="!py-2.5 !px-3 !bg-teal-600 hover:!bg-teal-500 active:!bg-teal-700 text-white flex-shrink-0"
+                    className="!py-2.5 !px-3 flex-shrink-0"
                     disabled={!newMemoryText.trim()}
                 >
                     {" "}
@@ -694,7 +691,7 @@ const MemoriesSettingsTab: React.FC = () => {
             </div>
             <div className="relative">
                 <IoSearchOutline
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400/80 pointer-events-none"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                     size={18}
                 />
                 <input
@@ -702,16 +699,16 @@ const MemoriesSettingsTab: React.FC = () => {
                     placeholder="Buscar memórias..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-2.5 py-1.5 pl-10 bg-slate-700/60 border border-slate-600/70 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 text-sm text-slate-100 transition-colors"
+                    className="w-full px-2.5 py-1.5 pl-10 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-sm text-gray-800 transition-colors"
                 />
             </div>
             {memories.length > 0 ? (
                 filteredMemories.length > 0 ? (
-                    <div className="overflow-y-auto space-y-2 p-3 bg-slate-900/60 rounded-lg scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50 border border-slate-700/60 max-h-[calc(100vh-480px)] sm:max-h-[calc(100vh-450px)] min-h-[100px]">
+                    <div className="overflow-y-auto space-y-2 p-3 bg-gray-50 rounded-lg border border-gray-200 max-h-[calc(100vh-480px)] sm:max-h-[calc(100vh-450px)] min-h-[100px]">
                         {filteredMemories.map((memory) => (
                             <div
                                 key={memory.id}
-                                className="p-2.5 bg-slate-700/80 rounded-md shadow transition-shadow hover:shadow-md"
+                                className="p-2.5 bg-white rounded-md shadow transition-shadow hover:shadow-md border border-gray-200"
                             >
                                 {editingMemory?.id === memory.id ? (
                                     <div className="flex flex-col gap-2">
@@ -721,20 +718,20 @@ const MemoriesSettingsTab: React.FC = () => {
                                             onKeyDown={handleEditMemoryKeyDown}
                                             ref={editMemoryInputRef}
                                             rows={3}
-                                            className="w-full p-2 bg-slate-600/70 border border-slate-500/80 rounded text-xs text-slate-100 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 resize-y min-h-[40px] scrollbar-thin scrollbar-thumb-slate-500 scrollbar-track-slate-600/50"
+                                            className="w-full p-2 bg-white border border-gray-300 rounded text-xs text-gray-800 focus:border-[#e04579] focus:ring-1 focus:ring-[#e04579] resize-y min-h-[40px]"
                                         />
                                         <div className="flex justify-end gap-1.5">
                                             <Button
                                                 variant="secondary"
                                                 onClick={handleCancelMemoryEdit}
-                                                className="!text-xs !py-1 !px-2.5 !bg-slate-500/80 hover:!bg-slate-500"
+                                                className="!text-xs !py-1 !px-2.5"
                                             >
                                                 Cancelar
                                             </Button>
                                             <Button
                                                 variant="primary"
                                                 onClick={handleSaveMemoryEdit}
-                                                className="!text-xs !py-1 !px-2.5 !bg-sky-600 hover:!bg-sky-500"
+                                                className="!text-xs !py-1 !px-2.5"
                                             >
                                                 Salvar
                                             </Button>
@@ -742,13 +739,13 @@ const MemoriesSettingsTab: React.FC = () => {
                                     </div>
                                 ) : (
                                     <div className="flex items-start justify-between gap-2">
-                                        <p className="text-xs text-slate-200 flex-grow break-words py-0.5 pr-1 whitespace-pre-wrap">
+                                        <p className="text-xs text-gray-700 flex-grow break-words py-0.5 pr-1 whitespace-pre-wrap">
                                             {memory.content}
                                         </p>
                                         <div className="flex-shrink-0 flex items-center gap-1">
                                             <Button
                                                 variant="icon"
-                                                className="!p-1.5 text-slate-400 hover:!text-sky-400 hover:!bg-slate-600/60"
+                                                className="!p-1.5 text-gray-500 hover:!text-[#e04579] hover:!bg-pink-100"
                                                 title="Editar memória"
                                                 onClick={() => handleStartEditMemory(memory)}
                                             >
@@ -757,7 +754,7 @@ const MemoriesSettingsTab: React.FC = () => {
                                             </Button>
                                             <Button
                                                 variant="icon"
-                                                className="!p-1.5 text-slate-400 hover:!text-red-400 hover:!bg-slate-600/60"
+                                                className="!p-1.5 text-gray-500 hover:!text-red-500 hover:!bg-red-100"
                                                 title="Excluir memória"
                                                 onClick={() => handleLocalDeleteMemory(memory.id)}
                                             >
@@ -771,24 +768,24 @@ const MemoriesSettingsTab: React.FC = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="p-4 text-center bg-slate-900/60 rounded-lg border border-slate-700/60">
+                    <div className="p-4 text-center bg-gray-50 rounded-lg border border-gray-200">
                         <IoSearchOutline
                             size={28}
-                            className="mx-auto text-slate-500 mb-2"
+                            className="mx-auto text-gray-400 mb-2"
                         />
-                        <p className="text-sm text-slate-400">
+                        <p className="text-sm text-gray-500">
                             Nenhuma memória encontrada para "{searchTerm}".
                         </p>
-                        <p className="text-xs text-slate-500 mt-1">
+                        <p className="text-xs text-gray-400 mt-1">
                             Tente um termo de busca diferente ou limpe a busca.
                         </p>
                     </div>
                 )
             ) : (
-                <div className="p-4 text-center bg-slate-900/60 rounded-lg border border-slate-700/60">
-                    <LuBrain size={28} className="mx-auto text-slate-500 mb-2" />
-                    <p className="text-sm text-slate-400">Nenhuma memória armazenada.</p>
-                    <p className="text-xs text-slate-500 mt-1">
+                <div className="p-4 text-center bg-gray-50 rounded-lg border border-gray-200">
+                    <LuBrain size={28} className="mx-auto text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-500">Nenhuma memória armazenada.</p>
+                    <p className="text-xs text-gray-400 mt-1">
                         Adicione memórias para personalizar suas interações.
                     </p>
                 </div>
@@ -916,7 +913,7 @@ const FunctionCallingSettingsTab: React.FC<{
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h3 className="text-base font-semibold text-slate-100">
+                <h3 className="text-base font-semibold text-gray-800">
                     Funções Externas (API Endpoints) ({currentFunctionDeclarations.length}
                     )
                 </h3>
@@ -924,23 +921,23 @@ const FunctionCallingSettingsTab: React.FC<{
                     <Button
                         variant="primary"
                         onClick={handleStartAddNew}
-                        className="!text-sm !py-2 !px-3.5 !bg-teal-600 hover:!bg-teal-500"
+                        className="!text-sm !py-2 !px-3.5"
                     >
                         <IoAddCircleOutline className="mr-1.5" size={18} /> Adicionar Nova
                     </Button>
                 )}
             </div>
-            <p className="text-xs text-slate-400 -mt-4">
+            <p className="text-xs text-gray-500 -mt-4">
                 Declare APIs externas que a IA pode chamar. O Loox atuará como um proxy
                 para essas chamadas.
             </p>
             {isEditing && (
-                <div className="p-4 bg-slate-700/60 rounded-lg border border-slate-600/70 shadow-md space-y-4">
-                    <h4 className="text-sm font-semibold text-sky-300">{formTitle}</h4>
+                <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-md space-y-4">
+                    <h4 className="text-sm font-semibold text-[#e04579]">{formTitle}</h4>
                     <div>
                         <label
                             htmlFor="funcName"
-                            className="block text-xs font-medium text-slate-300 mb-1"
+                            className="block text-xs font-medium text-gray-600 mb-1"
                         >
                             Nome da Função (para a IA)
                         </label>
@@ -951,9 +948,9 @@ const FunctionCallingSettingsTab: React.FC<{
                             value={editName}
                             onChange={(e) => setEditName(e.target.value)}
                             placeholder="ex: getCurrentWeather, searchProducts"
-                            className="w-full p-2.5 bg-slate-600/80 border border-slate-500/70 rounded-md focus:ring-1 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 text-sm text-slate-100"
+                            className="w-full p-2.5 bg-white border border-gray-300 rounded-md focus:ring-1 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-sm text-gray-800"
                         />
-                        <p className="text-xs text-slate-400/80 mt-1">
+                        <p className="text-xs text-gray-500 mt-1">
                             Nome que a IA usará para chamar esta API. Use camelCase ou
                             snake_case.
                         </p>
@@ -961,7 +958,7 @@ const FunctionCallingSettingsTab: React.FC<{
                     <div>
                         <label
                             htmlFor="funcDesc"
-                            className="block text-xs font-medium text-slate-300 mb-1"
+                            className="block text-xs font-medium text-gray-600 mb-1"
                         >
                             Descrição (para a IA)
                         </label>
@@ -971,16 +968,16 @@ const FunctionCallingSettingsTab: React.FC<{
                             onChange={(e) => setEditDescription(e.target.value)}
                             rows={2}
                             placeholder="ex: Obtém o clima atual para uma localidade..."
-                            className="w-full p-2.5 bg-slate-600/80 border border-slate-500/70 rounded-md focus:ring-1 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 text-sm text-slate-100 resize-y scrollbar-thin scrollbar-thumb-slate-500"
+                            className="w-full p-2.5 bg-white border border-gray-300 rounded-md focus:ring-1 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-sm text-gray-800 resize-y"
                         />
-                        <p className="text-xs text-slate-400/80 mt-1">
+                        <p className="text-xs text-gray-500 mt-1">
                             Descreva o que a API faz...
                         </p>
                     </div>
                     <div>
                         <label
                             htmlFor="funcEndpointUrl"
-                            className="block text-xs font-medium text-slate-300 mb-1"
+                            className="block text-xs font-medium text-gray-600 mb-1"
                         >
                             URL do Endpoint da API
                         </label>
@@ -990,13 +987,13 @@ const FunctionCallingSettingsTab: React.FC<{
                             value={editEndpointUrl}
                             onChange={(e) => setEditEndpointUrl(e.target.value)}
                             placeholder="ex: https://api.example.com/weather"
-                            className="w-full p-2.5 bg-slate-600/80 border border-slate-500/70 rounded-md focus:ring-1 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 text-sm text-slate-100"
+                            className="w-full p-2.5 bg-white border border-gray-300 rounded-md focus:ring-1 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-sm text-gray-800"
                         />
                     </div>
                     <div>
                         <label
                             htmlFor="funcHttpMethod"
-                            className="block text-xs font-medium text-slate-300 mb-1"
+                            className="block text-xs font-medium text-gray-600 mb-1"
                         >
                             Método HTTP
                         </label>
@@ -1008,30 +1005,20 @@ const FunctionCallingSettingsTab: React.FC<{
                                     e.target.value as LocalFunctionDeclaration["httpMethod"]
                                 )
                             }
-                            className="w-full p-2.5 bg-slate-600/80 border border-slate-500/70 rounded-md focus:ring-1 focus:ring-sky-500 focus:border-sky-500 text-sm text-slate-100 appearance-none bg-no-repeat bg-right pr-8"
+                            className="w-full p-2.5 bg-white border border-gray-300 rounded-md focus:ring-1 focus:ring-[#e04579] focus:border-[#e04579] text-sm text-gray-800 appearance-none bg-no-repeat bg-right pr-8"
                             style={{
                                 backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                                 backgroundSize: "1.5em 1.5em",
                                 backgroundPosition: "right 0.5rem center",
                             }}
                         >
-                            <option value="GET" className="bg-slate-700">
-                                GET
-                            </option>
-                            <option value="POST" className="bg-slate-700">
-                                POST
-                            </option>
-                            <option value="PUT" className="bg-slate-700">
-                                PUT
-                            </option>
-                            <option value="PATCH" className="bg-slate-700">
-                                PATCH
-                            </option>
-                            <option value="DELETE" className="bg-slate-700">
-                                DELETE
-                            </option>
+                            <option value="GET" className="bg-white">GET</option>
+                            <option value="POST" className="bg-white">POST</option>
+                            <option value="PUT" className="bg-white">PUT</option>
+                            <option value="PATCH" className="bg-white">PATCH</option>
+                            <option value="DELETE" className="bg-white">DELETE</option>
                         </select>
-                        <p className="text-xs text-slate-400/80 mt-1">
+                        <p className="text-xs text-gray-500 mt-1">
                             Para GET, os parâmetros da função serão adicionados como query
                             strings...
                         </p>
@@ -1039,7 +1026,7 @@ const FunctionCallingSettingsTab: React.FC<{
                     <div>
                         <label
                             htmlFor="funcParams"
-                            className="block text-xs font-medium text-slate-300 mb-1"
+                            className="block text-xs font-medium text-gray-600 mb-1"
                         >
                             Esquema de Parâmetros (JSON - para a IA)
                         </label>
@@ -1049,9 +1036,9 @@ const FunctionCallingSettingsTab: React.FC<{
                             onChange={(e) => setEditParamsSchema(e.target.value)}
                             rows={6}
                             placeholder={DEFAULT_FUNCTION_PARAMS_SCHEMA_PLACEHOLDER}
-                            className="w-full p-2.5 bg-slate-600/80 border border-slate-500/70 rounded-md focus:ring-1 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 text-sm text-slate-100 font-mono resize-y scrollbar-thin scrollbar-thumb-slate-500"
+                            className="w-full p-2.5 bg-white border border-gray-300 rounded-md focus:ring-1 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-sm text-gray-800 font-mono resize-y"
                         />
-                        <p className="text-xs text-slate-400/80 mt-1">
+                        <p className="text-xs text-gray-500 mt-1">
                             Define os parâmetros que a IA pode enviar para esta API...
                         </p>
                     </div>
@@ -1066,7 +1053,7 @@ const FunctionCallingSettingsTab: React.FC<{
                         <Button
                             variant="primary"
                             onClick={handleSave}
-                            className="!text-xs !py-1.5 !px-3 !bg-sky-600 hover:!bg-sky-500"
+                            className="!text-xs !py-1.5 !px-3"
                         >
                             Salvar Função
                         </Button>
@@ -1074,33 +1061,33 @@ const FunctionCallingSettingsTab: React.FC<{
                 </div>
             )}
             {currentFunctionDeclarations.length > 0 ? (
-                <div className="space-y-2 p-3 bg-slate-900/60 rounded-lg scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800/50 border border-slate-700/60 max-h-[calc(100vh-480px)] sm:max-h-[calc(100vh-450px)] min-h-[100px]">
+                <div className="space-y-2 p-3 bg-gray-50 rounded-lg border border-gray-200 max-h-[calc(100vh-480px)] sm:max-h-[calc(100vh-450px)] min-h-[100px]">
                     {currentFunctionDeclarations.map((declaration) => (
                         <div
                             key={declaration.id}
-                            className={`p-2.5 bg-slate-700/80 rounded-md shadow ${isEditing === declaration.id
-                                ? "ring-2 ring-sky-500"
-                                : "hover:shadow-md"
+                            className={`p-2.5 bg-white rounded-md shadow border ${isEditing === declaration.id
+                                ? "ring-2 ring-[#e04579] border-transparent"
+                                : "border-gray-200 hover:shadow-md"
                                 }`}
                         >
                             <div className="flex items-start justify-between gap-2">
                                 <div className="flex-grow">
-                                    <p className="text-sm font-semibold text-sky-400 break-words">
+                                    <p className="text-sm font-semibold text-[#e04579] break-words">
                                         {declaration.name}
                                     </p>
                                     <p
-                                        className="text-xs text-slate-300/90 mt-0.5 break-words whitespace-pre-wrap"
+                                        className="text-xs text-gray-700 mt-0.5 break-words whitespace-pre-wrap"
                                         title={declaration.description}
                                     >
                                         {declaration.description.substring(0, 100)}
                                         {declaration.description.length > 100 ? "..." : ""}
                                     </p>
-                                    <div className="mt-1.5 flex items-center text-xs text-slate-400">
+                                    <div className="mt-1.5 flex items-center text-xs text-gray-500">
                                         <IoLinkOutline size={14} className="mr-1 flex-shrink-0" />
                                         <span className="truncate" title={declaration.endpointUrl}>
                                             {declaration.endpointUrl}
                                         </span>
-                                        <span className="ml-2 px-1.5 py-0.5 bg-slate-600 text-slate-300 rounded text-[10px] font-medium">
+                                        <span className="ml-2 px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded text-[10px] font-medium">
                                             {declaration.httpMethod}
                                         </span>
                                     </div>
@@ -1109,7 +1096,7 @@ const FunctionCallingSettingsTab: React.FC<{
                                     <div className="flex-shrink-0 flex items-center gap-1">
                                         <Button
                                             variant="icon"
-                                            className="!p-1.5 text-slate-400 hover:!text-sky-400 hover:!bg-slate-600/60"
+                                            className="!p-1.5 text-gray-500 hover:!text-[#e04579] hover:!bg-pink-100"
                                             title="Editar função"
                                             onClick={() => handleStartEdit(declaration)}
                                         >
@@ -1118,7 +1105,7 @@ const FunctionCallingSettingsTab: React.FC<{
                                         </Button>
                                         <Button
                                             variant="icon"
-                                            className="!p-1.5 text-slate-400 hover:!text-red-400 hover:!bg-slate-600/60"
+                                            className="!p-1.5 text-gray-500 hover:!text-red-500 hover:!bg-red-100"
                                             title="Excluir função"
                                             onClick={() => handleDelete(declaration.id)}
                                         >
@@ -1133,15 +1120,15 @@ const FunctionCallingSettingsTab: React.FC<{
                 </div>
             ) : (
                 !isEditing && (
-                    <div className="p-4 text-center bg-slate-900/60 rounded-lg border border-slate-700/60">
+                    <div className="p-4 text-center bg-gray-50 rounded-lg border border-gray-200">
                         <IoTerminalOutline
                             size={28}
-                            className="mx-auto text-slate-500 mb-2"
+                            className="mx-auto text-gray-400 mb-2"
                         />
-                        <p className="text-sm text-slate-400">
+                        <p className="text-sm text-gray-500">
                             Nenhuma API externa configurada.
                         </p>
-                        <p className="text-xs text-slate-500 mt-1">
+                        <p className="text-xs text-gray-400 mt-1">
                             Adicione APIs para que a IA possa interagir com serviços externos.
                         </p>
                     </div>
@@ -1156,33 +1143,45 @@ const InterfaceSettingsTab: React.FC<{
     onToggleCodeHighlight: () => void;
     currentAiAvatarUrl: string;
     onAiAvatarUrlChange: (url: string) => void;
+    currentEnableWebSearchEnabled: boolean;
+    onToggleEnableWebSearch: () => void;
+    currentAttachmentsEnabled: boolean;
+    onToggleAttachmentsEnabled: () => void;
+    currentHideNavigation: boolean; // New prop
+    onToggleHideNavigation: () => void; // New prop
 }> = ({
     currentCodeHighlightEnabled,
     onToggleCodeHighlight,
     currentAiAvatarUrl,
     onAiAvatarUrlChange,
+    currentEnableWebSearchEnabled,
+    onToggleEnableWebSearch,
+    currentAttachmentsEnabled,
+    onToggleAttachmentsEnabled,
+    currentHideNavigation, // Destructure new prop
+    onToggleHideNavigation, // Destructure new prop
 }) => {
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-base font-semibold text-slate-100 mb-3">
+                <h3 className="text-base font-semibold text-gray-800 mb-3">
                     Configurações de Interface
                 </h3>
-                <div className="p-4 bg-slate-700/60 rounded-lg border border-slate-600/70 space-y-4 shadow">
+                <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-4 shadow">
                     <div className="flex items-center justify-between gap-3">
                         <div className="flex-grow">
-                            <p className="text-sm font-medium text-slate-100">
+                            <p className="text-sm font-medium text-gray-700">
                                 Habilitar destaque de sintaxe para código
                             </p>
-                            <p className="text-xs text-slate-400/90 mt-0.5">
+                            <p className="text-xs text-gray-500 mt-0.5">
                                 Ativa o destaque de sintaxe para blocos de código.
                             </p>
                         </div>
                         <Switch
                             checked={currentCodeHighlightEnabled}
                             onChange={onToggleCodeHighlight}
-                            className={`${currentCodeHighlightEnabled ? "bg-teal-500" : "bg-slate-600"
-                                } relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out`}
+                            className={`${currentCodeHighlightEnabled ? "bg-[#e04579]" : "bg-gray-300"
+                                } relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75`}
                         >
                             <span
                                 aria-hidden="true"
@@ -1191,16 +1190,16 @@ const InterfaceSettingsTab: React.FC<{
                             />
                         </Switch>
                     </div>
-                    <hr className="border-slate-600/80 my-3" />
+                    <hr className="border-gray-200 my-3" />
                     <div>
                         <label
                             htmlFor="aiAvatarUrl"
-                            className="block text-sm font-medium text-slate-100 mb-1.5"
+                            className="block text-sm font-medium text-gray-700 mb-1.5"
                         >
                             URL da Imagem do Avatar da IA
                         </label>
                         <div className="flex items-center gap-2">
-                            <IoAvatarImageOutline className="text-slate-400 flex-shrink-0" size={20} />
+                            <IoAvatarImageOutline className="text-gray-500 flex-shrink-0" size={20} />
                             <input
                                 type="url"
                                 id="aiAvatarUrl"
@@ -1208,13 +1207,82 @@ const InterfaceSettingsTab: React.FC<{
                                 placeholder="https://exemplo.com/avatar.png (deixe em branco para padrão)"
                                 value={currentAiAvatarUrl}
                                 onChange={(e) => onAiAvatarUrlChange(e.target.value)}
-                                className="w-full p-2.5 bg-slate-600/80 border border-slate-500/70 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 text-sm text-slate-100 shadow-sm transition-colors"
+                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-sm text-gray-800 shadow-sm transition-colors"
                             />
                         </div>
-                        <p className="text-xs text-slate-400/90 mt-2">
+                        <p className="text-xs text-gray-500 mt-2">
                             Forneça uma URL para uma imagem de avatar personalizada para a IA. Se
                             deixado em branco, o ícone padrão será usado.
                         </p>
+                    </div>
+                    <hr className="border-gray-200 my-3" />
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex-grow">
+                            <p className="text-sm font-medium text-gray-700">
+                                Habilitar botão de busca na web
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                Mostra/oculta o botão para ativar a busca na web para a próxima mensagem.
+                            </p>
+                        </div>
+                        <Switch
+                            checked={currentEnableWebSearchEnabled}
+                            onChange={onToggleEnableWebSearch}
+                            className={`${currentEnableWebSearchEnabled ? "bg-[#e04579]" : "bg-gray-300"
+                                } relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75`}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className={`${currentEnableWebSearchEnabled ? "translate-x-[20px]" : "translate-x-0"
+                                    } pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+                            />
+                        </Switch>
+                    </div>
+                    <hr className="border-gray-200 my-3" />
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex-grow">
+                            <p className="text-sm font-medium text-gray-700">
+                                Habilitar anexos de arquivos
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                Mostra/oculta o botão para anexar arquivos às mensagens.
+                            </p>
+                        </div>
+                        <Switch
+                            checked={currentAttachmentsEnabled}
+                            onChange={onToggleAttachmentsEnabled}
+                            className={`${currentAttachmentsEnabled ? "bg-[#e04579]" : "bg-gray-300"
+                                } relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75`}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className={`${currentAttachmentsEnabled ? "translate-x-[20px]" : "translate-x-0"
+                                    } pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+                            />
+                        </Switch>
+                    </div>
+                    <hr className="border-gray-200 my-3" />
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex-grow">
+                            <p className="text-sm font-medium text-gray-700">
+                                Ocultar Navegação Principal
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                Oculta a barra lateral de navegação e o botão de menu em dispositivos móveis.
+                            </p>
+                        </div>
+                        <Switch
+                            checked={currentHideNavigation}
+                            onChange={onToggleHideNavigation}
+                            className={`${currentHideNavigation ? "bg-[#e04579]" : "bg-gray-300"
+                                } relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75`}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className={`${currentHideNavigation ? "translate-x-[20px]" : "translate-x-0"
+                                    } pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+                            />
+                        </Switch>
                     </div>
                 </div>
             </div>
@@ -1246,16 +1314,16 @@ const DataSettingsTab: React.FC = () => {
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-base font-semibold text-slate-100 mb-3">
+                <h3 className="text-base font-semibold text-gray-800 mb-3">
                     Gerenciamento de Dados
                 </h3>
-                <div className="p-4 bg-slate-700/60 rounded-lg border border-slate-600/70 space-y-4 shadow">
+                <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-4 shadow">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                         <div className="flex-grow">
-                            <p className="text-sm font-medium text-slate-100">
+                            <p className="text-sm font-medium text-gray-700">
                                 Apagar todas as memórias
                             </p>
-                            <p className="text-xs text-slate-400/90 mt-0.5">
+                            <p className="text-xs text-gray-500 mt-0.5">
                                 Remove todas as memórias armazenadas pela IA.
                             </p>
                         </div>
@@ -1269,13 +1337,13 @@ const DataSettingsTab: React.FC = () => {
                             <IoTrashOutline className="mr-1.5" /> Limpar Memórias{" "}
                         </Button>
                     </div>
-                    <hr className="border-slate-600/80 my-3" />
+                    <hr className="border-gray-200 my-3" />
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                         <div className="flex-grow">
-                            <p className="text-sm font-medium text-slate-100">
+                            <p className="text-sm font-medium text-gray-700">
                                 Apagar todas as conversas
                             </p>
-                            <p className="text-xs text-slate-400/90 mt-0.5">
+                            <p className="text-xs text-gray-500 mt-0.5">
                                 Remove todo o seu histórico de conversas.
                             </p>
                         </div>
@@ -1290,7 +1358,7 @@ const DataSettingsTab: React.FC = () => {
                         </Button>
                     </div>
                 </div>
-                <p className="text-xs text-slate-500 mt-4 text-center">
+                <p className="text-xs text-gray-500 mt-4 text-center">
                     Todas as ações de exclusão de dados são irreversíveis.
                 </p>
             </div>
@@ -1305,9 +1373,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         useState<string>(DEFAULT_PERSONALITY_FOR_PLACEHOLDER);
     const [currentFunctionDeclarations, setCurrentFunctionDeclarations] =
         useState<LocalFunctionDeclaration[]>([]);
-    const [currentAiAvatarUrl, setCurrentAiAvatarUrl] = useState<string>(""); // Estado para URL do avatar
+    const [currentAiAvatarUrl, setCurrentAiAvatarUrl] = useState<string>("");
     const [isCodeHighlightEnabledState, setIsCodeHighlightEnabledState] =
         useState<boolean>(settings.codeSynthaxHighlightEnabled);
+    const [currentEnableWebSearchEnabled, setCurrentEnableWebSearchEnabled] =
+        useState<boolean>(settings.enableWebSearch);
+    const [currentAttachmentsEnabled, setCurrentAttachmentsEnabled] =
+        useState<boolean>(settings.enableAttachments);
+    const [currentHideNavigation, setCurrentHideNavigation] = // New state for hide navigation
+        useState<boolean>(settings.hideNavigation);
 
 
     const [activeTab, setActiveTab] = useState<TabId>("general");
@@ -1340,8 +1414,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     useEffect(() => {
         if (isOpen) {
             setCurrentApiKey(settings.apiKey || "");
-            setCurrentAiAvatarUrl(settings.aiAvatarUrl || ""); // Carregar URL do avatar
+            setCurrentAiAvatarUrl(settings.aiAvatarUrl || "");
             setIsCodeHighlightEnabledState(settings.codeSynthaxHighlightEnabled);
+            setCurrentEnableWebSearchEnabled(settings.enableWebSearch);
+            setCurrentAttachmentsEnabled(settings.enableAttachments);
+            setCurrentHideNavigation(settings.hideNavigation); // Load hideNavigation setting
 
 
             const currentSettingsSafety = settings.geminiModelConfig?.safetySettings;
@@ -1352,17 +1429,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 Array.isArray(currentSettingsSafety) &&
                 currentSettingsSafety.length === HARM_CATEGORIES_CONFIG.length
             ) {
-                // Verifica se todas as categorias necessárias estão presentes e têm thresholds válidos
                 const allCategoriesPresent = HARM_CATEGORIES_CONFIG.every((hc) =>
                     currentSettingsSafety.find((s) => s.category === hc.id && s.threshold)
                 );
                 if (allCategoriesPresent) {
                     effectiveSafetySettings = currentSettingsSafety;
                 } else {
-                    effectiveSafetySettings = appDefaultSafetySettings; // Reseta se incompleto ou inválido
+                    effectiveSafetySettings = appDefaultSafetySettings;
                 }
             } else {
-                effectiveSafetySettings = appDefaultSafetySettings; // Default se não existir ou formato incorreto
+                effectiveSafetySettings = appDefaultSafetySettings;
             }
 
             const mergedModelConfig = {
@@ -1429,6 +1505,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         }
     };
 
+    const handleToggleEnableWebSearchForTab = () => {
+        setCurrentEnableWebSearchEnabled(prev => !prev);
+    };
+
+    const handleToggleAttachmentsEnabledForTab = () => {
+        setCurrentAttachmentsEnabled(prev => !prev);
+    };
+
+    const handleToggleHideNavigationForTab = () => { // New handler for hide navigation toggle
+        setCurrentHideNavigation(prev => !prev);
+    };
+
 
     const handleSaveAllSettings = () => {
         if (localModelConfig.temperature < 0 || localModelConfig.temperature > 2) {
@@ -1458,16 +1546,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 httpMethod: lfd.httpMethod,
             }));
 
-        // Garante que safetySettings está completo e corretamente tipado antes de salvar
         const finalSafetySettings: SafetySetting[] = HARM_CATEGORIES_CONFIG.map(
             (hc) => {
                 const foundSetting = localModelConfig.safetySettings?.find(
                     (s) => s.category === hc.id
                 );
                 return {
-                    category: hc.id, // Garante que é o tipo HarmCategory do SDK
+                    category: hc.id,
                     threshold:
-                        foundSetting?.threshold || GenaiHarmBlockThresholdEnum.BLOCK_NONE, // Garante que é o tipo HarmBlockThreshold do SDK
+                        foundSetting?.threshold || GenaiHarmBlockThresholdEnum.BLOCK_NONE,
                 };
             }
         );
@@ -1483,8 +1570,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             geminiModelConfig: newGeminiConfig,
             customPersonalityPrompt: currentCustomPersonalityPrompt.trim(),
             functionDeclarations: appFuncDeclarations,
-            aiAvatarUrl: currentAiAvatarUrl.trim(), // Salvar URL do avatar
-            codeSynthaxHighlightEnabled: isCodeHighlightEnabledState, // Salvar estado do code highlight
+            aiAvatarUrl: currentAiAvatarUrl.trim(),
+            codeSynthaxHighlightEnabled: isCodeHighlightEnabledState,
+            enableWebSearch: currentEnableWebSearchEnabled,
+            enableAttachments: currentAttachmentsEnabled,
+            hideNavigation: currentHideNavigation, // Save hideNavigation setting
         }));
         alert("Configurações salvas com sucesso!");
     };
@@ -1556,7 +1646,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md" />
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
                 </Transition.Child>
                 <div className="fixed inset-0 overflow-y-auto">
                     <div className="flex min-h-full items-center justify-center p-3 sm:p-4 text-center">
@@ -1571,18 +1661,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                         >
                             <Dialog.Panel
                                 ref={modalContentRef}
-                                className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl shadow-black/50 w-full max-w-3xl text-slate-100 relative h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden border border-slate-700/70 text-left transform transition-all"
+                                className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl text-gray-800 relative h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden border border-gray-200 text-left transform transition-all"
                             >
-                                <div className="flex items-center justify-between p-4 pr-12 sm:p-5 sm:pr-14 border-b border-slate-700/60 flex-shrink-0 relative bg-slate-800/50">
+                                <div className="flex items-center justify-between p-4 pr-12 sm:p-5 sm:pr-14 border-b border-gray-200 flex-shrink-0 relative bg-white">
                                     <Dialog.Title
                                         as="h2"
-                                        className="text-lg font-semibold text-slate-100"
+                                        className="text-lg font-semibold text-gray-800"
                                     >
                                         Configurações do Aplicativo
                                     </Dialog.Title>
                                     <Button
                                         onClick={onClose}
-                                        className="!absolute top-1/2 -translate-y-1/2 right-3 !p-2 text-slate-400 hover:text-slate-100 rounded-full hover:!bg-slate-700/80 z-10"
+                                        className="!absolute top-1/2 -translate-y-1/2 right-3 !p-2 text-gray-500 hover:text-gray-700 rounded-full hover:!bg-gray-100 z-10"
                                         variant="icon"
                                         aria-label="Fechar modal"
                                     >
@@ -1591,14 +1681,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                     </Button>
                                 </div>
                                 <div className="flex flex-col md:flex-row flex-grow min-h-0">
-                                    <nav className="w-full md:w-52 flex-shrink-0 flex md:flex-col bg-slate-800/30 md:bg-slate-850/50 p-2 md:p-3 space-x-1 md:space-x-0 md:space-y-1.5 border-b md:border-b-0 md:border-r border-slate-700/60 overflow-x-auto md:overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                                    <nav className="w-full md:w-52 flex-shrink-0 flex md:flex-col bg-gray-50 p-2 md:p-3 space-x-1 md:space-x-0 md:space-y-1.5 border-b md:border-b-0 md:border-r border-gray-200 overflow-x-auto md:overflow-x-hidden">
                                         {tabs.map((tab) => (
                                             <button
                                                 key={tab.id}
                                                 onClick={() => handleTabChange(tab.id)}
-                                                className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ease-in-out group whitespace-nowrap flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-800 ${activeTab === tab.id
-                                                    ? "bg-gradient-to-r from-sky-600 to-blue-600 text-white shadow-md scale-[1.02]"
-                                                    : "text-slate-300 hover:bg-slate-700/70 hover:text-slate-50 active:scale-[0.98]"
+                                                className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ease-in-out group whitespace-nowrap flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e04579] focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50 ${activeTab === tab.id
+                                                    ? "bg-[#e04579] text-white shadow-md scale-[1.02]"
+                                                    : "text-gray-600 hover:bg-pink-50 hover:text-[#e04579] active:scale-[0.98]"
                                                     }`}
                                                 style={{ flex: "0 0 auto" }}
                                             >
@@ -1607,7 +1697,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                     {
                                                         className: `transition-transform duration-200 ${activeTab === tab.id
                                                             ? "text-white"
-                                                            : "text-slate-400 group-hover:text-slate-200"
+                                                            : "text-gray-400 group-hover:text-[#e04579]"
                                                             }`,
                                                     }
                                                 )}
@@ -1615,8 +1705,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                             </button>
                                         ))}
                                     </nav>
-                                    <div className="flex flex-col flex-grow min-h-0 bg-slate-800/20 relative overflow-hidden">
-                                        <div className="flex-grow p-4 sm:p-5 md:p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600/80 scrollbar-track-slate-700/50 scrollbar-thumb-rounded-full">
+                                    <div className="flex flex-col flex-grow min-h-0 bg-gray-50 relative overflow-hidden">
+                                        <div className="flex-grow p-4 sm:p-5 md:p-6 overflow-y-auto">
                                             {tabs.map((tab) => {
                                                 const TabComponent = tab.component;
                                                 const isTabActive = activeTab === tab.id;
@@ -1669,6 +1759,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                                     onToggleCodeHighlight: handleToggleCodeHighlightForTab,
                                                                     currentAiAvatarUrl: currentAiAvatarUrl,
                                                                     onAiAvatarUrlChange: setCurrentAiAvatarUrl,
+                                                                    currentEnableWebSearchEnabled: currentEnableWebSearchEnabled,
+                                                                    onToggleEnableWebSearch: handleToggleEnableWebSearchForTab,
+                                                                    currentAttachmentsEnabled: currentAttachmentsEnabled,
+                                                                    onToggleAttachmentsEnabled: handleToggleAttachmentsEnabledForTab,
+                                                                    currentHideNavigation: currentHideNavigation, // Pass new state
+                                                                    onToggleHideNavigation: handleToggleHideNavigationForTab, // Pass new handler
                                                                 })}
                                                             />
                                                         </div>
@@ -1676,11 +1772,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                 );
                                             })}
                                         </div>
-                                        <div className="p-4 border-t border-slate-700/60 flex-shrink-0 bg-slate-800/50 flex justify-end">
+                                        <div className="p-4 border-t border-gray-200 flex-shrink-0 bg-gray-50 flex justify-end">
                                             <Button
                                                 variant="primary"
                                                 onClick={handleSaveAllSettings}
-                                                className="!py-2.5 !px-5 !font-semibold !bg-sky-600 hover:!bg-sky-500 active:!bg-sky-700 shadow-md hover:shadow-lg transform active:scale-[0.98] transition-all"
+                                                className="!py-2.5 !px-5 !font-semibold shadow-md hover:shadow-lg transform active:scale-[0.98] transition-all"
                                             >
                                                 <IoCheckmarkOutline size={18} className="mr-1.5" />{" "}
                                                 Salvar Configurações

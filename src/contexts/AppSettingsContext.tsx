@@ -1,5 +1,5 @@
 // src/contexts/AppSettingsContext.tsx
-import React, { createContext, useContext, type ReactNode } from 'react';
+import React, { createContext, useContext, type ReactNode, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 // Importa os tipos do @google/genai diretamente ou via reexportação de src/types
 import { HarmCategory, HarmBlockThreshold, type SafetySetting } from '../types';
@@ -8,7 +8,7 @@ import type { AppSettings, GeminiModelConfig, GeminiModel, FunctionDeclaration }
 const APP_SETTINGS_KEY = 'geminiChat_appSettings';
 const DEFAULT_GEMINI_MODEL: GeminiModel = "gemini-2.5-pro-preview-05-06";
 
-export const DEFAULT_PERSONALITY_PROMPT = `Você é Loox, um assistente de IA pessoal projetado para ser um parceiro inteligente, prestativo e adaptável, operando dentro deste Web App. Sua missão é auxiliar os usuários em diversas tarefas, produtividade, explorar ideias e manter uma interação engajadora e personalizada.`;
+export const DEFAULT_PERSONALITY_PROMPT = `Você é uma IA professora / tutora de alunos que estão fazendo cursos na plataforma de ensino à distância Aulapp, e seu papel é ajudar os alunos a entenderem melhor o conteúdo do curso, responder perguntas e fornecer feedback sobre a evolução deles. Você deve ser amigável, paciente e encorajador, sempre buscando ajudar os alunos a aprenderem e se desenvolverem.`;
 
 // Definição padrão para safetySettings usando os tipos importados
 const defaultSafetySettings: SafetySetting[] = [
@@ -32,7 +32,10 @@ const defaultAppSettings: AppSettings = {
     },
     functionDeclarations: [],
     codeSynthaxHighlightEnabled: false,
-    aiAvatarUrl: '', // Valor padrão para o novo campo
+    aiAvatarUrl: '',
+    enableWebSearch: true,
+    enableAttachments: true,
+    hideNavigation: false, // Default value for new setting (false = show navigation)
 };
 
 interface AppSettingsContextType {
@@ -42,10 +45,13 @@ interface AppSettingsContextType {
     updateGeminiModelConfig: (config: Partial<GeminiModelConfig>) => void;
     updateFunctionDeclarations: (declarations: FunctionDeclaration[]) => void;
     updateCodeSyntaxHighlightEnabled: (enabled: boolean) => void;
-    updateAiAvatarUrl: (url: string) => void; // Nova função para atualizar URL do avatar
+    updateAiAvatarUrl: (url: string) => void;
+    updateEnableWebSearch: (enabled: boolean) => void;
+    updateAttachmentsEnabled: (enabled: boolean) => void;
+    updateHideNavigation: (hidden: boolean) => void; // New function for hideNavigation setting
 }
 
-const AppSettingsContext = createContext<AppSettingsContextType | undefined>(undefined);
+export const AppSettingsContext = createContext<AppSettingsContextType | undefined>(undefined);
 
 export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [settings, setSettings] = useLocalStorage<AppSettings>(
@@ -85,11 +91,11 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [settings.geminiModelConfig?.safetySettings]); // Dependência mais específica
 
-    const saveApiKey = (apiKey: string) => {
+    const saveApiKey = useCallback((apiKey: string) => {
         setSettings((prevSettings) => ({ ...prevSettings, apiKey }));
-    };
+    }, [setSettings]);
 
-    const updateGeminiModelConfig = (configUpdate: Partial<GeminiModelConfig>) => {
+    const updateGeminiModelConfig = useCallback((configUpdate: Partial<GeminiModelConfig>) => {
         setSettings((prevSettings) => {
             const newModelConfig = {
                 ...prevSettings.geminiModelConfig,
@@ -104,28 +110,49 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
                 geminiModelConfig: newModelConfig,
             };
         });
-    };
+    }, [setSettings]);
 
-    const updateFunctionDeclarations = (declarations: FunctionDeclaration[]) => {
+    const updateFunctionDeclarations = useCallback((declarations: FunctionDeclaration[]) => {
         setSettings((prevSettings) => ({
             ...prevSettings,
             functionDeclarations: declarations,
         }));
-    };
+    }, [setSettings]);
 
-    const updateCodeSyntaxHighlightEnabled = (enabled: boolean) => {
+    const updateCodeSyntaxHighlightEnabled = useCallback((enabled: boolean) => {
         setSettings((prevSettings) => ({
             ...prevSettings,
-            codeSynthaxHighlightEnabled: enabled, // Corrigido: sythaxHighlightEnabled -> codeSynthaxHighlightEnabled
+            codeSynthaxHighlightEnabled: enabled,
         }));
-    };
+    }, [setSettings]);
 
-    const updateAiAvatarUrl = (url: string) => { // Implementação da nova função
+    const updateAiAvatarUrl = useCallback((url: string) => {
         setSettings((prevSettings) => ({
             ...prevSettings,
             aiAvatarUrl: url,
         }));
-    };
+    }, [setSettings]);
+
+    const updateEnableWebSearch = useCallback((enabled: boolean) => {
+        setSettings((prevSettings) => ({
+            ...prevSettings,
+            enableWebSearch: enabled,
+        }));
+    }, [setSettings]);
+
+    const updateAttachmentsEnabled = useCallback((enabled: boolean) => {
+        setSettings((prevSettings) => ({
+            ...prevSettings,
+            enableAttachments: enabled,
+        }));
+    }, [setSettings]);
+
+    const updateHideNavigation = useCallback((hidden: boolean) => { // Implementation for new setting
+        setSettings((prevSettings) => ({
+            ...prevSettings,
+            hideNavigation: hidden,
+        }));
+    }, [setSettings]);
 
     return (
         <AppSettingsContext.Provider value={{
@@ -135,7 +162,10 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
             updateGeminiModelConfig,
             updateFunctionDeclarations,
             updateCodeSyntaxHighlightEnabled,
-            updateAiAvatarUrl, // Adicionada ao provedor
+            updateAiAvatarUrl,
+            updateEnableWebSearch,
+            updateAttachmentsEnabled,
+            updateHideNavigation, // Added to provider value
         }}>
             {children}
         </AppSettingsContext.Provider>

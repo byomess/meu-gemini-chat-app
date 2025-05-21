@@ -18,10 +18,11 @@ import React from 'react'
 const AUTO_SCROLL_INTERVAL = 500;
 
 interface ChatAreaProps {
-    onOpenMobileSidebar: () => void
+    onOpenMobileSidebar: () => void;
+    showMobileMenuButton: boolean; // New prop
 }
 
-const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
+const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenuButton }) => {
     const {
         activeConversation,
         activeConversationId,
@@ -43,7 +44,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
     const conversationTitle = activeConversation?.title || 'Chat'
 
     const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
-        // Se o scroll for programático, não queremos que seja interpretado como manual
         userManuallyScrolledRef.current = false
         messagesEndRef.current?.scrollIntoView({ behavior })
     }, [])
@@ -58,7 +58,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
     const startAutoScrollInterval = useCallback(() => {
         stopAutoScrollInterval()
         autoScrollIntervalRef.current = setInterval(() => {
-            if (chatContainerRef.current && !userManuallyScrolledRef.current) { // Só auto-scrolla se não houve scroll manual recente
+            if (chatContainerRef.current && !userManuallyScrolledRef.current) { 
                 const container = chatContainerRef.current
                 const threshold = 10
                 const atBottom =
@@ -84,7 +84,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
         }
     }, [isAutoScrollActive, startAutoScrollInterval, stopAutoScrollInterval])
 
-    // Efeito para detectar INTERAÇÃO do usuário que causa scroll
     useEffect(() => {
         const container = chatContainerRef.current
         if (!container) return
@@ -93,14 +92,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
             userManuallyScrolledRef.current = true
         }
 
-        // Eventos que indicam uma intenção de scroll pelo usuário
         container.addEventListener('wheel', setUserScrolledManually, { passive: true })
         container.addEventListener('touchstart', setUserScrolledManually, { passive: true })
-        // Keydown é mais complexo porque precisamos checar teclas específicas
-        // e o evento pode ser no document ou input, não só no container.
-        // Por simplicidade, focaremos no wheel e touch no container primeiro.
-        // Se o scroll por teclado for um problema, podemos adicionar um listener mais global.
-
+        
         return () => {
             container.removeEventListener('wheel', setUserScrolledManually)
             container.removeEventListener('touchstart', setUserScrolledManually)
@@ -108,7 +102,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
     }, [])
 
 
-    // Efeito para lidar com o evento de SCROLL e atualizar estados
     useEffect(() => {
         const container = chatContainerRef.current
         if (!container) return
@@ -118,7 +111,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
                 clearTimeout(scrollTimeoutRef.current)
             }
             scrollTimeoutRef.current = setTimeout(() => {
-                if (!chatContainerRef.current) return // Container pode ter sido desmontado
+                if (!chatContainerRef.current) return 
 
                 const currentContainer = chatContainerRef.current
                 const threshold = 80
@@ -126,22 +119,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
 
                 setIsUserScrolledUp(!atBottom)
 
-                // Se o auto-scroll estiver ativo E o usuário scrollou manualmente para cima
                 if (isAutoScrollActive && userManuallyScrolledRef.current && !atBottom) {
                     setIsAutoScrollActive(false)
                 }
-
-                // Importante: Resetar o flag APÓS a lógica de decisão
-                // para que o próximo scroll programático não seja afetado.
-                // Fazemos isso aqui, pois este handleScroll é o consumidor final da informação
-                // de "scroll manual" para esta iteração.
                 userManuallyScrolledRef.current = false
 
-            }, 60) // Debounce
+            }, 60) 
         }
 
         container.addEventListener('scroll', handleScroll, { passive: true })
-        handleScroll() // Chamada inicial
+        handleScroll() 
 
         return () => {
             container.removeEventListener('scroll', handleScroll)
@@ -149,15 +136,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
                 clearTimeout(scrollTimeoutRef.current)
             }
         }
-    }, [isAutoScrollActive]) // Depende de isAutoScrollActive para reavaliar a desativação
+    }, [isAutoScrollActive]) 
 
 
-    // Efeito para scroll inicial e resetar auto-scroll ao mudar de conversa
     useEffect(() => {
         if (isAutoScrollActive) {
             setIsAutoScrollActive(false)
         }
-        userManuallyScrolledRef.current = false // Reseta ao mudar de conversa também
+        userManuallyScrolledRef.current = false 
 
         const container = chatContainerRef.current
         if (!container) {
@@ -172,8 +158,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
                 setTimeout(() => {
                     if (chatContainerRef.current) {
                         const currentContainer = chatContainerRef.current
-                        // Só scrolla para o final se o usuário não tiver scrollado manualmente para cima
-                        // entre o carregamento da conversa e este timeout.
                         if (!userManuallyScrolledRef.current) {
                             const stillNearTop = currentContainer.scrollTop < currentContainer.clientHeight / 2
                             if (stillNearTop) {
@@ -197,7 +181,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
 
 
     const handleFloatingButtonClick = () => {
-        userManuallyScrolledRef.current = false // Clique no botão não é scroll manual do conteúdo
+        userManuallyScrolledRef.current = false 
         if (isAutoScrollActive) {
             setIsAutoScrollActive(false)
             if (chatContainerRef.current) {
@@ -215,33 +199,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
 
     const showWelcome = !activeConversationId
     const showApiKeyMissing = activeConversationId && !settings.apiKey
-    // O botão só deve aparecer se houver mensagens e não estivermos na tela de boas-vindas/API key
-    // E também, só faz sentido se houver conteúdo scrollável ou se o usuário estiver scrollado para cima.
-    // A lógica de `isUserScrolledUp` OU `isAutoScrollActive` define se o botão é necessário.
-    // Se não estiver scrollado pra cima e o auto scroll estiver desligado, não precisa do botão para "ir para o fim".
-    // Mas o botão AGORA também ATIVA o auto-scroll, então ele deve aparecer se há mensagens.
     const showFloatingButton = !showWelcome && !showApiKeyMissing && messages.length > 0;
 
 
     return (
-        <main className="
-        flex flex-col h-screen relative text-slate-100
-        bg-slate-950 bg-gradient-to-b from-slate-950 to-slate-900
-      ">
+        <main className="flex flex-col h-screen relative text-gray-800 bg-gray-100">
 
-            <div className="
-          sticky top-0 z-20
-          flex items-center gap-3
-          px-4 py-3
-          backdrop-blur
-          bg-slate-800/60
-          border-b border-slate-700/50
-          shadow-md
-        ">
-                {isMobile && (
+            <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 backdrop-blur-md bg-white/80 border-b border-gray-200 shadow-sm">
+                {isMobile && showMobileMenuButton && (
                     <button
                         onClick={onOpenMobileSidebar}
-                        className="p-1 text-slate-300 hover:text-white"
+                        className="p-1 text-gray-600 hover:text-gray-900"
                         title="Abrir menu"
                         aria-label="Abrir menu"
                     >
@@ -249,8 +217,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
                     </button>
                 )}
 
-                <IoChatbubblesOutline size={22} className="flex-shrink-0 text-slate-400" />
-                <h2 className="truncate text-base sm:text-lg font-semibold">{conversationTitle}</h2>
+                <IoChatbubblesOutline size={22} className="flex-shrink-0 text-gray-500" />
+                <h2 className="truncate text-base sm:text-lg font-semibold text-gray-800">{conversationTitle}</h2>
             </div>
 
             {showFloatingButton && (
@@ -259,13 +227,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
                     className={`
                         fixed bottom-24 right-6 sm:right-8 z-30
                         p-3 rounded-full
-                        shadow-lg shadow-indigo-800/40
+                        shadow-lg shadow-[#e04579]/30
                         text-white
                         hover:scale-105 active:scale-95
                         transition-all duration-150 ease-in-out
                         ${isAutoScrollActive
                             ? 'bg-gradient-to-br from-green-500 to-emerald-600'
-                            : 'bg-gradient-to-br from-cyan-500 to-indigo-600'}
+                            : 'bg-gradient-to-br from-[#e04579] to-[#c73d6a]'
+                        }
                     `}
                     title={isAutoScrollActive
                         ? "Desativar rolagem automática"
@@ -282,29 +251,25 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
 
             <div
                 ref={chatContainerRef}
-                className="
-          flex-1 overflow-y-auto
-          px-3 md:px-4 py-4 md:py-6
-          scrollbar-thin scrollbar-thumb-slate-700 hover:scrollbar-thumb-slate-600
-        "
+                className="flex-1 overflow-y-auto px-3 md:px-4 py-4 md:py-6" // Scrollbar styling will be from global CSS or browser default
             >
                 {showWelcome ? (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-500 p-6 text-center">
+                    <div className="h-full flex flex-col items-center justify-center text-gray-500 p-6 text-center">
                         <img
-                            src="/logo-loox.png"
+                            src="/logo-aulapp.svg"
                             alt="Logo Loox"
-                            className="py-4 w-36 h-auto opacity-40 loox-logo-blue"
+                            className="py-4 w-36 h-auto opacity-70"
                         />
-                        <p className="text-lg font-medium text-slate-500">Faaala Felipão!</p>
-                        <p className="text-sm max-w-xs text-slate-600 mt-4">
-                            {isMobile
+                        <p className="text-lg font-medium text-gray-600">Bem-vindo, aluno!</p>
+                        <p className="text-sm max-w-xs text-gray-500 mt-4">
+                            {isMobile && showMobileMenuButton
                                 ? "Toque no ícone de menu no canto superior esquerdo para ver suas conversas ou iniciar uma nova."
                                 : "Crie uma nova conversa ou selecione uma existente no painel à esquerda para começar."
                             }
                         </p>
                     </div>
                 ) : showApiKeyMissing ? (
-                    <div className="h-full flex flex-col items-center justify-center text-yellow-400 p-6 text-center">
+                    <div className="h-full flex flex-col items-center justify-center text-orange-600 p-6 text-center">
                         <IoLockClosedOutline size={48} className="mb-4 opacity-70" />
                         <p className="text-lg font-medium">Chave de API necessária</p>
                         <p className="text-sm max-w-xs">
@@ -313,8 +278,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
                         </p>
                     </div>
                 ) : messages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-500 p-6 text-center">
-                        <IoChatbubblesOutline size={48} className="mb-4 opacity-40" />
+                    <div className="h-full flex flex-col items-center justify-center text-gray-500 p-6 text-center">
+                        <IoChatbubblesOutline size={48} className="mb-4 opacity-50" />
                         <p className="text-lg font-medium">Nenhuma mensagem ainda.</p>
                         <p className="text-sm max-w-xs">Envie uma mensagem abaixo para iniciar a conversa.</p>
                     </div>
@@ -328,7 +293,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar }) => {
                 )}
             </div>
 
-            <MessageInput />
+            <MessageInput /> {/* Props will be updated in MessageInput file */}
         </main>
     )
 }

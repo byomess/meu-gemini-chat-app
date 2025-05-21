@@ -42,7 +42,10 @@ export interface AppSettings {
     customPersonalityPrompt: string;
     functionDeclarations: FunctionDeclaration[];
     codeSynthaxHighlightEnabled: boolean;
-    aiAvatarUrl?: string; // Novo campo para URL do avatar da IA
+    aiAvatarUrl?: string;
+    enableWebSearch: boolean;
+    enableAttachments: boolean;
+    hideNavigation: boolean; // New setting for hiding navigation
 }
 
 export interface Memory {

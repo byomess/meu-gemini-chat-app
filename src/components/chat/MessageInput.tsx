@@ -175,21 +175,21 @@ const MessageInput: React.FC = () => {
     };
 
 
-    const UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM = 2.5;
+    const UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM = 2.5; // Approx 40px for 16px base
     const FOCUSED_TEXTAREA_MAX_HEIGHT_VH = 40;
-    const MAX_THUMBNAIL_SIZE = 80;
+    const MAX_THUMBNAIL_SIZE = 80; // pixels
 
     const getPixelValueFromRem = (rem: number) => {
         if (typeof window !== 'undefined') {
             return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
         }
-        return rem * 16;
+        return rem * 16; // Fallback for SSR or tests
     };
 
     const adjustTextareaHeight = useCallback(() => {
         if (textareaRef.current) {
             const currentTextarea = textareaRef.current;
-            currentTextarea.style.height = 'auto';
+            currentTextarea.style.height = 'auto'; // Reset height to shrink if needed
             const scrollHeight = currentTextarea.scrollHeight;
             let currentMaxHeight;
             if (isTextareaFocused) {
@@ -212,7 +212,7 @@ const MessageInput: React.FC = () => {
     useEffect(() => {
         const handleResize = () => { adjustTextareaHeight(); };
         window.addEventListener('resize', handleResize);
-        adjustTextareaHeight();
+        adjustTextareaHeight(); // Initial adjustment
         return () => { window.removeEventListener('resize', handleResize); };
     }, [adjustTextareaHeight]);
 
@@ -250,6 +250,8 @@ const MessageInput: React.FC = () => {
     }, [stopMediaStream]);
 
     const addFilesToState = async (files: FileList | File[], isRecordedAudio = false) => {
+        // Allow adding recorded audio even if general attachments are off
+        if (!settings.enableAttachments && !isRecordedAudio) return;
         if (isRecording && !isRecordedAudio) return;
 
         const newFilesPromises: Promise<LocalAttachedFile | null>[] = [];
@@ -266,7 +268,7 @@ const MessageInput: React.FC = () => {
                         previewUrl = await blobToDataURL(file);
                     } catch (e) {
                         console.error(`Error creating data URL for ${file.name}:`, e);
-                        if (file.type.startsWith('image/')) {
+                        if (file.type.startsWith('image/')) { // Fallback for images if dataURL fails
                             try { previewUrl = URL.createObjectURL(file); } catch (e2) { console.error("Error creating ObjectURL for image preview:", e2); }
                         }
                     }
@@ -279,7 +281,7 @@ const MessageInput: React.FC = () => {
                     type: file.type,
                     size: file.size,
                     previewUrl: previewUrl,
-                    isRecording: isRecordedAudio ? false : undefined,
+                    isRecording: isRecordedAudio ? false : undefined, // Mark as not a live recording if it's processed audio
                 };
             })();
             newFilesPromises.push(newAttachedFilePromise);
@@ -291,15 +293,16 @@ const MessageInput: React.FC = () => {
 
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!settings.enableAttachments) return;
         const files = event.target.files;
         if (!files) return;
         addFilesToState(files);
-        if (fileInputRef.current) { fileInputRef.current.value = ""; }
+        if (fileInputRef.current) { fileInputRef.current.value = ""; } // Reset file input
         textareaRef.current?.focus();
     };
 
     const handlePaste = useCallback(async (event: ClipboardEvent) => {
-        if (isRecording || !isTextareaFocused) return;
+        if (!settings.enableAttachments || isRecording || !isTextareaFocused) return;
         const items = event.clipboardData?.items;
         if (items) {
             const filesToPaste: File[] = [];
@@ -314,21 +317,21 @@ const MessageInput: React.FC = () => {
                 await addFilesToState(filesToPaste);
             }
         }
-    }, [isRecording, isTextareaFocused, addFilesToState]);
+    }, [isRecording, isTextareaFocused, addFilesToState, settings.enableAttachments]);
 
     useEffect(() => {
         const textareaElement = textareaRef.current;
-        if (textareaElement) {
+        if (textareaElement && settings.enableAttachments) {
             textareaElement.addEventListener('paste', handlePaste as unknown as EventListener);
             return () => { textareaElement.removeEventListener('paste', handlePaste as unknown as EventListener); };
         }
-    }, [handlePaste]);
+    }, [handlePaste, settings.enableAttachments]);
 
     const handleRemoveFile = (fileIdToRemove: string) => {
         setAttachedFiles(prevFiles =>
             prevFiles.filter(f => {
                 if (f.id === fileIdToRemove) {
-                    if (f.previewUrl && f.previewUrl.startsWith('blob:')) {
+                    if (f.previewUrl && f.previewUrl.startsWith('blob:')) { // Only revoke ObjectURLs
                         URL.revokeObjectURL(f.previewUrl);
                     }
                     return false;
@@ -340,7 +343,7 @@ const MessageInput: React.FC = () => {
 
     const clearAttachmentsFromState = () => {
         attachedFiles.forEach(f => {
-            if (f.previewUrl && f.previewUrl.startsWith('blob:')) {
+            if (f.previewUrl && f.previewUrl.startsWith('blob:')) { // Only revoke ObjectURLs
                 URL.revokeObjectURL(f.previewUrl);
             }
         });
@@ -348,6 +351,7 @@ const MessageInput: React.FC = () => {
     }
 
     const startRecording = async () => {
+        // Audio recording can be independent of general file attachments
         setAudioError(null);
         setErrorFromAI(null);
         wasCancelledRef.current = false;
@@ -365,7 +369,7 @@ const MessageInput: React.FC = () => {
                     ? { mimeType: 'audio/webm; codecs=opus' }
                     : MediaRecorder.isTypeSupported('audio/mp4')
                         ? { mimeType: 'audio/mp4' }
-                        : {};
+                        : {}; // Let the browser decide if none are explicitly supported
             mediaRecorderRef.current = new MediaRecorder(stream, options);
             audioChunksRef.current = [];
             mediaRecorderRef.current.ondataavailable = (event) => {
@@ -373,19 +377,19 @@ const MessageInput: React.FC = () => {
             };
 
             mediaRecorderRef.current.onstop = async () => {
-                stopMediaStream();
+                stopMediaStream(); // Stop the tracks once recording is done
                 setIsRecording(false);
                 if (wasCancelledRef.current) {
                     wasCancelledRef.current = false;
-                    audioChunksRef.current = [];
+                    audioChunksRef.current = []; // Clear chunks if cancelled
                     if (textareaRef.current) textareaRef.current.focus();
                     return;
                 }
-                if (!mediaRecorderRef.current) return;
+                if (!mediaRecorderRef.current) return; // Should not happen if onstop is called
 
-                const audioMimeType = mediaRecorderRef.current.mimeType || 'audio/ogg';
+                const audioMimeType = mediaRecorderRef.current.mimeType || 'audio/ogg'; // Fallback mime type
                 const audioBlob = new Blob(audioChunksRef.current, { type: audioMimeType });
-                audioChunksRef.current = [];
+                audioChunksRef.current = []; // Clear chunks after creating blob
 
                 if (audioBlob.size === 0) {
                     setAudioError("Gravação resultou em áudio vazio. Tente novamente.");
@@ -397,14 +401,14 @@ const MessageInput: React.FC = () => {
                 const audioFileName = `gravacao_${Date.now()}.${audioExtension}`;
                 const recordedAudioFile = new File([audioBlob], audioFileName, { type: audioMimeType });
 
-                await addFilesToState([recordedAudioFile], true);
+                await addFilesToState([recordedAudioFile], true); // Mark as recorded audio
 
                 if (textareaRef.current) textareaRef.current.focus();
             };
 
             mediaRecorderRef.current.onerror = (event: Event) => {
                 console.error("MediaRecorder error:", event);
-                const specificError = (event as any).error;
+                const specificError = (event as any).error; // Type assertion for specific error
                 setAudioError(`Erro na gravação: ${specificError?.name || specificError?.message || 'Erro desconhecido'}`);
                 stopMediaStream();
                 setIsRecording(false);
@@ -422,31 +426,35 @@ const MessageInput: React.FC = () => {
                 setAudioError("Não foi possível acessar o microfone.");
             }
             setIsRecording(false);
-            stopMediaStream();
+            stopMediaStream(); // Ensure stream is stopped on error
         }
     };
 
     const stopRecordingAndAttach = () => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-            wasCancelledRef.current = false;
+            wasCancelledRef.current = false; // Ensure it's not treated as a cancellation
             mediaRecorderRef.current.stop();
+            // onstop will handle the rest
         }
     };
 
     const handleCancelRecording = () => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-            wasCancelledRef.current = true;
+            wasCancelledRef.current = true; // Mark as cancelled
             mediaRecorderRef.current.stop();
+            // onstop will handle cleanup
         } else {
+            // If not actively recording but mic might be on (e.g., permission granted but error before start)
             stopMediaStream();
             setIsRecording(false);
-            audioChunksRef.current = [];
+            audioChunksRef.current = []; // Clear any stray chunks
         }
-        setAudioError(null);
+        setAudioError(null); // Clear any previous audio error
         if (textareaRef.current) textareaRef.current.focus();
     };
 
     const handleMicButtonClick = () => {
+        // Mic button logic is independent of settings.enableAttachments for its own operation
         if (isRecording) {
             stopRecordingAndAttach();
         } else {
@@ -468,10 +476,13 @@ const MessageInput: React.FC = () => {
         setErrorFromAI(null);
 
         const trimmedText = text.trim();
-        const hasContentToSend = trimmedText || attachedFiles.length > 0;
+        // Content to send can be text OR (if attachments enabled OR if it's recorded audio) attached files
+        const hasFilesToSend = (settings.enableAttachments || attachedFiles.some(f => f.file.type.startsWith('audio/'))) && attachedFiles.length > 0;
+        const hasContentToSend = trimmedText || hasFilesToSend;
+
 
         if (!hasContentToSend || !activeConversationId || isProcessingEditedMessage || isRecording) {
-            if (isLoadingAI) return;
+            if (isLoadingAI) return; // Don't submit if AI is already loading (unless it's an abort action)
             return;
         }
 
@@ -480,7 +491,7 @@ const MessageInput: React.FC = () => {
                 text: "Erro: Chave de API não configurada.", sender: 'model', metadata: { error: true }
             });
             setText('');
-            clearAttachmentsFromState();
+            clearAttachmentsFromState(); // Clear all attachments regardless of type
             if (textareaRef.current) textareaRef.current.style.height = 'auto';
             return;
         }
@@ -491,15 +502,14 @@ const MessageInput: React.FC = () => {
         abortStreamControllerRef.current = new AbortController();
         const signal = abortStreamControllerRef.current.signal;
 
-        // Limpar refs de status e parts para a nova submissão
         lastProcessingStatusForInputRef.current = null;
         accumulatedRawPartsForInputRef.current = [];
-        let accumulatedAiText = ""; // Variável local para o texto da IA desta submissão
+        let accumulatedAiText = "";
 
         const currentTextForAI = trimmedText;
         const currentConversation = conversations.find(c => c.id === activeConversationId);
-        const webSearchActiveForThisSubmission = isWebSearchEnabledForNextMessage;
-        if (webSearchActiveForThisSubmission) setIsWebSearchEnabledForNextMessage(false);
+        const webSearchActiveForThisSubmission = settings.enableWebSearch && isWebSearchEnabledForNextMessage;
+        if (isWebSearchEnabledForNextMessage) setIsWebSearchEnabledForNextMessage(false);
 
         const historyBeforeCurrentUserMessage: { sender: 'user' | 'model' | 'function'; text?: string; parts?: Part[] }[] =
             currentConversation?.messages.map(msg => {
@@ -509,13 +519,17 @@ const MessageInput: React.FC = () => {
                 return { sender: msg.sender, text: msg.text };
             }) || [];
 
-        const filesInfoForUIMessage: AttachedFileInfo[] = attachedFiles.map(localFile => ({
-            id: localFile.id,
-            name: localFile.name,
-            type: localFile.type,
-            size: localFile.size,
-            dataUrl: localFile.previewUrl,
-        }));
+        // Files for UI message can be all types if attachments are enabled, or only audio if not
+        const filesInfoForUIMessage: AttachedFileInfo[] = attachedFiles
+            .filter(localFile => settings.enableAttachments || localFile.file.type.startsWith('audio/'))
+            .map(localFile => ({
+                id: localFile.id,
+                name: localFile.name,
+                type: localFile.type,
+                size: localFile.size,
+                dataUrl: localFile.previewUrl,
+            }));
+
 
         addMessageToConversation(activeConversationId, {
             text: trimmedText,
@@ -525,9 +539,10 @@ const MessageInput: React.FC = () => {
             }
         });
 
-        const filesToSendToAI = [...attachedFiles];
+        // Files to send to AI can be all types if attachments are enabled, or only audio if not
+        const filesToSendToAI = attachedFiles.filter(localFile => settings.enableAttachments || localFile.file.type.startsWith('audio/'));
         setText('');
-        clearAttachmentsFromState();
+        clearAttachmentsFromState(); // Clear all attachments
         setIsLoadingAI(true);
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
@@ -535,7 +550,7 @@ const MessageInput: React.FC = () => {
         }
 
         const aiMessageId = addMessageToConversation(activeConversationId, {
-            text: "", sender: 'model', metadata: { isLoading: true } // Metadata inicial
+            text: "", sender: 'model', metadata: { isLoading: true }
         });
         if (!aiMessageId) {
             console.error("Não foi possível criar a mensagem placeholder da IA.");
@@ -558,7 +573,8 @@ const MessageInput: React.FC = () => {
             const streamGenerator = streamMessageToGemini(
                 settings.apiKey, historyBeforeCurrentUserMessage, currentTextForAI, rawFilesForAPI,
                 currentGlobalMemoriesWithObjects, settings.geminiModelConfig, systemInstructionText,
-                settings.functionDeclarations || [], signal, webSearchActiveForThisSubmission
+                settings.functionDeclarations || [], signal,
+                webSearchActiveForThisSubmission
             );
 
             for await (const streamResponse of streamGenerator) {
@@ -648,9 +664,7 @@ const MessageInput: React.FC = () => {
                 }
             }
 
-            const finalDisplayableText = accumulatedAiText; // Já está sem cursor aqui
-            // A lógica de exibir erro no texto é gerenciada pelo MessageBubble com base no metadata.error
-
+            const finalDisplayableText = accumulatedAiText;
             updateMessageInConversation(activeConversationId, aiMessageId, {
                 text: finalDisplayableText, metadata: finalMetadata
             });
@@ -663,12 +677,12 @@ const MessageInput: React.FC = () => {
                 rawParts: accumulatedRawPartsForInputRef.current.length > 0 ? [...accumulatedRawPartsForInputRef.current] : undefined,
             };
             if ((error as Error).name === 'AbortError' || signal.aborted) {
-                finalMetadataUpdate.abortedByUser = true; finalMetadataUpdate.error = false; // Aborto não é um "erro" da IA
+                finalMetadataUpdate.abortedByUser = true; finalMetadataUpdate.error = false;
             } else {
                 const clientErrorMessage = error instanceof Error ? error.message : "Desculpe, ocorreu uma falha desconhecida no processamento da resposta.";
                 finalMetadataUpdate.error = clientErrorMessage;
                 finalMetadataUpdate.userFacingError = clientErrorMessage;
-                setErrorFromAI(clientErrorMessage); // Mostra erro acima do input
+                setErrorFromAI(clientErrorMessage);
             }
             updateMessageInConversation(activeConversationId, aiMessageId, {
                 text: accumulatedAiText.replace(/▍$/, ''), metadata: finalMetadataUpdate
@@ -678,7 +692,6 @@ const MessageInput: React.FC = () => {
             if (abortStreamControllerRef.current && abortStreamControllerRef.current.signal === signal) {
                 abortStreamControllerRef.current = null;
             }
-            // Limpar refs de status e parts para a próxima submissão
             lastProcessingStatusForInputRef.current = null;
             accumulatedRawPartsForInputRef.current = [];
 
@@ -695,20 +708,23 @@ const MessageInput: React.FC = () => {
             if (e.key === 'Enter') e.preventDefault();
             return;
         }
-        const hasContent = text.trim().length > 0 || attachedFiles.length > 0;
+        const hasTextContent = text.trim().length > 0;
+        const hasFiles = (settings.enableAttachments || attachedFiles.some(f => f.file.type.startsWith('audio/'))) && attachedFiles.length > 0;
+        const hasContent = hasTextContent || hasFiles;
+
         if (isMobile ? (e.key === 'Enter' && e.ctrlKey && hasContent) : (e.key === 'Enter' && !e.shiftKey && hasContent)) {
             e.preventDefault(); handleSubmit();
         }
     };
 
     const isCurrentlyLoading = isLoadingAI || isProcessingEditedMessage;
-    const canSubmitEffectively = (text.trim().length > 0 || attachedFiles.length > 0) && !!activeConversationId && !isCurrentlyLoading && !!settings.apiKey && !isRecording;
-    const isTextareaAndAttachDisabled = !activeConversationId || !settings.apiKey || isProcessingEditedMessage || isRecording || isLoadingAI;
-    const isMicDisabled = !activeConversationId || !settings.apiKey || isProcessingEditedMessage || isLoadingAI;
+    const canSubmitEffectively = (text.trim().length > 0 || ((settings.enableAttachments || attachedFiles.some(f => f.file.type.startsWith('audio/'))) && attachedFiles.length > 0)) && !!activeConversationId && !isCurrentlyLoading && !!settings.apiKey && !isRecording;
+    const isAttachButtonDisabled = !activeConversationId || !settings.apiKey || isProcessingEditedMessage || isRecording || isLoadingAI || !settings.enableAttachments;
+    const isMicDisabled = !activeConversationId || !settings.apiKey || isProcessingEditedMessage || isLoadingAI; // Removed !settings.enableAttachments
     const isWebSearchButtonDisabled = !activeConversationId || !settings.apiKey || isCurrentlyLoading || isRecording;
 
     const recordingPlaceholder = (
-        <div className="flex items-center text-sm text-slate-400">
+        <div className="flex items-center text-sm text-gray-500">
             <div className="relative w-3 h-3 mr-2 flex items-center justify-center">
                 <span className="absolute inline-flex w-2 h-2 bg-red-500 rounded-full opacity-75 animate-ping"></span>
                 <span className="relative inline-block w-2 h-2 bg-red-500 rounded-full"></span>
@@ -719,21 +735,28 @@ const MessageInput: React.FC = () => {
 
     return (
         <>
-            <div className="px-2 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-3 border-t border-slate-700/60 bg-slate-800/95 backdrop-blur-sm sticky bottom-0 shadow- ઉપર-md z-20">
+            <div className="px-2 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-3 border-t border-gray-200 bg-gray-50 sticky bottom-0 shadow- ऊपर-md z-20">
                 {errorFromAI && (
-                    <div className="mb-2 p-2 text-xs text-red-400 bg-red-900/40 border border-red-700/50 rounded-md flex items-center gap-2">
+                    <div className="mb-2 p-2 text-xs text-red-700 bg-red-100 border border-red-300 rounded-md flex items-center gap-2">
                         <IoWarningOutline className="flex-shrink-0 text-base" /> <span>{errorFromAI}</span>
                     </div>
                 )}
                 {audioError && (
-                    <div className="mb-2 p-2 text-xs text-yellow-500 bg-yellow-900/40 border border-yellow-700/50 rounded-md flex items-center gap-2">
+                    <div className="mb-2 p-2 text-xs text-yellow-700 bg-yellow-100 border border-yellow-300 rounded-md flex items-center gap-2">
                         <IoWarningOutline className="flex-shrink-0 text-base" /> <span>{audioError}</span>
                     </div>
                 )}
 
-                {attachedFiles.length > 0 && !isRecording && (
-                    <div className="mb-2 p-2 bg-slate-800/50 border border-slate-700/80 rounded-lg flex gap-2.5 items-center max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50 shadow-sm">
+                {/* Display area for attached files (including recorded audio) */}
+                {/* Show this area if attachments are enabled OR if there's recorded audio, and there are files */}
+                {((settings.enableAttachments || attachedFiles.some(f => f.file.type.startsWith('audio/'))) && attachedFiles.length > 0 && !isRecording) && (
+                    <div className="mb-2 p-2 bg-gray-100 border border-gray-200 rounded-lg flex gap-2.5 items-center max-h-60 overflow-y-auto shadow-sm">
                         {attachedFiles.map(item => {
+                            // Only display non-audio files if general attachments are enabled
+                            if (!item.file.type.startsWith('audio/') && !settings.enableAttachments) {
+                                return null;
+                            }
+
                             const isVisualMedia = (item.type.startsWith('image/') || item.type.startsWith('video/')) && item.previewUrl;
                             const mediaClasses = isVisualMedia ? "cursor-pointer hover:opacity-80 transition-opacity" : "";
 
@@ -751,7 +774,7 @@ const MessageInput: React.FC = () => {
                                 );
                             } else if (item.type.startsWith('image/') && item.previewUrl) {
                                 return (
-                                    <div key={item.id} className="relative group bg-slate-700/80 p-1.5 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200 self-start max-w-[calc(100%-1rem)]">
+                                    <div key={item.id} className="relative group bg-white p-1.5 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200 self-start max-w-[calc(100%-1rem)]">
                                         <img
                                             src={item.previewUrl} alt={`Preview ${item.name}`}
                                             className={`object-cover rounded-md ${mediaClasses}`}
@@ -770,7 +793,7 @@ const MessageInput: React.FC = () => {
                                 );
                             } else if (item.type.startsWith('video/') && item.previewUrl) {
                                 return (
-                                    <div key={item.id} className="relative group bg-slate-700/80 p-1.5 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200 self-start max-w-[calc(100%-1rem)]">
+                                    <div key={item.id} className="relative group bg-white p-1.5 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200 self-start max-w-[calc(100%-1rem)]">
                                         <div
                                             className={`relative w-full h-full object-cover rounded-md flex items-center justify-center bg-black ${mediaClasses}`}
                                             style={{ maxWidth: `${MAX_THUMBNAIL_SIZE * 2}px`, maxHeight: `${MAX_THUMBNAIL_SIZE * 1.5}px` }}
@@ -795,14 +818,15 @@ const MessageInput: React.FC = () => {
                                     </div>
                                 );
                             }
+                            // Generic file display (non-audio, non-image, non-video with preview)
                             return (
-                                <div key={item.id} className="relative group bg-slate-700/80 p-1.5 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200 self-start" style={{ width: `${MAX_THUMBNAIL_SIZE}px`, height: `${MAX_THUMBNAIL_SIZE}px` }}>
-                                    <div className="flex flex-col items-center justify-center bg-slate-600/70 text-slate-300 rounded-sm text-[10px] p-1 break-all w-full h-full" style={{ overflowWrap: 'break-word', wordBreak: 'break-all', whiteSpace: 'normal', lineHeight: 'tight' }} title={item.name}>
-                                        {item.type.startsWith('image/') ? <IoImageOutline size={26} className="mb-1 text-slate-400" />
-                                            : item.type.startsWith('video/') ? <IoVideocamOutline size={26} className="mb-1 text-slate-400" />
-                                                : <IoDocumentTextOutline size={26} className="mb-1 text-slate-400" />}
+                                <div key={item.id} className="relative group bg-white p-1.5 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200 self-start" style={{ width: `${MAX_THUMBNAIL_SIZE}px`, height: `${MAX_THUMBNAIL_SIZE}px` }}>
+                                    <div className="flex flex-col items-center justify-center bg-gray-100 text-gray-700 rounded-sm text-[10px] p-1 break-all w-full h-full" style={{ overflowWrap: 'break-word', wordBreak: 'break-all', whiteSpace: 'normal', lineHeight: 'tight' }} title={item.name}>
+                                        {item.type.startsWith('image/') ? <IoImageOutline size={26} className="mb-1 text-gray-500" />
+                                            : item.type.startsWith('video/') ? <IoVideocamOutline size={26} className="mb-1 text-gray-500" />
+                                                : <IoDocumentTextOutline size={26} className="mb-1 text-gray-500" />}
                                         <span className='truncate w-full text-center'>{item.name}</span>
-                                        <span className='text-slate-500 text-[9px] mt-0.5'>{Math.round(item.size / 1024)} KB</span>
+                                        <span className='text-gray-400 text-[9px] mt-0.5'>{Math.round(item.size / 1024)} KB</span>
                                     </div>
                                     <Button
                                         variant="icon"
@@ -822,33 +846,37 @@ const MessageInput: React.FC = () => {
                         else if (!isRecording) { handleSubmit(e); }
                         else { e.preventDefault(); }
                     }}
-                    className={`flex items-end bg-slate-900/90 border border-slate-700/70 rounded-xl p-1.5 shadow-lg
-                                focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500/70
+                    className={`flex items-end bg-white border border-gray-300 rounded-xl p-1.5 shadow-lg
+                                focus-within:ring-2 focus-within:ring-[#e04579] focus-within:border-[#e04579]/70
                                 transition-all duration-200 ease-in-out
                                 ${isRecording ? 'ring-2 !ring-red-500/80 !border-red-500/80' : ''}
-                                ${isTextareaFocused && !isRecording ? '!border-blue-500/70 ring-2 ring-blue-500' : ''}`}
+                                ${isTextareaFocused && !isRecording ? '!border-[#e04579]/70 ring-2 ring-[#e04579]' : ''}`}
                 >
-                    <div className="flex-shrink-0 p-0.5 flex items-center space-x-1">
-                        <Button type="button" variant="icon"
-                            className={`!p-2.5 rounded-lg transform active:scale-90 transition-colors duration-150 ${isWebSearchEnabledForNextMessage ? 'bg-blue-600/80 text-sky-100 hover:bg-blue-500/90 focus:bg-blue-500/90' : 'text-slate-400 hover:text-blue-400 hover:bg-slate-700/60'}`}
-                            onClick={() => setIsWebSearchEnabledForNextMessage(prev => !prev)} disabled={isWebSearchButtonDisabled}
-                            aria-label={isWebSearchEnabledForNextMessage ? "Desativar busca na web para a próxima mensagem" : "Ativar busca na web para a próxima mensagem"}
-                            title={isWebSearchEnabledForNextMessage ? "Busca na web ATIVADA para a próxima mensagem. Clique para desativar." : "Ativar busca na web para a próxima mensagem."}
-                        > <IoEarthOutline size={20} /> </Button>
+                    <div className="flex-shrink-0 p-0.5 flex items-center space-x-0.5">
+                        {settings.enableWebSearch && (
+                            <Button type="button" variant="icon"
+                                className={`!p-2.5 rounded-lg transform active:scale-90 transition-colors duration-150 ${isWebSearchEnabledForNextMessage ? 'bg-[#e04579] text-white hover:bg-[#c73d6a]' : 'text-gray-500 hover:text-[#e04579] hover:bg-pink-50'}`}
+                                onClick={() => setIsWebSearchEnabledForNextMessage(prev => !prev)} disabled={isWebSearchButtonDisabled}
+                                aria-label={isWebSearchEnabledForNextMessage ? "Desativar busca na web para a próxima mensagem" : "Ativar busca na web para a próxima mensagem"}
+                                title={isWebSearchEnabledForNextMessage ? "Busca na web ATIVADA para a próxima mensagem. Clique para desativar." : "Ativar busca na web para a próxima mensagem."}
+                            > <IoEarthOutline size={20} /> </Button>
+                        )}
                         {isRecording ? (
-                            <Button type="button" variant="icon" className="!p-2.5 text-red-400 hover:text-red-300 !bg-red-900/50 hover:!bg-red-800/60 rounded-lg transform active:scale-90" onClick={handleCancelRecording} aria-label="Cancelar gravação" title="Cancelar gravação">
+                            <Button type="button" variant="icon" className="!p-2.5 text-red-500 hover:text-red-700 !bg-red-100 hover:!bg-red-200 rounded-lg transform active:scale-90" onClick={handleCancelRecording} aria-label="Cancelar gravação" title="Cancelar gravação">
                                 <IoClose size={22} />
                             </Button>
                         ) : (
-                            <Button type="button" variant="icon" className="!p-2.5 text-slate-400 hover:text-blue-400 hover:bg-slate-700/60 rounded-lg transform active:scale-90" onClick={() => fileInputRef.current?.click()} disabled={isTextareaAndAttachDisabled} aria-label="Anexar arquivos" title="Anexar arquivos">
-                                <IoAttach size={20} />
-                            </Button>
+                            settings.enableAttachments && ( // Attach button only shown if general attachments are enabled
+                                <Button type="button" variant="icon" className="!p-2.5 text-gray-500 hover:text-[#e04579] hover:bg-pink-50 rounded-lg transform active:scale-90" onClick={() => fileInputRef.current?.click()} disabled={isAttachButtonDisabled} aria-label="Anexar arquivos" title="Anexar arquivos">
+                                    <IoAttach size={20} />
+                                </Button>
+                            )
                         )}
                     </div>
-                    <input type="file" ref={fileInputRef} multiple onChange={handleFileChange} className="hidden" accept="image/*,audio/*,video/*,application/pdf,text/plain,.doc,.docx,.xls,.xlsx,.ppt,.pptx,application/zip,application/x-rar-compressed" disabled={isTextareaAndAttachDisabled} />
+                    <input type="file" ref={fileInputRef} multiple onChange={handleFileChange} className="hidden" accept="image/*,audio/*,video/*,application/pdf,text/plain,.doc,.docx,.xls,.xlsx,.ppt,.pptx,application/zip,application/x-rar-compressed" disabled={isAttachButtonDisabled} />
 
                     <div className="flex-1 mx-1.5 relative flex items-center">
-                        {isRecording && (
+                        {isRecording && ( // Show recording placeholder regardless of settings.enableAttachments
                             <div className="absolute inset-0 flex items-center justify-start pl-3 pointer-events-none z-10">
                                 {recordingPlaceholder}
                             </div>
@@ -856,24 +884,26 @@ const MessageInput: React.FC = () => {
                         <textarea ref={textareaRef} rows={1} value={text} onChange={(e) => setText(e.target.value)}
                             onKeyDown={handleKeyDown} onFocus={() => setIsTextareaFocused(true)} onBlur={() => setIsTextareaFocused(false)}
                             placeholder={isRecording ? '' : (isCurrentlyLoading ? 'IA respondendo...' : placeholderText)}
-                            className={`w-full bg-transparent text-slate-100 placeholder-slate-500 focus:outline-none py-2.5 resize-none leading-tight scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent transition-all duration-200 ease-in-out ${isRecording ? 'text-transparent caret-transparent' : ''} ${isCurrentlyLoading && !isRecording ? 'placeholder-slate-600' : ''}`}
+                            className={`w-full bg-transparent text-gray-800 placeholder-gray-500 focus:outline-none py-2.5 resize-none leading-tight transition-all duration-200 ease-in-out ${isRecording ? 'text-transparent caret-transparent' : ''} ${isCurrentlyLoading && !isRecording ? 'placeholder-gray-400' : ''}`}
                             style={{ maxHeight: isTextareaFocused ? `${window.innerHeight * (FOCUSED_TEXTAREA_MAX_HEIGHT_VH / 100)}px` : `${getPixelValueFromRem(UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM)}px`, minHeight: `${getPixelValueFromRem(UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM)}px` }}
-                            disabled={isTextareaAndAttachDisabled && !isLoadingAI}
+                            disabled={!activeConversationId || !settings.apiKey || isProcessingEditedMessage || isLoadingAI || isRecording}
                             aria-label="Campo de entrada de mensagem"
                         />
                     </div>
 
                     <div className="flex-shrink-0 p-0.5 flex items-center space-x-1.5">
+                        {/* Mic button is always shown, its disabled state is handled by isMicDisabled */}
                         <Button type="button" variant={isRecording ? "danger" : "icon"}
-                            className={`!p-2.5 rounded-lg transform active:scale-90 ${isRecording ? '!bg-red-600 hover:!bg-red-700 text-white animate-pulseRing' : 'text-slate-400 hover:text-blue-400 hover:bg-slate-700/60'}`}
+                            className={`!p-2.5 rounded-lg transform active:scale-90 ${isRecording ? '!bg-red-600 hover:!bg-red-700 text-white animate-pulseRing' : 'text-gray-500 hover:text-[#e04579] hover:bg-pink-50'}`}
                             onClick={handleMicButtonClick} disabled={isMicDisabled}
                             aria-label={isRecording ? "Parar gravação e anexar áudio" : "Iniciar gravação de áudio"}
                             title={isRecording ? "Parar gravação e anexar áudio" : "Iniciar gravação de áudio"}
                         > {isRecording ? <IoStopCircleOutline size={20} /> : <IoMicOutline size={20} />} </Button>
+                        
                         {!isRecording && (
                             <Button type={isCurrentlyLoading ? "button" : "submit"} onClick={isCurrentlyLoading ? handleAbortAIResponse : undefined}
                                 variant={isCurrentlyLoading ? "danger" : "primary"}
-                                className={`!p-2.5 rounded-lg transform active:scale-90 group overflow-hidden ${isCurrentlyLoading ? 'hover:!bg-red-700' : canSubmitEffectively ? 'hover:!bg-blue-700' : '!bg-slate-700 !text-slate-500 cursor-not-allowed'}`}
+                                className={`!p-2.5 rounded-lg transform active:scale-90 group overflow-hidden ${isCurrentlyLoading ? 'hover:!bg-red-700' : canSubmitEffectively ? 'hover:!bg-[#c73d6a]' : '!bg-gray-300 !text-gray-500 cursor-not-allowed'}`}
                                 disabled={isCurrentlyLoading ? false : !canSubmitEffectively}
                                 aria-label={isCurrentlyLoading ? "Abortar resposta" : "Enviar mensagem"}
                                 title={isCurrentlyLoading ? "Abortar resposta" : "Enviar mensagem"}
@@ -882,8 +912,8 @@ const MessageInput: React.FC = () => {
                     </div>
                 </form>
                 {!settings.apiKey && activeConversationId && !isCurrentlyLoading && !isRecording && (
-                    <p className="text-xs text-yellow-400/90 text-center mt-2.5 px-2">
-                        Chave de API não configurada. Por favor, adicione sua chave nas <strong className="font-medium text-yellow-300">Configurações</strong> para interagir com a IA.
+                    <p className="text-xs text-yellow-600 text-center mt-2.5 px-2">
+                        Chave de API não configurada. Por favor, adicione sua chave nas <strong className="font-medium text-yellow-700">Configurações</strong> para interagir com a IA.
                     </p>
                 )}
             </div>

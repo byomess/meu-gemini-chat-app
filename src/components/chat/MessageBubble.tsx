@@ -187,7 +187,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const [mediaModalOpen, setMediaModalOpen] = useState(false);
     const [selectedMedia, setSelectedMedia] = useState<AttachedFileInfo | null>(null);
 
-    // ... (resto das funções handle, adjustEditareaHeight, open/closeMediaModal - sem alterações)
     const openMediaModal = (fileInfo: AttachedFileInfo) => {
         if ((fileInfo.type.startsWith('image/') || fileInfo.type.startsWith('video/')) && fileInfo.dataUrl) {
             setSelectedMedia(fileInfo);
@@ -274,7 +273,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
 
     const isThisUserMessageBeingReprocessed = isUser && isProcessingEditedMessage && (activeConversation?.messages.some((m) => m.id === message.id) ?? false) && Boolean(activeConversation?.messages[activeConversation.messages.length - 1]?.metadata?.isLoading) && ((activeConversation?.messages.findIndex((m) => m.id === message.id) ?? 0) < ((activeConversation?.messages.length ?? 1) - 1));
 
-    // Agora showActivityIndicator usa o activeDisplayStatus
     const showActivityIndicator = !isUser && !isFunctionRole && isLoading && activeDisplayStatus &&
         (activeDisplayStatus.stage === 'pending' || activeDisplayStatus.stage === 'in_progress' || activeDisplayStatus.stage === 'awaiting_ai');
 
@@ -306,7 +304,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         !functionCallPart && !functionResponsePart && !shouldRenderTextContent;
 
     const canPerformActionsOnMessage = !isFunctionRole && !isLoading && !isActualErrorForStyling && !isProcessingEditedMessage && !isThisUserMessageBeingReprocessed && !showActivityIndicator;
-    const syntaxHighlightEnabledGlobally = !isGeneratingResponse && settings.codeSynthaxHighlightEnabled; // Usar settings
+    const syntaxHighlightEnabledGlobally = !isGeneratingResponse && settings.codeSynthaxHighlightEnabled;
+    
     const markdownComponents: Components = {
         code: ({ inline, className, children, ...props }: CustomCodeRendererProps) => {
             const codeString = React.Children.toArray(children).join('');
@@ -316,27 +315,27 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                 isLikelyInline = (!className || !className.startsWith('language-')) && !codeString.includes('\n');
             }
 
-            if (!isUser && isLoading && !syntaxHighlightEnabledGlobally) {
+            if (!isUser && isLoading && !syntaxHighlightEnabledGlobally) { // AI loading, syntax highlight off
                 if (isLikelyInline) {
                     return (
-                        <code {...props} className={`font-mono text-inherit px-1 bg-slate-700/40 rounded-sm ${className || ''}`}>
+                        <code {...props} className={`font-mono text-inherit px-1 bg-gray-200 rounded-sm ${className || ''}`}>
                             {children}
                         </code>
                     );
                 } else {
                     return (
-                        <pre className="bg-slate-800/30 p-3 my-2 rounded-md overflow-x-auto border border-slate-700/50">
-                            <code className={`whitespace-pre-wrap break-words text-slate-300 ${className || ''}`} {...props}>
+                        <pre className="bg-gray-100 p-3 my-2 rounded-md overflow-x-auto border border-gray-200">
+                            <code className={`whitespace-pre-wrap break-words text-gray-700 ${className || ''}`} {...props}>
                                 {codeString.replace(/\n$/, '')}
                             </code>
                         </pre>
                     );
                 }
-            } else {
+            } else { // User message OR AI done OR syntax highlight on
                 if (isLikelyInline) {
                     return (
                         <code
-                            className={`bg-slate-800/80 text-purple-300 px-1.5 py-0.5 rounded-md font-mono text-xs sm:text-sm mx-0.5 align-baseline shadow-sm border border-slate-600 ${className || ''}`}
+                            className={`bg-pink-50 text-[#dd386f] px-1.5 py-0.5 rounded-md font-mono text-xs sm:text-sm mx-0.5 align-baseline shadow-sm border border-pink-200 ${className || ''}`}
                             {...props}
                         >
                             {children}
@@ -375,13 +374,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         ul: (props) => <ul className="list-disc list-inside my-2 pl-5 space-y-1" {...props} />,
         ol: (props) => <ol className="list-decimal list-inside my-2 pl-5 space-y-1" {...props} />,
         li: (props) => <li className="pb-0.5" {...props} />,
-        a: (props) => <a className="text-sky-400 hover:!text-sky-300 underline hover:no-underline" target="_blank" rel="noopener noreferrer" {...props} />,
-        blockquote: (props) => <blockquote className="border-l-4 border-slate-500 pl-4 my-2 italic text-slate-300" {...props} />,
-        table: (props) => <div className="overflow-x-auto my-3 shadow-md rounded-md border border-slate-600"><table className="table-auto w-full border-collapse" {...props} /></div>,
-        thead: (props) => <thead className="bg-slate-700/50" {...props} />,
-        th: (props) => <th className="border border-slate-600 px-3 py-2 text-left text-sm font-medium text-slate-200" {...props} />,
-        td: (props) => <td className="border border-slate-600 px-3 py-2 text-sm text-slate-300" {...props} />,
-        strong: (props) => <strong className="font-semibold text-slate-100" {...props} />,
+        a: (props) => <a className="text-[#e04579] hover:text-[#c73d6a] underline hover:no-underline" target="_blank" rel="noopener noreferrer" {...props} />,
+        blockquote: (props) => <blockquote className="border-l-4 border-gray-300 pl-4 my-2 italic text-gray-600" {...props} />,
+        table: (props) => <div className="overflow-x-auto my-3 shadow rounded-md border border-gray-300"><table className="table-auto w-full border-collapse" {...props} /></div>,
+        thead: (props) => <thead className="bg-gray-100" {...props} />,
+        th: (props) => <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700" {...props} />,
+        td: (props) => <td className="border border-gray-300 px-3 py-2 text-sm text-gray-600" {...props} />,
+        strong: (props) => <strong className="font-semibold text-gray-900" {...props} />,
         em: (props) => <em className="italic" {...props} />,
     };
 
@@ -404,30 +403,35 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     }
 
     const hasAnyContentForBubble = hasAttachedFiles || shouldRenderTextContent || showAITypingIndicator || functionCallPart || functionResponsePart || showActivityIndicator;
-    const userBubbleClasses = "bg-gradient-to-br from-sky-600 to-blue-700 text-white shadow-lg backdrop-blur-sm bg-opacity-90";
-    const aiBubbleBaseClasses = "bg-gradient-to-br from-slate-700 to-slate-800 text-slate-200 shadow-lg backdrop-blur-sm bg-opacity-90";
-    const functionRoleBubbleClasses = "bg-gradient-to-br from-indigo-700 to-purple-800 text-indigo-100 shadow-lg backdrop-blur-sm bg-opacity-90 border-2 border-indigo-500/50";
-    const errorBubbleClasses = "!bg-gradient-to-br !from-red-700/90 !to-red-800/90 !border-2 !border-red-500/70 text-red-100";
-    const abortedBubbleClasses = "border-2 border-dashed border-amber-500/80 !bg-slate-700/70 shadow-amber-500/10 shadow-md";
+    
+    const userBubbleClasses = "bg-[#e04579] text-white shadow-md";
+    const aiBubbleBaseClasses = "bg-white text-gray-800 shadow-md border border-gray-200";
+    const functionRoleBubbleClasses = "bg-indigo-50 text-indigo-700 shadow-md border border-indigo-200"; // Lighter indigo
+    const errorBubbleClasses = "!bg-red-50 !border-red-300 text-red-700";
+    const abortedBubbleClasses = "border-2 border-dashed border-yellow-400 !bg-yellow-50 text-yellow-700 shadow-yellow-500/10";
     const baseLoadingPulse = isLoading && !isUser && !showActivityIndicator && !userFacingErrorMessage && !abortedByUser && !isEditing && !functionCallPart && !functionResponsePart;
-    const messageContainerClasses = `py-3 px-4 rounded-2xl relative prose prose-sm prose-invert w-full
-                               transition-all duration-200 ease-in-out prose-p:text-slate-200 prose-headings:text-slate-50
+    
+    const messageContainerClasses = `py-3 px-4 rounded-2xl relative prose prose-sm w-full
+                               transition-all duration-200 ease-in-out 
+                               prose-p:text-gray-700 prose-headings:text-gray-900 
                                ${isUser ? userBubbleClasses : (isFunctionRole ? functionRoleBubbleClasses : aiBubbleBaseClasses)}
                                ${isActualErrorForStyling ? errorBubbleClasses : ''}
                                ${abortedByUser && !isEditing ? abortedBubbleClasses : ''}
-                               ${baseLoadingPulse ? 'opacity-60 animate-pulse !bg-slate-600/70 border border-slate-500/60' : ''}`;
-    const editContainerClasses = `p-2 rounded-xl shadow-xl border-2 border-blue-500/70 w-full
-                             ${isUser ? 'bg-blue-700/90' : 'bg-slate-700/90'} backdrop-blur-md`;
-    const editTextareaClasses = `w-full p-2.5 text-sm bg-transparent text-white focus:outline-none resize-none scrollbar-thin
-                             placeholder-slate-400/70
-                             ${isUser ? 'scrollbar-thumb-blue-400 scrollbar-track-blue-600/50'
-            : 'scrollbar-thumb-slate-500 scrollbar-track-slate-600/50'}`;
+                               ${baseLoadingPulse ? 'opacity-60 animate-pulse !bg-gray-200 border border-gray-300' : ''}`;
+    
+    const editContainerClasses = `p-2 rounded-xl shadow-xl border-2 border-[#e04579]/70 w-full
+                             ${isUser ? 'bg-[#e04579]/90' : 'bg-gray-100/90'} backdrop-blur-sm`;
+    
+    const editTextareaClasses = `w-full p-2.5 text-sm bg-transparent focus:outline-none resize-none scrollbar-thin
+                             ${isUser ? 'text-white placeholder-pink-100/70 scrollbar-thumb-pink-200 scrollbar-track-pink-500/50' 
+                                     : 'text-gray-800 placeholder-gray-500/70 scrollbar-thumb-gray-400 scrollbar-track-gray-200/50'}`;
+    
     const editButtonClasses = `!p-2 rounded-lg transform active:scale-90 transition-all
-                           ${isUser ? 'text-blue-100 hover:text-white hover:!bg-blue-500/70'
-            : 'text-slate-200 hover:text-white hover:!bg-slate-500/70'}`;
+                           ${isUser ? 'text-pink-100 hover:text-white hover:!bg-[#c73d6a]/70' 
+                                   : 'text-gray-600 hover:text-gray-900 hover:!bg-gray-300/70'}`;
+    
     const desktopMaxWidthClasses = 'max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]';
 
-    // ... (JSX da MessageBubble)
     return (
         <>
             <div
@@ -449,23 +453,23 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                 <img
                                     src={settings.aiAvatarUrl}
                                     alt="AI Avatar"
-                                    className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isMobile ? 'self-start' : ''}`}
+                                    className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shadow-md border-2 border-white/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isMobile ? 'self-start' : ''}`}
                                     onError={() => setAiAvatarLoadError(true)}
                                 />
                             ) : (
-                                <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isMobile ? 'self-start' : ''}`}>
+                                <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-md border-2 border-white/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isMobile ? 'self-start' : ''}`}>
                                     <IoSparklesOutline size={isMobile ? 16 : 18} />
                                 </div>
                             )
                         )}
                         {isFunctionRole && (
-                            <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isMobile ? 'self-end order-first' : ''}`}>
+                            <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white shadow-md border-2 border-white/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isMobile ? 'self-end order-first' : ''}`}>
                                 <IoGitCommitOutline size={isMobile ? 16 : 18} />
                             </div>
                         )}
 
                         {isUser && isMobile && (
-                            <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-blue-500 to-sky-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isEditing ? '!-mb-1' : ''} self-end order-first`} >
+                            <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-[#e04579] to-[#c73d6a] flex items-center justify-center text-white shadow-md border-2 border-white/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isEditing ? '!-mb-1' : ''} self-end order-first`} >
                                 <IoPersonCircleOutline size={isMobile ? 18 : 20} />
                             </div>
                         )}
@@ -474,7 +478,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                             {hasAttachedFiles && attachedFilesInfo && (
                                 <div className={`flex flex-wrap gap-2 mb-1.5 ${isUser || isFunctionRole ? 'justify-end' : 'justify-start'}`}>
                                     {attachedFilesInfo.map((fileInfo: AttachedFileInfo) => (
-                                        <div key={fileInfo.id} className="bg-slate-800/60 border border-slate-700/60 p-1.5 rounded-xl shadow-md overflow-hidden max-w-[260px] sm:max-w-xs backdrop-blur-sm">
+                                        <div key={fileInfo.id} className="bg-gray-100 border border-gray-200 p-1.5 rounded-xl shadow-sm overflow-hidden max-w-[260px] sm:max-w-xs backdrop-blur-sm">
                                             {fileInfo.type.startsWith('image/') && fileInfo.dataUrl ? (
                                                 <img
                                                     src={fileInfo.dataUrl}
@@ -505,12 +509,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                                     <CustomAudioPlayer src={fileInfo.dataUrl} fileName={fileInfo.name} />
                                                 </div>
                                             ) : (
-                                                <div className="flex flex-col items-center justify-center text-xs p-2 text-center bg-slate-700/50 rounded-md" style={{ width: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE * 0.9}px`, height: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE * 0.9}px`, minWidth: '70px' }} title={`${fileInfo.name} (${(fileInfo.size / 1024).toFixed(1)} KB)`}>
-                                                    {fileInfo.type.startsWith('image/') ? <IoImageOutline size={26} className="mb-1 text-slate-400" />
-                                                        : fileInfo.type.startsWith('video/') ? <IoVideocamOutline size={26} className="mb-1 text-slate-400" />
-                                                            : fileInfo.type.startsWith('audio/') ? <IoMusicalNotesOutline size={26} className="mb-1 text-slate-400" />
-                                                                : <IoDocumentTextOutline size={26} className="mb-1 text-slate-400" />}
-                                                    <span className="truncate block w-full text-slate-300 text-[11px]">{fileInfo.name}</span>
+                                                <div className="flex flex-col items-center justify-center text-xs p-2 text-center bg-gray-200 rounded-md" style={{ width: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE * 0.9}px`, height: `${MAX_THUMBNAIL_SIZE_IN_BUBBLE * 0.9}px`, minWidth: '70px' }} title={`${fileInfo.name} (${(fileInfo.size / 1024).toFixed(1)} KB)`}>
+                                                    {fileInfo.type.startsWith('image/') ? <IoImageOutline size={26} className="mb-1 text-gray-500" />
+                                                        : fileInfo.type.startsWith('video/') ? <IoVideocamOutline size={26} className="mb-1 text-gray-500" />
+                                                            : fileInfo.type.startsWith('audio/') ? <IoMusicalNotesOutline size={26} className="mb-1 text-gray-500" />
+                                                                : <IoDocumentTextOutline size={26} className="mb-1 text-gray-500" />}
+                                                    <span className="truncate block w-full text-gray-600 text-[11px]">{fileInfo.name}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -524,14 +528,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                         <textarea ref={editTextareaRef} value={editedText} onChange={(e) => setEditedText(e.target.value)} onKeyDown={handleEditKeyDown} className={editTextareaClasses} rows={1} aria-label="Editar mensagem" />
                                         <div className="flex justify-end gap-1.5 mt-2 px-1">
                                             <Button variant='icon' onClick={handleCancelEdit} className={editButtonClasses} title="Cancelar edição (Esc)"> <IoCloseOutline size={20} /> </Button>
-                                            <Button variant='icon' onClick={handleSaveEdit} className={`${editButtonClasses} ${editedText.trim() === '' && !hasAttachedFiles ? '!text-slate-500 !bg-slate-600/50 cursor-not-allowed' : (isUser ? '!bg-blue-600 hover:!bg-blue-500' : '!bg-slate-600 hover:!bg-slate-500')}`} title="Salvar edição (Enter)" disabled={isProcessingEditedMessage || (editedText.trim() === '' && !hasAttachedFiles && message.text === '')}> <IoCheckmarkOutline size={20} /> </Button>
+                                            <Button variant='icon' onClick={handleSaveEdit} className={`${editButtonClasses} ${editedText.trim() === '' && !hasAttachedFiles ? '!text-gray-400 !bg-gray-200/50 cursor-not-allowed' : (isUser ? '!bg-[#c73d6a] hover:!bg-[#b3365f]' : '!bg-gray-300 hover:!bg-gray-400')}`} title="Salvar edição (Enter)" disabled={isProcessingEditedMessage || (editedText.trim() === '' && !hasAttachedFiles && message.text === '')}> <IoCheckmarkOutline size={20} /> </Button>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className={messageContainerClasses}>
-                                        {isThisUserMessageBeingReprocessed && (<div className="absolute -top-1.5 -right-1.5 p-0.5 bg-slate-600 rounded-full shadow z-10"> <IoSyncOutline size={12} className="text-slate-300 animate-spin" /> </div>)}
+                                        {isThisUserMessageBeingReprocessed && (<div className="absolute -top-1.5 -right-1.5 p-0.5 bg-gray-300 rounded-full shadow z-10"> <IoSyncOutline size={12} className="text-gray-600 animate-spin" /> </div>)}
 
-                                        {/* INDICADORES DE ATIVIDADE USANDO activeDisplayStatus */}
                                         {showActivityIndicator && activeDisplayStatus && (
                                             <>
                                                 {(activeDisplayStatus.type === 'function_call_request' ||
@@ -548,27 +551,26 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
 
                                         {functionCallPart && !showActivityIndicator && (
                                             <div
-                                                className="function-call-request-display flex flex-col gap-1 p-2.5 my-1.5 rounded-lg border text-xs shadow-md bg-amber-500/10 border-amber-500/30 text-amber-200"
+                                                className="function-call-request-display flex flex-col gap-1 p-2.5 my-1.5 rounded-lg border text-xs shadow-sm bg-amber-50 border-amber-200 text-amber-700"
                                                 title={`Chamada para a função: ${functionCallPart.functionCall.name}`}
                                             >
-                                                <div className="flex items-center gap-2"> {/* gap-2 = 0.5rem */}
-                                                    <IoTerminalOutline size={18} className="flex-shrink-0 text-amber-400" /> {/* 18px = 1.125rem */}
-                                                    <span className="font-semibold text-amber-300">Chamada de Função Solicitada:</span>
+                                                <div className="flex items-center gap-2">
+                                                    <IoTerminalOutline size={18} className="flex-shrink-0 text-amber-600" />
+                                                    <span className="font-semibold text-amber-700">Chamada de Função Solicitada:</span>
                                                 </div>
-                                                {/* Nome da função */}
-                                                <div className="pl-[calc(1.125rem+0.5rem)]"> {/* pl- approx 1.625rem or 26px */}
-                                                    <p className="text-sm font-medium text-amber-100">{functionCallPart.functionCall.name}</p>
+                                                <div className="pl-[calc(1.125rem+0.5rem)]">
+                                                    <p className="text-sm font-medium text-amber-800">{functionCallPart.functionCall.name}</p>
                                                 </div>
                                             </div>
                                         )}
 
                                         {functionResponsePart && (
                                             <div className="function-response-content p-1">
-                                                <div className="flex items-center text-xs text-indigo-300 mb-1.5">
+                                                <div className="flex items-center text-xs text-indigo-600 mb-1.5">
                                                     <IoGitCommitOutline size={16} className="mr-1.5 flex-shrink-0" />
                                                     <span className="font-semibold">Resposta da Função Recebida:</span>
                                                 </div>
-                                                <p className="text-sm font-medium text-indigo-100 mb-1">{functionResponsePart.functionResponse.name}</p>
+                                                <p className="text-sm font-medium text-indigo-700 mb-1">{functionResponsePart.functionResponse.name}</p>
                                             </div>
                                         )}
 
@@ -592,12 +594,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                         )}
 
                                         {userFacingErrorMessage && isActualErrorForStyling && (
-                                            <div className={`mt-2.5 text-xs ${message.text.trim().length > 0 || showActivityIndicator ? 'border-t border-red-500/40 pt-2' : ''} text-red-200/90`}>
+                                            <div className={`mt-2.5 text-xs ${message.text.trim().length > 0 || showActivityIndicator ? 'border-t border-red-300/60 pt-2' : ''} text-red-600`}>
                                                 <strong>Erro:</strong> {userFacingErrorMessage}
                                             </div>
                                         )}
                                         {abortedByUser && !isEditing && (
-                                            <div className={`mt-2.5 text-xs ${message.text.trim().length > 0 || showActivityIndicator ? 'border-t border-amber-600/50 pt-2' : ''} text-amber-200/90`}>
+                                            <div className={`mt-2.5 text-xs ${message.text.trim().length > 0 || showActivityIndicator ? 'border-t border-yellow-400/60 pt-2' : ''} text-yellow-600`}>
                                                 Resposta abortada pelo usuário.
                                             </div>
                                         )}
@@ -607,20 +609,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                         </div>
 
                         {isUser && !isMobile && (
-                            <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-blue-500 to-sky-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 self-end transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isEditing ? '!-mb-1' : ''}`} >
+                            <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-[#e04579] to-[#c73d6a] flex items-center justify-center text-white shadow-md border-2 border-white/50 self-end transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isEditing ? '!-mb-1' : ''}`} >
                                 <IoPersonCircleOutline size={isMobile ? 18 : 20} />
                             </div>
                         )}
 
                         {((canPerformActionsOnMessage || (!isUser && !isFunctionRole && abortedByUser)) && showActions && !isEditing) && (
-                            <div className={`flex items-center rounded-xl shadow-xl bg-slate-800/70 border border-slate-700/80 p-1 absolute transform transition-all duration-150 ease-out z-10 backdrop-blur-sm
+                            <div className={`flex items-center rounded-xl shadow-lg bg-gray-50/80 border border-gray-200/90 p-1 absolute transform transition-all duration-150 ease-out z-10 backdrop-blur-sm
                                         ${isUser ?
                                     (isMobile ? 'right-0 top-4' : 'right-11 -top-6') :
                                     (isMobile ? 'left-0 top-4' : 'left-11 sm:left-12 -top-6')
                                 }
                                         ${showActions ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 -translate-y-2 pointer-events-none'}`}>
-                                {!isFunctionRole && <Button variant='icon' onClick={handleEdit} className="!p-1.5 text-slate-300 hover:!text-sky-400 hover:!bg-slate-700/70" title="Editar mensagem" disabled={isProcessingEditedMessage || (!isUser && isThisUserMessageBeingReprocessed)}> <IoPencilOutline size={16} /> </Button>}
-                                <Button variant='icon' onClick={handleDelete} className="!p-1.5 text-slate-300 hover:!text-red-400 hover:!bg-slate-700/70" title="Excluir mensagem" disabled={isProcessingEditedMessage}> <IoTrashOutline size={16} /> </Button>
+                                {!isFunctionRole && <Button variant='icon' onClick={handleEdit} className="!p-1.5 text-gray-500 hover:!text-[#e04579] hover:!bg-pink-100" title="Editar mensagem" disabled={isProcessingEditedMessage || (!isUser && isThisUserMessageBeingReprocessed)}> <IoPencilOutline size={16} /> </Button>}
+                                <Button variant='icon' onClick={handleDelete} className="!p-1.5 text-gray-500 hover:!text-red-500 hover:!bg-red-100" title="Excluir mensagem" disabled={isProcessingEditedMessage}> <IoTrashOutline size={16} /> </Button>
                             </div>
                         )}
                     </div>
@@ -634,7 +636,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                             : `ml-11 sm:ml-12 ${desktopMaxWidthClasses} mr-auto`
                         )
                         }`}>
-                        <div className="flex items-center gap-1.5 text-xs text-purple-400 mb-1">
+                        <div className="flex items-center gap-1.5 text-xs text-purple-600 mb-1">
                             <MainActionIcon size={15} />
                             <span className="font-medium">{mainMemoryActionLabel}</span>
                         </div>

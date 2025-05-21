@@ -18,7 +18,7 @@ interface MemoryContextType {
     replaceAllMemories: (newMemories: Memory[]) => void;
 }
 
-const MemoryContext = createContext<MemoryContextType | undefined>(undefined);
+export const MemoryContext = createContext<MemoryContextType | undefined>(undefined);
 
 export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [memories, setMemories] = useLocalStorage<Memory[]>(MEMORIES_KEY, []);
@@ -97,7 +97,7 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         })).sort(sortByTimestampDesc);
 
         setMemories(processedMemories);
-        alert(`${processedMemories.length} memórias importadas com sucesso!`);
+        // alert(`${processedMemories.length} memórias importadas com sucesso!`);
     }, [setMemories]);
 
 

@@ -5,11 +5,22 @@ import ChatArea from './components/layout/ChatArea';
 import SettingsModal from './components/settings/SettingsModal';
 import useIsMobile from './hooks/useIsMobile';
 import React from 'react';
+import { useUrlConfigInitializer } from './hooks/useUrlConfigInitializer'; // Import the hook
+import { useConversations } from './contexts/ConversationContext'; // Import useConversations
+import { useAppSettings } from './contexts/AppSettingsContext'; // Import useAppSettings
 
 function App() {
+  useUrlConfigInitializer(); // Call the hook to initialize config from URL
+
+  const { conversations, createNewConversation, activeConversationId } = useConversations(); // Get conversation context
+  const { settings } = useAppSettings(); // Get app settings
+
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
+
+  // The showNavigation state is now derived from settings.hideNavigation
+  const showNavigation = !settings.hideNavigation;
 
   const handleOpenSettingsModal = useCallback(() => {
     setIsSettingsModalOpen(true);
@@ -23,8 +34,10 @@ function App() {
   }, []);
 
   const handleOpenMobileSidebar = useCallback(() => {
-    setIsMobileSidebarOpen(true);
-  }, []);
+    if (showNavigation) { // Only open if navigation is shown (derived from settings)
+        setIsMobileSidebarOpen(true);
+    }
+  }, [showNavigation]);
 
   const handleCloseMobileSidebar = useCallback(() => {
     setIsMobileSidebarOpen(false);
@@ -36,17 +49,26 @@ function App() {
 
   useEffect(() => {
     const body = document.body;
-    if (isMobileSidebarOpen && isMobile) {
+    // Use showNavigation (derived from settings)
+    if (isMobileSidebarOpen && isMobile && showNavigation) {
       body.classList.add('mobile-sidebar-open');
     } else {
       body.classList.remove('mobile-sidebar-open');
     }
-  }, [isMobileSidebarOpen, isMobile]);
+  }, [isMobileSidebarOpen, isMobile, showNavigation]);
+
+  // Effect to automatically create a new conversation if none exist on load
+  useEffect(() => {
+    if (conversations && conversations.length === 0 && !activeConversationId) {
+      console.log("No conversations found and no active conversation, creating a new one automatically.");
+      createNewConversation();
+    }
+  }, [conversations, createNewConversation, activeConversationId]);
 
   return (
     <div className="flex h-screen bg-slate-950 text-white selection:bg-blue-600 selection:text-white overflow-hidden">
       
-      {!isMobile && (
+      {!isMobile && showNavigation && ( // Use showNavigation (derived from settings)
         <Sidebar
             onOpenSettings={handleOpenSettingsModal}
             isMobile={false}
@@ -55,11 +77,12 @@ function App() {
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
          <ChatArea 
-            onOpenMobileSidebar={handleOpenMobileSidebar} 
+            onOpenMobileSidebar={handleOpenMobileSidebar}
+            showMobileMenuButton={showNavigation}  // Use showNavigation (derived from settings)
          />
       </div>
 
-      {isMobile && (
+      {isMobile && showNavigation && ( // Use showNavigation (derived from settings)
         <>
           {/* Overlay para fechar o sidebar ao clicar fora */}
           {/* A transição de opacidade é controlada aqui */}
