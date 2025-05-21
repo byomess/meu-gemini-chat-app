@@ -172,7 +172,7 @@ const CustomAudioPlayer: React.FC<CustomAudioPlayerProps> = ({ src, fileName }) 
                                    // não é estritamente necessário aqui, e pode até causar um flicker se o evento demorar.
                                    // O seu original era: `setIsPlaying(!isPlaying);` no final.
                                    // Para evitar o problema de estado otimista vs. real, vou deixar os eventos cuidarem.
-                                   // O `catch` do `play()` já faz `setIsPlaying(false)` em caso de erro.
+                                   // O `catch` do `play()` já faiz `setIsPlaying(false)` em caso de erro.
     };
 
     const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -224,7 +224,7 @@ const CustomAudioPlayer: React.FC<CustomAudioPlayerProps> = ({ src, fileName }) 
 
     if (error) {
         return (
-            <div className="flex flex-col items-center justify-center p-3 bg-slate-800/80 border border-red-700/50 rounded-lg text-red-400 text-xs w-full">
+            <div className="flex flex-col items-center justify-center p-3 bg-red-50 border border-red-300 rounded-lg text-red-700 text-xs w-full">
                 <p className="text-center max-w-xs">{error}</p>
             </div>
         );
@@ -242,7 +242,7 @@ const CustomAudioPlayer: React.FC<CustomAudioPlayerProps> = ({ src, fileName }) 
     }
 
     return (
-        <div className="bg-slate-800/80 border border-slate-700/70 p-3 rounded-lg shadow-md">
+        <div className="bg-white border border-gray-200 p-3 rounded-lg shadow-md">
             {/* preload="metadata" é importante para 'loadedmetadata' disparar cedo */}
             <audio ref={audioRef} src={src} preload="metadata" className="hidden"></audio>
 
@@ -250,7 +250,7 @@ const CustomAudioPlayer: React.FC<CustomAudioPlayerProps> = ({ src, fileName }) 
                 <Button
                     onClick={togglePlayPause}
                     variant="icon"
-                    className="!p-2.5 text-slate-200 hover:text-blue-400 bg-slate-700 hover:bg-slate-600 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
+                    className="!p-2.5 text-gray-700 hover:text-blue-600 bg-gray-100 hover:bg-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
                     aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
                     // Desabilita se não há fonte, ou se está carregando e não tem nem metadados ainda.
                     disabled={!src || (isLoading && (!duration || (audioRef.current?.readyState ?? 0) < (audioRef.current?.HAVE_METADATA ?? 0)))}
@@ -260,10 +260,10 @@ const CustomAudioPlayer: React.FC<CustomAudioPlayerProps> = ({ src, fileName }) 
                 </Button>
 
                 <div className="flex-grow flex items-center space-x-2">
-                    <span className="text-xs font-mono text-slate-400 w-10 text-right tabular-nums">{formatTime(currentTime)}</span>
+                    <span className="text-xs font-mono text-gray-600 w-10 text-right tabular-nums">{formatTime(currentTime)}</span>
                     <div
                         ref={progressBarRef}
-                        className="relative w-full h-2 bg-slate-600 rounded-full cursor-pointer group flex items-center"
+                        className="relative w-full h-2 bg-gray-200 rounded-full cursor-pointer group flex items-center"
                         onClick={handleProgressClick}
                         title="Barra de progresso"
                     >
@@ -271,12 +271,12 @@ const CustomAudioPlayer: React.FC<CustomAudioPlayerProps> = ({ src, fileName }) 
                             className="absolute top-0 left-0 h-full bg-blue-500 rounded-full"
                             style={{ width: `${progressPercent}%` }}
                         ></div>
-                        <div className="absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 -translate-x-1/2 bg-white rounded-full shadow border border-slate-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                        <div className="absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 -translate-x-1/2 bg-white rounded-full shadow border border-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
                             style={{ left: `${progressPercent}%` }}
                         ></div>
                     </div>
                     {/* Mostra a duração real, ou 0:00 se ainda não carregou / erro / stream sem fim */}
-                    <span className="text-xs font-mono text-slate-400 w-10 text-left tabular-nums">{formatTime(duration)}</span>
+                    <span className="text-xs font-mono text-gray-600 w-10 text-left tabular-nums">{formatTime(duration)}</span>
                 </div>
 
                 <div className="relative flex items-center"
@@ -286,7 +286,7 @@ const CustomAudioPlayer: React.FC<CustomAudioPlayerProps> = ({ src, fileName }) 
                     <Button
                         onClick={toggleMute}
                         variant="icon"
-                        className="!p-2 text-slate-300 hover:text-slate-100 focus:outline-none"
+                        className="!p-2 text-gray-600 hover:text-gray-800 focus:outline-none"
                         aria-label={isMuted ? 'Ativar som' : 'Desativar som'}
                         title={isMuted ? 'Ativar som' : 'Desativar som'}
                     >
@@ -294,11 +294,11 @@ const CustomAudioPlayer: React.FC<CustomAudioPlayerProps> = ({ src, fileName }) 
                     </Button>
                     {showVolumeControl && (
                         <div
-                            className="absolute right-[calc(100%+4px)] top-1/2 -translate-y-1/2 p-2 bg-slate-700 rounded-md shadow-xl w-28 h-8 flex items-center z-10 border border-slate-600"
+                            className="absolute right-[calc(100%+4px)] top-1/2 -translate-y-1/2 p-2 bg-white rounded-md shadow-xl w-28 h-8 flex items-center z-10 border border-gray-200"
                         >
                             <div
                                 ref={volumeBarRef}
-                                className="relative w-full h-1.5 bg-slate-500 rounded-full cursor-pointer group/volume flex items-center"
+                                className="relative w-full h-1.5 bg-gray-200 rounded-full cursor-pointer group/volume flex items-center"
                                 onClick={handleVolumeInteraction}
                                 onTouchMove={handleVolumeInteraction}
                                 title="Controle de volume"
@@ -307,7 +307,7 @@ const CustomAudioPlayer: React.FC<CustomAudioPlayerProps> = ({ src, fileName }) 
                                     className="absolute top-0 left-0 h-full bg-blue-400 rounded-full"
                                     style={{ width: `${volumePercent}%` }}
                                 ></div>
-                                <div className="absolute top-1/2 h-3 w-3 -translate-y-1/2 -translate-x-1/2 bg-white rounded-full shadow border border-slate-400 opacity-0 group-hover/volume:opacity-100 transition-opacity"
+                                <div className="absolute top-1/2 h-3 w-3 -translate-y-1/2 -translate-x-1/2 bg-white rounded-full shadow border border-gray-300 opacity-0 group-hover/volume:opacity-100 transition-opacity"
                                     style={{ left: `${volumePercent}%` }}
                                 ></div>
                             </div>
@@ -315,7 +315,7 @@ const CustomAudioPlayer: React.FC<CustomAudioPlayerProps> = ({ src, fileName }) 
                     )}
                 </div>
             </div>
-            <p className="text-[11px] text-slate-400 mt-2.5 truncate text-center px-1">
+            <p className="text-[11px] text-gray-600 mt-2.5 truncate text-center px-1">
                 {fileName}
             </p>
         </div>
