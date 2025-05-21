@@ -10,6 +10,7 @@ import {
     IoGitCommitOutline,
 } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
+import { useAppSettings } from '../../contexts/AppSettingsContext'; // Importar useAppSettings
 import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -50,6 +51,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         activeConversation,
         isGeneratingResponse,
     } = useConversations();
+    const { settings } = useAppSettings(); // Obter configurações globais
 
     const isMobile = useIsMobile();
 
@@ -64,6 +66,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const lastIndicatorTypeSetTimeRef = useRef<number>(0);
     // Ref para guardar o tipo do último indicador que começou a ser exibido
     const currentIndicatorTypeRef = useRef<ProcessingStatus['type'] | undefined>(undefined);
+
+    const [aiAvatarLoadError, setAiAvatarLoadError] = useState(false); // Estado para erro de carregamento do avatar da IA
+
+    useEffect(() => {
+        // Resetar erro de avatar quando a URL do avatar ou a mensagem mudar
+        setAiAvatarLoadError(false);
+    }, [settings.aiAvatarUrl, message.id]);
 
 
     useEffect(() => {
@@ -297,7 +306,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         !functionCallPart && !functionResponsePart && !shouldRenderTextContent;
 
     const canPerformActionsOnMessage = !isFunctionRole && !isLoading && !isActualErrorForStyling && !isProcessingEditedMessage && !isThisUserMessageBeingReprocessed && !showActivityIndicator;
-    const syntaxHighlightEnabledGlobally = !isGeneratingResponse;
+    const syntaxHighlightEnabledGlobally = !isGeneratingResponse && settings.codeSynthaxHighlightEnabled; // Usar settings
     const markdownComponents: Components = {
         code: ({ inline, className, children, ...props }: CustomCodeRendererProps) => {
             const codeString = React.Children.toArray(children).join('');
@@ -436,9 +445,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                         } gap-2 sm:gap-2.5`}>
 
                         {(!isUser && !isFunctionRole) && (
-                            <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isMobile ? 'self-start' : ''}`}>
-                                <IoSparklesOutline size={isMobile ? 16 : 18} />
-                            </div>
+                            settings.aiAvatarUrl && !aiAvatarLoadError ? (
+                                <img
+                                    src={settings.aiAvatarUrl}
+                                    alt="AI Avatar"
+                                    className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isMobile ? 'self-start' : ''}`}
+                                    onError={() => setAiAvatarLoadError(true)}
+                                />
+                            ) : (
+                                <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isMobile ? 'self-start' : ''}`}>
+                                    <IoSparklesOutline size={isMobile ? 16 : 18} />
+                                </div>
+                            )
                         )}
                         {isFunctionRole && (
                             <div className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg border-2 border-slate-950/50 transform group-hover/messageBubble:scale-105 transition-transform duration-200 ${isMobile ? 'self-end order-first' : ''}`}>

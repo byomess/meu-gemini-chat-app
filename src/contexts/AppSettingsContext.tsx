@@ -32,6 +32,7 @@ const defaultAppSettings: AppSettings = {
     },
     functionDeclarations: [],
     codeSynthaxHighlightEnabled: false,
+    aiAvatarUrl: '', // Valor padrão para o novo campo
 };
 
 interface AppSettingsContextType {
@@ -41,6 +42,7 @@ interface AppSettingsContextType {
     updateGeminiModelConfig: (config: Partial<GeminiModelConfig>) => void;
     updateFunctionDeclarations: (declarations: FunctionDeclaration[]) => void;
     updateCodeSyntaxHighlightEnabled: (enabled: boolean) => void;
+    updateAiAvatarUrl: (url: string) => void; // Nova função para atualizar URL do avatar
 }
 
 const AppSettingsContext = createContext<AppSettingsContextType | undefined>(undefined);
@@ -114,7 +116,14 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
     const updateCodeSyntaxHighlightEnabled = (enabled: boolean) => {
         setSettings((prevSettings) => ({
             ...prevSettings,
-            sythaxHighlightEnabled: enabled,
+            codeSynthaxHighlightEnabled: enabled, // Corrigido: sythaxHighlightEnabled -> codeSynthaxHighlightEnabled
+        }));
+    };
+
+    const updateAiAvatarUrl = (url: string) => { // Implementação da nova função
+        setSettings((prevSettings) => ({
+            ...prevSettings,
+            aiAvatarUrl: url,
         }));
     };
 
@@ -125,7 +134,8 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
             saveApiKey,
             updateGeminiModelConfig,
             updateFunctionDeclarations,
-            updateCodeSyntaxHighlightEnabled
+            updateCodeSyntaxHighlightEnabled,
+            updateAiAvatarUrl, // Adicionada ao provedor
         }}>
             {children}
         </AppSettingsContext.Provider>

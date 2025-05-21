@@ -42,10 +42,11 @@ export interface AppSettings {
     customPersonalityPrompt: string;
     functionDeclarations: FunctionDeclaration[];
     codeSynthaxHighlightEnabled: boolean;
+    aiAvatarUrl?: string; // Novo campo para URL do avatar da IA
 }
 
 export interface Memory {
-    id: string;
+    id:string;
     content: string;
     timestamp: Date;
     sourceMessageId?: string;

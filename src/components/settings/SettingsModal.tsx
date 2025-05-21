@@ -19,6 +19,7 @@ import {
     IoLinkOutline,
     IoShieldCheckmarkOutline,
     IoColorPaletteOutline,
+    IoImageOutline as IoAvatarImageOutline, // Renomeado para evitar conflito se IoImageOutline for usado em outro lugar
 } from "react-icons/io5";
 import Button from "../common/Button";
 import { useAppSettings } from "../../contexts/AppSettingsContext";
@@ -1150,31 +1151,17 @@ const FunctionCallingSettingsTab: React.FC<{
     );
 };
 
-const InterfaceSettingsTab: React.FC = () => {
-    const { settings, setSettings } = useAppSettings();
-    const [isCodeHighlightEnabled, setIsCodeHighlightEnabled] =
-        useState<boolean>(settings.codeSynthaxHighlightEnabled);
-    const handleToggleCodeHighlight = () => {
-        if (!isCodeHighlightEnabled) {
-            if (
-                window.confirm(
-                    "Habilitar o destaque de sintaxe para código pode impactar o desempenho do aplicativo, especialmente em conversas muito longas com múltiplos blocos de código. Deseja continuar?"
-                )
-            ) {
-                setIsCodeHighlightEnabled(true);
-                setSettings((prev) => ({
-                    ...prev,
-                    codeSynthaxHighlightEnabled: true,
-                }));
-            }
-        } else {
-            setIsCodeHighlightEnabled(false);
-            setSettings((prev) => ({
-                ...prev,
-                codeSynthaxHighlightEnabled: false,
-            }));
-        }
-    };
+const InterfaceSettingsTab: React.FC<{
+    currentCodeHighlightEnabled: boolean;
+    onToggleCodeHighlight: () => void;
+    currentAiAvatarUrl: string;
+    onAiAvatarUrlChange: (url: string) => void;
+}> = ({
+    currentCodeHighlightEnabled,
+    onToggleCodeHighlight,
+    currentAiAvatarUrl,
+    onAiAvatarUrlChange,
+}) => {
     return (
         <div className="space-y-6">
             <div>
@@ -1192,19 +1179,42 @@ const InterfaceSettingsTab: React.FC = () => {
                             </p>
                         </div>
                         <Switch
-                            checked={isCodeHighlightEnabled}
-                            onChange={handleToggleCodeHighlight}
-                            className={`${
-                                isCodeHighlightEnabled ? "bg-teal-500" : "bg-slate-600"
-                            } relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out`}
+                            checked={currentCodeHighlightEnabled}
+                            onChange={onToggleCodeHighlight}
+                            className={`${currentCodeHighlightEnabled ? "bg-teal-500" : "bg-slate-600"
+                                } relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out`}
                         >
                             <span
                                 aria-hidden="true"
-                                className={`${
-                                    isCodeHighlightEnabled ? "translate-x-[20px]" : "translate-x-0"
-                                } pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+                                className={`${currentCodeHighlightEnabled ? "translate-x-[20px]" : "translate-x-0"
+                                    } pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
                             />
                         </Switch>
+                    </div>
+                    <hr className="border-slate-600/80 my-3" />
+                    <div>
+                        <label
+                            htmlFor="aiAvatarUrl"
+                            className="block text-sm font-medium text-slate-100 mb-1.5"
+                        >
+                            URL da Imagem do Avatar da IA
+                        </label>
+                        <div className="flex items-center gap-2">
+                            <IoAvatarImageOutline className="text-slate-400 flex-shrink-0" size={20} />
+                            <input
+                                type="url"
+                                id="aiAvatarUrl"
+                                name="aiAvatarUrl"
+                                placeholder="https://exemplo.com/avatar.png (deixe em branco para padrão)"
+                                value={currentAiAvatarUrl}
+                                onChange={(e) => onAiAvatarUrlChange(e.target.value)}
+                                className="w-full p-2.5 bg-slate-600/80 border border-slate-500/70 rounded-lg focus:ring-1 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 text-sm text-slate-100 shadow-sm transition-colors"
+                            />
+                        </div>
+                        <p className="text-xs text-slate-400/90 mt-2">
+                            Forneça uma URL para uma imagem de avatar personalizada para a IA. Se
+                            deixado em branco, o ícone padrão será usado.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -1295,6 +1305,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         useState<string>(DEFAULT_PERSONALITY_FOR_PLACEHOLDER);
     const [currentFunctionDeclarations, setCurrentFunctionDeclarations] =
         useState<LocalFunctionDeclaration[]>([]);
+    const [currentAiAvatarUrl, setCurrentAiAvatarUrl] = useState<string>(""); // Estado para URL do avatar
+    const [isCodeHighlightEnabledState, setIsCodeHighlightEnabledState] =
+        useState<boolean>(settings.codeSynthaxHighlightEnabled);
+
+
     const [activeTab, setActiveTab] = useState<TabId>("general");
     const modalContentRef = useRef<HTMLDivElement>(null);
     const [previousTab, setPreviousTab] = useState<TabId | null>(null);
@@ -1325,6 +1340,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     useEffect(() => {
         if (isOpen) {
             setCurrentApiKey(settings.apiKey || "");
+            setCurrentAiAvatarUrl(settings.aiAvatarUrl || ""); // Carregar URL do avatar
+            setIsCodeHighlightEnabledState(settings.codeSynthaxHighlightEnabled);
+
 
             const currentSettingsSafety = settings.geminiModelConfig?.safetySettings;
             let effectiveSafetySettings: SafetySetting[];
@@ -1397,6 +1415,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         }
     };
 
+    const handleToggleCodeHighlightForTab = () => {
+        if (!isCodeHighlightEnabledState) {
+            if (
+                window.confirm(
+                    "Habilitar o destaque de sintaxe para código pode impactar o desempenho do aplicativo, especialmente em conversas muito longas com múltiplos blocos de código. Deseja continuar?"
+                )
+            ) {
+                setIsCodeHighlightEnabledState(true);
+            }
+        } else {
+            setIsCodeHighlightEnabledState(false);
+        }
+    };
+
+
     const handleSaveAllSettings = () => {
         if (localModelConfig.temperature < 0 || localModelConfig.temperature > 2) {
             alert("A temperatura deve estar entre 0.0 e 2.0.");
@@ -1450,6 +1483,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             geminiModelConfig: newGeminiConfig,
             customPersonalityPrompt: currentCustomPersonalityPrompt.trim(),
             functionDeclarations: appFuncDeclarations,
+            aiAvatarUrl: currentAiAvatarUrl.trim(), // Salvar URL do avatar
+            codeSynthaxHighlightEnabled: isCodeHighlightEnabledState, // Salvar estado do code highlight
         }));
         alert("Configurações salvas com sucesso!");
     };
@@ -1628,6 +1663,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                                 {...(tab.id === "functionCalling" && {
                                                                     currentFunctionDeclarations,
                                                                     setCurrentFunctionDeclarations,
+                                                                })}
+                                                                {...(tab.id === "interface" && {
+                                                                    currentCodeHighlightEnabled: isCodeHighlightEnabledState,
+                                                                    onToggleCodeHighlight: handleToggleCodeHighlightForTab,
+                                                                    currentAiAvatarUrl: currentAiAvatarUrl,
+                                                                    onAiAvatarUrlChange: setCurrentAiAvatarUrl,
                                                                 })}
                                                             />
                                                         </div>
