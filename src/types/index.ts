@@ -3,12 +3,14 @@
 // Importa e reexporta os tipos diretamente do SDK do Gemini
 // Isso garante que estamos usando os tipos exatos que o SDK espera.
 import type {
-    SafetySetting as GenaiSafetySetting
+    SafetySetting as GenaiSafetySetting,
+    Part as GenaiPart // Adicionado para rawParts
 } from '@google/genai';
 
 export { HarmCategory, HarmBlockThreshold } from '@google/genai';
 
 export type SafetySetting = GenaiSafetySetting; // Usaremos este tipo do SDK
+export type Part = GenaiPart; // Reexportando Part
 
 export type GeminiModel =
     | "gemini-2.5-pro-preview-05-06"
@@ -21,7 +23,7 @@ export interface GeminiModelConfig {
     topP: number;
     topK: number;
     maxOutputTokens: number;
-    safetySettings?: SafetySetting[]; // Agora usa o SafetySetting do @google/genai
+    safetySettings?: SafetySetting[];
 }
 
 export interface FunctionDeclaration {
@@ -43,29 +45,52 @@ export interface AppSettings {
 }
 
 export interface Memory {
-  id: string;
-  content: string;
-  timestamp: Date;
-  sourceMessageId?: string;
+    id: string;
+    content: string;
+    timestamp: Date;
+    sourceMessageId?: string;
 }
 
-// Tipos de conversação (sem alterações nesta correção específica)
 export type MemoryActionType = 'created' | 'updated' | 'deleted_by_ai';
 
 export interface AttachedFileInfo {
-  id: string;
-  name: string;
-  type: string;
-  size: number;
-  dataUrl?: string;
+    id: string;
+    name: string;
+    type: string;
+    size: number;
+    dataUrl?: string;
 }
+
+// Novo: Tipos para o status de processamento
+export type ProcessingType =
+    | 'function_call_request'         // IA decidiu chamar uma função
+    | 'function_call_execution'       // Loox está executando a função (chamada HTTP, etc.)
+    | 'function_call_response'        // Resposta da função recebida, aguardando IA processar
+    | 'user_attachment_upload'        // Upload de arquivos do usuário para a API Gemini
+    | 'file_from_function_processing';// Arquivo retornado por função sendo processado/disponibilizado para IA
+
+export type ProcessingStage =
+    | 'pending'                       // Ação iniciada, aguardando
+    | 'in_progress'                   // Em execução
+    | 'awaiting_ai'                   // Submetido à IA, aguardando que ela use/processe
+    | 'completed'                     // Concluído com sucesso (pode ser um estágio intermediário)
+    | 'failed';                       // Falhou
+
+export interface ProcessingStatus {
+    type: ProcessingType;
+    stage: ProcessingStage;
+    name?: string; // Nome da função, nome do arquivo
+    details?: string; // Mensagem adicional de status, ex: "Aguardando API externa...", "Analisando conteúdo..."
+    error?: string; // Mensagem de erro se stage for 'failed'
+}
+// Fim do Novo
 
 export interface MessageMetadata {
     temp?: boolean;
     isLoading?: boolean;
-    error?: boolean | string;
+    error?: boolean | string; // Mantido para erros gerais da mensagem
     abortedByUser?: boolean;
-    userFacingError?: string;
+    userFacingError?: string; // Mantido para erros gerais da mensagem
     attachedFilesInfo?: AttachedFileInfo[];
     memorizedMemoryActions?: {
         id: string;
@@ -73,13 +98,14 @@ export interface MessageMetadata {
         originalContent?: string;
         action: MemoryActionType;
     }[];
-    rawParts?: unknown[];
+    rawParts?: Part[]; // Usando o tipo Part importado
+    processingStatus?: ProcessingStatus; // Novo campo para status detalhado
 }
 
 export interface Message {
     id: string;
     text: string;
-    sender: 'user' | 'model' | 'function';
+    sender: 'user' | 'model' | 'function'; // 'function' é para a RESPOSTA da função, não o pedido
     timestamp: Date;
     metadata?: MessageMetadata;
 }

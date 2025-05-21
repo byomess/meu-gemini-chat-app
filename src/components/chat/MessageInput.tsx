@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useRef, useEffect, useCallback, Fragment } from 'react'; // Adicionado Fragment
+// src/components/input/MessageInput.tsx
+import React, { useState, useRef, useEffect, useCallback, Fragment } from 'react';
 import Button from '../common/Button';
 import {
     IoWarningOutline,
@@ -10,11 +11,11 @@ import {
     IoStop,
     IoPaperPlaneOutline,
     IoEarthOutline,
-    IoVideocamOutline, // Adicionado para thumbnail de vídeo
-    IoImageOutline, // Adicionado para thumbnail de imagem genérico
-    IoDocumentTextOutline, // Adicionado para thumbnail de documento genérico
+    IoVideocamOutline,
+    IoImageOutline,
+    IoDocumentTextOutline,
 } from 'react-icons/io5';
-import { Dialog, Transition } from '@headlessui/react'; // Adicionado para MediaModal
+import { Dialog, Transition } from '@headlessui/react';
 import { useConversations } from '../../contexts/ConversationContext';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { useMemories } from '../../contexts/MemoryContext';
@@ -23,11 +24,11 @@ import {
     type StreamedGeminiResponseChunk,
     type RawFileAttachment
 } from '../../services/geminiService';
-import type { MessageMetadata, AttachedFileInfo } from '../../types';
+import type { MessageMetadata, AttachedFileInfo, ProcessingStatus, Part } from '../../types'; // Adicionado ProcessingStatus, Part
 import { v4 as uuidv4 } from 'uuid';
 import useIsMobile from '../../hooks/useIsMobile';
 import { systemMessage } from '../../prompts';
-import type { Part } from '@google/genai';
+// Removido: import type { Part } from '@google/genai'; // Já vem de ../../types
 import CustomAudioPlayer from '../common/CustomAudioPlayer';
 
 interface LocalAttachedFile {
@@ -40,7 +41,6 @@ interface LocalAttachedFile {
     isRecording?: boolean;
 }
 
-// Definição do MediaModal (copiado e adaptado de MessageBubble)
 interface MediaModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -54,7 +54,7 @@ const MediaModal: React.FC<MediaModalProps> = ({ isOpen, onClose, mediaUrl, medi
 
     return (
         <Transition appear show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-[150]" onClose={onClose}> {/* Aumentado z-index se necessário */}
+            <Dialog as="div" className="relative z-[150]" onClose={onClose}>
                 <Transition.Child
                     as={Fragment}
                     enter="ease-out duration-300"
@@ -101,7 +101,7 @@ const MediaModal: React.FC<MediaModalProps> = ({ isOpen, onClose, mediaUrl, medi
                                     className="!absolute top-2 right-2 !p-2.5 text-white bg-black/50 hover:!bg-black/70 rounded-full z-10"
                                     title="Fechar mídia"
                                 >
-                                    <IoClose size={24} /> {/* Usando IoClose de react-icons/io5 */}
+                                    <IoClose size={24} />
                                 </Button>
                             </Dialog.Panel>
                         </Transition.Child>
@@ -154,9 +154,13 @@ const MessageInput: React.FC = () => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Estados para o MediaModal do Input
     const [mediaModalOpenInput, setMediaModalOpenInput] = useState(false);
     const [selectedMediaInput, setSelectedMediaInput] = useState<LocalAttachedFile | null>(null);
+
+    // Refs para armazenar o último status de processamento e raw parts durante o stream de uma nova mensagem
+    const lastProcessingStatusForInputRef = useRef<ProcessingStatus | null>(null);
+    const accumulatedRawPartsForInputRef = useRef<Part[]>([]);
+
 
     const openMediaModalInput = (fileInfo: LocalAttachedFile) => {
         if ((fileInfo.type.startsWith('image/') || fileInfo.type.startsWith('video/')) && fileInfo.previewUrl) {
@@ -167,7 +171,7 @@ const MessageInput: React.FC = () => {
 
     const closeMediaModalInput = () => {
         setMediaModalOpenInput(false);
-        setSelectedMediaInput(null); // Limpar para evitar mostrar mídia antiga brevemente
+        setSelectedMediaInput(null);
     };
 
 
@@ -257,13 +261,13 @@ const MessageInput: React.FC = () => {
             const fileId = uuidv4();
             const newAttachedFilePromise: Promise<LocalAttachedFile | null> = (async () => {
                 let previewUrl: string | undefined = undefined;
-                if (file.type.startsWith('image/') || file.type.startsWith('audio/') || file.type.startsWith('video/')) { // Gerar DataURL para imagens, áudios e vídeos
+                if (file.type.startsWith('image/') || file.type.startsWith('audio/') || file.type.startsWith('video/')) {
                     try {
                         previewUrl = await blobToDataURL(file);
                     } catch (e) {
                         console.error(`Error creating data URL for ${file.name}:`, e);
-                        if (file.type.startsWith('image/')) { // Fallback para imagens
-                           try { previewUrl = URL.createObjectURL(file); } catch (e2) { console.error("Error creating ObjectURL for image preview:", e2); }
+                        if (file.type.startsWith('image/')) {
+                            try { previewUrl = URL.createObjectURL(file); } catch (e2) { console.error("Error creating ObjectURL for image preview:", e2); }
                         }
                     }
                 }
@@ -487,6 +491,11 @@ const MessageInput: React.FC = () => {
         abortStreamControllerRef.current = new AbortController();
         const signal = abortStreamControllerRef.current.signal;
 
+        // Limpar refs de status e parts para a nova submissão
+        lastProcessingStatusForInputRef.current = null;
+        accumulatedRawPartsForInputRef.current = [];
+        let accumulatedAiText = ""; // Variável local para o texto da IA desta submissão
+
         const currentTextForAI = trimmedText;
         const currentConversation = conversations.find(c => c.id === activeConversationId);
         const webSearchActiveForThisSubmission = isWebSearchEnabledForNextMessage;
@@ -526,7 +535,7 @@ const MessageInput: React.FC = () => {
         }
 
         const aiMessageId = addMessageToConversation(activeConversationId, {
-            text: "", sender: 'model', metadata: { isLoading: true }
+            text: "", sender: 'model', metadata: { isLoading: true } // Metadata inicial
         });
         if (!aiMessageId) {
             console.error("Não foi possível criar a mensagem placeholder da IA.");
@@ -536,7 +545,6 @@ const MessageInput: React.FC = () => {
 
         let memoryOperationsFromServer: StreamedGeminiResponseChunk['memoryOperations'] = [];
         let streamError: string | null = null;
-        let accumulatedAiText = "";
 
         try {
             const currentGlobalMemoriesWithObjects = globalMemoriesFromHook.map(mem => ({ id: mem.id, content: mem.content }));
@@ -557,24 +565,32 @@ const MessageInput: React.FC = () => {
                 if (signal.aborted) { streamError = "Resposta abortada pelo usuário."; break; }
 
                 if (streamResponse.delta) {
-                    const isStatusMessage = streamResponse.delta.startsWith("Processando anexos...") ||
-                        streamResponse.delta.startsWith("Anexos processados") ||
-                        streamResponse.delta.startsWith("Alguns anexos processados") ||
-                        streamResponse.delta.startsWith("Falha ao processar anexos") ||
-                        streamResponse.delta.includes("[Loox: Executando a função") ||
-                        streamResponse.delta.includes("[Loox: Função") ||
-                        streamResponse.delta.includes("[Loox: Erro ao processar a função");
-
                     accumulatedAiText += streamResponse.delta;
-                    updateMessageInConversation(activeConversationId, aiMessageId, {
-                        text: accumulatedAiText + (isStatusMessage ? "" : "▍"),
-                        metadata: { isLoading: true }
-                    });
                 }
+                if (streamResponse.processingStatus) {
+                    lastProcessingStatusForInputRef.current = streamResponse.processingStatus;
+                }
+                if (streamResponse.rawPartsForNextTurn) {
+                    accumulatedRawPartsForInputRef.current = [...streamResponse.rawPartsForNextTurn];
+                }
+
+                const showTypingCursor = !streamResponse.isFinished &&
+                    !(lastProcessingStatusForInputRef.current &&
+                        (lastProcessingStatusForInputRef.current.stage === 'pending' ||
+                            lastProcessingStatusForInputRef.current.stage === 'in_progress' ||
+                            lastProcessingStatusForInputRef.current.stage === 'awaiting_ai'));
+
+                updateMessageInConversation(activeConversationId, aiMessageId, {
+                    text: accumulatedAiText + (showTypingCursor ? "▍" : ""),
+                    metadata: {
+                        isLoading: !streamResponse.isFinished,
+                        processingStatus: lastProcessingStatusForInputRef.current || undefined,
+                        rawParts: accumulatedRawPartsForInputRef.current.length > 0 ? [...accumulatedRawPartsForInputRef.current] : undefined,
+                    }
+                });
+
                 if (streamResponse.error) {
                     streamError = streamResponse.error;
-                    if (!streamResponse.delta) setErrorFromAI(streamError);
-                    else console.warn("Erro parcial durante o stream:", streamError);
                 }
                 if (streamResponse.isFinished) {
                     accumulatedAiText = streamResponse.finalText || accumulatedAiText.replace(/▍$/, '');
@@ -585,11 +601,17 @@ const MessageInput: React.FC = () => {
 
             const finalMetadata: Partial<MessageMetadata> = {
                 isLoading: false,
-                abortedByUser: streamError === "Resposta abortada pelo usuário." || streamError?.includes("abortado") ? true : undefined,
+                abortedByUser: streamError === "Resposta abortada pelo usuário." || (signal.aborted && !streamError) ? true : undefined,
+                processingStatus: lastProcessingStatusForInputRef.current || undefined,
+                rawParts: accumulatedRawPartsForInputRef.current.length > 0 ? [...accumulatedRawPartsForInputRef.current] : undefined,
             };
 
             if (streamError && !finalMetadata.abortedByUser) {
                 finalMetadata.error = streamError;
+                finalMetadata.userFacingError = streamError;
+                if (lastProcessingStatusForInputRef.current && lastProcessingStatusForInputRef.current.stage !== 'completed' && lastProcessingStatusForInputRef.current.stage !== 'failed') {
+                    finalMetadata.processingStatus = { ...(lastProcessingStatusForInputRef.current || {} as ProcessingStatus), stage: 'failed', error: streamError };
+                }
             }
 
             if (!streamError || finalMetadata.abortedByUser) {
@@ -626,16 +648,8 @@ const MessageInput: React.FC = () => {
                 }
             }
 
-            let finalDisplayableText = accumulatedAiText.replace(/▍$/, '');
-            if (streamError && !finalMetadata.abortedByUser) {
-                const errorPrefix = "⚠️ ";
-                if (!finalDisplayableText.includes(streamError)) {
-                    finalDisplayableText = finalDisplayableText.trim() ? `${finalDisplayableText}\n\n${errorPrefix}${streamError}` : `${errorPrefix}${streamError}`;
-                }
-                finalMetadata.userFacingError = streamError;
-            } else if (finalDisplayableText.includes('\n\n⚠️ ') && !streamError && !finalMetadata.abortedByUser) {
-                finalDisplayableText = finalDisplayableText.replace(/\n\n⚠️ .+$/, '').trim();
-            }
+            const finalDisplayableText = accumulatedAiText; // Já está sem cursor aqui
+            // A lógica de exibir erro no texto é gerenciada pelo MessageBubble com base no metadata.error
 
             updateMessageInConversation(activeConversationId, aiMessageId, {
                 text: finalDisplayableText, metadata: finalMetadata
@@ -643,13 +657,18 @@ const MessageInput: React.FC = () => {
 
         } catch (error: unknown) {
             console.error("Falha catastrófica ao processar stream com Gemini:", error);
-            const finalMetadataUpdate: Partial<MessageMetadata> = { isLoading: false };
+            const finalMetadataUpdate: Partial<MessageMetadata> = {
+                isLoading: false,
+                processingStatus: lastProcessingStatusForInputRef.current || undefined,
+                rawParts: accumulatedRawPartsForInputRef.current.length > 0 ? [...accumulatedRawPartsForInputRef.current] : undefined,
+            };
             if ((error as Error).name === 'AbortError' || signal.aborted) {
-                finalMetadataUpdate.abortedByUser = true; finalMetadataUpdate.error = false;
+                finalMetadataUpdate.abortedByUser = true; finalMetadataUpdate.error = false; // Aborto não é um "erro" da IA
             } else {
                 const clientErrorMessage = error instanceof Error ? error.message : "Desculpe, ocorreu uma falha desconhecida no processamento da resposta.";
-                finalMetadataUpdate.error = clientErrorMessage; finalMetadataUpdate.userFacingError = clientErrorMessage;
-                setErrorFromAI(clientErrorMessage);
+                finalMetadataUpdate.error = clientErrorMessage;
+                finalMetadataUpdate.userFacingError = clientErrorMessage;
+                setErrorFromAI(clientErrorMessage); // Mostra erro acima do input
             }
             updateMessageInConversation(activeConversationId, aiMessageId, {
                 text: accumulatedAiText.replace(/▍$/, ''), metadata: finalMetadataUpdate
@@ -659,8 +678,12 @@ const MessageInput: React.FC = () => {
             if (abortStreamControllerRef.current && abortStreamControllerRef.current.signal === signal) {
                 abortStreamControllerRef.current = null;
             }
+            // Limpar refs de status e parts para a próxima submissão
+            lastProcessingStatusForInputRef.current = null;
+            accumulatedRawPartsForInputRef.current = [];
+
             if (textareaRef.current && settings.apiKey && !errorFromAI && !streamError && !isProcessingEditedMessage && !isRecording && !isLoadingAI) {
-                 if (document.contains(textareaRef.current)) {
+                if (document.contains(textareaRef.current)) {
                     textareaRef.current.focus();
                 }
             }
@@ -695,8 +718,8 @@ const MessageInput: React.FC = () => {
     );
 
     return (
-        <> {/* Envolve com Fragment para o MediaModal */}
-            <div className="px-2 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-3 border-t border-slate-700/60 bg-slate-800/95 backdrop-blur-sm sticky bottom-0 shadow- ऊपर-md z-20">
+        <>
+            <div className="px-2 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-3 border-t border-slate-700/60 bg-slate-800/95 backdrop-blur-sm sticky bottom-0 shadow- ઉપર-md z-20">
                 {errorFromAI && (
                     <div className="mb-2 p-2 text-xs text-red-400 bg-red-900/40 border border-red-700/50 rounded-md flex items-center gap-2">
                         <IoWarningOutline className="flex-shrink-0 text-base" /> <span>{errorFromAI}</span>
@@ -750,7 +773,7 @@ const MessageInput: React.FC = () => {
                                     <div key={item.id} className="relative group bg-slate-700/80 p-1.5 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200 self-start max-w-[calc(100%-1rem)]">
                                         <div
                                             className={`relative w-full h-full object-cover rounded-md flex items-center justify-center bg-black ${mediaClasses}`}
-                                            style={{ maxWidth: `${MAX_THUMBNAIL_SIZE * 2}px`, maxHeight: `${MAX_THUMBNAIL_SIZE * 1.5}px` }} // Ajustado para vídeos
+                                            style={{ maxWidth: `${MAX_THUMBNAIL_SIZE * 2}px`, maxHeight: `${MAX_THUMBNAIL_SIZE * 1.5}px` }}
                                             onClick={() => openMediaModalInput(item)}
                                             title={`${item.name} - Clique para ampliar`}
                                         >
@@ -772,7 +795,6 @@ const MessageInput: React.FC = () => {
                                     </div>
                                 );
                             }
-                            // Fallback para outros tipos de arquivo
                             return (
                                 <div key={item.id} className="relative group bg-slate-700/80 p-1.5 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200 self-start" style={{ width: `${MAX_THUMBNAIL_SIZE}px`, height: `${MAX_THUMBNAIL_SIZE}px` }}>
                                     <div className="flex flex-col items-center justify-center bg-slate-600/70 text-slate-300 rounded-sm text-[10px] p-1 break-all w-full h-full" style={{ overflowWrap: 'break-word', wordBreak: 'break-all', whiteSpace: 'normal', lineHeight: 'tight' }} title={item.name}>

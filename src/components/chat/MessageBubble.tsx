@@ -1,19 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/components/chat/MessageBubble.tsx
-import React, { useState, useRef, useEffect, Fragment } from 'react';
-import type { Message, MessageMetadata, MemoryActionType, AttachedFileInfo } from '../../types';
+import React, { useState, useRef, useEffect } from 'react';
+import type { Message, MessageMetadata, MemoryActionType, AttachedFileInfo, Part, ProcessingStatus } from '../../types'; // Adicionado ProcessingStatus explicitamente
 import {
     IoPersonCircleOutline, IoSparklesOutline, IoGitNetworkOutline, IoTrashOutline,
     IoPencilOutline, IoCheckmarkOutline, IoCloseOutline, IoSyncOutline,
     IoCreateOutline, IoInformationCircleOutline, IoRemoveCircleOutline,
-    IoDocumentTextOutline, IoImageOutline, IoMusicalNotesOutline,
-    IoChevronDownOutline, IoChevronUpOutline,
-    IoTrashBinOutline, IoVideocamOutline, IoTerminalOutline,
+    IoDocumentTextOutline, IoImageOutline, IoMusicalNotesOutline, IoVideocamOutline, IoTerminalOutline,
     IoGitCommitOutline,
 } from 'react-icons/io5';
-import { Dialog, Transition } from '@headlessui/react';
 import { useConversations } from '../../contexts/ConversationContext';
-import { useMemories } from '../../contexts/MemoryContext';
 import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -21,248 +17,29 @@ import CodeBlock from '../common/CodeBlock';
 import CustomAudioPlayer from '../common/CustomAudioPlayer';
 import Button from '../common/Button';
 import useIsMobile from '../../hooks/useIsMobile';
-import type { Part, FunctionCall, FunctionResponse } from '@google/genai';
+import type { FunctionCall, FunctionResponse } from '@google/genai';
 
-interface MemoryActionItemProps {
-    memoryActionDetail: NonNullable<MessageMetadata['memorizedMemoryActions']>[0];
-}
-
-const MemoryActionItem: React.FC<MemoryActionItemProps> = ({ memoryActionDetail }) => {
-    const { memories, updateMemory, deleteMemory } = useMemories();
-    const [isEditingMemory, setIsEditingMemory] = useState(false);
-    const currentMemoryInContext = memories.find(m => m.id === memoryActionDetail.id);
-    const [editedMemoryContent, setEditedMemoryContent] = useState(
-        currentMemoryInContext ? currentMemoryInContext.content : memoryActionDetail.content
-    );
-    const [showDetails, setShowDetails] = useState(false);
-
-    useEffect(() => {
-        if (currentMemoryInContext && !isEditingMemory) {
-            setEditedMemoryContent(currentMemoryInContext.content);
-        } else if (!currentMemoryInContext && !isEditingMemory && memoryActionDetail.action !== 'deleted_by_ai') {
-            setEditedMemoryContent(memoryActionDetail.content);
-        }
-    }, [currentMemoryInContext, isEditingMemory, memoryActionDetail.content, memoryActionDetail.action]);
-
-    const memoryExistsInContext = !!currentMemoryInContext;
-
-    const handleEditMemory = () => {
-        if (!currentMemoryInContext) return;
-        setEditedMemoryContent(currentMemoryInContext.content);
-        setIsEditingMemory(true);
-        setShowDetails(true);
-    };
-
-    const handleSaveMemoryEdit = () => {
-        if (!currentMemoryInContext) return;
-        const trimmedContent = editedMemoryContent.trim();
-        if (trimmedContent && trimmedContent !== currentMemoryInContext.content) {
-            updateMemory(memoryActionDetail.id, trimmedContent);
-        } else if (!trimmedContent && currentMemoryInContext.content) {
-            if (window.confirm(`O conteúdo da memória "${currentMemoryInContext.content}" está vazio. Deseja excluir esta memória?`)) {
-                deleteMemory(memoryActionDetail.id);
-            }
-        }
-        setIsEditingMemory(false);
-    };
-
-    const handleCancelMemoryEdit = () => {
-        setEditedMemoryContent(currentMemoryInContext ? currentMemoryInContext.content : memoryActionDetail.content);
-        setIsEditingMemory(false);
-    };
-
-    const handleDeleteUserMemory = () => {
-        if (!currentMemoryInContext) return;
-        if (window.confirm(`Tem certeza que deseja excluir a memória: "${currentMemoryInContext.content}"? Esta ação afeta o armazenamento global de memórias.`)) {
-            deleteMemory(memoryActionDetail.id);
-        }
-        setIsEditingMemory(false);
-    };
-
-    let ActionIconComponent = IoGitNetworkOutline;
-    let actionLabel = "";
-    let colorClass = "text-purple-400";
-
-    if (memoryActionDetail.action === 'created') {
-        ActionIconComponent = IoCreateOutline;
-        actionLabel = "Nova memória criada:";
-        colorClass = "text-green-400";
-    } else if (memoryActionDetail.action === 'updated') {
-        ActionIconComponent = IoInformationCircleOutline;
-        actionLabel = "Memória atualizada:";
-        colorClass = "text-sky-400";
-    } else if (memoryActionDetail.action === 'deleted_by_ai') {
-        ActionIconComponent = IoRemoveCircleOutline;
-        actionLabel = "Memória removida:";
-        colorClass = "text-amber-400";
-    }
-
-    const baseMemoryText = memoryActionDetail.originalContent || memoryActionDetail.content;
-    const finalDisplayText = memoryActionDetail.action === 'updated' && memoryExistsInContext ? currentMemoryInContext.content : (memoryActionDetail.content || baseMemoryText);
-
-
-    if (!memoryExistsInContext && memoryActionDetail.action !== 'deleted_by_ai' && !isEditingMemory) {
-        return (
-            <li className="flex items-start text-slate-500/80 italic py-1.5 px-2 -mx-1 text-xs border-l-2 border-slate-700/50 pl-3">
-                <ActionIconComponent className={`mr-2 mt-0.5 flex-shrink-0 ${colorClass}`} size={15} />
-                <div className="flex-1 min-w-0">
-                    <span className="font-medium block">{actionLabel}</span>
-                    <p className="line-through whitespace-pre-wrap break-words opacity-80">
-                        "{baseMemoryText}" (removida pelo usuário)
-                    </p>
-                </div>
-            </li>
-        );
-    }
-
-    return (
-        <li className="group/memory-item flex flex-col py-1.5 hover:bg-slate-700/40 rounded-md px-2 -mx-2 border-l-2 border-slate-700/50 pl-3 transition-colors">
-            <div className="flex items-start justify-between w-full">
-                <div className={`flex items-start text-xs ${colorClass} flex-grow min-w-0`}>
-                    <ActionIconComponent className="mr-2 mt-0.5 flex-shrink-0" size={15} />
-                    <div className="flex-1 min-w-0">
-                        <span className="font-semibold block">{actionLabel}</span>
-                        {!showDetails && !isEditingMemory && (
-                            <p className="truncate whitespace-nowrap">
-                                {memoryActionDetail.action === 'updated' ? `De: "${memoryActionDetail.originalContent}" Para: "${finalDisplayText}"` : `"${finalDisplayText}"`}
-                            </p>
-                        )}
-                    </div>
-                </div>
-                {!isEditingMemory && memoryActionDetail.action !== 'deleted_by_ai' && memoryExistsInContext && (
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover/memory-item:opacity-100 transition-opacity flex-shrink-0 ml-2">
-                        <Button variant="icon" onClick={handleEditMemory} className="!p-1 text-purple-400 hover:!text-purple-300 hover:!bg-slate-600/50" title="Editar esta memória no sistema"> <IoPencilOutline size={14} /> </Button>
-                        <Button variant="icon" onClick={handleDeleteUserMemory} className="!p-1 text-red-500 hover:!text-red-400 hover:!bg-slate-600/50" title="Excluir esta memória do sistema"> <IoTrashBinOutline size={14} /> </Button>
-                    </div>
-                )}
-                {!isEditingMemory && (
-                    <Button variant='icon' onClick={() => setShowDetails(!showDetails)} className='!p-1 text-slate-400 hover:!text-slate-200 hover:!bg-slate-600/50 ml-1 flex-shrink-0' title={showDetails ? "Esconder detalhes" : "Mostrar detalhes"}>
-                        {showDetails ? <IoChevronUpOutline size={16} /> : <IoChevronDownOutline size={16} />}
-                    </Button>
-                )}
-            </div>
-
-            {(showDetails || isEditingMemory) && (
-                <div className="mt-1.5 pl-[23px] w-full">
-                    {isEditingMemory && currentMemoryInContext ? (
-                        <div className="flex-grow flex items-center gap-1.5 w-full bg-slate-700/50 p-2 rounded-md border border-slate-600">
-                            <input
-                                type="text"
-                                value={editedMemoryContent}
-                                onChange={(e) => setEditedMemoryContent(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSaveMemoryEdit(); }
-                                    if (e.key === 'Escape') { e.preventDefault(); handleCancelMemoryEdit(); }
-                                }}
-                                className="flex-grow text-xs bg-slate-800/70 text-slate-100 p-1.5 rounded border border-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                autoFocus
-                            />
-                            <Button variant='icon' onClick={handleSaveMemoryEdit} className="!p-1.5 text-green-400 hover:!text-green-300 !bg-slate-600 hover:!bg-slate-500" title="Salvar (Enter)"> <IoCheckmarkOutline size={16} /> </Button>
-                            <Button variant='icon' onClick={handleCancelMemoryEdit} className="!p-1.5 text-slate-300 hover:!text-slate-100 !bg-slate-600 hover:!bg-slate-500" title="Cancelar (Esc)"> <IoCloseOutline size={16} /> </Button>
-                        </div>
-                    ) : (
-                        <div className="text-xs text-slate-300/90 whitespace-pre-wrap break-words bg-slate-700/30 p-2 rounded-md">
-                            {memoryActionDetail.action === 'updated' && (
-                                <>
-                                    <p><strong className='text-slate-400 font-medium'>Original:</strong> "{memoryActionDetail.originalContent}"</p>
-                                    <p><strong className='text-slate-400 font-medium'>Atualizado para:</strong> "{finalDisplayText}"</p>
-                                </>
-                            )}
-                            {memoryActionDetail.action !== 'updated' && (
-                                <p>"{finalDisplayText}"</p>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
-        </li>
-    );
-};
+import FunctionCallActivityIndicator from './FunctionCallActivityIndicator';
+import FileProcessingActivityIndicator from './FileProcessingActivityIndicator';
+import { MemoryActionItem } from './MemoryActionItem';
+import { MediaModal } from '../common/MediaModal';
 
 const MAX_THUMBNAIL_SIZE_IN_BUBBLE = 100;
-
-interface MediaModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    mediaUrl?: string;
-    mediaName?: string;
-    mediaType?: string;
-}
-
-const MediaModal: React.FC<MediaModalProps> = ({ isOpen, onClose, mediaUrl, mediaName, mediaType }) => {
-    if (!mediaUrl) return null;
-
-    return (
-        <Transition appear show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-[150]" onClose={onClose}>
-                <Transition.Child
-                    as={Fragment}
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                >
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" />
-                </Transition.Child>
-
-                <div className="fixed inset-0 overflow-y-auto">
-                    <div className="flex min-h-full items-center justify-center p-4 text-center">
-                        <Transition.Child
-                            as={Fragment}
-                            enter="ease-out duration-300"
-                            enterFrom="opacity-0 scale-95"
-                            enterTo="opacity-100 scale-100"
-                            leave="ease-in duration-200"
-                            leaveFrom="opacity-100 scale-100"
-                            leaveTo="opacity-0 scale-95"
-                        >
-                            <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-lg bg-transparent p-0 text-left align-middle shadow-xl transition-all">
-                                {mediaType?.startsWith('image/') && (
-                                    <img
-                                        src={mediaUrl}
-                                        alt={mediaName || 'Imagem Ampliada'}
-                                        className="max-h-[90vh] max-w-full mx-auto object-contain rounded-md"
-                                    />
-                                )}
-                                {mediaType?.startsWith('video/') && (
-                                    <video
-                                        src={mediaUrl}
-                                        controls
-                                        autoPlay
-                                        className="max-h-[90vh] max-w-full mx-auto object-contain rounded-md"
-                                        title={mediaName || 'Vídeo Ampliado'}
-                                    />
-                                )}
-                                <Button
-                                    variant="icon"
-                                    onClick={onClose}
-                                    className="!absolute top-2 right-2 !p-2.5 text-white bg-black/50 hover:!bg-black/70 rounded-full z-10"
-                                    title="Fechar mídia"
-                                >
-                                    <IoCloseOutline size={24} />
-                                </Button>
-                            </Dialog.Panel>
-                        </Transition.Child>
-                    </div>
-                </div>
-            </Dialog>
-        </Transition>
-    );
-};
+const MIN_INDICATOR_TYPE_DISPLAY_TIME = 1000;
 
 interface MessageBubbleProps {
     message: Message;
     conversationId: string;
 }
 
+// Interface CustomCodeRendererProps (sem alteração)
 interface CustomCodeRendererProps extends React.HTMLAttributes<HTMLElement>, ExtraProps {
     inline?: boolean;
     children?: React.ReactNode;
     className?: string;
     node?: any;
 }
+
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }) => {
     const {
@@ -279,6 +56,111 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const isUser = message.sender === 'user';
     const isFunctionRole = message.sender === 'function';
     const isLoading = message.metadata?.isLoading;
+    const incomingProcessingStatus = message.metadata?.processingStatus; // Status vindo das props
+
+    // Estado para o status que está efetivamente sendo usado para renderizar o indicador
+    const [activeDisplayStatus, setActiveDisplayStatus] = useState<ProcessingStatus | undefined>(incomingProcessingStatus);
+    const indicatorTypeChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastIndicatorTypeSetTimeRef = useRef<number>(0);
+    // Ref para guardar o tipo do último indicador que começou a ser exibido
+    const currentIndicatorTypeRef = useRef<ProcessingStatus['type'] | undefined>(undefined);
+
+
+    useEffect(() => {
+        // Inicializa activeDisplayStatus e o tempo quando o componente monta ou incomingProcessingStatus aparece pela primeira vez
+        if (incomingProcessingStatus && !activeDisplayStatus) {
+            setActiveDisplayStatus(incomingProcessingStatus);
+            lastIndicatorTypeSetTimeRef.current = Date.now();
+            currentIndicatorTypeRef.current = incomingProcessingStatus.type;
+        }
+    }, [incomingProcessingStatus, activeDisplayStatus]);
+
+
+    useEffect(() => {
+        // Se não há status vindo das props, e tínhamos um status ativo, limpamos.
+        if (!incomingProcessingStatus && activeDisplayStatus) {
+            if (indicatorTypeChangeTimeoutRef.current) {
+                clearTimeout(indicatorTypeChangeTimeoutRef.current);
+            }
+            // Poderia haver um delay para limpar também, se desejado, mas por ora limpa direto
+            setActiveDisplayStatus(undefined);
+            currentIndicatorTypeRef.current = undefined;
+            lastIndicatorTypeSetTimeRef.current = 0;
+            return;
+        }
+
+        // Se não há status vindo, não faz nada.
+        if (!incomingProcessingStatus) {
+            return;
+        }
+
+        // Se o incomingProcessingStatus é "igual" (mesmo tipo e stage relevante) ao activeDisplayStatus,
+        // apenas atualiza o activeDisplayStatus para garantir que 'details' etc. estejam atualizados.
+        // Os filhos cuidarão do seu próprio timing interno para stages.
+        if (activeDisplayStatus &&
+            incomingProcessingStatus.type === activeDisplayStatus.type &&
+            incomingProcessingStatus.stage === activeDisplayStatus.stage /* Adicione mais campos se necessário para esta comparação */
+        ) {
+            // Se o tipo é o mesmo, apenas atualiza para que os filhos recebam os detalhes mais recentes.
+            // Não resetamos o timer de tipo aqui, pois o tipo não mudou.
+            if (JSON.stringify(incomingProcessingStatus) !== JSON.stringify(activeDisplayStatus)) {
+                setActiveDisplayStatus(incomingProcessingStatus);
+            }
+            return;
+        }
+
+
+        // Lógica para troca de TIPO de indicador
+        const incomingType = incomingProcessingStatus.type;
+        const activeType = activeDisplayStatus?.type;
+
+        if (indicatorTypeChangeTimeoutRef.current) {
+            clearTimeout(indicatorTypeChangeTimeoutRef.current);
+        }
+
+        if (activeType && incomingType !== activeType && lastIndicatorTypeSetTimeRef.current !== 0) {
+            // Houve uma mudança no TIPO de indicador (ex: de function_call para file_processing)
+            const now = Date.now();
+            const timeSinceLastTypeSet = now - lastIndicatorTypeSetTimeRef.current;
+
+            if (timeSinceLastTypeSet < MIN_INDICATOR_TYPE_DISPLAY_TIME) {
+                const delay = MIN_INDICATOR_TYPE_DISPLAY_TIME - timeSinceLastTypeSet;
+                indicatorTypeChangeTimeoutRef.current = setTimeout(() => {
+                    setActiveDisplayStatus(incomingProcessingStatus);
+                    lastIndicatorTypeSetTimeRef.current = Date.now();
+                    currentIndicatorTypeRef.current = incomingProcessingStatus.type;
+                }, delay);
+            } else {
+                // Tempo mínimo do tipo anterior já passou, atualiza imediatamente
+                setActiveDisplayStatus(incomingProcessingStatus);
+                lastIndicatorTypeSetTimeRef.current = now;
+                currentIndicatorTypeRef.current = incomingProcessingStatus.type;
+            }
+        } else {
+            // Caso inicial (activeDisplayStatus ainda não definido), ou tipo é o mesmo (já tratado),
+            // ou é uma mudança para um tipo quando antes não havia nenhum.
+            // Atualiza diretamente se o activeDisplayStatus for diferente do incoming.
+            if (JSON.stringify(incomingProcessingStatus) !== JSON.stringify(activeDisplayStatus)) {
+                setActiveDisplayStatus(incomingProcessingStatus);
+            }
+            // Se o lastIndicatorTypeSetTimeRef.current é 0, significa que é a primeira vez que um indicador deste tipo está sendo setado
+            // ou o tipo anterior foi completamente removido.
+            if (lastIndicatorTypeSetTimeRef.current === 0 || activeType !== incomingType) {
+                lastIndicatorTypeSetTimeRef.current = Date.now();
+                currentIndicatorTypeRef.current = incomingProcessingStatus.type;
+            }
+        }
+
+        return () => {
+            if (indicatorTypeChangeTimeoutRef.current) {
+                clearTimeout(indicatorTypeChangeTimeoutRef.current);
+            }
+        };
+        // Adicionamos activeDisplayStatus à lista de dependências para garantir que o effect rode
+        // quando ele for alterado internamente por um timeout.
+    }, [incomingProcessingStatus, activeDisplayStatus]);
+
+
     const isActualErrorForStyling = (typeof message.metadata?.error === 'string' && message.metadata.error !== "Resposta abortada pelo usuário.") || (typeof message.metadata?.error === 'boolean' && message.metadata.error === true);
     const abortedByUser = message.metadata?.abortedByUser;
     const userFacingErrorMessage = message.metadata?.userFacingError || (typeof message.metadata?.error === 'string' && message.metadata.error !== "Resposta abortada pelo usuário." ? message.metadata.error : undefined);
@@ -286,7 +168,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const hasMemoryActions = memoryActions && memoryActions.length > 0;
     const attachedFilesInfo: AttachedFileInfo[] | undefined = message.metadata?.attachedFilesInfo;
     const hasAttachedFiles = !!(attachedFilesInfo && attachedFilesInfo.length > 0);
-    const rawParts = message.metadata?.rawParts;
+    const rawParts: Part[] | undefined = message.metadata?.rawParts as Part[] | undefined;
 
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [editedText, setEditedText] = useState<string>(message.text);
@@ -296,6 +178,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const [mediaModalOpen, setMediaModalOpen] = useState(false);
     const [selectedMedia, setSelectedMedia] = useState<AttachedFileInfo | null>(null);
 
+    // ... (resto das funções handle, adjustEditareaHeight, open/closeMediaModal - sem alterações)
     const openMediaModal = (fileInfo: AttachedFileInfo) => {
         if ((fileInfo.type.startsWith('image/') || fileInfo.type.startsWith('video/')) && fileInfo.dataUrl) {
             setSelectedMedia(fileInfo);
@@ -358,7 +241,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         if (isUser) {
             await regenerateResponseForEditedMessage(conversationId, message.id, newText);
         } else {
-            const newMetadata: Partial<MessageMetadata> = { ...message.metadata, abortedByUser: false, error: false, userFacingError: undefined };
+            const newMetadata: Partial<MessageMetadata> = {
+                ...message.metadata,
+                abortedByUser: false,
+                error: false, // Limpa erro ao editar manualmente
+                userFacingError: undefined,
+                processingStatus: undefined // Limpa status de processamento ao editar manualmente
+            };
             if (isLoading) newMetadata.isLoading = false;
             updateMessageInConversation(conversationId, message.id, { text: newText, metadata: newMetadata });
         }
@@ -375,10 +264,40 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     };
 
     const isThisUserMessageBeingReprocessed = isUser && isProcessingEditedMessage && (activeConversation?.messages.some((m) => m.id === message.id) ?? false) && Boolean(activeConversation?.messages[activeConversation.messages.length - 1]?.metadata?.isLoading) && ((activeConversation?.messages.findIndex((m) => m.id === message.id) ?? 0) < ((activeConversation?.messages.length ?? 1) - 1));
-    const canPerformActionsOnMessage = !isFunctionRole && !isLoading && !isActualErrorForStyling && !isProcessingEditedMessage && !isThisUserMessageBeingReprocessed;
 
+    // Agora showActivityIndicator usa o activeDisplayStatus
+    const showActivityIndicator = !isUser && !isFunctionRole && isLoading && activeDisplayStatus &&
+        (activeDisplayStatus.stage === 'pending' || activeDisplayStatus.stage === 'in_progress' || activeDisplayStatus.stage === 'awaiting_ai');
+
+    const currentMessageText = message.text.replace(/▍$/, '').trim();
+    const isLogMessage = currentMessageText.startsWith("[Loox:");
+
+    let textForDisplay = currentMessageText;
+    textForDisplay = textForDisplay.replace(/\[Loox:\s*.*?\]/g, "").trim();
+    textForDisplay = textForDisplay.replace(/\[MEMORIZE:\s*"[^"]+"\]/g, "").trim();
+    textForDisplay = textForDisplay.replace(/\[UPDATE_MEMORY original:\s*"[^"]+"\s*new:\s*"[^"]+"\]/g, "").trim();
+    textForDisplay = textForDisplay.replace(/\[DELETE_MEMORY:\s*"[^"]+"\]/g, "").trim();
+    const sanitizedMessageText = textForDisplay;
+
+    let renderUserTextPortion = sanitizedMessageText.length > 0;
+    if (showActivityIndicator) {
+        if (isLogMessage && sanitizedMessageText.length === 0) {
+            renderUserTextPortion = false;
+        }
+    }
+
+    const shouldRenderTextContent = renderUserTextPortion ||
+        (!isUser && !isFunctionRole && (userFacingErrorMessage || (abortedByUser && !isEditing))) ||
+        (isFunctionRole && !(rawParts?.find((p): p is Part & { functionResponse: FunctionResponse } => (p as Part).functionResponse !== undefined)));
+
+    const functionCallPart = rawParts?.find((p): p is Part & { functionCall: FunctionCall } => (p as Part).functionCall !== undefined);
+    const functionResponsePart = rawParts?.find((p): p is Part & { functionResponse: FunctionResponse } => (p as Part).functionResponse !== undefined);
+
+    const showAITypingIndicator = !isUser && !isFunctionRole && isLoading && !showActivityIndicator &&
+        !functionCallPart && !functionResponsePart && !shouldRenderTextContent;
+
+    const canPerformActionsOnMessage = !isFunctionRole && !isLoading && !isActualErrorForStyling && !isProcessingEditedMessage && !isThisUserMessageBeingReprocessed && !showActivityIndicator;
     const syntaxHighlightEnabledGlobally = !isGeneratingResponse;
-
     const markdownComponents: Components = {
         code: ({ inline, className, children, ...props }: CustomCodeRendererProps) => {
             const codeString = React.Children.toArray(children).join('');
@@ -387,8 +306,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
             if (typeof inline !== 'boolean' || !inline) {
                 isLikelyInline = (!className || !className.startsWith('language-')) && !codeString.includes('\n');
             }
-            
-            if (!isUser && isLoading) {
+
+            if (!isUser && isLoading && !syntaxHighlightEnabledGlobally) {
                 if (isLikelyInline) {
                     return (
                         <code {...props} className={`font-mono text-inherit px-1 bg-slate-700/40 rounded-sm ${className || ''}`}>
@@ -475,48 +394,31 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         }
     }
 
-    const functionCallPart = rawParts?.find((p): p is Part & { functionCall: FunctionCall } => {
-        const part = p as Part;
-        return !!part.functionCall;
-    });
-    const functionResponsePart = rawParts?.find((p): p is Part & { functionResponse: FunctionResponse } => {
-        return (p as Part).functionResponse !== undefined;
-    });
-
-    const shouldRenderTextContent = message.text.trim().length > 0 ||
-        (!isUser && !isFunctionRole && (userFacingErrorMessage || (abortedByUser && !isEditing))) ||
-        (isFunctionRole && !functionResponsePart);
-
-    const showAITypingIndicator = !isUser && !isFunctionRole && isLoading && !shouldRenderTextContent && !functionCallPart;
-    const hasAnyContentForBubble = hasAttachedFiles || shouldRenderTextContent || showAITypingIndicator || functionCallPart || functionResponsePart;
-
+    const hasAnyContentForBubble = hasAttachedFiles || shouldRenderTextContent || showAITypingIndicator || functionCallPart || functionResponsePart || showActivityIndicator;
     const userBubbleClasses = "bg-gradient-to-br from-sky-600 to-blue-700 text-white shadow-lg backdrop-blur-sm bg-opacity-90";
     const aiBubbleBaseClasses = "bg-gradient-to-br from-slate-700 to-slate-800 text-slate-200 shadow-lg backdrop-blur-sm bg-opacity-90";
     const functionRoleBubbleClasses = "bg-gradient-to-br from-indigo-700 to-purple-800 text-indigo-100 shadow-lg backdrop-blur-sm bg-opacity-90 border-2 border-indigo-500/50";
     const errorBubbleClasses = "!bg-gradient-to-br !from-red-700/90 !to-red-800/90 !border-2 !border-red-500/70 text-red-100";
     const abortedBubbleClasses = "border-2 border-dashed border-amber-500/80 !bg-slate-700/70 shadow-amber-500/10 shadow-md";
-    const loadingBubbleClasses = "opacity-60 animate-pulse !bg-slate-600/70 border border-slate-500/60";
-
+    const baseLoadingPulse = isLoading && !isUser && !showActivityIndicator && !userFacingErrorMessage && !abortedByUser && !isEditing && !functionCallPart && !functionResponsePart;
     const messageContainerClasses = `py-3 px-4 rounded-2xl relative prose prose-sm prose-invert w-full
-                                   transition-all duration-200 ease-in-out prose-p:text-slate-200 prose-headings:text-slate-50
-                                   ${isUser ? userBubbleClasses : (isFunctionRole ? functionRoleBubbleClasses : aiBubbleBaseClasses)}
-                                   ${isActualErrorForStyling ? errorBubbleClasses : ''}
-                                   ${abortedByUser && !isEditing ? abortedBubbleClasses : ''}
-                                   ${isLoading && !isUser && !showAITypingIndicator && !userFacingErrorMessage && !abortedByUser && !isEditing && !functionCallPart && !functionResponsePart ? loadingBubbleClasses : ''}`;
-
+                               transition-all duration-200 ease-in-out prose-p:text-slate-200 prose-headings:text-slate-50
+                               ${isUser ? userBubbleClasses : (isFunctionRole ? functionRoleBubbleClasses : aiBubbleBaseClasses)}
+                               ${isActualErrorForStyling ? errorBubbleClasses : ''}
+                               ${abortedByUser && !isEditing ? abortedBubbleClasses : ''}
+                               ${baseLoadingPulse ? 'opacity-60 animate-pulse !bg-slate-600/70 border border-slate-500/60' : ''}`;
     const editContainerClasses = `p-2 rounded-xl shadow-xl border-2 border-blue-500/70 w-full
-                                 ${isUser ? 'bg-blue-700/90' : 'bg-slate-700/90'} backdrop-blur-md`;
-
+                             ${isUser ? 'bg-blue-700/90' : 'bg-slate-700/90'} backdrop-blur-md`;
     const editTextareaClasses = `w-full p-2.5 text-sm bg-transparent text-white focus:outline-none resize-none scrollbar-thin
-                                 placeholder-slate-400/70
-                                 ${isUser ? 'scrollbar-thumb-blue-400 scrollbar-track-blue-600/50'
+                             placeholder-slate-400/70
+                             ${isUser ? 'scrollbar-thumb-blue-400 scrollbar-track-blue-600/50'
             : 'scrollbar-thumb-slate-500 scrollbar-track-slate-600/50'}`;
     const editButtonClasses = `!p-2 rounded-lg transform active:scale-90 transition-all
-                               ${isUser ? 'text-blue-100 hover:text-white hover:!bg-blue-500/70'
+                           ${isUser ? 'text-blue-100 hover:text-white hover:!bg-blue-500/70'
             : 'text-slate-200 hover:text-white hover:!bg-slate-500/70'}`;
-
     const desktopMaxWidthClasses = 'max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%]';
 
+    // ... (JSX da MessageBubble)
     return (
         <>
             <div
@@ -525,13 +427,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                 onMouseLeave={() => setShowActions(false)}
             >
                 {hasAnyContentForBubble && (
-                    <div className={`flex w-full ${
-                        isMobile
-                            ? (isUser || isFunctionRole ? 'flex-col items-end' : 'flex-col items-start')
-                            : (isUser || isFunctionRole
-                                ? `flex-row items-end justify-end ${desktopMaxWidthClasses} ml-auto`
-                                : `flex-row items-end justify-start ${desktopMaxWidthClasses} mr-auto`
-                              )
+                    <div className={`flex w-full ${isMobile
+                        ? (isUser || isFunctionRole ? 'flex-col items-end' : 'flex-col items-start')
+                        : (isUser || isFunctionRole
+                            ? `flex-row items-end justify-end ${desktopMaxWidthClasses} ml-auto`
+                            : `flex-row items-end justify-start ${desktopMaxWidthClasses} mr-auto`
+                        )
                         } gap-2 sm:gap-2.5`}>
 
                         {(!isUser && !isFunctionRole) && (
@@ -599,96 +500,92 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                 </div>
                             )}
 
-                            {(shouldRenderTextContent || showAITypingIndicator || functionCallPart || functionResponsePart || (isEditing && !isUser && abortedByUser)) && (
-                                <div className={`relative flex ${isUser || isFunctionRole ? 'justify-end' : 'justify-start'} max-w-full ${isUser && hasAttachedFiles ? 'mt-0' : ''} `}>
-                                    {isEditing && !isThisUserMessageBeingReprocessed ? (
-                                        <div className={editContainerClasses}>
-                                            <textarea ref={editTextareaRef} value={editedText} onChange={(e) => setEditedText(e.target.value)} onKeyDown={handleEditKeyDown} className={editTextareaClasses} rows={1} aria-label="Editar mensagem" />
-                                            <div className="flex justify-end gap-1.5 mt-2 px-1">
-                                                <Button variant='icon' onClick={handleCancelEdit} className={editButtonClasses} title="Cancelar edição (Esc)"> <IoCloseOutline size={20} /> </Button>
-                                                <Button variant='icon' onClick={handleSaveEdit} className={`${editButtonClasses} ${editedText.trim() === '' && !hasAttachedFiles ? '!text-slate-500 !bg-slate-600/50 cursor-not-allowed' : (isUser ? '!bg-blue-600 hover:!bg-blue-500' : '!bg-slate-600 hover:!bg-slate-500')}`} title="Salvar edição (Enter)" disabled={isProcessingEditedMessage || (editedText.trim() === '' && !hasAttachedFiles && message.text === '')}> <IoCheckmarkOutline size={20} /> </Button>
-                                            </div>
+                            <div className={`relative flex ${isUser || isFunctionRole ? 'justify-end' : 'justify-start'} max-w-full ${isUser && hasAttachedFiles ? 'mt-0' : ''} `}>
+                                {isEditing && !isThisUserMessageBeingReprocessed ? (
+                                    <div className={editContainerClasses}>
+                                        <textarea ref={editTextareaRef} value={editedText} onChange={(e) => setEditedText(e.target.value)} onKeyDown={handleEditKeyDown} className={editTextareaClasses} rows={1} aria-label="Editar mensagem" />
+                                        <div className="flex justify-end gap-1.5 mt-2 px-1">
+                                            <Button variant='icon' onClick={handleCancelEdit} className={editButtonClasses} title="Cancelar edição (Esc)"> <IoCloseOutline size={20} /> </Button>
+                                            <Button variant='icon' onClick={handleSaveEdit} className={`${editButtonClasses} ${editedText.trim() === '' && !hasAttachedFiles ? '!text-slate-500 !bg-slate-600/50 cursor-not-allowed' : (isUser ? '!bg-blue-600 hover:!bg-blue-500' : '!bg-slate-600 hover:!bg-slate-500')}`} title="Salvar edição (Enter)" disabled={isProcessingEditedMessage || (editedText.trim() === '' && !hasAttachedFiles && message.text === '')}> <IoCheckmarkOutline size={20} /> </Button>
                                         </div>
-                                    ) : (
-                                        <div className={messageContainerClasses}>
-                                            {isThisUserMessageBeingReprocessed && (<div className="absolute -top-1.5 -right-1.5 p-0.5 bg-slate-600 rounded-full shadow z-10"> <IoSyncOutline size={12} className="text-slate-300 animate-spin" /> </div>)}
+                                    </div>
+                                ) : (
+                                    <div className={messageContainerClasses}>
+                                        {isThisUserMessageBeingReprocessed && (<div className="absolute -top-1.5 -right-1.5 p-0.5 bg-slate-600 rounded-full shadow z-10"> <IoSyncOutline size={12} className="text-slate-300 animate-spin" /> </div>)}
 
-                                            {functionCallPart ? (
-                                                <div className="function-call-content p-1">
-                                                    <div className="flex items-center text-xs text-amber-300 mb-1.5">
-                                                        <IoTerminalOutline size={16} className="mr-1.5 flex-shrink-0" />
-                                                        <span className="font-semibold">Chamada de Função Solicitada:</span>
-                                                    </div>
-                                                    <p className="text-sm font-medium text-amber-100 mb-1">{functionCallPart.functionCall.name}</p>
-                                                    {functionCallPart.functionCall.args && Object.keys(functionCallPart.functionCall.args).length > 0 && (
-                                                        <>
-                                                            <p className="text-xs text-amber-300/80 mb-0.5">Argumentos:</p>
-                                                            <CodeBlock
-                                                                className="language-json !text-xs !my-0 !p-0"
-                                                                enableSynthaxHighlight={syntaxHighlightEnabledGlobally}
-                                                            >
-                                                                {JSON.stringify(functionCallPart.functionCall.args, null, 2)}
-                                                            </CodeBlock>
-                                                        </>
-                                                    )}
-                                                    {message.text.trim() &&
-                                                        <ReactMarkdown
-                                                            remarkPlugins={[remarkGfm, remarkBreaks]}
-                                                            components={markdownComponents}
-                                                        >
-                                                            {message.text.replace(/▍$/, '')}
-                                                        </ReactMarkdown>
-                                                    }
+                                        {/* INDICADORES DE ATIVIDADE USANDO activeDisplayStatus */}
+                                        {showActivityIndicator && activeDisplayStatus && (
+                                            <>
+                                                {(activeDisplayStatus.type === 'function_call_request' ||
+                                                    activeDisplayStatus.type === 'function_call_execution' ||
+                                                    activeDisplayStatus.type === 'function_call_response') &&
+                                                    <FunctionCallActivityIndicator status={activeDisplayStatus} />
+                                                }
+                                                {(activeDisplayStatus.type === 'user_attachment_upload' ||
+                                                    activeDisplayStatus.type === 'file_from_function_processing') &&
+                                                    <FileProcessingActivityIndicator status={activeDisplayStatus} />
+                                                }
+                                            </>
+                                        )}
+
+                                        {functionCallPart && !showActivityIndicator && (
+                                            <div
+                                                className="function-call-request-display flex flex-col gap-1 p-2.5 my-1.5 rounded-lg border text-xs shadow-md bg-amber-500/10 border-amber-500/30 text-amber-200"
+                                                title={`Chamada para a função: ${functionCallPart.functionCall.name}`}
+                                            >
+                                                <div className="flex items-center gap-2"> {/* gap-2 = 0.5rem */}
+                                                    <IoTerminalOutline size={18} className="flex-shrink-0 text-amber-400" /> {/* 18px = 1.125rem */}
+                                                    <span className="font-semibold text-amber-300">Chamada de Função Solicitada:</span>
                                                 </div>
-                                            ) : functionResponsePart ? (
-                                                <div className="function-response-content p-1">
-                                                    <div className="flex items-center text-xs text-indigo-300 mb-1.5">
-                                                        <IoGitCommitOutline size={16} className="mr-1.5 flex-shrink-0" />
-                                                        <span className="font-semibold">Resposta da Função:</span>
-                                                    </div>
-                                                    <p className="text-sm font-medium text-indigo-100 mb-1">{functionResponsePart.functionResponse.name}</p>
-                                                    <p className="text-xs text-indigo-300/80 mb-0.5">Conteúdo da Resposta:</p>
-                                                    <CodeBlock
-                                                        className="language-json !text-xs !my-0 !p-0"
-                                                        enableSynthaxHighlight={syntaxHighlightEnabledGlobally}
-                                                    >
-                                                        {JSON.stringify(functionResponsePart.functionResponse.response?.content ?? {}, null, 2)}
-                                                    </CodeBlock>
+                                                {/* Nome da função */}
+                                                <div className="pl-[calc(1.125rem+0.5rem)]"> {/* pl- approx 1.625rem or 26px */}
+                                                    <p className="text-sm font-medium text-amber-100">{functionCallPart.functionCall.name}</p>
                                                 </div>
-                                            ) : showAITypingIndicator ? (
-                                                <div className="typing-dots flex items-center space-x-1.5 h-6">
-                                                    <span className="block w-2.5 h-2.5 bg-current rounded-full animate-bounce delay-0"></span>
-                                                    <span className="block w-2.5 h-2.5 bg-current rounded-full animate-bounce delay-200"></span>
-                                                    <span className="block w-2.5 h-2.5 bg-current rounded-full animate-bounce delay-400"></span>
+                                            </div>
+                                        )}
+
+                                        {functionResponsePart && (
+                                            <div className="function-response-content p-1">
+                                                <div className="flex items-center text-xs text-indigo-300 mb-1.5">
+                                                    <IoGitCommitOutline size={16} className="mr-1.5 flex-shrink-0" />
+                                                    <span className="font-semibold">Resposta da Função Recebida:</span>
                                                 </div>
-                                            ) : (
-                                                <>
-                                                    {(message.text.trim().length > 0) && (
-                                                        <div className="message-text-content">
-                                                            <ReactMarkdown
-                                                                remarkPlugins={[remarkGfm, remarkBreaks]}
-                                                                components={markdownComponents}
-                                                            >
-                                                                {message.text.replace(/▍$/, '')}
-                                                            </ReactMarkdown>
-                                                        </div>
-                                                    )}
-                                                    {userFacingErrorMessage && isActualErrorForStyling && (
-                                                        <div className={`mt-2.5 text-xs ${message.text.trim().length > 0 ? 'border-t border-red-500/40 pt-2' : ''} text-red-200/90`}>
-                                                            <strong>Erro:</strong> {userFacingErrorMessage}
-                                                        </div>
-                                                    )}
-                                                    {abortedByUser && !isEditing && (
-                                                        <div className={`mt-2.5 text-xs ${message.text.trim().length > 0 ? 'border-t border-amber-600/50 pt-2' : ''} text-amber-200/90`}>
-                                                            Resposta abortada pelo usuário.
-                                                        </div>
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                                                <p className="text-sm font-medium text-indigo-100 mb-1">{functionResponsePart.functionResponse.name}</p>
+                                            </div>
+                                        )}
+
+                                        {showAITypingIndicator && (
+                                            <div className="typing-dots flex items-center space-x-1.5 h-6">
+                                                <span className="block w-2.5 h-2.5 bg-current rounded-full animate-bounce delay-0"></span>
+                                                <span className="block w-2.5 h-2.5 bg-current rounded-full animate-bounce delay-200"></span>
+                                                <span className="block w-2.5 h-2.5 bg-current rounded-full animate-bounce delay-400"></span>
+                                            </div>
+                                        )}
+
+                                        {shouldRenderTextContent && (
+                                            <div className="message-text-content">
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm, remarkBreaks]}
+                                                    components={markdownComponents}
+                                                >
+                                                    {sanitizedMessageText}
+                                                </ReactMarkdown>
+                                            </div>
+                                        )}
+
+                                        {userFacingErrorMessage && isActualErrorForStyling && (
+                                            <div className={`mt-2.5 text-xs ${message.text.trim().length > 0 || showActivityIndicator ? 'border-t border-red-500/40 pt-2' : ''} text-red-200/90`}>
+                                                <strong>Erro:</strong> {userFacingErrorMessage}
+                                            </div>
+                                        )}
+                                        {abortedByUser && !isEditing && (
+                                            <div className={`mt-2.5 text-xs ${message.text.trim().length > 0 || showActivityIndicator ? 'border-t border-amber-600/50 pt-2' : ''} text-amber-200/90`}>
+                                                Resposta abortada pelo usuário.
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {isUser && !isMobile && (
@@ -699,11 +596,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
 
                         {((canPerformActionsOnMessage || (!isUser && !isFunctionRole && abortedByUser)) && showActions && !isEditing) && (
                             <div className={`flex items-center rounded-xl shadow-xl bg-slate-800/70 border border-slate-700/80 p-1 absolute transform transition-all duration-150 ease-out z-10 backdrop-blur-sm
-                                            ${isUser ?
+                                        ${isUser ?
                                     (isMobile ? 'right-0 top-4' : 'right-11 -top-6') :
                                     (isMobile ? 'left-0 top-4' : 'left-11 sm:left-12 -top-6')
                                 }
-                                            ${showActions ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 -translate-y-2 pointer-events-none'}`}>
+                                        ${showActions ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 -translate-y-2 pointer-events-none'}`}>
                                 {!isFunctionRole && <Button variant='icon' onClick={handleEdit} className="!p-1.5 text-slate-300 hover:!text-sky-400 hover:!bg-slate-700/70" title="Editar mensagem" disabled={isProcessingEditedMessage || (!isUser && isThisUserMessageBeingReprocessed)}> <IoPencilOutline size={16} /> </Button>}
                                 <Button variant='icon' onClick={handleDelete} className="!p-1.5 text-slate-300 hover:!text-red-400 hover:!bg-slate-700/70" title="Excluir mensagem" disabled={isProcessingEditedMessage}> <IoTrashOutline size={16} /> </Button>
                             </div>
@@ -712,13 +609,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                 )}
 
                 {!isUser && !isFunctionRole && hasMemoryActions && memoryActions && (
-                     <div className={`mt-3 animate-fadeInQuick ${
-                        isMobile
-                            ? 'w-full'
-                            : (isUser || isFunctionRole
-                                ? `${desktopMaxWidthClasses} ml-auto`
-                                : `ml-11 sm:ml-12 ${desktopMaxWidthClasses} mr-auto`
-                              )
+                    <div className={`mt-3 animate-fadeInQuick ${isMobile
+                        ? 'w-full'
+                        : (isUser || isFunctionRole
+                            ? `${desktopMaxWidthClasses} ml-auto`
+                            : `ml-11 sm:ml-12 ${desktopMaxWidthClasses} mr-auto`
+                        )
                         }`}>
                         <div className="flex items-center gap-1.5 text-xs text-purple-400 mb-1">
                             <MainActionIcon size={15} />

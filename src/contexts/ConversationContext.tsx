@@ -1,24 +1,25 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/contexts/ConversationContext.tsx
 import React, { createContext, useContext, type ReactNode, useState, useCallback, useRef, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import type { Conversation, Message, MessageMetadata } from '../types';
+import type { Conversation, Message, MessageMetadata, ProcessingStatus, Part } from '../types'; // Adicionado ProcessingStatus e Part
 import { v4 as uuidv4 } from 'uuid';
 import { useAppSettings } from './AppSettingsContext';
 import { useMemories } from './MemoryContext';
 import { streamMessageToGemini, type StreamedGeminiResponseChunk } from '../services/geminiService';
 import { systemMessage } from '../prompts';
-import type { Part } from '@google/genai';
+// Removido: import type { Part } from '@google/genai'; // Já está vindo de ../types
 
 const CONVERSATIONS_KEY = 'geminiChat_conversations';
 const ACTIVE_CONVERSATION_ID_KEY = 'geminiChat_activeConversationId';
-const CHUNK_RENDER_INTERVAL_MS = 200;
+const CHUNK_RENDER_INTERVAL_MS = 200; // Reduzido para atualizações mais rápidas de status
 
 interface ConversationContextType {
     conversations: Conversation[];
     activeConversationId: string | null;
     activeConversation: Conversation | null;
     isProcessingEditedMessage: boolean;
-    isGeneratingResponse: boolean; // Added
+    isGeneratingResponse: boolean;
     setActiveConversationId: (id: string | null) => void;
     createNewConversation: () => Conversation;
     deleteConversation: (id: string) => void;
@@ -50,7 +51,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
     const [conversations, setConversations] = useLocalStorage<Conversation[]>(CONVERSATIONS_KEY, []);
     const [activeId, setActiveId] = useLocalStorage<string | null>(ACTIVE_CONVERSATION_ID_KEY, null);
     const [isProcessingEditedMessage, setIsProcessingEditedMessage] = useState<boolean>(false);
-    const [isGeneratingResponse, setIsGeneratingResponse] = useState<boolean>(false); // Added state
+    const [isGeneratingResponse, setIsGeneratingResponse] = useState<boolean>(false);
 
     const { settings } = useAppSettings();
     const { memories: globalMemoriesFromHook, addMemory, updateMemory, deleteMemory: deleteMemoryFromHook } = useMemories();
@@ -61,6 +62,9 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
     const currentConversationIdRef = useRef<string | null>(null);
     const renderIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const streamHasFinishedRef = useRef<boolean>(false);
+    const lastProcessingStatusRef = useRef<ProcessingStatus | null>(null);
+    const accumulatedRawPartsRef = useRef<Part[]>([]);
+
 
     const localAbortEditedMessageControllerRef = useRef<AbortController | null>(null);
 
@@ -143,7 +147,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                                     ...msg,
                                     ...(updates.text !== undefined && { text: updates.text }),
                                     ...(updates.metadata && { metadata: { ...msg.metadata, ...updates.metadata } }),
-                                    timestamp: new Date()
+                                    timestamp: new Date() // Atualiza timestamp para re-renderizações se necessário
                                 }
                                 : msg
                         ),
@@ -180,27 +184,49 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         }
 
         if (currentAiMessageIdRef.current && currentConversationIdRef.current) {
+            let textToUpdate = accumulatedTextRef.current;
+            const newMetadata: Partial<MessageMetadata> = {
+                isLoading: !streamHasFinishedRef.current,
+            };
+
             if (chunkQueueRef.current.length > 0) {
                 const chunkToRender = chunkQueueRef.current.join("");
-                chunkQueueRef.current = [];
-                accumulatedTextRef.current += chunkToRender;
-
-                const isStatusMessage = accumulatedTextRef.current.includes("[Loox: Executando a função") ||
-                    accumulatedTextRef.current.includes("[Loox: Função") ||
-                    accumulatedTextRef.current.includes("[Loox: Erro ao processar a função");
-
-                updateMessageInConversation(currentConversationIdRef.current, currentAiMessageIdRef.current, {
-                    text: accumulatedTextRef.current + (isStatusMessage || streamHasFinishedRef.current ? "" : "▍"),
-                    metadata: { isLoading: !streamHasFinishedRef.current }
-                });
+                chunkQueueRef.current = []; // Limpa a fila de texto
+                textToUpdate += chunkToRender;
+                accumulatedTextRef.current = textToUpdate; // Atualiza o acumulado
             }
 
+            // Adiciona o cursor de digitação se não for uma mensagem de status puro e o stream não terminou
+            const isStatusMessage = lastProcessingStatusRef.current &&
+                (lastProcessingStatusRef.current.stage === 'in_progress' || lastProcessingStatusRef.current.stage === 'pending');
+
+            if (!isStatusMessage && !streamHasFinishedRef.current) {
+                textToUpdate += "▍";
+            }
+
+            newMetadata.processingStatus = lastProcessingStatusRef.current || undefined;
+            if (accumulatedRawPartsRef.current.length > 0) {
+                newMetadata.rawParts = [...accumulatedRawPartsRef.current];
+            }
+
+
+            updateMessageInConversation(currentConversationIdRef.current, currentAiMessageIdRef.current, {
+                text: textToUpdate,
+                metadata: newMetadata
+            });
+
+            // Se o stream não terminou ou ainda há chunks de texto na fila (improvável aqui, mas seguro)
             if (!streamHasFinishedRef.current || chunkQueueRef.current.length > 0) {
                 renderIntervalRef.current = setTimeout(processChunkQueue, CHUNK_RENDER_INTERVAL_MS);
             } else {
+                // Certifica-se de que a mensagem final está sem o cursor e com metadados corretos
                 updateMessageInConversation(currentConversationIdRef.current, currentAiMessageIdRef.current, {
-                    text: accumulatedTextRef.current,
-                    metadata: { isLoading: false }
+                    text: accumulatedTextRef.current, // Sem o cursor
+                    metadata: {
+                        isLoading: false,
+                        processingStatus: lastProcessingStatusRef.current || undefined,
+                        rawParts: accumulatedRawPartsRef.current.length > 0 ? [...accumulatedRawPartsRef.current] : undefined,
+                    }
                 });
             }
         }
@@ -229,8 +255,13 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 text: accumulatedTextRef.current.replace(/▍$/, ''),
                 metadata: {
                     isLoading: false,
-                    error: false,
-                    abortedByUser: true
+                    error: false, // ou true se o aborto for considerado um erro
+                    abortedByUser: true,
+                    processingStatus: lastProcessingStatusRef.current?.stage !== 'completed' && lastProcessingStatusRef.current?.stage !== 'failed' ?
+                        { ...(lastProcessingStatusRef.current || {} as ProcessingStatus), stage: 'failed', error: 'Abortado pelo usuário' }
+                        : lastProcessingStatusRef.current || undefined,
+                    rawParts: accumulatedRawPartsRef.current.length > 0 ? [...accumulatedRawPartsRef.current] : undefined,
+
                 }
             });
         }
@@ -238,12 +269,14 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
         renderIntervalRef.current = null;
         setIsProcessingEditedMessage(false);
-        setIsGeneratingResponse(false); // Reset here
+        setIsGeneratingResponse(false);
         chunkQueueRef.current = [];
         accumulatedTextRef.current = "";
         streamHasFinishedRef.current = true;
         currentAiMessageIdRef.current = null;
         currentConversationIdRef.current = null;
+        lastProcessingStatusRef.current = null;
+        accumulatedRawPartsRef.current = [];
         if (localAbortEditedMessageControllerRef.current) {
             localAbortEditedMessageControllerRef.current = null;
         }
@@ -268,16 +301,18 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         chunkQueueRef.current = [];
         accumulatedTextRef.current = "";
         streamHasFinishedRef.current = false;
+        lastProcessingStatusRef.current = null;
+        accumulatedRawPartsRef.current = [];
         setIsProcessingEditedMessage(true);
-        setIsGeneratingResponse(true); // Set true at the beginning of generation
+        setIsGeneratingResponse(true);
 
         if (!settings.apiKey) {
-            const errorMsgId = addMessageToConversation(conversationId, {
-                text: "Erro: Chave de API não configurada.", sender: 'model', metadata: { error: true }
-            });
-            updateMessageInConversation(conversationId, errorMsgId, { metadata: { isLoading: false } });
+            // const errorMsgId = addMessageToConversation(conversationId, {
+            //     text: "Erro: Chave de API não configurada.", sender: 'model', metadata: { error: true, isLoading: false }
+            // });
+            // updateMessageInConversation(conversationId, errorMsgId, { metadata: { isLoading: false } }); // isLoading já é false
             setIsProcessingEditedMessage(false);
-            setIsGeneratingResponse(false); // Reset
+            setIsGeneratingResponse(false);
             localAbortEditedMessageControllerRef.current = null;
             return;
         }
@@ -285,7 +320,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         const conversationToUpdate = conversations.find(c => c.id === conversationId);
         if (!conversationToUpdate) {
             setIsProcessingEditedMessage(false);
-            setIsGeneratingResponse(false); // Reset
+            setIsGeneratingResponse(false);
             localAbortEditedMessageControllerRef.current = null;
             return;
         }
@@ -293,17 +328,25 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         const messageIndex = conversationToUpdate.messages.findIndex(msg => msg.id === editedMessageId);
         if (messageIndex === -1) {
             setIsProcessingEditedMessage(false);
-            setIsGeneratingResponse(false); // Reset
+            setIsGeneratingResponse(false);
             localAbortEditedMessageControllerRef.current = null;
             return;
         }
 
+        // Remove mensagens da IA e de função após a mensagem editada
         const updatedMessagesForHistory = conversationToUpdate.messages.slice(0, messageIndex + 1);
         updatedMessagesForHistory[messageIndex] = {
             ...updatedMessagesForHistory[messageIndex],
             text: newText,
             timestamp: new Date(),
-            metadata: { ...updatedMessagesForHistory[messageIndex].metadata, error: undefined, abortedByUser: undefined, userFacingError: undefined }
+            metadata: {
+                ...updatedMessagesForHistory[messageIndex].metadata,
+                error: undefined,
+                abortedByUser: undefined,
+                userFacingError: undefined,
+                processingStatus: undefined, // Limpa status anterior da mensagem do usuário
+                // rawParts: undefined, // Limpa rawParts da mensagem do usuário, se houver
+            }
         };
 
         setConversations(prevConvos =>
@@ -319,7 +362,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         });
         if (!newAiMessageId) {
             setIsProcessingEditedMessage(false);
-            setIsGeneratingResponse(false); // Reset
+            setIsGeneratingResponse(false);
             localAbortEditedMessageControllerRef.current = null;
             return;
         }
@@ -331,12 +374,15 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         let streamError: string | null = null;
         let finalAiResponseText = "";
 
+        // Inicia o loop de renderização imediatamente
         renderIntervalRef.current = setTimeout(processChunkQueue, CHUNK_RENDER_INTERVAL_MS);
 
         try {
             const historyForAPI: { sender: 'user' | 'model' | 'function'; text?: string; parts?: Part[] }[] =
                 updatedMessagesForHistory.map(msg => {
-                    if (msg.metadata?.rawParts) {
+                    // Para o histórico da API, se a mensagem tiver rawParts, use-as. Senão, use o texto.
+                    // Mensagens de 'function' (resposta da função) devem usar suas 'parts' se existirem.
+                    if (msg.metadata?.rawParts && (msg.sender === 'model' || msg.sender === 'function')) {
                         return { sender: msg.sender, parts: msg.metadata.rawParts as Part[] };
                     }
                     return { sender: msg.sender, text: msg.text };
@@ -346,9 +392,9 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
             const streamGenerator = streamMessageToGemini(
                 settings.apiKey,
-                historyForAPI.slice(0, -1),
-                newText,
-                [],
+                historyForAPI.slice(0, -1), // Exclui a mensagem do usuário atual, que será passada como `newText`
+                newText, // Texto da mensagem do usuário atual (editada)
+                updatedMessagesForHistory[messageIndex].metadata?.attachedFilesInfo?.map(f => ({ file: f as any })) || [], // TODO: Precisa adaptar se for reenviar arquivos de fato
                 currentGlobalMemoriesWithObjects,
                 settings.geminiModelConfig,
                 systemMessage({
@@ -357,7 +403,8 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                     customPersonalityPrompt: settings.customPersonalityPrompt
                 }),
                 settings.functionDeclarations || [],
-                signal
+                signal,
+                settings.geminiModelConfig.model.startsWith("gemini-1.5-pro") // Exemplo de como habilitar web search
             );
 
             for await (const streamResponse of streamGenerator) {
@@ -368,8 +415,22 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 if (streamResponse.delta) {
                     chunkQueueRef.current.push(streamResponse.delta);
                 }
+                if (streamResponse.processingStatus) {
+                    lastProcessingStatusRef.current = streamResponse.processingStatus;
+                    // Força uma atualização da UI para mostrar o status imediatamente
+                    if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
+                    processChunkQueue(); // Chama diretamente para refletir o status
+                }
+                if (streamResponse.rawPartsForNextTurn) {
+                    // Acumula as parts para a mensagem da IA atual.
+                    // Se for um functionCall, estas parts serão importantes.
+                    accumulatedRawPartsRef.current = [...streamResponse.rawPartsForNextTurn];
+                    if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
+                    processChunkQueue();
+                }
                 if (streamResponse.error) {
                     streamError = streamResponse.error;
+                    // Não quebre o loop aqui, deixe o isFinished finalizar para pegar o texto acumulado
                 }
                 if (streamResponse.isFinished) {
                     finalAiResponseText = streamResponse.finalText || accumulatedTextRef.current;
@@ -377,8 +438,10 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                     break;
                 }
             }
-            streamHasFinishedRef.current = true;
+            streamHasFinishedRef.current = true; // Indica que o stream terminou
+            // Limpa o intervalo e chama processChunkQueue uma última vez para renderizar o estado final
             if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
+            renderIntervalRef.current = null; // Garante que não haverá mais execuções agendadas
             processChunkQueue();
 
 
@@ -398,19 +461,26 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             const finalMetadata: Partial<MessageMetadata> = {
                 isLoading: false,
                 abortedByUser: streamError === "Resposta abortada pelo usuário." || (signal.aborted && !streamError) ? true : undefined,
+                processingStatus: lastProcessingStatusRef.current || undefined,
+                rawParts: accumulatedRawPartsRef.current.length > 0 ? [...accumulatedRawPartsRef.current] : undefined,
             };
+
             if (streamError && !finalMetadata.abortedByUser) {
-                finalMetadata.error = streamError;
+                finalMetadata.error = streamError; // Pode ser string ou boolean
                 finalMetadata.userFacingError = streamError;
+                if (lastProcessingStatusRef.current && lastProcessingStatusRef.current.stage !== 'completed') {
+                    finalMetadata.processingStatus = { ...lastProcessingStatusRef.current, stage: 'failed', error: streamError };
+                }
             }
 
-            let textForFinalMessage = (finalAiResponseText || accumulatedTextRef.current).replace(/▍$/, '');
+            const textForFinalMessage = (finalAiResponseText || accumulatedTextRef.current).replace(/▍$/, '');
             if (streamError && !finalMetadata.abortedByUser && !textForFinalMessage.includes(streamError)) {
-                textForFinalMessage = textForFinalMessage.trim() ? `${textForFinalMessage}\n\n⚠️ ${streamError}` : `⚠️ ${streamError}`;
+                // Apenas adiciona o erro se não for um aborto e o texto não o contiver
+                // textForFinalMessage = textForFinalMessage.trim() ? `${textForFinalMessage}\n\n⚠️ ${streamError}` : `⚠️ ${streamError}`;
             } else if (textForFinalMessage.includes('\n\n⚠️ ') && !streamError && !finalMetadata.abortedByUser) {
-                textForFinalMessage = textForFinalMessage.replace(/\n\n⚠️ .+$/, '').trim();
+                // textForFinalMessage = textForFinalMessage.replace(/\n\n⚠️ .+$/, '').trim();
             }
-
+            // A exibição do erro textual será gerenciada pelo MessageBubble com base no metadata.error e metadata.userFacingError
 
             if (!streamError || finalMetadata.abortedByUser) {
                 const processedMemoryActions: Required<MessageMetadata>['memorizedMemoryActions'] = [];
@@ -451,11 +521,13 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             currentConversationIdRef.current = null;
             chunkQueueRef.current = [];
             accumulatedTextRef.current = "";
+            lastProcessingStatusRef.current = null;
+            accumulatedRawPartsRef.current = [];
             if (localAbortEditedMessageControllerRef.current && localAbortEditedMessageControllerRef.current.signal === signal) {
                 localAbortEditedMessageControllerRef.current = null;
             }
             setIsProcessingEditedMessage(false);
-            setIsGeneratingResponse(false); // Reset false at the end of generation
+            setIsGeneratingResponse(false);
         }
     }, [
         settings.apiKey, settings.geminiModelConfig, settings.customPersonalityPrompt, settings.functionDeclarations,
@@ -471,7 +543,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             activeConversationId: activeId,
             activeConversation,
             isProcessingEditedMessage,
-            isGeneratingResponse, // Expose here
+            isGeneratingResponse,
             setActiveConversationId,
             createNewConversation,
             deleteConversation,
