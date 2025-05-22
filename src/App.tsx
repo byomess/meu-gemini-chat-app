@@ -106,7 +106,8 @@ const AppContent = () => {
           onClose={handleCloseSettingsModal}
         />
       </div>
-      {dialogProps && dialogProps.isOpen && <CustomDialog {...dialogProps} />}
+      {/* Render CustomDialog if dialogProps exist, letting its internal Transition handle the isOpen state */}
+      {dialogProps && <CustomDialog {...dialogProps} />}
     </>
   );
 }
