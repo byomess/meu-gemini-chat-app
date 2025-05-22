@@ -1,9 +1,10 @@
 // src/components/settings/tabs/FunctionCallingSettingsTab.tsx
 import React, { useState, useRef } from "react";
-import { IoAddCircleOutline, IoPencilOutline, IoTrashBinOutline, IoTerminalOutline, IoLinkOutline, IoDownloadOutline, IoCloudUploadOutline } from "react-icons/io5"; // Updated imported icons
+import { IoAddCircleOutline, IoPencilOutline, IoTrashBinOutline, IoTerminalOutline, IoLinkOutline, IoDownloadOutline, IoCloudUploadOutline } from "react-icons/io5";
 import Button from "../../common/Button";
+import TextInput from "../../common/TextInput"; // Import TextInput
 import { v4 as uuidv4 } from "uuid";
-import { useDialog } from "../../../contexts/DialogContext"; // Import useDialog
+import { useDialog } from "../../../contexts/DialogContext";
 
 interface LocalFunctionDeclaration {
     id: string;
@@ -36,7 +37,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
     currentFunctionDeclarations,
     setCurrentFunctionDeclarations,
 }) => {
-    const { showDialog } = useDialog(); // Use the dialog hook
+    const { showDialog } = useDialog();
     const [isEditing, setIsEditing] = useState<string | null>(null);
     const [editName, setEditName] = useState("");
     const [editDescription, setEditDescription] = useState("");
@@ -45,7 +46,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
     const [editHttpMethod, setEditHttpMethod] =
         useState<LocalFunctionDeclaration["httpMethod"]>("GET");
     const nameInputRef = useRef<HTMLInputElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null); // Ref for hidden file input
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const isValidUrl = (urlString: string): boolean => {
         try {
@@ -178,7 +179,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
         reader.onload = (e) => {
             try {
                 const content = e.target?.result as string;
-                const importedData: LocalFunctionDeclaration[] = JSON.parse(content); // Parse as LocalFunctionDeclaration[] for validation
+                const importedData: LocalFunctionDeclaration[] = JSON.parse(content);
 
                 if (!Array.isArray(importedData)) {
                     showDialog({ title: "Import Error", message: "O arquivo importado não contém uma lista válida de funções.", type: "alert" });
@@ -191,12 +192,12 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                         item &&
                         typeof item.name === 'string' &&
                         typeof item.description === 'string' &&
-                        typeof item.parametersSchema === 'string' && // Assuming schema is stored as string
+                        typeof item.parametersSchema === 'string' &&
                         typeof item.endpointUrl === 'string' &&
                         ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(item.httpMethod)
                     ) {
                         validatedData.push({
-                            id: item.id || uuidv4(), // Use existing ID or generate new one
+                            id: item.id || uuidv4(),
                             name: item.name,
                             description: item.description,
                             parametersSchema: item.parametersSchema,
@@ -262,17 +263,17 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                 Declare APIs externas que a IA pode chamar. O Loox atuará como um proxy
                 para essas chamadas.
             </p>
-            <div className="flex justify-between items-center mt-4"> {/* Changed to justify-between */}
+            <div className="flex justify-between items-center mt-4">
                 {!isEditing && (
                     <Button
                         variant="primary"
                         onClick={handleStartAddNew}
                         className="!text-xs !py-1.5 !px-2.5"
                     >
-                        <IoAddCircleOutline className="mr-1.5" size={18} /> Adicionar {/* Changed label */}
+                        <IoAddCircleOutline className="mr-1.5" size={18} /> Adicionar
                     </Button>
                 )}
-                <div className="flex gap-2"> {/* Grouping right-aligned buttons */}
+                <div className="flex gap-2">
                     <Button
                         variant="secondary"
                         onClick={handleExport}
@@ -280,7 +281,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                         disabled={!!isEditing || currentFunctionDeclarations.length === 0}
                         title="Exportar funções para JSON"
                     >
-                        <IoDownloadOutline className="mr-1.5" size={18} /> Exportar {/* Changed icon */}
+                        <IoDownloadOutline className="mr-1.5" size={18} /> Exportar
                     </Button>
                     <input
                         type="file"
@@ -296,34 +297,26 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                         disabled={!!isEditing}
                         title="Importar funções de um arquivo JSON"
                     >
-                        <IoCloudUploadOutline className="mr-1.5" size={18} /> Importar {/* Changed icon */}
+                        <IoCloudUploadOutline className="mr-1.5" size={18} /> Importar
                     </Button>
                 </div>
             </div>
             {isEditing && (
                 <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-md space-y-4">
                     <h4 className="text-sm font-semibold text-[#e04579]">{formTitle}</h4>
-                    <div>
-                        <label
-                            htmlFor="funcName"
-                            className="block text-xs font-medium text-gray-600 mb-1"
-                        >
-                            Nome da Função (para a IA)
-                        </label>
-                        <input
-                            ref={nameInputRef}
-                            type="text"
-                            id="funcName"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            placeholder="ex: getCurrentWeather, searchProducts"
-                            className="w-full p-2.5 bg-white border border-gray-300 rounded-md focus:ring-1 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-sm text-gray-800"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                            Nome que a IA usará para chamar esta API. Use camelCase ou
-                            snake_case.
-                        </p>
-                    </div>
+                    <TextInput
+                        ref={nameInputRef}
+                        id="funcName"
+                        name="funcName"
+                        label="Nome da Função (para a IA)"
+                        value={editName}
+                        onChange={setEditName}
+                        placeholder="ex: getCurrentWeather, searchProducts"
+                        helperText="Nome que a IA usará para chamar esta API. Use camelCase ou snake_case."
+                        inputClassName="p-2.5 text-sm" // Match original styling
+                        labelClassName="block text-xs font-medium text-gray-600 mb-1"
+                        helperTextClassName="text-xs text-gray-500 mt-1"
+                    />
                     <div>
                         <label
                             htmlFor="funcDesc"
@@ -343,22 +336,17 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                             Descreva o que a API faz...
                         </p>
                     </div>
-                    <div>
-                        <label
-                            htmlFor="funcEndpointUrl"
-                            className="block text-xs font-medium text-gray-600 mb-1"
-                        >
-                            URL do Endpoint da API
-                        </label>
-                        <input
-                            type="url"
-                            id="funcEndpointUrl"
-                            value={editEndpointUrl}
-                            onChange={(e) => setEditEndpointUrl(e.target.value)}
-                            placeholder="ex: https://api.example.com/weather"
-                            className="w-full p-2.5 bg-white border border-gray-300 rounded-md focus:ring-1 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-sm text-gray-800"
-                        />
-                    </div>
+                    <TextInput
+                        id="funcEndpointUrl"
+                        name="funcEndpointUrl"
+                        type="url"
+                        label="URL do Endpoint da API"
+                        value={editEndpointUrl}
+                        onChange={setEditEndpointUrl}
+                        placeholder="ex: https://api.example.com/weather"
+                        inputClassName="p-2.5 text-sm" // Match original styling
+                        labelClassName="block text-xs font-medium text-gray-600 mb-1"
+                    />
                     <div>
                         <label
                             htmlFor="funcHttpMethod"
@@ -440,7 +428,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                 }`}
                         >
                             <div className="flex items-start justify-between gap-2">
-                                <div className="flex-grow min-w-0"> {/* Added min-w-0 here */}
+                                <div className="flex-grow min-w-0">
                                     <p className="text-sm font-semibold text-[#e04579] break-words">
                                         {declaration.name}
                                     </p>

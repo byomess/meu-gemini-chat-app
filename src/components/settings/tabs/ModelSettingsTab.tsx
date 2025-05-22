@@ -3,6 +3,7 @@ import React, { useMemo } from "react";
 import type { GeminiModel, GeminiModelConfig, SafetySetting, HarmCategory, HarmBlockThreshold } from "../../../types";
 import { HarmCategory as GenaiHarmCategoryEnum, HarmBlockThreshold as GenaiHarmBlockThresholdEnum } from "@google/genai";
 import { IoShieldCheckmarkOutline } from "react-icons/io5";
+import TextInput from "../../common/TextInput"; // Import TextInput
 
 export const AVAILABLE_GEMINI_MODELS: GeminiModel[] = [
     "gemini-2.5-pro-preview-05-06",
@@ -170,6 +171,16 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({ currentModelConfig,
         });
     }, [currentModelConfig.safetySettings]);
 
+    const maxTokensForModel = useMemo(() => {
+        return currentModelConfig.model.includes("flash")
+            ? 8192
+            : currentModelConfig.model.includes("pro")
+                ? currentModelConfig.model.includes("preview")
+                    ? 32768
+                    : 8192
+                : 8192;
+    }, [currentModelConfig.model]);
+
     return (
         <div className="space-y-5 pb-5">
             <div>
@@ -239,42 +250,28 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({ currentModelConfig,
                 info="Considera os K tokens mais prováveis. (0 desativa)"
             />
 
-            <div>
-                <label
-                    htmlFor="maxOutputTokens"
-                    className="block text-sm font-medium text-gray-700 mb-1.5"
-                >
-                    Máximo de Tokens de Saída
-                </label>
-                <input
-                    type="number"
-                    id="maxOutputTokens"
-                    name="maxOutputTokens"
-                    min="1"
-                    max={
-                        currentModelConfig.model.includes("flash")
-                            ? 8192
-                            : currentModelConfig.model.includes("pro")
-                                ? currentModelConfig.model.includes("preview")
-                                    ? 32768
-                                    : 8192
-                                : 8192
-                    }
-                    step="1024"
-                    value={currentModelConfig.maxOutputTokens}
-                    onChange={(e) =>
-                        onModelConfigChange(
-                            "maxOutputTokens",
-                            parseInt(e.target.value, 10) || 1
-                        )
-                    }
-                    className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e04579] focus:border-[#e04579] text-gray-800 shadow-sm"
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                    Limite de tokens na resposta da IA. (Ex: 8192 para Flash, até 32768
-                    para Pro Preview)
-                </p>
-            </div>
+            <TextInput
+                id="maxOutputTokens"
+                name="maxOutputTokens"
+                label="Máximo de Tokens de Saída"
+                type="number"
+                value={String(currentModelConfig.maxOutputTokens)} // TextInput expects string value
+                onChange={(value) => {
+                    const numValue = parseInt(value, 10);
+                    // Ensure the value is at least 1 and not NaN
+                    onModelConfigChange("maxOutputTokens", isNaN(numValue) || numValue < 1 ? 1 : numValue);
+                }}
+                // Pass min, max, step directly; TextInput will pass them to the <input>
+                // @ts-ignore because TextInputProps doesn't explicitly define these, but they are passed down
+                min="1"
+                // @ts-ignore
+                max={String(maxTokensForModel)}
+                // @ts-ignore
+                step="1024"
+                helperText={`Limite de tokens na resposta da IA. (Ex: 8192 para Flash, até ${maxTokensForModel} para ${currentModelConfig.model})`}
+                // TextInput's baseInputClasses should handle most styling.
+                // inputClassName="p-3" // Default TextInput padding is p-3
+            />
 
             <div className="pt-3 mt-3 border-t border-gray-200">
                 <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">

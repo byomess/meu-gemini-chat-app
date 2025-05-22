@@ -2,6 +2,7 @@
 import React from "react";
 import { Switch } from "@headlessui/react";
 import { RxAvatar } from "react-icons/rx";
+import TextInput from "../../common/TextInput"; // Import TextInput
 
 interface InterfaceSettingsTabProps {
     currentCodeHighlightEnabled: boolean;
@@ -30,11 +31,10 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
 }) => {
     return (
         <div className="space-y-6">
-            <div className="space-y-4"> {/* Moved space-y-4 here */}
+            <div className="space-y-4">
                 <h3 className="text-base font-semibold text-gray-800 mb-3">
                     Configurações de Interface
                 </h3>
-                {/* Removed the container div */}
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex-grow">
                         <p className="text-sm font-medium text-gray-700">
@@ -67,14 +67,18 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
                     </label>
                     <div className="flex items-center gap-2">
                         <RxAvatar className="text-gray-500 flex-shrink-0" size={20} />
-                        <input
-                            type="url"
+                        <TextInput
                             id="aiAvatarUrl"
                             name="aiAvatarUrl"
+                            type="url"
                             placeholder="https://exemplo.com/avatar.png (deixe em branco para padrão)"
                             value={currentAiAvatarUrl}
-                            onChange={(e) => onAiAvatarUrlChange(e.target.value)}
-                            className="w-full p-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-sm text-gray-800 shadow-sm transition-colors"
+                            onChange={onAiAvatarUrlChange} // TextInput's onChange passes the value directly
+                            // The baseInputClasses in TextInput should cover styling.
+                            // If specific adjustments are needed, inputClassName can be used.
+                            // e.g., inputClassName="p-2.5 text-sm" if TextInput defaults are p-3
+                            // For this case, TextInput defaults should be fine.
+                            inputClassName="p-2.5 text-sm" // Match original styling more closely
                         />
                     </div>
                     <p className="text-xs text-gray-500 mt-2">

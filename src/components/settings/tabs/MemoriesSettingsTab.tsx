@@ -4,9 +4,10 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { IoAddCircleOutline, IoDownloadOutline, IoCloudUploadOutline, IoPencilOutline, IoTrashBinOutline, IoSearchOutline } from "react-icons/io5";
 import { LuBrain } from "react-icons/lu";
 import Button from "../../common/Button";
+import TextInput from "../../common/TextInput"; // Import TextInput
 import { useMemories } from "../../../contexts/MemoryContext";
 import type { Memory } from "../../../types";
-import { useDialog } from "../../../contexts/DialogContext"; // Import useDialog
+import { useDialog } from "../../../contexts/DialogContext";
 
 const MemoriesSettingsTab: React.FC = () => {
     const {
@@ -16,7 +17,7 @@ const MemoriesSettingsTab: React.FC = () => {
         updateMemory,
         replaceAllMemories,
     } = useMemories();
-    const { showDialog } = useDialog(); // Use the dialog hook
+    const { showDialog } = useDialog();
     const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
     const [editedMemoryText, setEditedMemoryText] = useState<string>("");
     const [newMemoryText, setNewMemoryText] = useState<string>("");
@@ -228,19 +229,21 @@ const MemoriesSettingsTab: React.FC = () => {
                 </div>
             </div>
             <div className="flex items-center gap-2.5 mt-2">
-                <input
+                <TextInput
                     ref={newMemoryInputRef}
-                    type="text"
+                    id="newMemory"
+                    name="newMemory"
                     value={newMemoryText}
-                    onChange={(e) => setNewMemoryText(e.target.value)}
+                    onChange={setNewMemoryText}
                     onKeyDown={handleNewMemoryKeyDown}
                     placeholder="Adicionar nova memória..."
-                    className="flex-grow p-2.5 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-sm text-gray-800 transition-colors"
+                    containerClassName="flex-grow"
+                    inputClassName="p-2.5 text-sm" // Match original styling
                 />
                 <Button
                     variant="primary"
                     onClick={handleAddNewMemory}
-                    className="!py-2.5 !px-3 flex-shrink-0"
+                    className="!py-2.5 !px-3 flex-shrink-0" // Adjusted padding to better match TextInput
                     disabled={!newMemoryText.trim()}
                 >
                     {" "}
@@ -249,15 +252,18 @@ const MemoriesSettingsTab: React.FC = () => {
             </div>
             <div className="relative">
                 <IoSearchOutline
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" // Ensure icon is above input
                     size={18}
                 />
-                <input
-                    type="text"
+                <TextInput
+                    id="searchMemories"
+                    name="searchMemories"
                     placeholder="Buscar memórias..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-2.5 py-1.5 pl-10 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-sm text-gray-800 transition-colors"
+                    onChange={setSearchTerm}
+                    // Add pl-10 to inputClassName to make space for the icon
+                    inputClassName="px-2.5 py-1.5 text-sm pl-10" // Match original styling and add padding for icon
+                    // containerClassName="w-full" // Ensure TextInput takes full width if needed
                 />
             </div>
             {memories.length > 0 ? (
