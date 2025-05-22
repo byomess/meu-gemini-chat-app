@@ -105,14 +105,16 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside className={finalAsideClasses}>
       {isMobile && onCloseMobile && isOpen && (
-          <button
+          <Button
+            variant="ghost" // Using ghost variant for custom background/text
+            size="icon-md" // For p-2 rounded-full
             onClick={onCloseMobile}
-            className="absolute top-4 -right-12 p-1.5 text-gray-500 hover:text-gray-800 rounded-full z-[51] transition-colors bg-gray-100 hover:bg-gray-200"
+            className="absolute top-4 -right-12 z-[51] bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-800"
             title="Fechar menu"
             aria-label="Fechar menu"
           >
             <IoCloseOutline size={26} />
-          </button>
+          </Button>
       )}
 
       <div className="mb-3">
@@ -165,18 +167,20 @@ const Sidebar: React.FC<SidebarProps> = ({
                     autoFocus
                     className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-[#e04579]/70 focus:border-[#e04579] text-sm py-0.5 transition-colors rounded-none"
                   />
-                  <button
+                  <Button
+                    variant="ghost" // Using ghost variant for minimal styling
+                    size="icon-sm" // For p-1.5 rounded-md
                     onMouseDown={(e) => { 
                         e.preventDefault(); 
                         e.stopPropagation();
                         handleCancelEditTitle();
                     }}
-                    className="p-1 text-gray-500 hover:text-gray-800 flex-shrink-0 rounded-md hover:bg-gray-300"
+                    className="text-gray-500 hover:text-gray-800 flex-shrink-0 hover:bg-gray-300"
                     title="Cancelar edição (Esc)"
                     aria-label="Cancelar renomeação da conversa"
                   >
                     <IoCloseOutline size={18} />
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <>
@@ -206,22 +210,26 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   ? '!opacity-100 !bg-[#e04579]/20 group-hover/convoItem:!bg-[#e04579]/30 [&>button:hover]:!bg-[#e04579]/40'
                                   : '[&>button:hover]:bg-gray-300/80'
                                 }`}>
-                  <button
+                  <Button
+                    variant="ghost" // Using ghost variant for minimal styling
+                    size="icon-sm" // For p-1.5 rounded-md
                     onClick={(e) => handleStartEditTitle(e, convo)}
                     title="Editar título"
                     aria-label="Editar título da conversa"
                     className={`${convo.id === activeConversationId ? 'text-white opacity-80 hover:text-white' : 'text-gray-500 hover:text-gray-800'} transition-colors`}
                   >
                     <IoPencilOutline size={15} />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost" // Using ghost variant for minimal styling
+                    size="icon-sm" // For p-1.5 rounded-md
                     onClick={(e) => handleDeleteConversation(e, convo.id)}
                     title="Excluir conversa"
                     aria-label="Excluir conversa"
                     className={`${convo.id === activeConversationId ? 'text-white opacity-80 hover:text-red-200' : 'text-gray-500 hover:text-red-500'} transition-colors`}
                   >
                     <IoTrashBinOutline size={15} />
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -242,16 +250,16 @@ const Sidebar: React.FC<SidebarProps> = ({
     </div>
 
       <div className={`pt-3 mt-2 border-t border-gray-200`}>
-        <button
+        <Button
+          variant="ghost" // Using ghost variant for minimal styling
           onClick={onOpenSettings}
-          className={`w-full text-left text-gray-700 hover:bg-pink-50 hover:text-gray-900 rounded-lg
-                      flex items-center transition-colors duration-150 ease-in-out text-sm group/settings p-2.5 space-x-3
-                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e04579] focus-visible:ring-offset-1 focus-visible:ring-offset-white`}
+          className={`w-full text-left rounded-lg flex items-center text-sm group/settings p-2.5 space-x-3
+                      hover:bg-pink-50 hover:text-gray-900 focus-visible:ring-[#e04579] focus-visible:ring-offset-1 focus-visible:ring-offset-white`}
           aria-label="Configurações"
         >
           <IoSettingsOutline size={20} className={`text-gray-500 group-hover/settings:text-[#e04579] group-hover/settings:rotate-45 transition-all duration-300`} />
           <span className="font-medium">Configurações</span>
-        </button>
+        </Button>
       </div>
     </aside>
   );
