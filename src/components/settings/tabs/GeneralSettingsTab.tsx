@@ -1,5 +1,6 @@
 // src/components/settings/tabs/GeneralSettingsTab.tsx
 import React from "react";
+import TextInput from "../../common/TextInput"; // Import the new component
 
 export const DEFAULT_PERSONALITY_FOR_PLACEHOLDER = `Você é uma IA professora / tutora de alunos que estão fazendo cursos na plataforma de ensino à distância Aulapp, e seu papel é ajudar os alunos a entenderem melhor o conteúdo do curso, responder perguntas e fornecer feedback sobre a evolução deles. Você deve ser amigável, paciente e encorajador, sempre buscando ajudar os alunos a aprenderem e se desenvolverem.`;
 
@@ -18,27 +19,25 @@ const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
 }) => {
     return (
         <div className="space-y-6">
-            <div>
-                <label
-                    htmlFor="apiKey"
-                    className="block text-sm font-medium text-gray-700 mb-1.5"
-                >
-                    Chave da API Google Gemini
-                </label>
-                <input
-                    type="password"
-                    id="apiKey"
-                    name="apiKey"
-                    placeholder="Cole sua chave da API aqui (ex: AIza...)"
-                    value={currentApiKey}
-                    onChange={(e) => setCurrentApiKey(e.target.value)}
-                    className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-gray-800 shadow-sm transition-colors"
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                    Sua chave de API é armazenada localmente no seu navegador e nunca é
-                    enviada para nossos servidores.
-                </p>
-            </div>
+            <TextInput
+                id="apiKey"
+                name="apiKey"
+                label="Chave da API Google Gemini"
+                type="password"
+                value={currentApiKey}
+                onChange={setCurrentApiKey} // The new component's onChange passes the value directly
+                placeholder="Cole sua chave da API aqui (ex: AIza...)"
+                helperText={
+                    <>
+                        Sua chave de API é armazenada localmente no seu navegador e nunca é
+                        enviada para nossos servidores.
+                    </>
+                }
+                // The default styles within TextInput are designed to match the previous appearance.
+                // Custom classes can be passed if needed, e.g.:
+                // inputClassName="your-custom-input-class"
+                // containerClassName="your-custom-container-class"
+            />
             <div>
                 <label
                     htmlFor="customPersonalityPrompt"
