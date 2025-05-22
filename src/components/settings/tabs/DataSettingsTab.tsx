@@ -77,12 +77,31 @@ const DataSettingsTab: React.FC = () => {
             enableWebSearch: settings.enableWebSearch,
             enableAttachments: settings.enableAttachments,
             hideNavigation: settings.hideNavigation, // Exporting as hideNavigation
-            memories: memories.map(mem => ({
-                id: mem.id,
-                content: mem.content,
-                timestamp: mem.timestamp.toISOString(),
-                sourceMessageId: mem.sourceMessageId,
-            })),
+            memories: memories.map(mem => {
+                let timestampStr: string;
+                if (mem.timestamp instanceof Date) {
+                    timestampStr = mem.timestamp.toISOString();
+                } else if (typeof mem.timestamp === 'string') {
+                    const date = new Date(mem.timestamp);
+                    if (!isNaN(date.getTime())) {
+                        timestampStr = date.toISOString();
+                    } else {
+                        // Fallback for invalid date string
+                        console.warn(`Invalid date string for memory ID ${mem.id}:`, mem.timestamp, ". Using current time for export.");
+                        timestampStr = new Date().toISOString();
+                    }
+                } else {
+                    // Fallback for unexpected types
+                    console.warn(`Unexpected timestamp type for memory ID ${mem.id}:`, mem.timestamp, ". Using current time for export.");
+                    timestampStr = new Date().toISOString();
+                }
+                return {
+                    id: mem.id,
+                    content: mem.content,
+                    timestamp: timestampStr,
+                    sourceMessageId: mem.sourceMessageId,
+                };
+            }),
         };
 
         const filename = `loox_settings_export_${new Date().toISOString().slice(0, 10)}.json`;
