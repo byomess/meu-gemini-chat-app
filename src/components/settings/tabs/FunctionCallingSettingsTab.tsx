@@ -249,7 +249,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                         variant="secondary"
                         onClick={handleExport}
                         className="!text-xs !py-1.5 !px-2.5 !font-medium"
-                        disabled={isEditing || currentFunctionDeclarations.length === 0}
+                        disabled={!!isEditing || currentFunctionDeclarations.length === 0}
                         title="Exportar funções para JSON"
                     >
                         <IoDownloadOutline className="mr-1.5" size={18} /> Exportar {/* Changed icon */}
@@ -265,7 +265,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                         variant="secondary"
                         onClick={() => fileInputRef.current?.click()}
                         className="!text-xs !py-1.5 !px-2.5 !font-medium"
-                        disabled={isEditing}
+                        disabled={!!isEditing}
                         title="Importar funções de um arquivo JSON"
                     >
                         <IoCloudUploadOutline className="mr-1.5" size={18} /> Importar {/* Changed icon */}
