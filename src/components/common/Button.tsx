@@ -9,7 +9,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', size = 'md', className, ...props }) => {
   const baseStyles =
-    'inline-flex items-center justify-center font-medium focus:outline-none disabled:opacity-60 disabled:pointer-events-none transition-all duration-150 ease-in-out';
+    'inline-flex items-center justify-center font-medium focus:outline-none disabled:opacity-60 disabled:pointer-events-none transition-all duration-150 ease-in-out cursor-pointer'; // Added cursor-pointer
 
   const sizeStyles = {
     sm: 'px-3 py-1.5 text-xs rounded',
