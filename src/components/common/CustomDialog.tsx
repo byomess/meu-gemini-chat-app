@@ -1,5 +1,5 @@
 // src/components/common/CustomDialog.tsx
-import React, { Fragment, useRef, useEffect } from 'react';
+import React, { Fragment, useRef, useEffect, useCallback } from 'react';
 import { Transition } from '@headlessui/react';
 import Button from './Button';
 
@@ -28,6 +28,27 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
 }) => {
   const primaryButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Memoize handleConfirm and handleCancel to ensure stable references
+  const handleConfirm = useCallback(() => {
+    if (onConfirm) onConfirm();
+    onClose(); // Always close after confirm
+  }, [onConfirm, onClose]);
+
+  const handleCancel = useCallback(() => {
+    if (onCancel) onCancel();
+    onClose(); // Always close after cancel
+  }, [onCancel, onClose]);
+
+  // This function handles the primary action (OK/Confirm) and stops propagation
+  const primaryAction = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // Stop event propagation for the button click
+    if (type === 'confirm' && onConfirm) {
+      handleConfirm();
+    } else {
+      onClose(); // Call onClose directly for alert type
+    }
+  }, [type, onConfirm, handleConfirm, onClose]);
+
   useEffect(() => {
     if (isOpen) {
       // Use a timeout to ensure the button is rendered and interactive before focusing
@@ -36,31 +57,25 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
         primaryButtonRef.current?.focus();
       }, 100); // A small delay, adjust if needed
 
-      return () => clearTimeout(timer);
+      // Add event listener for Escape key
+      const handleEscape = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          if (type === 'confirm') {
+            handleCancel(); // Call cancel logic for confirm type
+          } else {
+            onClose(); // Just close for alert type
+          }
+        }
+      };
+
+      document.addEventListener('keydown', handleEscape);
+
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('keydown', handleEscape);
+      };
     }
-  }, [isOpen]);
-
-  const handleConfirm = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Stop event propagation
-    if (onConfirm) onConfirm();
-    onClose(); // Always close after confirm
-  };
-
-  const handleCancel = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Stop event propagation
-    if (onCancel) onCancel();
-    onClose(); // Always close after cancel
-  };
-
-  // This function handles the primary action (OK/Confirm) and stops propagation
-  const primaryAction = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Stop event propagation
-    if (type === 'confirm' && onConfirm) {
-      handleConfirm(e); // Call handleConfirm, which already stops propagation
-    } else {
-      onClose(); // Call onClose directly for alert type
-    }
-  };
+  }, [isOpen, type, handleCancel, onClose]); // Dependencies for the useEffect
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -75,7 +90,10 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
           leaveTo="opacity-0"
         >
           {/* Very light transparent black background with blur */}
-          <div className="fixed inset-0 bg-black/10 backdrop-blur-sm" />
+          <div
+            className="fixed inset-0 bg-black/10 backdrop-blur-sm"
+            onClick={type === 'confirm' ? handleCancel : onClose} // Handle click outside
+          />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
