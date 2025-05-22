@@ -230,47 +230,48 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                     Funções Externas (API Endpoints) ({currentFunctionDeclarations.length}
                     )
                 </h3>
-                <div className="flex gap-2"> {/* Grouping buttons */}
-                    <Button
-                        variant="secondary"
-                        onClick={handleExport}
-                        className="!text-xs !py-1.5 !px-2.5 !font-medium" // Changed !py-2 to !py-1.5 and !px-3.5 to !px-2.5
-                        disabled={isEditing || currentFunctionDeclarations.length === 0}
-                        title="Exportar funções para JSON"
-                    >
-                        <IoArrowDownOutline className="mr-1.5" size={18} /> Exportar
-                    </Button>
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleImport}
-                        accept=".json"
-                        className="hidden"
-                    />
-                    <Button
-                        variant="secondary"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="!text-xs !py-1.5 !px-2.5 !font-medium" // Changed !py-2 to !py-1.5 and !px-3.5 to !px-2.5
-                        disabled={isEditing}
-                        title="Importar funções de um arquivo JSON"
-                    >
-                        <IoArrowUpOutline className="mr-1.5" size={18} /> Importar
-                    </Button>
-                    {!isEditing && (
-                        <Button
-                            variant="primary"
-                            onClick={handleStartAddNew}
-                            className="!text-xs !py-1.5 !px-2.5" // Changed !text-sm to !text-xs, !py-2 to !py-1.5 and !px-3.5 to !px-2.5
-                        >
-                            <IoAddCircleOutline className="mr-1.5" size={18} /> Adicionar Nova
-                        </Button>
-                    )}
-                </div>
+                {/* Buttons were here */}
             </div>
             <p className="text-xs text-gray-500 -mt-4">
                 Declare APIs externas que a IA pode chamar. O Loox atuará como um proxy
                 para essas chamadas.
             </p>
+            <div className="flex gap-2 mt-4"> {/* Grouping buttons, moved here and added mt-4 */}
+                <Button
+                    variant="secondary"
+                    onClick={handleExport}
+                    className="!text-xs !py-1.5 !px-2.5 !font-medium"
+                    disabled={isEditing || currentFunctionDeclarations.length === 0}
+                    title="Exportar funções para JSON"
+                >
+                    <IoArrowDownOutline className="mr-1.5" size={18} /> Exportar
+                </Button>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImport}
+                    accept=".json"
+                    className="hidden"
+                />
+                <Button
+                    variant="secondary"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="!text-xs !py-1.5 !px-2.5 !font-medium"
+                    disabled={isEditing}
+                    title="Importar funções de um arquivo JSON"
+                >
+                    <IoArrowUpOutline className="mr-1.5" size={18} /> Importar
+                </Button>
+                {!isEditing && (
+                    <Button
+                        variant="primary"
+                        onClick={handleStartAddNew}
+                        className="!text-xs !py-1.5 !px-2.5"
+                    >
+                        <IoAddCircleOutline className="mr-1.5" size={18} /> Adicionar Nova
+                    </Button>
+                )}
+            </div>
             {isEditing && (
                 <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-md space-y-4">
                     <h4 className="text-sm font-semibold text-[#e04579]">{formTitle}</h4>
