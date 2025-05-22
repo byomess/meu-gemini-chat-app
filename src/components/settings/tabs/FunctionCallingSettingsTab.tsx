@@ -178,7 +178,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
         reader.onload = (e) => {
             try {
                 const content = e.target?.result as string;
-                const importedData: any[] = JSON.parse(content); // Parse as any[] first for validation
+                const importedData: LocalFunctionDeclaration[] = JSON.parse(content); // Parse as LocalFunctionDeclaration[] for validation
 
                 if (!Array.isArray(importedData)) {
                     showDialog({ title: "Import Error", message: "O arquivo importado não contém uma lista válida de funções.", type: "alert" });
