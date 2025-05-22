@@ -26,17 +26,27 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
   onCancel,
   type = 'alert',
 }) => {
-  const handleConfirm = () => {
+  const handleConfirm = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Stop event propagation
     if (onConfirm) onConfirm();
     onClose(); // Always close after confirm
   };
 
-  const handleCancel = () => {
+  const handleCancel = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Stop event propagation
     if (onCancel) onCancel();
     onClose(); // Always close after cancel
   };
 
-  const primaryAction = type === 'confirm' && onConfirm ? handleConfirm : onClose;
+  // This function handles the primary action (OK/Confirm) and stops propagation
+  const primaryAction = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Stop event propagation
+    if (type === 'confirm' && onConfirm) {
+      handleConfirm(e); // Call handleConfirm, which already stops propagation
+    } else {
+      onClose(); // Call onClose directly for alert type
+    }
+  };
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
