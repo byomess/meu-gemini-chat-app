@@ -267,4 +267,23 @@
   --color-code-block-no-highlight-scrollbar-track: var(--color-gray-200);
   --color-inline-code-text-alt: var(--color-indigo-700);
   --color-inline-code-bg-alt: var(--color-gray-200);
+
+  /* CustomDialog Colors */
+  --color-dialog-overlay-bg: color-mix(in srgb, var(--color-black) 10%, transparent);
+  --color-dialog-bg: var(--color-white);
+  --color-dialog-border: var(--color-gray-200);
+  --color-dialog-title-text: var(--color-gray-800);
+  --color-dialog-message-text: var(--color-gray-700);
+
+  /* TextInput Colors */
+  --color-text-input-label-text: var(--color-gray-700);
+  --color-text-input-bg: var(--color-white);
+  --color-text-input-border: var(--color-gray-300);
+  --color-text-input-focus-ring: var(--color-primary);
+  --color-text-input-focus-border: var(--color-primary);
+  --color-text-input-placeholder-text: var(--color-gray-400);
+  --color-text-input-text: var(--color-gray-800);
+  --color-text-input-helper-text: var(--color-gray-500);
+  --color-text-input-icon: var(--color-gray-500);
+  --color-text-input-icon-hover: var(--color-gray-700);
 }

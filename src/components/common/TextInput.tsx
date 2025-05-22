@@ -33,17 +33,17 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
     disabled = false,
     autoComplete,
     containerClassName = '', // Default: no extra classes for the main container
-    labelClassName = "block text-sm font-medium text-gray-700 mb-1.5",
+    labelClassName = "block text-sm font-medium text-[var(--color-text-input-label-text)] mb-1.5",
     inputWrapperClassName = "relative", // For the div wrapping input and icon
     inputClassName: customInputClassName = "", // User-provided custom classes for input
-    helperTextClassName = "text-xs text-gray-500 mt-2",
+    helperTextClassName = "text-xs text-[var(--color-text-input-helper-text)] mt-2",
 }, ref) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
     const actualInputType = type === 'password' && isPasswordVisible ? 'text' : type;
 
     // Base styles matching the original input in GeneralSettingsTab
-    const baseInputClasses = "w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-gray-800 shadow-sm transition-colors";
+    const baseInputClasses = "w-full p-3 bg-[var(--color-text-input-bg)] border border-[var(--color-text-input-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-text-input-focus-ring)] focus:border-[var(--color-text-input-focus-border)] placeholder-[var(--color-text-input-placeholder-text)] text-[var(--color-text-input-text)] shadow-sm transition-colors";
     
     const passwordSpecificClasses = type === 'password' ? "pr-12" : ""; // Adjust pr-X as needed for icon spacing
 
@@ -73,7 +73,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
                     <button
                         type="button"
                         onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-                        className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#e04579] rounded-r-lg"
+                        className="absolute inset-y-0 right-0 px-3 flex items-center text-[var(--color-text-input-icon)] hover:text-[var(--color-text-input-icon-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-text-input-focus-ring)] rounded-r-lg"
                         aria-label={isPasswordVisible ? "Hide password" : "Show password"}
                     >
                         {isPasswordVisible ? <FiEyeOff size={20} /> : <FiEye size={20} />}

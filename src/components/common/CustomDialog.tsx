@@ -1,6 +1,5 @@
 // src/components/common/CustomDialog.tsx
 import React, { Fragment, useRef, useEffect, useCallback } from 'react';
-import { Transition } from '@headlessui/react';
 import Button from './Button';
 
 export interface CustomDialogProps {
@@ -114,7 +113,7 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
         >
           {/* Very light transparent black background with blur */}
           <div
-            className="fixed inset-0 bg-black/10 backdrop-blur-sm"
+            className="fixed inset-0 bg-[var(--color-dialog-overlay-bg)] backdrop-blur-sm"
             onClick={type === 'confirm' ? handleCancel : onClose} // Handle click outside
           />
         </Transition.Child>
@@ -132,18 +131,18 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
             >
               {/* White dialog panel with gray border and dark text */}
               <div
-                className="w-full max-w-md transform overflow-hidden rounded-xl bg-white p-5 sm:p-6 text-left align-middle shadow-xl transition-all border border-gray-200"
+                className="w-full max-w-md transform overflow-hidden rounded-xl bg-[var(--color-dialog-bg)] p-5 sm:p-6 text-left align-middle shadow-xl transition-all border border-[var(--color-dialog-border)]"
                 ref={dialogContentRef} // Assign the ref here
                 role="dialog" // ARIA role for accessibility
                 aria-modal="true" // ARIA attribute for modal dialogs
                 aria-labelledby="dialog-title" // Link to the title for screen readers
                 aria-describedby="dialog-description" // Link to the message for screen readers
               >
-                <h3 id="dialog-title" className="text-lg sm:text-xl font-semibold leading-6 text-gray-800 mb-3 sm:mb-4">
+                <h3 id="dialog-title" className="text-lg sm:text-xl font-semibold leading-6 text-[var(--color-dialog-title-text)] mb-3 sm:mb-4">
                   {title}
                 </h3>
                 <div id="dialog-description" className="mb-5 sm:mb-6">
-                  <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                  <div className="text-sm text-[var(--color-dialog-message-text)] whitespace-pre-wrap">
                     {message}
                   </div>
                 </div>
