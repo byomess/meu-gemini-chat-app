@@ -27,6 +27,7 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
   type = 'alert',
 }) => {
   const primaryButtonRef = useRef<HTMLButtonElement>(null);
+  const dialogContentRef = useRef<HTMLDivElement>(null); // Ref for the dialog content
 
   // Memoize handleConfirm and handleCancel to ensure stable references
   const handleConfirm = useCallback(() => {
@@ -51,28 +52,50 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      // Use a timeout to ensure the button is rendered and interactive before focusing
-      // This can help with potential race conditions with the Transition component
+      // Focus the primary button when the dialog opens
       const timer = setTimeout(() => {
         primaryButtonRef.current?.focus();
       }, 100); // A small delay, adjust if needed
 
-      // Add event listener for Escape key
-      const handleEscape = (event: KeyboardEvent) => {
+      // Add event listener for Escape key and Tab key for focus trapping
+      const handleKeyDown = (event: KeyboardEvent) => {
         if (event.key === 'Escape') {
           if (type === 'confirm') {
             handleCancel(); // Call cancel logic for confirm type
           } else {
             onClose(); // Just close for alert type
           }
+        } else if (event.key === 'Tab' && dialogContentRef.current) {
+          const focusableElements = Array.from(
+            dialogContentRef.current.querySelectorAll(
+              'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )
+          ) as HTMLElement[];
+
+          if (focusableElements.length === 0) return; // No focusable elements to trap
+
+          const firstFocusableEl = focusableElements[0];
+          const lastFocusableEl = focusableElements[focusableElements.length - 1];
+
+          if (event.shiftKey) { // Shift + Tab
+            if (document.activeElement === firstFocusableEl) {
+              lastFocusableEl.focus();
+              event.preventDefault();
+            }
+          } else { // Tab
+            if (document.activeElement === lastFocusableEl) {
+              firstFocusableEl.focus();
+              event.preventDefault();
+            }
+          }
         }
       };
 
-      document.addEventListener('keydown', handleEscape);
+      document.addEventListener('keydown', handleKeyDown);
 
       return () => {
         clearTimeout(timer);
-        document.removeEventListener('keydown', handleEscape);
+        document.removeEventListener('keydown', handleKeyDown);
       };
     }
   }, [isOpen, type, handleCancel, onClose]); // Dependencies for the useEffect
@@ -108,11 +131,18 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
               leaveTo="opacity-0 scale-95"
             >
               {/* White dialog panel with gray border and dark text */}
-              <div className="w-full max-w-md transform overflow-hidden rounded-xl bg-white p-5 sm:p-6 text-left align-middle shadow-xl transition-all border border-gray-200">
-                <h3 className="text-lg sm:text-xl font-semibold leading-6 text-gray-800 mb-3 sm:mb-4">
+              <div
+                className="w-full max-w-md transform overflow-hidden rounded-xl bg-white p-5 sm:p-6 text-left align-middle shadow-xl transition-all border border-gray-200"
+                ref={dialogContentRef} // Assign the ref here
+                role="dialog" // ARIA role for accessibility
+                aria-modal="true" // ARIA attribute for modal dialogs
+                aria-labelledby="dialog-title" // Link to the title for screen readers
+                aria-describedby="dialog-description" // Link to the message for screen readers
+              >
+                <h3 id="dialog-title" className="text-lg sm:text-xl font-semibold leading-6 text-gray-800 mb-3 sm:mb-4">
                   {title}
                 </h3>
-                <div className="mb-5 sm:mb-6">
+                <div id="dialog-description" className="mb-5 sm:mb-6">
                   <div className="text-sm text-gray-700 whitespace-pre-wrap">
                     {message}
                   </div>
