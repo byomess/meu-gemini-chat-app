@@ -27,6 +27,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     onCloseMobile,
     onSelectConversation
 }) => {
+  // We don't need to use isDarkModeEnabled state here directly for dark: classes,
+  // but importing useTheme confirms the context is available if needed later.
+  // const { isDarkModeEnabled } = useTheme();
+
   const {
     conversations,
     activeConversationId,
