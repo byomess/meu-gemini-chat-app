@@ -7,7 +7,6 @@ import {
     IoSyncOutline,
     IoCheckmarkCircleOutline,
     IoCloseCircleOutline,
-    IoSettingsOutline, // For file_from_function_processing
     IoImageOutline,
     IoMusicalNotesOutline,
     IoVideocamOutline,
@@ -135,8 +134,6 @@ const FileProcessingActivityIndicator: React.FC<FileProcessingActivityIndicatorP
             stageText = `Status: ${displayedStage || 'Indefinido'}`;
     }
     
-    const baseIconForTitle = status.type === 'user_attachment_upload' ? IoCloudUploadOutline : IoSettingsOutline;
-
     const fileName = status.name || "Arquivo";
     const details = status.details || '';
     const errorDetails = displayedStage === 'failed' ? (status.error || 'Erro desconhecido') : '';

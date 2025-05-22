@@ -229,17 +229,18 @@ const MemoriesSettingsTab: React.FC = () => {
                 </div>
             </div>
             <div className="flex items-center gap-2.5 mt-2">
-                <TextInput
-                    ref={newMemoryInputRef}
-                    id="newMemory"
-                    name="newMemory"
-                    value={newMemoryText}
-                    onChange={setNewMemoryText}
-                    onKeyDown={handleNewMemoryKeyDown}
-                    placeholder="Adicionar nova memória..."
-                    containerClassName="flex-grow"
-                    inputClassName="p-2.5 text-sm" // Match original styling
-                />
+                <div onKeyDown={handleNewMemoryKeyDown} className="flex-grow">
+                    <TextInput
+                        ref={newMemoryInputRef}
+                        id="newMemory"
+                        name="newMemory"
+                        value={newMemoryText}
+                        onChange={setNewMemoryText}
+                        placeholder="Adicionar nova memória..."
+                        containerClassName="w-full"
+                        inputClassName="p-2.5 text-sm" // Match original styling
+                    />
+                </div>
                 <Button
                     variant="primary"
                     onClick={handleAddNewMemory}

@@ -1,5 +1,5 @@
 // src/contexts/DialogContext.tsx
-import React, { createContext, useState, useContext, useCallback, ReactNode } from 'react';
+import React, { createContext, useState, useContext, useCallback, type ReactNode } from 'react';
 import type { CustomDialogProps } from '../components/common/CustomDialog'; // Adjust path as needed
 
 // Exclude isOpen and onClose from DialogOptions as they are managed by the context

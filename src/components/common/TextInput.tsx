@@ -1,11 +1,10 @@
-// src/components/common/TextInput.tsx
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { FiEye, FiEyeOff } from 'react-icons/fi'; // Assuming react-icons is installed
 
 interface TextInputProps {
     id: string;
     name: string;
-    label: string;
+    label?: string; // Made optional
     value: string;
     onChange: (value: string) => void; // Passes the string value directly
     type?: 'text' | 'password' | 'email' | 'url' | 'number';
@@ -22,7 +21,7 @@ interface TextInputProps {
     helperTextClassName?: string;
 }
 
-const TextInput: React.FC<TextInputProps> = ({
+const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
     id,
     name,
     label,
@@ -38,7 +37,7 @@ const TextInput: React.FC<TextInputProps> = ({
     inputWrapperClassName = "relative", // For the div wrapping input and icon
     inputClassName: customInputClassName = "", // User-provided custom classes for input
     helperTextClassName = "text-xs text-gray-500 mt-2",
-}) => {
+}, ref) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
     const actualInputType = type === 'password' && isPasswordVisible ? 'text' : type;
@@ -46,16 +45,17 @@ const TextInput: React.FC<TextInputProps> = ({
     // Base styles matching the original input in GeneralSettingsTab
     const baseInputClasses = "w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e04579] focus:border-[#e04579] placeholder-gray-400 text-gray-800 shadow-sm transition-colors";
     
-    // Add padding to the right if it's a password input to make space for the icon
     const passwordSpecificClasses = type === 'password' ? "pr-12" : ""; // Adjust pr-X as needed for icon spacing
 
     const effectiveInputClassName = `${baseInputClasses} ${passwordSpecificClasses} ${customInputClassName}`.trim();
 
     return (
         <div className={containerClassName}>
-            <label htmlFor={id} className={labelClassName}>
-                {label}
-            </label>
+            {label && ( // Render label only if it is provided
+                <label htmlFor={id} className={labelClassName}>
+                    {label}
+                </label>
+            )}
             <div className={inputWrapperClassName}>
                 <input
                     type={actualInputType}
@@ -67,6 +67,7 @@ const TextInput: React.FC<TextInputProps> = ({
                     disabled={disabled}
                     autoComplete={autoComplete}
                     className={effectiveInputClassName}
+                    ref={ref}
                 />
                 {type === 'password' && (
                     <button
@@ -86,6 +87,8 @@ const TextInput: React.FC<TextInputProps> = ({
             )}
         </div>
     );
-};
+});
+
+TextInput.displayName = 'TextInput';
 
 export default TextInput;
