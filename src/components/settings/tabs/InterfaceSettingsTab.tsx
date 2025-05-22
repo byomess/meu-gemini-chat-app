@@ -1,7 +1,7 @@
 // src/components/settings/tabs/InterfaceSettingsTab.tsx
 import React from "react";
 import { Switch } from "@headlessui/react";
-import { IoAvatarImageOutline } from "react-icons/io5";
+import { RxAvatar } from "react-icons/rx";
 
 interface InterfaceSettingsTabProps {
     currentCodeHighlightEnabled: boolean;
@@ -66,7 +66,7 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
                             URL da Imagem do Avatar da IA
                         </label>
                         <div className="flex items-center gap-2">
-                            <IoAvatarImageOutline className="text-gray-500 flex-shrink-0" size={20} />
+                            <RxAvatar className="text-gray-500 flex-shrink-0" size={20} />
                             <input
                                 type="url"
                                 id="aiAvatarUrl"
