@@ -2,7 +2,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { PrismAsyncLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import RSHLightAsync from 'react-syntax-highlighter/dist/esm/light-async';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Changed from vscDarkPlus to vs
 import { IoCopyOutline, IoCheckmarkDoneOutline } from 'react-icons/io5';
 
 import jsx from 'react-syntax-highlighter/dist/esm/languages/prism/jsx';
@@ -57,30 +57,30 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({
 
     if (inline) {
         return (
-            <code className={`${className || ''} px-1.5 py-0.5 bg-slate-700/70 text-pink-400 rounded-md text-[0.85em]`}>
+            <code className={`${className || ''} px-1 py-0.5 bg-gray-200 text-indigo-700 rounded text-[0.85em] font-mono`}>
                 {children}
             </code>
         );
     }
 
     return (
-        <div className="code-block-wrapper group relative my-3 rounded-lg shadow-md bg-[#1e1e1e] w-full">
-            <div className="flex justify-between items-center px-3 py-1.5 bg-slate-800/70 border-b border-slate-700/50 rounded-t-lg">
-                <span className="text-xs text-slate-400 font-mono select-none">
-                    {language || 'código'}
+        <div className="code-block-wrapper group relative my-3 rounded-lg shadow-md bg-white border border-gray-200 w-full">
+            <div className="flex justify-between items-center px-3 py-1.5 bg-gray-100 border-b border-gray-200 rounded-t-lg">
+                <span className="text-xs text-gray-500 font-mono select-none">
+                    {language || 'code'} {/* Changed from 'código' to 'code' for consistency */}
                 </span>
                 <button
                     onClick={handleCopy}
-                    className="p-1 text-slate-400 hover:text-slate-100 rounded-md hover:bg-slate-700 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
-                    title={isCopied ? "Copiado!" : "Copiar código"}
-                    aria-label={isCopied ? "Código copiado para a área de transferência" : "Copiar código para a área de transferência"}
+                    className="p-1 text-gray-500 hover:text-gray-800 rounded-md hover:bg-gray-200 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    title={isCopied ? "Copied!" : "Copy code"} // Translated to English
+                    aria-label={isCopied ? "Code copied to clipboard" : "Copy code to clipboard"} // Translated to English
                 >
-                    {isCopied ? <IoCheckmarkDoneOutline size={16} className="text-green-400" /> : <IoCopyOutline size={16} />}
+                    {isCopied ? <IoCheckmarkDoneOutline size={16} className="text-green-500" /> : <IoCopyOutline size={16} />}
                 </button>
             </div>
             {settings.codeSynthaxHighlightEnabled && language ? (
                 <SyntaxHighlighter
-                    style={vscDarkPlus}
+                    style={vs} // Changed to light theme
                     language={language}
                     PreTag="div"
                     showLineNumbers={false}
@@ -93,6 +93,7 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({
                         lineHeight: '1.6',
                         borderRadius: '0 0 0.5rem 0.5rem',
                         overflowX: 'auto',
+                        // backgroundColor will be set by the 'vs' theme (typically white)
                     }}
                     codeTagProps={{
                         style: { 
@@ -104,13 +105,13 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({
                 </SyntaxHighlighter>
             ) : (
                 <pre
-                    className="m-0 p-4 text-[0.875rem] leading-[1.6] rounded-b-lg overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-700/50"
+                    className="m-0 p-4 text-[0.875rem] leading-[1.6] rounded-b-lg overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 bg-gray-50 text-gray-900"
                     style={{ 
                         fontFamily: 'var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace)', 
                         whiteSpace: 'pre',
                     }}
                 >
-                    <code className="whitespace-pre">
+                    <code className="whitespace-pre" style={{ color: 'inherit' }}>
                         {codeString}
                     </code>
                 </pre>
