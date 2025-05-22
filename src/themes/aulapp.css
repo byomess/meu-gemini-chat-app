@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  /* Base Colors */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  --color-pink-50: #fdf2f8;
+  --color-red-200: #fecaca;
+  --color-red-500: #ef4444;
+  --color-white: white;
+  --color-black: black;
+
+  /* Custom Primary Color */
+  --color-primary: #e04579;
+  --color-primary-dark: #c73d6a;
+
+  /* Semantic Colors (Sidebar specific for now) */
+  --color-sidebar-bg: var(--color-white);
+  --color-sidebar-text: var(--color-gray-700);
+  --color-sidebar-border: var(--color-gray-200);
+  --color-sidebar-heading-text: var(--color-gray-600);
+
+  --color-convo-item-text: var(--color-gray-700);
+  --color-convo-item-hover-bg: var(--color-pink-50);
+  --color-convo-item-hover-text: var(--color-gray-900);
+  --color-convo-item-active-bg: var(--color-primary);
+  --color-convo-item-active-text: var(--color-white);
+  --color-convo-item-edit-bg: var(--color-gray-200);
+  --color-convo-item-edit-text: var(--color-gray-800);
+  --color-convo-item-edit-border: color-mix(in srgb, var(--color-primary) 70%, transparent);
+  --color-convo-item-edit-focus-border: var(--color-primary);
+  --color-convo-item-icon: var(--color-gray-500);
+  --color-convo-item-hover-icon: var(--color-gray-700);
+  --color-convo-item-active-icon: var(--color-white);
+
+  --color-convo-item-actions-bg: color-mix(in srgb, var(--color-gray-100) 50%, transparent);
+  --color-convo-item-actions-hover-bg: color-mix(in srgb, var(--color-gray-200) 80%, transparent);
+  --color-convo-item-actions-button-hover-bg: color-mix(in srgb, var(--color-gray-300) 80%, transparent);
+  --color-convo-item-actions-icon: var(--color-gray-500);
+  --color-convo-item-actions-hover-icon: var(--color-gray-800);
+  --color-convo-item-actions-delete-hover-icon: var(--color-red-500);
+
+  --color-convo-item-active-actions-bg: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  --color-convo-item-active-actions-hover-bg: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  --color-convo-item-active-actions-button-hover-bg: color-mix(in srgb, var(--color-primary) 40%, transparent);
+  --color-convo-item-active-actions-icon: var(--color-white);
+  --color-convo-item-active-actions-delete-hover-icon: var(--color-red-200);
+
+  --color-settings-button-text: var(--color-gray-700);
+  --color-settings-button-hover-bg: var(--color-pink-50);
+  --color-settings-button-hover-text: var(--color-gray-900);
+  --color-settings-button-icon: var(--color-gray-500);
+  --color-settings-button-hover-icon: var(--color-primary);
+
+  --color-mobile-close-button-bg: var(--color-gray-100);
+  --color-mobile-close-button-hover-bg: var(--color-gray-200);
+  --color-mobile-close-button-icon: var(--color-gray-500);
+  --color-mobile-close-button-hover-icon: var(--color-gray-800);
+
+  --color-logo-text: var(--color-gray-600);
+
+  --color-focus-ring: var(--color-primary);
+  --color-focus-ring-offset: var(--color-white);
+}
