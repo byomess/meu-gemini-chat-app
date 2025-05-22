@@ -72,7 +72,7 @@ const DataSettingsTab: React.FC = () => {
                             disabled={conversations.length === 0}
                         >
                             {" "}
-                            <IoChatbubblesOutline className="mr-1.5" /> Limpar Conversas{" "}
+                            <IoTrashOutline className="mr-1.5" /> Limpar Conversas{" "} {/* Changed icon to IoTrashOutline */}
                         </Button>
                     </div>
                 </div>
