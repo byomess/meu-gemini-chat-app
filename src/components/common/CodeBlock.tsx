@@ -57,25 +57,25 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({
 
     if (inline) {
         return (
-            <code className={`${className || ''} px-1 py-0.5 bg-gray-200 text-indigo-700 rounded text-[0.85em] font-mono`}>
+            <code className={`${className || ''} px-1 py-0.5 bg-[var(--color-inline-code-bg-alt)] text-[var(--color-inline-code-text-alt)] rounded text-[0.85em] font-mono`}>
                 {children}
             </code>
         );
     }
 
     return (
-        <div className="code-block-wrapper group relative my-3 rounded-lg shadow-md bg-white border border-gray-200 w-full">
-            <div className="flex justify-between items-center px-3 py-1.5 bg-gray-100 border-b border-gray-200 rounded-t-lg">
-                <span className="text-xs text-gray-500 font-mono select-none">
+        <div className="code-block-wrapper group relative my-3 rounded-lg shadow-md bg-[var(--color-code-block-wrapper-bg)] border border-[var(--color-code-block-wrapper-border)] w-full">
+            <div className="flex justify-between items-center px-3 py-1.5 bg-[var(--color-code-block-header-bg)] border-b border-[var(--color-code-block-header-border)] rounded-t-lg">
+                <span className="text-xs text-[var(--color-code-block-language-text)] font-mono select-none">
                     {language || 'code'} {/* Changed from 'código' to 'code' for consistency */}
                 </span>
                 <button
                     onClick={handleCopy}
-                    className="p-1 text-gray-500 hover:text-gray-800 rounded-md hover:bg-gray-200 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    className="p-1 text-[var(--color-code-block-copy-button-text)] hover:text-[var(--color-code-block-copy-button-hover-text)] rounded-md hover:bg-[var(--color-code-block-copy-button-hover-bg)] transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
                     title={isCopied ? "Copied!" : "Copy code"} // Translated to English
                     aria-label={isCopied ? "Code copied to clipboard" : "Copy code to clipboard"} // Translated to English
                 >
-                    {isCopied ? <IoCheckmarkDoneOutline size={16} className="text-green-500" /> : <IoCopyOutline size={16} />}
+                    {isCopied ? <IoCheckmarkDoneOutline size={16} className="text-[var(--color-code-block-copy-button-copied-icon)]" /> : <IoCopyOutline size={16} />}
                 </button>
             </div>
             {settings.codeSynthaxHighlightEnabled && language ? (
@@ -105,7 +105,7 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({
                 </SyntaxHighlighter>
             ) : (
                 <pre
-                    className="m-0 p-4 text-[0.875rem] leading-[1.6] rounded-b-lg overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 bg-gray-50 text-gray-900"
+                    className="m-0 p-4 text-[0.875rem] leading-[1.6] rounded-b-lg overflow-x-auto scrollbar-thin scrollbar-thumb-[var(--color-code-block-no-highlight-scrollbar-thumb)] scrollbar-track-[var(--color-code-block-no-highlight-scrollbar-track)] bg-[var(--color-code-block-no-highlight-bg)] text-[var(--color-code-block-no-highlight-text)]"
                     style={{ 
                         fontFamily: 'var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace)', 
                         whiteSpace: 'pre',

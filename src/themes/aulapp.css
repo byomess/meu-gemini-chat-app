@@ -200,4 +200,71 @@
   --color-input-container-bg: var(--color-gray-50);
   --color-api-key-warning-text: var(--color-yellow-600);
   --color-api-key-warning-strong-text: var(--color-yellow-700);
+
+  /* Button Colors */
+  --color-button-primary-bg: var(--color-primary);
+  --color-button-primary-hover-bg: var(--color-primary-dark);
+  --color-button-primary-active-bg: #b3365f; /* Specific darker pink */
+  --color-button-primary-text: var(--color-white);
+
+  --color-button-secondary-bg: var(--color-gray-200);
+  --color-button-secondary-hover-bg: var(--color-gray-300);
+  --color-button-secondary-active-bg: var(--color-gray-400);
+  --color-button-secondary-text: var(--color-gray-700);
+  --color-button-secondary-border: var(--color-gray-300);
+  --color-button-focus-ring-secondary: var(--color-gray-400);
+
+  --color-button-danger-bg: var(--color-red-600);
+  --color-button-danger-hover-bg: var(--color-red-700);
+  --color-button-danger-active-bg: var(--color-red-800);
+  --color-button-danger-text: var(--color-white);
+
+  --color-button-icon-text: var(--color-gray-600);
+  --color-button-icon-hover-text: var(--color-primary);
+  --color-button-icon-hover-bg: var(--color-pink-100);
+  --color-button-icon-active-bg: var(--color-pink-200);
+
+  --color-button-ghost-text: var(--color-gray-700);
+  --color-button-ghost-hover-bg: var(--color-gray-100);
+  --color-button-ghost-active-bg: var(--color-gray-200);
+
+  /* CustomAudioPlayer Colors */
+  --color-audio-player-bg: var(--color-white);
+  --color-audio-player-border: var(--color-gray-200);
+  --color-audio-player-button-bg: var(--color-gray-100);
+  --color-audio-player-button-hover-bg: var(--color-gray-200);
+  --color-audio-player-button-text: var(--color-gray-700);
+  --color-audio-player-button-hover-text: var(--color-blue-600); /* Keeping blue for now, can map to primary later if desired */
+  --color-audio-player-progress-track-bg: var(--color-gray-200);
+  --color-audio-player-progress-fill-bg: var(--color-blue-500); /* Keeping blue for now */
+  --color-audio-player-progress-thumb-bg: var(--color-white);
+  --color-audio-player-progress-thumb-border: var(--color-gray-300);
+  --color-audio-player-time-text: var(--color-gray-600);
+  --color-audio-player-volume-control-bg: var(--color-white);
+  --color-audio-player-volume-control-border: var(--color-gray-200);
+  --color-audio-player-volume-track-bg: var(--color-gray-200);
+  --color-audio-player-volume-fill-bg: var(--color-blue-400); /* Keeping blue for now */
+  --color-audio-player-volume-thumb-bg: var(--color-white);
+  --color-audio-player-volume-thumb-border: var(--color-gray-300);
+  --color-audio-player-filename-text: var(--color-gray-600);
+  --color-audio-player-error-bg: var(--color-red-50);
+  --color-audio-player-error-border: var(--color-red-300);
+  --color-audio-player-error-text: var(--color-red-700);
+
+  /* CodeBlock Colors */
+  --color-code-block-wrapper-bg: var(--color-white);
+  --color-code-block-wrapper-border: var(--color-gray-200);
+  --color-code-block-header-bg: var(--color-gray-100);
+  --color-code-block-header-border: var(--color-gray-200);
+  --color-code-block-language-text: var(--color-gray-500);
+  --color-code-block-copy-button-text: var(--color-gray-500);
+  --color-code-block-copy-button-hover-text: var(--color-gray-800);
+  --color-code-block-copy-button-hover-bg: var(--color-gray-200);
+  --color-code-block-copy-button-copied-icon: var(--color-green-500);
+  --color-code-block-no-highlight-bg: var(--color-gray-50);
+  --color-code-block-no-highlight-text: var(--color-gray-900);
+  --color-code-block-no-highlight-scrollbar-thumb: var(--color-gray-400);
+  --color-code-block-no-highlight-scrollbar-track: var(--color-gray-200);
+  --color-inline-code-text-alt: var(--color-indigo-700);
+  --color-inline-code-bg-alt: var(--color-gray-200);
 }
