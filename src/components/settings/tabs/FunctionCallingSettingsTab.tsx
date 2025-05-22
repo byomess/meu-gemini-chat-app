@@ -234,7 +234,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                     <Button
                         variant="secondary"
                         onClick={handleExport}
-                        className="!text-sm !py-2 !px-3.5"
+                        className="!text-xs !py-2 !px-3.5 !font-medium" // Updated class
                         disabled={isEditing || currentFunctionDeclarations.length === 0}
                         title="Exportar funções para JSON"
                     >
@@ -250,7 +250,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                     <Button
                         variant="secondary"
                         onClick={() => fileInputRef.current?.click()}
-                        className="!text-sm !py-2 !px-3.5"
+                        className="!text-xs !py-2 !px-3.5 !font-medium" // Updated class
                         disabled={isEditing}
                         title="Importar funções de um arquivo JSON"
                     >
