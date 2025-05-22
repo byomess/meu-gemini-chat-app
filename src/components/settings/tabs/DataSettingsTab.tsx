@@ -46,8 +46,8 @@ const DataSettingsTab: React.FC = () => {
                             </p>
                         </div>
                         <Button
-                            variant="danger"
-                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0 w-full sm:w-auto"
+                            variant="secondary" // Changed from "danger" to "secondary"
+                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0 w-full sm:w-[180px]" // Added sm:w-[180px] for consistent width
                             onClick={handleLocalClearAllMemories}
                             disabled={memories.length === 0}
                         >
@@ -66,8 +66,8 @@ const DataSettingsTab: React.FC = () => {
                             </p>
                         </div>
                         <Button
-                            variant="danger"
-                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0 w-full sm:w-auto"
+                            variant="secondary" // Changed from "danger" to "secondary"
+                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0 w-full sm:w-[180px]" // Added sm:w-[180px] for consistent width
                             onClick={handleLocalDeleteAllConversations}
                             disabled={conversations.length === 0}
                         >
