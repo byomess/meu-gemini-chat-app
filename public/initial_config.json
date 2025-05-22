@@ -17,5 +17,6 @@
   "aiAvatarUrl": "/ai-default-avatar.png",
   "memories": [],
   "codeSynthaxHighlightEnabled": true,
+  "showNavigation": false,
   "theme": "light"
 }

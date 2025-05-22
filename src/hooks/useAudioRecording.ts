@@ -1,6 +1,5 @@
 // src/hooks/useAudioRecording.ts
-import { useState, useRef, useCallback } from 'react';
-import type { LocalAttachedFile } from './useFileAttachments';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 interface UseAudioRecordingProps {
     addFilesToState: (files: File[], isRecordedAudio: boolean) => Promise<void>;

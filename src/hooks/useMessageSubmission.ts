@@ -1,5 +1,5 @@
 // src/hooks/useMessageSubmission.ts
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useConversations } from '../contexts/ConversationContext';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { useMemories } from '../contexts/MemoryContext';
@@ -8,7 +8,7 @@ import {
     type StreamedGeminiResponseChunk,
     type RawFileAttachment
 } from '../services/geminiService';
-import type { MessageMetadata, AttachedFileInfo, ProcessingStatus, Part, Conversation, Memory } from '../types';
+import type { MessageMetadata, AttachedFileInfo, ProcessingStatus, Part, Conversation } from '../types';
 import { systemMessage } from '../prompts';
 import type { LocalAttachedFile } from './useFileAttachments';
 

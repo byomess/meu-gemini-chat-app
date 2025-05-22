@@ -6,23 +6,20 @@ import {
     IoClose,
     IoKeyOutline,
     IoBuildOutline,
-    IoChatbubblesOutline,
     IoTerminalOutline,
     IoColorPaletteOutline,
-    IoCheckmarkOutline,
-    FiDatabase,
+    IoCheckmarkCircleOutline
 } from "react-icons/io5";
+import { FiDatabase } from "react-icons/fi";
 import { LuBrain } from "react-icons/lu";
 import Button from "../common/Button";
 import { useAppSettings } from "../../contexts/AppSettingsContext";
 import type {
-    GeminiModel,
     GeminiModelConfig,
     FunctionDeclaration as AppFunctionDeclaration,
     SafetySetting,
 } from "../../types";
 import {
-    HarmCategory as GenaiHarmCategoryEnum,
     HarmBlockThreshold as GenaiHarmBlockThresholdEnum,
 } from "@google/genai";
 
@@ -470,7 +467,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                 onClick={handleSaveAllSettings}
                                                 className="!py-2.5 !px-5 !font-semibold shadow-md hover:shadow-lg transform active:scale-[0.98] transition-all"
                                             >
-                                                <IoCheckmarkOutline size={18} className="mr-1.5" />{" "}
+                                                <IoCheckmarkCircleOutline size={18} className="mr-1.5" />{" "}
                                                 Salvar Configurações
                                             </Button>
                                         </div>

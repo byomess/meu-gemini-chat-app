@@ -1,5 +1,5 @@
 // src/components/chat/MessageInputForm.tsx
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import Button from '../common/Button';
 import {
     IoAttach,
@@ -20,8 +20,8 @@ interface MessageInputFormProps {
     onTextFocus: () => void;
     onTextBlur: () => void;
 
-    textareaRef: React.RefObject<HTMLTextAreaElement>;
-    fileInputRef: React.RefObject<HTMLInputElement>;
+    textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+    fileInputRef: React.RefObject<HTMLInputElement | null>;
     onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     onAttachClick: () => void;
 

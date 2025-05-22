@@ -1,15 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/components/chat/MessageInput.tsx
-import React, { useState, useRef, useEffect, useCallback, Fragment } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useConversations } from '../../contexts/ConversationContext';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
-import { useMemories } from '../../contexts/MemoryContext'; // Keep for useMessageSubmission hook
 import useIsMobile from '../../hooks/useIsMobile';
 
 import InputErrorDisplay from './InputErrorDisplay';
 import AttachedFilesPreview from './AttachedFilesPreview';
 import MessageInputForm from './MessageInputForm';
-import MediaModal from '../common/MediaModal'; // Using the common MediaModal
+import { MediaModal } from '../common/MediaModal';
 
 import { useFileAttachments, type LocalAttachedFile } from '../../hooks/useFileAttachments';
 import { useAudioRecording } from '../../hooks/useAudioRecording';

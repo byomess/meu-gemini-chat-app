@@ -39,7 +39,7 @@ interface UrlConfigFile {
 }
 
 // Helper for basic deep comparison of JSON-like objects
-function areObjectsEffectivelyEqual(objA: any, objB: any): boolean {
+function areObjectsEffectivelyEqual(objA: Record<string, unknown>, objB: Record<string, unknown>): boolean {
     if (objA === objB) return true;
     if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
         return false;
@@ -184,7 +184,10 @@ export function useUrlConfigInitializer() {
                         }
                         if (configToApply.functionDeclarations !== undefined) {
                             const newDeclarations = configToApply.functionDeclarations.map(fd => ({ ...fd, id: fd.id || uuidv4() }));
-                            if (!areObjectsEffectivelyEqual(newAppSettings.functionDeclarations, newDeclarations)) {
+                            if (!areObjectsEffectivelyEqual(
+                                { functionDeclarations: newAppSettings.functionDeclarations },
+                                { functionDeclarations: newDeclarations }
+                            )) {
                                 newAppSettings.functionDeclarations = newDeclarations;
                                 changed = true;
                             }
@@ -234,7 +237,7 @@ export function useUrlConfigInitializer() {
                                 tentativeMergedModelConfig.safetySettings = FALLBACK_DEFAULT_SAFETY_SETTINGS_FOR_HOOK.map(s => ({ ...s }));
                             }
                             
-                            if (!areObjectsEffectivelyEqual(newAppSettings.geminiModelConfig, tentativeMergedModelConfig)) {
+                            if (!areObjectsEffectivelyEqual(newAppSettings.geminiModelConfig as unknown as Record<string, unknown>, tentativeMergedModelConfig as unknown as Record<string, unknown>)) {
                                 newAppSettings.geminiModelConfig = tentativeMergedModelConfig;
                                 changed = true;
                             }
@@ -281,7 +284,7 @@ export function useUrlConfigInitializer() {
 
                         let changed = false;
                         if (existingIndex !== -1) {
-                            if (!areObjectsEffectivelyEqual(newDeclarations[existingIndex], funcDeclToApply)) {
+                            if (!areObjectsEffectivelyEqual(newDeclarations[existingIndex] as unknown as Record<string, unknown>, funcDeclToApply as unknown as Record<string, unknown>)) {
                                 console.log(`Overwriting function declaration (ID: ${funcDeclToApply.id}, Name: ${funcDeclToApply.name}) from URL encoded param.`);
                                 newDeclarations[existingIndex] = funcDeclToApply;
                                 changed = true;
