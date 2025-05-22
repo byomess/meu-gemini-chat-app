@@ -57,7 +57,7 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const { settings, setSettings } = useAppSettings();
-    const { showDialog } = useDialog(); // Use the dialog hook
+    const { showDialog, dialogProps } = useDialog(); // Use the dialog hook and get dialogProps
     const [currentApiKey, setCurrentApiKey] = useState<string>("");
     const [currentCustomPersonalityPrompt, setCurrentCustomPersonalityPrompt] =
         useState<string>(DEFAULT_PERSONALITY_FOR_PLACEHOLDER);
@@ -329,7 +329,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             <Dialog
                 as="div"
                 className="relative z-[100]"
-                onClose={onClose}
+                // Conditionally disable onClose if CustomDialog is open
+                onClose={dialogProps?.isOpen ? () => {} : onClose}
                 initialFocus={modalContentRef}
             >
                 <Transition.Child
