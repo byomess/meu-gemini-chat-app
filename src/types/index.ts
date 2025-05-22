@@ -45,6 +45,7 @@ export interface AppSettings {
     enableWebSearch: boolean;
     enableAttachments: boolean;
     hideNavigation: boolean; // New setting for hiding navigation
+    isDarkModeEnabled: boolean; // New setting for dark mode
 }
 
 export interface Memory {

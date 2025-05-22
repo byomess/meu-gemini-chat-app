@@ -9,6 +9,7 @@ import { useUrlConfigInitializer } from './hooks/useUrlConfigInitializer'; // Im
 import { useConversations } from './contexts/ConversationContext'; // Import useConversations
 import { useAppSettings } from './contexts/AppSettingsContext'; // Import useAppSettings
 import { DialogProvider, useDialog } from './contexts/DialogContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext'; // Import ThemeProvider and useTheme
 import CustomDialog from './components/common/CustomDialog';
 
 // Helper component to render the dialog and main app content, as App itself is not inside DialogProvider initially
@@ -16,6 +17,7 @@ const AppContent = () => {
   const { dialogProps } = useDialog();
   const { settings } = useAppSettings();
   const { conversations, createNewConversation, activeConversationId } = useConversations();
+  const { isDarkModeEnabled } = useTheme(); // Use the theme context
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -113,11 +115,13 @@ const AppContent = () => {
 }
 
 function App() {
-  useUrlConfigInitializer(); 
+  useUrlConfigInitializer();
 
   return (
     <DialogProvider>
-      <AppContent />
+      <ThemeProvider> {/* Wrap AppContent with ThemeProvider */}
+        <AppContent />
+      </ThemeProvider>
     </DialogProvider>
   );
 }
