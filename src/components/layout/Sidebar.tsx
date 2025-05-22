@@ -95,11 +95,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   }, [setActiveConversationId, isMobile, onSelectConversation]);
 
-  const baseClasses = `bg-white text-gray-700 h-screen flex flex-col p-3 transition-all duration-300 ease-in-out shadow-xl`;
+  const baseClasses = `bg-[var(--color-sidebar-bg)] text-[var(--color-sidebar-text)] h-screen flex flex-col p-3 transition-all duration-300 ease-in-out shadow-xl`;
   
-  const desktopSpecificClasses = `w-64 md:w-72 border-r border-gray-200 relative`;
+  const desktopSpecificClasses = `w-64 md:w-72 border-r border-[var(--color-sidebar-border)] relative`;
   
-  const mobileSpecificClasses = `fixed inset-y-0 left-0 w-3/4 max-w-sm z-50 border-r border-gray-200 
+  const mobileSpecificClasses = `fixed inset-y-0 left-0 w-3/4 max-w-sm z-50 border-r border-[var(--color-sidebar-border)] 
                                  ${isOpen ? 'translate-x-0' : '-translate-x-full'}`;
 
   const finalAsideClasses = isMobile 
@@ -113,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             variant="ghost" // Using ghost variant for custom background/text
             size="icon-md" // For p-2 rounded-full
             onClick={onCloseMobile}
-            className="absolute top-4 -right-12 z-[51] bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-800"
+            className="absolute top-4 -right-12 z-[51] bg-[var(--color-mobile-close-button-bg)] hover:bg-[var(--color-mobile-close-button-hover-bg)] text-[var(--color-mobile-close-button-icon)] hover:text-[var(--color-mobile-close-button-hover-icon)]"
             title="Fechar menu"
             aria-label="Fechar menu"
           >
@@ -126,8 +126,9 @@ const Sidebar: React.FC<SidebarProps> = ({
           variant="primary"
           className={`w-full !py-2.5 flex items-center justify-center space-x-2.5 rounded-lg
                       text-sm font-semibold shadow-md hover:shadow-lg 
-                      focus:ring-offset-white 
-                      transition-all duration-200 ease-in-out group/newConvo transform active:scale-[0.98]`}
+                      focus:ring-offset-[var(--color-focus-ring-offset)] 
+                      transition-all duration-200 ease-in-out group/newConvo transform active:scale-[0.98]
+                      bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]`}
           onClick={() => {
               createNewConversation();
               if(isMobile && onSelectConversation) onSelectConversation();
@@ -141,7 +142,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <nav className={`flex-grow flex flex-col min-h-0`}>
-          <p className="text-xs text-gray-600 uppercase mb-2.5 px-1.5 font-semibold tracking-wider whitespace-nowrap">
+          <p className="text-xs text-[var(--color-sidebar-heading-text)] uppercase mb-2.5 px-1.5 font-semibold tracking-wider whitespace-nowrap">
             Recentes
           </p>
         <div className={`flex-grow overflow-y-auto space-y-1 pr-1 -mr-1`}>
@@ -152,12 +153,12 @@ const Sidebar: React.FC<SidebarProps> = ({
               title={convo.title}
               className={`group/convoItem w-full flex items-center rounded-lg text-sm text-left
                           transition-all duration-150 ease-in-out relative p-2.5 space-x-2.5
-                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e04579] focus-visible:ring-offset-2 focus-visible:ring-offset-white
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-focus-ring-offset)]
                           ${editingConversationId === convo.id
-                              ? 'bg-gray-200 shadow-inner cursor-default'
+                              ? 'bg-[var(--color-convo-item-edit-bg)] shadow-inner cursor-default'
                               : convo.id === activeConversationId
-                                  ? `text-white font-semibold bg-[#e04579] shadow-md hover:bg-[#c73d6a] cursor-pointer`
-                                  : `text-gray-700 hover:bg-pink-50 hover:text-gray-900 cursor-pointer`
+                                  ? `text-[var(--color-convo-item-active-text)] font-semibold bg-[var(--color-convo-item-active-bg)] shadow-md hover:bg-[var(--color-primary-dark)] cursor-pointer`
+                                  : `text-[var(--color-convo-item-text)] hover:bg-[var(--color-convo-item-hover-bg)] hover:text-[var(--color-convo-item-hover-text)] cursor-pointer`
                           }`}
             >
               {editingConversationId === convo.id ? (
@@ -169,7 +170,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     onKeyDown={(e) => handleTitleKeyDown(e, convo.id)}
                     onBlur={() => handleSaveTitle(convo.id)}
                     autoFocus
-                    className="flex-1 bg-transparent text-gray-800 focus:outline-none border-b-2 border-[#e04579]/70 focus:border-[#e04579] text-sm py-0.5 transition-colors rounded-none"
+                    className="flex-1 bg-transparent text-[var(--color-convo-item-edit-text)] focus:outline-none border-b-2 border-[var(--color-convo-item-edit-border)] focus:border-[var(--color-convo-item-edit-focus-border)] text-sm py-0.5 transition-colors rounded-none"
                   />
                   <Button
                     variant="ghost" // Using ghost variant for minimal styling
@@ -179,7 +180,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         e.stopPropagation();
                         handleCancelEditTitle();
                     }}
-                    className="text-gray-500 hover:text-gray-800 flex-shrink-0 hover:bg-gray-300"
+                    className="text-[var(--color-convo-item-actions-icon)] hover:text-[var(--color-convo-item-actions-hover-icon)] flex-shrink-0 hover:bg-[var(--color-convo-item-actions-button-hover-bg)]"
                     title="Cancelar edição (Esc)"
                     aria-label="Cancelar renomeação da conversa"
                   >
@@ -192,13 +193,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                     size={19}
                     className={`flex-shrink-0 transition-colors duration-200
                                 ${convo.id === activeConversationId
-                                    ? 'text-white'
-                                    : 'text-gray-500 group-hover/convoItem:text-gray-700'
+                                    ? 'text-[var(--color-convo-item-active-icon)]'
+                                    : 'text-[var(--color-convo-item-icon)] group-hover/convoItem:text-[var(--color-convo-item-hover-icon)]'
                                 }`}
                   />
                   <span className="truncate flex-1 text-sm">{convo.title}</span>
                   {convo.id === activeConversationId && !isMobile && (
-                    <IoChevronForward size={16} className="text-white opacity-80 ml-auto" />
+                    <IoChevronForward size={16} className="text-[var(--color-convo-item-active-icon)] opacity-80 ml-auto" />
                   )}
                 </>
               )}
@@ -208,11 +209,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 group-focus-within/convoItem:opacity-100
                                 transition-opacity duration-200 ease-in-out
                                 absolute right-2 top-1/2 -translate-y-1/2 
-                                bg-gray-100/50 group-hover/convoItem:bg-gray-200/80 backdrop-blur-sm rounded-md p-0.5 space-x-0.5
+                                bg-[var(--color-convo-item-actions-bg)] group-hover/convoItem:bg-[var(--color-convo-item-actions-hover-bg)] backdrop-blur-sm rounded-md p-0.5 space-x-0.5
                                 [&>button]:p-1.5 [&>button]:rounded-md 
                                 ${convo.id === activeConversationId
-                                  ? '!opacity-100 !bg-[#e04579]/20 group-hover/convoItem:!bg-[#e04579]/30 [&>button:hover]:!bg-[#e04579]/40'
-                                  : '[&>button:hover]:bg-gray-300/80'
+                                  ? '!opacity-100 !bg-[var(--color-convo-item-active-actions-bg)] group-hover/convoItem:!bg-[var(--color-convo-item-active-actions-hover-bg)] [&>button:hover]:!bg-[var(--color-convo-item-active-actions-button-hover-bg)]'
+                                  : '[&>button:hover]:bg-[var(--color-convo-item-actions-button-hover-bg)]'
                                 }`}>
                   <Button
                     variant="ghost" // Using ghost variant for minimal styling
@@ -220,7 +221,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     onClick={(e) => handleStartEditTitle(e, convo)}
                     title="Editar título"
                     aria-label="Editar título da conversa"
-                    className={`${convo.id === activeConversationId ? 'text-white opacity-80 hover:text-white' : 'text-gray-500 hover:text-gray-800'} transition-colors`}
+                    className={`${convo.id === activeConversationId ? 'text-[var(--color-convo-item-active-actions-icon)] opacity-80 hover:text-[var(--color-convo-item-active-actions-icon)]' : 'text-[var(--color-convo-item-actions-icon)] hover:text-[var(--color-convo-item-actions-hover-icon)]'} transition-colors`}
                   >
                     <IoPencilOutline size={15} />
                   </Button>
@@ -230,7 +231,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     onClick={(e) => handleDeleteConversation(e, convo.id)}
                     title="Excluir conversa"
                     aria-label="Excluir conversa"
-                    className={`${convo.id === activeConversationId ? 'text-white opacity-80 hover:text-red-200' : 'text-gray-500 hover:text-red-500'} transition-colors`}
+                    className={`${convo.id === activeConversationId ? 'text-[var(--color-convo-item-active-actions-icon)] opacity-80 hover:text-[var(--color-convo-item-active-actions-delete-hover-icon)]' : 'text-[var(--color-convo-item-actions-icon)] hover:text-[var(--color-convo-item-actions-delete-hover-icon)]'} transition-colors`}
                   >
                     <IoTrashBinOutline size={15} />
                   </Button>
@@ -239,7 +240,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
           ))}
           {sortedConversations.length === 0 && (
-            <p className={`text-sm text-gray-500 text-center py-6 px-3 italic`}>
+            <p className={`text-sm text-[var(--color-gray-500)] text-center py-6 px-3 italic`}>
               Nenhuma conversa ainda. <br/>Clique em "Nova Conversa" para começar.
             </p>
           )}
@@ -248,20 +249,20 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     <div className="flex flex-col justify-center items-center pt-4">
       <img src="/logo-aulapp.svg" alt="Logo Loox" className={`w-36 h-auto`} />
-      <span className="text-xs text-gray-600 mb-2.5 px-1.5 tracking-wider whitespace-nowrap">
+      <span className="text-xs text-[var(--color-logo-text)] mb-2.5 px-1.5 tracking-wider whitespace-nowrap">
         powered by Loox AI ®
       </span>
     </div>
 
-      <div className={`pt-3 mt-2 border-t border-gray-200`}>
+      <div className={`pt-3 mt-2 border-t border-[var(--color-sidebar-border)]`}>
         <Button
           variant="ghost" // Using ghost variant for minimal styling
           onClick={onOpenSettings}
           className={`w-full text-left rounded-lg flex items-center text-sm group/settings p-2.5 space-x-3
-                      hover:bg-pink-50 hover:text-gray-900 focus-visible:ring-[#e04579] focus-visible:ring-offset-1 focus-visible:ring-offset-white`}
+                      hover:bg-[var(--color-settings-button-hover-bg)] hover:text-[var(--color-settings-button-hover-text)] focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-focus-ring-offset)]`}
           aria-label="Configurações"
         >
-          <IoSettingsOutline size={20} className={`text-gray-500 group-hover/settings:text-[#e04579] group-hover/settings:rotate-45 transition-all duration-300`} />
+          <IoSettingsOutline size={20} className={`text-[var(--color-settings-button-icon)] group-hover/settings:text-[var(--color-settings-button-hover-icon)] group-hover/settings:rotate-45 transition-all duration-300`} />
           <span className="font-medium">Configurações</span>
         </Button>
       </div>
