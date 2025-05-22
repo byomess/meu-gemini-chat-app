@@ -3,7 +3,6 @@ import React, { useState, useRef } from "react";
 import { IoAddCircleOutline, IoPencilOutline, IoTrashBinOutline, IoTerminalOutline, IoLinkOutline, IoArrowUpOutline, IoArrowDownOutline } from "react-icons/io5"; // Added new icons
 import Button from "../../common/Button";
 import { v4 as uuidv4 } from "uuid";
-import type { FunctionDeclaration as AppFunctionDeclaration } from "../../../types";
 
 interface LocalFunctionDeclaration {
     id: string;
@@ -224,7 +223,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                 : "";
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <h3 className="text-base font-semibold text-gray-800">
                     Funções Externas (API Endpoints) ({currentFunctionDeclarations.length}
