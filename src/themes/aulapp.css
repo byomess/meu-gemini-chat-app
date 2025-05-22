@@ -194,4 +194,10 @@
   --color-function-role-avatar-gradient-to: var(--color-purple-500);
   --color-user-avatar-gradient-from: var(--color-primary);
   --color-user-avatar-gradient-to: var(--color-primary-dark);
+
+  /* Message Input Colors */
+  --color-input-container-border: var(--color-gray-200);
+  --color-input-container-bg: var(--color-gray-50);
+  --color-api-key-warning-text: var(--color-yellow-600);
+  --color-api-key-warning-strong-text: var(--color-yellow-700);
 }

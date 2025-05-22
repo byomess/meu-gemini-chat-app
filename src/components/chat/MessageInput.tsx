@@ -209,7 +209,7 @@ const MessageInput: React.FC = () => {
 
     return (
         <>
-            <div className="px-2 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-3 border-t border-gray-200 bg-gray-50 sticky bottom-0 shadow- ऊपर-md z-20">
+            <div className="px-2 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-3 border-t border-[var(--color-input-container-border)] bg-[var(--color-input-container-bg)] sticky bottom-0 shadow- ऊपर-md z-20">
                 <InputErrorDisplay
                     aiError={messageSubmission.errorFromAI}
                     audioError={audioError}
@@ -259,8 +259,8 @@ const MessageInput: React.FC = () => {
                 />
 
                 {!settings.apiKey && activeConversationId && !isCurrentlyLoadingOverall && !isRecording && (
-                    <p className="text-xs text-yellow-600 text-center mt-2.5 px-2">
-                        Chave de API não configurada. Por favor, adicione sua chave nas <strong className="font-medium text-yellow-700">Configurações</strong> para interagir com a IA.
+                    <p className="text-xs text-[var(--color-api-key-warning-text)] text-center mt-2.5 px-2">
+                        Chave de API não configurada. Por favor, adicione sua chave nas <strong className="font-medium text-[var(--color-api-key-warning-strong-text)]">Configurações</strong> para interagir com a IA.
                     </p>
                 )}
             </div>
