@@ -186,7 +186,7 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({ currentModelConfig,
                     onChange={(e) =>
                         onModelConfigChange("model", e.target.value as GeminiModel)
                     }
-                    className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e04579]/80 focus:border-[#e04579] text-gray-800 shadow-sm appearance-none bg-no-repeat bg-right pr-8"
+                    className="w-full p-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e04579]/80 focus:border-[#e04579] text-gray-800 shadow-sm appearance-none bg-no-repeat bg-right pr-8"
                     style={{
                         backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                         backgroundSize: "1.5em 1.5em",
