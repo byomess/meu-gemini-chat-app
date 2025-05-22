@@ -1,6 +1,6 @@
 // src/components/settings/tabs/FunctionCallingSettingsTab.tsx
 import React, { useState, useRef } from "react";
-import { IoAddCircleOutline, IoPencilOutline, IoTrashBinOutline, IoTerminalOutline, IoLinkOutline } from "react-icons/io5";
+import { IoAddCircleOutline, IoPencilOutline, IoTrashBinOutline, IoTerminalOutline, IoLinkOutline, IoArrowUpOutline, IoArrowDownOutline } from "react-icons/io5"; // Added new icons
 import Button from "../../common/Button";
 import { v4 as uuidv4 } from "uuid";
 import type { FunctionDeclaration as AppFunctionDeclaration } from "../../../types";
@@ -44,6 +44,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
     const [editHttpMethod, setEditHttpMethod] =
         useState<LocalFunctionDeclaration["httpMethod"]>("GET");
     const nameInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null); // Ref for hidden file input
 
     const isValidUrl = (urlString: string): boolean => {
         try {
@@ -146,6 +147,75 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
         resetForm();
     };
 
+    const handleExport = () => {
+        const filename = "function_callings.json";
+        const jsonStr = JSON.stringify(currentFunctionDeclarations, null, 2);
+        const blob = new Blob([jsonStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const content = e.target?.result as string;
+                const importedData: LocalFunctionDeclaration[] = JSON.parse(content);
+
+                if (!Array.isArray(importedData)) {
+                    alert("O arquivo importado não contém uma lista válida de funções.");
+                    return;
+                }
+
+                const validatedData: LocalFunctionDeclaration[] = [];
+                for (const item of importedData) {
+                    // Basic validation for required fields
+                    if (
+                        item &&
+                        typeof item.name === 'string' &&
+                        typeof item.description === 'string' &&
+                        typeof item.parametersSchema === 'string' &&
+                        typeof item.endpointUrl === 'string' &&
+                        ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(item.httpMethod)
+                    ) {
+                        validatedData.push({ ...item, id: uuidv4() }); // Assign new UUIDs to avoid conflicts
+                    } else {
+                        console.warn("Skipping invalid function declaration during import:", item);
+                    }
+                }
+
+                if (validatedData.length > 0) {
+                    setCurrentFunctionDeclarations(validatedData);
+                    alert(`Importadas ${validatedData.length} funções com sucesso.`);
+                } else {
+                    alert("Nenhuma função válida encontrada no arquivo importado.");
+                }
+
+            } catch (error) {
+                console.error("Erro ao importar funções:", error);
+                alert("Erro ao processar o arquivo. Certifique-se de que é um JSON válido.");
+            } finally {
+                // Clear the file input value to allow importing the same file again
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+            }
+        };
+        reader.onerror = () => {
+            alert("Erro ao ler o arquivo.");
+        };
+        reader.readAsText(file);
+    };
+
     const formTitle =
         isEditing === "new"
             ? "Adicionar Nova Função (API Endpoint)"
@@ -160,15 +230,42 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                     Funções Externas (API Endpoints) ({currentFunctionDeclarations.length}
                     )
                 </h3>
-                {!isEditing && (
+                <div className="flex gap-2"> {/* Grouping buttons */}
                     <Button
-                        variant="primary"
-                        onClick={handleStartAddNew}
+                        variant="secondary"
+                        onClick={handleExport}
                         className="!text-sm !py-2 !px-3.5"
+                        disabled={isEditing || currentFunctionDeclarations.length === 0}
+                        title="Exportar funções para JSON"
                     >
-                        <IoAddCircleOutline className="mr-1.5" size={18} /> Adicionar Nova
+                        <IoArrowDownOutline className="mr-1.5" size={18} /> Exportar
                     </Button>
-                )}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImport}
+                        accept=".json"
+                        className="hidden"
+                    />
+                    <Button
+                        variant="secondary"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="!text-sm !py-2 !px-3.5"
+                        disabled={isEditing}
+                        title="Importar funções de um arquivo JSON"
+                    >
+                        <IoArrowUpOutline className="mr-1.5" size={18} /> Importar
+                    </Button>
+                    {!isEditing && (
+                        <Button
+                            variant="primary"
+                            onClick={handleStartAddNew}
+                            className="!text-sm !py-2 !px-3.5"
+                        >
+                            <IoAddCircleOutline className="mr-1.5" size={18} /> Adicionar Nova
+                        </Button>
+                    )}
+                </div>
             </div>
             <p className="text-xs text-gray-500 -mt-4">
                 Declare APIs externas que a IA pode chamar. O Loox atuará como um proxy
