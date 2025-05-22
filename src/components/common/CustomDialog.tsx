@@ -22,7 +22,7 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
   onClose,
   confirmText = 'OK',
   onConfirm,
-  cancelText = 'Cancelar', // Changed default to Portuguese to match app context
+  cancelText = 'Cancelar',
   onCancel,
   type = 'alert',
 }) => {
@@ -40,7 +40,7 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <div className="relative z-[200]"> {/* Changed from Dialog to div for Headless UI Transition context */}
+      <div className="relative z-[200]">
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -50,7 +50,8 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm" />
+          {/* Very light transparent black background with blur */}
+          <div className="fixed inset-0 bg-black/10 backdrop-blur-sm" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -64,12 +65,13 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <div className="w-full max-w-md transform overflow-hidden rounded-xl bg-slate-800 p-5 sm:p-6 text-left align-middle shadow-xl transition-all border border-slate-700">
-                <h3 className="text-lg sm:text-xl font-semibold leading-6 text-white mb-3 sm:mb-4">
+              {/* White dialog panel with gray border and dark text */}
+              <div className="w-full max-w-md transform overflow-hidden rounded-xl bg-white p-5 sm:p-6 text-left align-middle shadow-xl transition-all border border-gray-200">
+                <h3 className="text-lg sm:text-xl font-semibold leading-6 text-gray-800 mb-3 sm:mb-4">
                   {title}
                 </h3>
                 <div className="mb-5 sm:mb-6">
-                  <div className="text-sm text-slate-300 whitespace-pre-wrap">
+                  <div className="text-sm text-gray-700 whitespace-pre-wrap">
                     {message}
                   </div>
                 </div>
