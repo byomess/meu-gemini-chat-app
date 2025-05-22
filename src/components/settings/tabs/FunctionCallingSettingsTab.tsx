@@ -234,7 +234,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                     <Button
                         variant="secondary"
                         onClick={handleExport}
-                        className="!text-xs !py-2 !px-3.5 !font-medium" // Updated class
+                        className="!text-xs !py-1.5 !px-2.5 !font-medium" // Changed !py-2 to !py-1.5 and !px-3.5 to !px-2.5
                         disabled={isEditing || currentFunctionDeclarations.length === 0}
                         title="Exportar funções para JSON"
                     >
@@ -250,7 +250,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                     <Button
                         variant="secondary"
                         onClick={() => fileInputRef.current?.click()}
-                        className="!text-xs !py-2 !px-3.5 !font-medium" // Updated class
+                        className="!text-xs !py-1.5 !px-2.5 !font-medium" // Changed !py-2 to !py-1.5 and !px-3.5 to !px-2.5
                         disabled={isEditing}
                         title="Importar funções de um arquivo JSON"
                     >
@@ -260,7 +260,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                         <Button
                             variant="primary"
                             onClick={handleStartAddNew}
-                            className="!text-sm !py-2 !px-3.5"
+                            className="!text-xs !py-1.5 !px-2.5" // Changed !text-sm to !text-xs, !py-2 to !py-1.5 and !px-3.5 to !px-2.5
                         >
                             <IoAddCircleOutline className="mr-1.5" size={18} /> Adicionar Nova
                         </Button>
