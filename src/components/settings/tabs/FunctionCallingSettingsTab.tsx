@@ -314,7 +314,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                 }`}
                         >
                             <div className="flex items-start justify-between gap-2">
-                                <div className="flex-grow">
+                                <div className="flex-grow min-w-0"> {/* Added min-w-0 here */}
                                     <p className="text-sm font-semibold text-[#e04579] break-words">
                                         {declaration.name}
                                     </p>
