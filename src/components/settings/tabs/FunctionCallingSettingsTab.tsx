@@ -1,6 +1,6 @@
 // src/components/settings/tabs/FunctionCallingSettingsTab.tsx
 import React, { useState, useRef } from "react";
-import { IoAddCircleOutline, IoPencilOutline, IoTrashBinOutline, IoTerminalOutline, IoLinkOutline, IoArrowUpOutline, IoArrowDownOutline } from "react-icons/io5"; // Added new icons
+import { IoAddCircleOutline, IoPencilOutline, IoTrashBinOutline, IoTerminalOutline, IoLinkOutline, IoDownloadOutline, IoCloudUploadOutline } from "react-icons/io5"; // Updated imported icons
 import Button from "../../common/Button";
 import { v4 as uuidv4 } from "uuid";
 
@@ -252,7 +252,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                         disabled={isEditing || currentFunctionDeclarations.length === 0}
                         title="Exportar funções para JSON"
                     >
-                        <IoArrowDownOutline className="mr-1.5" size={18} /> Exportar
+                        <IoDownloadOutline className="mr-1.5" size={18} /> Exportar {/* Changed icon */}
                     </Button>
                     <input
                         type="file"
@@ -268,7 +268,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                         disabled={isEditing}
                         title="Importar funções de um arquivo JSON"
                     >
-                        <IoArrowUpOutline className="mr-1.5" size={18} /> Importar
+                        <IoCloudUploadOutline className="mr-1.5" size={18} /> Importar {/* Changed icon */}
                     </Button>
                 </div>
             </div>
