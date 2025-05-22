@@ -37,7 +37,6 @@ export interface FunctionDeclaration {
 
 export interface AppSettings {
     apiKey: string;
-    theme?: 'dark' | 'light';
     geminiModelConfig: GeminiModelConfig;
     customPersonalityPrompt: string;
     functionDeclarations: FunctionDeclaration[];
