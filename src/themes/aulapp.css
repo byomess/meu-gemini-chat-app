@@ -13,8 +13,28 @@
   --color-gray-800: #1f2937;
   --color-gray-900: #111827;
   --color-pink-50: #fdf2f8;
+  --color-red-50: #fef2f2; /* New: for error bubble background */
+  --color-red-100: #fee2e2; /* New: for message actions delete hover bg */
   --color-red-200: #fecaca;
+  --color-red-300: #fca5a5; /* New: for error bubble border */
   --color-red-500: #ef4444;
+  --color-red-600: #dc2626; /* New: for error message text */
+  --color-red-700: #b91c1c; /* New: for error bubble text */
+  --color-yellow-50: #fffbeb; /* New: for aborted bubble background */
+  --color-yellow-400: #facc15; /* New: for aborted bubble border */
+  --color-yellow-600: #eab308; /* New: for aborted message text */
+  --color-yellow-700: #a16207; /* New: for aborted bubble text */
+  --color-indigo-50: #eef2ff; /* New: for function bubble background */
+  --color-indigo-200: #c7d2fe; /* New: for function bubble border */
+  --color-indigo-400: #818cf8; /* New: for function avatar gradient from */
+  --color-indigo-600: #4f46e5; /* New: for function response text */
+  --color-indigo-700: #4338ca; /* New: for function bubble text, function response name */
+  --color-purple-500: #a855f7; /* New: for default AI avatar gradient to, function avatar gradient to */
+  --color-amber-50: #fffbeb; /* New: for function call request bg */
+  --color-amber-200: #fde68a; /* New: for function call request border */
+  --color-amber-600: #d97706; /* New: for function call request icon */
+  --color-amber-700: #b45309; /* New: for function call request text */
+  --color-amber-800: #92400e; /* New: for function call request name */
   --color-white: white;
   --color-black: black;
 
@@ -69,4 +89,109 @@
 
   --color-focus-ring: var(--color-primary);
   --color-focus-ring-offset: var(--color-white);
+
+  /* Message Bubble Colors */
+  --color-message-bubble-user-bg: var(--color-primary);
+  --color-message-bubble-user-text: var(--color-white);
+  --color-message-bubble-ai-bg: var(--color-white);
+  --color-message-bubble-ai-text: var(--color-gray-800);
+  --color-message-bubble-ai-border: var(--color-gray-200);
+  --color-message-bubble-function-bg: var(--color-indigo-50);
+  --color-message-bubble-function-text: var(--color-indigo-700);
+  --color-message-bubble-function-border: var(--color-indigo-200);
+  --color-message-bubble-error-bg: var(--color-red-50);
+  --color-message-bubble-error-border: var(--color-red-300);
+  --color-message-bubble-error-text: var(--color-red-700);
+  --color-message-bubble-aborted-bg: var(--color-yellow-50);
+  --color-message-bubble-aborted-border: var(--color-yellow-400);
+  --color-message-bubble-aborted-text: var(--color-yellow-700);
+  --color-message-bubble-aborted-shadow: color-mix(in srgb, var(--color-yellow-500) 10%, transparent);
+  --color-message-bubble-loading-bg: var(--color-gray-200);
+  --color-message-bubble-loading-border: var(--color-gray-300);
+
+  /* Message Bubble Edit State */
+  --color-message-bubble-edit-border: color-mix(in srgb, var(--color-primary) 70%, transparent);
+  --color-message-bubble-user-edit-bg: color-mix(in srgb, var(--color-primary) 90%, transparent);
+  --color-message-bubble-ai-edit-bg: color-mix(in srgb, var(--color-gray-100) 90%, transparent);
+  --color-message-bubble-user-edit-text: var(--color-pink-100);
+  --color-message-bubble-user-edit-placeholder: color-mix(in srgb, var(--color-pink-100) 70%, transparent);
+  --color-message-bubble-user-edit-scrollbar-thumb: var(--color-pink-200);
+  --color-message-bubble-user-edit-scrollbar-track: color-mix(in srgb, var(--color-pink-500) 50%, transparent);
+  --color-message-bubble-ai-edit-text: var(--color-gray-800);
+  --color-message-bubble-ai-edit-placeholder: color-mix(in srgb, var(--color-gray-500) 70%, transparent);
+  --color-message-bubble-ai-edit-scrollbar-thumb: var(--color-gray-400);
+  --color-message-bubble-ai-edit-scrollbar-track: color-mix(in srgb, var(--color-gray-200) 50%, transparent);
+
+  /* Message Bubble Edit Buttons */
+  --color-message-bubble-user-edit-button-text: var(--color-pink-100);
+  --color-message-bubble-user-edit-button-hover-text: var(--color-white);
+  --color-message-bubble-user-edit-button-hover-bg: color-mix(in srgb, var(--color-primary-dark) 70%, transparent);
+  --color-message-bubble-ai-edit-button-text: var(--color-gray-600);
+  --color-message-bubble-ai-edit-button-hover-text: var(--color-gray-900);
+  --color-message-bubble-ai-edit-button-hover-bg: color-mix(in srgb, var(--color-gray-300) 70%, transparent);
+
+  /* Message Bubble Reprocess Icon */
+  --color-message-bubble-reprocess-icon-bg: var(--color-gray-300);
+  --color-message-bubble-reprocess-icon-text: var(--color-gray-600);
+
+  /* Attached Files */
+  --color-attached-file-bg: var(--color-gray-100);
+  --color-attached-file-border: var(--color-gray-200);
+  --color-attached-file-generic-icon-bg: var(--color-gray-200);
+  --color-attached-file-generic-icon: var(--color-gray-500);
+  --color-attached-file-generic-name: var(--color-gray-600);
+
+  /* Function Call Request */
+  --color-function-call-request-bg: var(--color-amber-50);
+  --color-function-call-request-border: var(--color-amber-200);
+  --color-function-call-request-text: var(--color-amber-700);
+  --color-function-call-request-icon: var(--color-amber-600);
+  --color-function-call-request-name: var(--color-amber-800);
+
+  /* Function Response */
+  --color-function-response-text: var(--color-indigo-600);
+  --color-function-response-name: var(--color-indigo-700);
+
+  /* Markdown/Prose Styling */
+  --color-inline-code-text: #dd386f; /* Specific pink for inline code */
+  --color-inline-code-bg: var(--color-pink-50);
+  --color-inline-code-border: var(--color-pink-200);
+  --color-inline-code-loading-bg: var(--color-gray-200);
+  --color-code-block-loading-bg: var(--color-gray-100);
+  --color-code-block-loading-border: var(--color-gray-200);
+  --color-code-block-loading-text: var(--color-gray-700);
+  --color-prose-p-text: var(--color-gray-700);
+  --color-prose-headings-text: var(--color-gray-900);
+  --color-link-text: var(--color-primary);
+  --color-link-hover-text: var(--color-primary-dark);
+  --color-blockquote-border: var(--color-gray-300);
+  --color-blockquote-text: var(--color-gray-600);
+  --color-table-border: var(--color-gray-300);
+  --color-table-head-bg: var(--color-gray-100);
+  --color-table-cell-border: var(--color-gray-300);
+  --color-table-header-text: var(--color-gray-700);
+  --color-table-cell-text: var(--color-gray-600);
+  --color-strong-text: var(--color-gray-900);
+  --color-error-message-text: var(--color-red-600);
+  --color-error-message-border: color-mix(in srgb, var(--color-red-300) 60%, transparent);
+  --color-aborted-message-text: var(--color-yellow-600);
+  --color-aborted-message-border: color-mix(in srgb, var(--color-yellow-400) 60%, transparent);
+  --color-memory-actions-heading-text: var(--color-purple-600);
+
+  /* Message Actions Bubble */
+  --color-message-actions-bg: color-mix(in srgb, var(--color-gray-50) 80%, transparent);
+  --color-message-actions-border: color-mix(in srgb, var(--color-gray-200) 90%, transparent);
+  --color-message-actions-button-text: var(--color-gray-500);
+  --color-message-actions-edit-button-hover-text: var(--color-primary);
+  --color-message-actions-edit-button-hover-bg: var(--color-pink-100);
+  --color-message-actions-delete-button-hover-text: var(--color-red-500);
+  --color-message-actions-delete-button-hover-bg: var(--color-red-100);
+
+  /* Avatars */
+  --color-default-ai-avatar-gradient-from: var(--color-purple-500);
+  --color-default-ai-avatar-gradient-to: var(--color-pink-500);
+  --color-function-role-avatar-gradient-from: var(--color-indigo-400);
+  --color-function-role-avatar-gradient-to: var(--color-purple-500);
+  --color-user-avatar-gradient-from: var(--color-primary);
+  --color-user-avatar-gradient-to: var(--color-primary-dark);
 }
