@@ -5,7 +5,7 @@ import Button from "../../common/Button";
 import { useMemories } from "../../../contexts/MemoryContext";
 import { useConversations } from "../../../contexts/ConversationContext";
 import { AppSettingsContext } from "../../../contexts/AppSettingsContext"; // Added AppSettingsContext
-import { AppSettings, Memory, FunctionDeclaration, GeminiModelConfig, SafetySetting } from "../../../types"; // Added type imports
+import type { AppSettings, Memory, FunctionDeclaration, GeminiModelConfig } from "../../../types"; // Added type imports
 import { v4 as uuidv4 } from 'uuid'; // Added uuid
 
 // Define the structure for the URL config file, mirroring useUrlConfigInitializer's UrlConfigFile
@@ -34,6 +34,7 @@ interface UrlConfigFile {
 const DataSettingsTab: React.FC = () => {
     const { clearAllMemories, memories, replaceAllMemories } = useMemories(); // Added replaceAllMemories
     const { deleteAllConversations, conversations } = useConversations();
+    const importFileInputRef = useRef<HTMLInputElement>(null); // Added ref for file input
     const appSettingsContext = useContext(AppSettingsContext); // Added AppSettingsContext usage
 
     // Added null check for context
@@ -42,8 +43,6 @@ const DataSettingsTab: React.FC = () => {
         return null; 
     }
     const { settings, setSettings } = appSettingsContext; // Destructure settings and setSettings
-
-    const importFileInputRef = useRef<HTMLInputElement>(null); // Added ref for file input
 
     const handleLocalClearAllMemories = () => {
         if (
