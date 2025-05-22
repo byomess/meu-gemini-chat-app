@@ -22,6 +22,7 @@ import type {
 import {
     HarmBlockThreshold as GenaiHarmBlockThresholdEnum,
 } from "@google/genai";
+import { useDialog } from "../../contexts/DialogContext"; // Import useDialog
 
 // Import new tab components
 import GeneralSettingsTab, { DEFAULT_PERSONALITY_FOR_PLACEHOLDER } from "./tabs/GeneralSettingsTab";
@@ -56,6 +57,7 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const { settings, setSettings } = useAppSettings();
+    const { showDialog } = useDialog(); // Use the dialog hook
     const [currentApiKey, setCurrentApiKey] = useState<string>("");
     const [currentCustomPersonalityPrompt, setCurrentCustomPersonalityPrompt] =
         useState<string>(DEFAULT_PERSONALITY_FOR_PLACEHOLDER);
@@ -182,13 +184,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
     const handleToggleCodeHighlightForTab = () => {
         if (!isCodeHighlightEnabledState) {
-            if (
-                window.confirm(
-                    "Habilitar o destaque de sintaxe para código pode impactar o desempenho do aplicativo, especialmente em conversas muito longas com múltiplos blocos de código. Deseja continuar?"
-                )
-            ) {
-                setIsCodeHighlightEnabledState(true);
-            }
+            showDialog({
+                title: "Confirm Action",
+                message: "Habilitar o destaque de sintaxe para código pode impactar o desempenho do aplicativo, especialmente em conversas muito longas com múltiplos blocos de código. Deseja continuar?",
+                type: "confirm",
+                confirmText: "Continuar",
+                cancelText: "Cancelar",
+                onConfirm: () => {
+                    setIsCodeHighlightEnabledState(true);
+                },
+            });
         } else {
             setIsCodeHighlightEnabledState(false);
         }
@@ -209,19 +214,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
     const handleSaveAllSettings = () => {
         if (localModelConfig.temperature < 0 || localModelConfig.temperature > 2) {
-            alert("A temperatura deve estar entre 0.0 e 2.0.");
+            showDialog({ title: "Validation Error", message: "A temperatura deve estar entre 0.0 e 2.0.", type: "alert" });
             return;
         }
         if (localModelConfig.topP < 0 || localModelConfig.topP > 1) {
-            alert("Top P deve estar entre 0.0 e 1.0.");
+            showDialog({ title: "Validation Error", message: "Top P deve estar entre 0.0 e 1.0.", type: "alert" });
             return;
         }
         if (localModelConfig.topK < 0) {
-            alert("Top K não pode ser negativo.");
+            showDialog({ title: "Validation Error", message: "Top K não pode ser negativo.", type: "alert" });
             return;
         }
         if (localModelConfig.maxOutputTokens < 1) {
-            alert("Máximo de Tokens de Saída deve ser pelo menos 1.");
+            showDialog({ title: "Validation Error", message: "Máximo de Tokens de Saída deve ser pelo menos 1.", type: "alert" });
             return;
         }
 
@@ -265,7 +270,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             enableAttachments: currentAttachmentsEnabled,
             hideNavigation: currentHideNavigation,
         }));
-        alert("Configurações salvas com sucesso!");
+        showDialog({ title: "Success", message: "Configurações salvas com sucesso!", type: "alert" });
+        // onClose(); // Optionally close the modal after saving
     };
 
     const tabs: Tab[] = [

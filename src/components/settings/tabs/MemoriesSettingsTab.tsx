@@ -6,6 +6,7 @@ import { LuBrain } from "react-icons/lu";
 import Button from "../../common/Button";
 import { useMemories } from "../../../contexts/MemoryContext";
 import type { Memory } from "../../../types";
+import { useDialog } from "../../../contexts/DialogContext"; // Import useDialog
 
 const MemoriesSettingsTab: React.FC = () => {
     const {
@@ -15,6 +16,7 @@ const MemoriesSettingsTab: React.FC = () => {
         updateMemory,
         replaceAllMemories,
     } = useMemories();
+    const { showDialog } = useDialog(); // Use the dialog hook
     const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
     const [editedMemoryText, setEditedMemoryText] = useState<string>("");
     const [newMemoryText, setNewMemoryText] = useState<string>("");
@@ -31,13 +33,20 @@ const MemoriesSettingsTab: React.FC = () => {
     }, [editingMemory]);
 
     const handleLocalDeleteMemory = (id: string) => {
-        if (window.confirm("Tem certeza de que deseja apagar esta memória?")) {
-            deleteMemory(id);
-            if (editingMemory?.id === id) {
-                setEditingMemory(null);
-                setEditedMemoryText("");
-            }
-        }
+        showDialog({
+            title: "Confirm Deletion",
+            message: "Tem certeza de que deseja apagar esta memória?",
+            type: "confirm",
+            confirmText: "Apagar",
+            cancelText: "Cancelar",
+            onConfirm: () => {
+                deleteMemory(id);
+                if (editingMemory?.id === id) {
+                    setEditingMemory(null);
+                    setEditedMemoryText("");
+                }
+            },
+        });
     };
     const handleStartEditMemory = (memory: Memory) => {
         setEditingMemory(memory);
@@ -51,7 +60,11 @@ const MemoriesSettingsTab: React.FC = () => {
             setEditingMemory(null);
             setEditedMemoryText("");
         } else if (editingMemory && !editedMemoryText.trim()) {
-            alert("O conteúdo da memória não pode ser vazio.");
+            showDialog({
+                title: "Validation Error",
+                message: "O conteúdo da memória não pode ser vazio.",
+                type: "alert",
+            });
         }
     };
     const handleCancelMemoryEdit = () => {
@@ -86,7 +99,11 @@ const MemoriesSettingsTab: React.FC = () => {
     };
     const handleExportMemories = () => {
         if (memories.length === 0) {
-            alert("Nenhuma memória para exportar.");
+            showDialog({
+                title: "Export Error",
+                message: "Nenhuma memória para exportar.",
+                type: "alert",
+            });
             return;
         }
         const jsonString = JSON.stringify(memories, null, 2);
@@ -116,25 +133,33 @@ const MemoriesSettingsTab: React.FC = () => {
                             (mem) =>
                                 typeof mem.id === "string" &&
                                 typeof mem.content === "string" &&
-                                typeof mem.timestamp === "string"
+                                typeof mem.timestamp === "string" // Timestamps will be converted
                         )
                     ) {
-                        if (
-                            window.confirm(
-                                `Isso substituirá ${memories.length > 0
-                                    ? "TODAS as memórias atuais"
-                                    : "suas memórias (atualmente vazias)"
+                        showDialog({
+                            title: "Confirm Import",
+                            message: `Isso substituirá ${memories.length > 0
+                                ? "TODAS as memórias atuais"
+                                : "suas memórias (atualmente vazias)"
                                 } por ${importedMemories.length
-                                } memórias do arquivo. Deseja continuar?`
-                            )
-                        ) {
-                            replaceAllMemories(
-                                importedMemories.map((mem) => ({
-                                    ...mem,
-                                    timestamp: new Date(mem.timestamp),
-                                }))
-                            );
-                        }
+                                } memórias do arquivo. Deseja continuar?`,
+                            type: "confirm",
+                            confirmText: "Continuar",
+                            cancelText: "Cancelar",
+                            onConfirm: () => {
+                                replaceAllMemories(
+                                    importedMemories.map((mem) => ({
+                                        ...mem,
+                                        timestamp: new Date(mem.timestamp), // Convert string to Date
+                                    }))
+                                );
+                                showDialog({
+                                    title: "Import Successful",
+                                    message: "Memórias importadas com sucesso.",
+                                    type: "alert",
+                                });
+                            },
+                        });
                     } else {
                         throw new Error(
                             "O arquivo JSON não contém um array de memórias válidas (cada memória deve ter 'id', 'content', 'timestamp')."
@@ -143,12 +168,14 @@ const MemoriesSettingsTab: React.FC = () => {
                 }
             } catch (error) {
                 console.error("Erro ao importar memórias:", error);
-                alert(
-                    `Erro ao importar memórias: ${error instanceof Error
+                showDialog({
+                    title: "Import Error",
+                    message: `Erro ao importar memórias: ${error instanceof Error
                         ? error.message
                         : "Formato de arquivo inválido."
-                    }`
-                );
+                        }`,
+                    type: "alert",
+                });
             } finally {
                 if (fileInputRef.current) {
                     fileInputRef.current.value = "";

@@ -3,6 +3,7 @@ import React, { useState, useRef } from "react";
 import { IoAddCircleOutline, IoPencilOutline, IoTrashBinOutline, IoTerminalOutline, IoLinkOutline, IoDownloadOutline, IoCloudUploadOutline } from "react-icons/io5"; // Updated imported icons
 import Button from "../../common/Button";
 import { v4 as uuidv4 } from "uuid";
+import { useDialog } from "../../../contexts/DialogContext"; // Import useDialog
 
 interface LocalFunctionDeclaration {
     id: string;
@@ -35,6 +36,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
     currentFunctionDeclarations,
     setCurrentFunctionDeclarations,
 }) => {
+    const { showDialog } = useDialog(); // Use the dialog hook
     const [isEditing, setIsEditing] = useState<string | null>(null);
     const [editName, setEditName] = useState("");
     const [editDescription, setEditDescription] = useState("");
@@ -81,37 +83,39 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
     };
 
     const handleDelete = (id: string) => {
-        if (
-            window.confirm(
-                `Tem certeza que deseja excluir a função "${currentFunctionDeclarations.find((d) => d.id === id)?.name ||
-                "esta função"
-                }"?`
-            )
-        ) {
-            setCurrentFunctionDeclarations(
-                currentFunctionDeclarations.filter((d) => d.id !== id)
-            );
-            if (isEditing === id) {
-                resetForm();
-            }
-        }
+        const functionToDelete = currentFunctionDeclarations.find((d) => d.id === id);
+        showDialog({
+            title: "Confirm Deletion",
+            message: `Tem certeza que deseja excluir a função "${functionToDelete?.name || "esta função"}"?`,
+            type: "confirm",
+            confirmText: "Excluir",
+            cancelText: "Cancelar",
+            onConfirm: () => {
+                setCurrentFunctionDeclarations(
+                    currentFunctionDeclarations.filter((d) => d.id !== id)
+                );
+                if (isEditing === id) {
+                    resetForm();
+                }
+            },
+        });
     };
 
     const handleSave = () => {
         if (!editName.trim()) {
-            alert("O nome da função é obrigatório.");
+            showDialog({ title: "Validation Error", message: "O nome da função é obrigatório.", type: "alert" });
             return;
         }
         if (!editDescription.trim()) {
-            alert("A descrição da função é obrigatória.");
+            showDialog({ title: "Validation Error", message: "A descrição da função é obrigatória.", type: "alert" });
             return;
         }
         if (!editEndpointUrl.trim()) {
-            alert("A URL do Endpoint da API é obrigatória.");
+            showDialog({ title: "Validation Error", message: "A URL do Endpoint da API é obrigatória.", type: "alert" });
             return;
         }
         if (!isValidUrl(editEndpointUrl.trim())) {
-            alert("A URL do Endpoint da API fornecida não é válida.");
+            showDialog({ title: "Validation Error", message: "A URL do Endpoint da API fornecida não é válida.", type: "alert" });
             return;
         }
         try {
@@ -119,9 +123,11 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                 JSON.parse(editParamsSchema);
             }
         } catch {
-            alert(
-                "O esquema de parâmetros não é um JSON válido. Verifique a sintaxe."
-            );
+            showDialog({
+                title: "Validation Error",
+                message: "O esquema de parâmetros não é um JSON válido. Verifique a sintaxe.",
+                type: "alert",
+            });
             return;
         }
         const declarationData: Omit<LocalFunctionDeclaration, "id"> = {
@@ -147,6 +153,10 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
     };
 
     const handleExport = () => {
+        if (currentFunctionDeclarations.length === 0) {
+            showDialog({ title: "Export Info", message: "Nenhuma função para exportar.", type: "alert" });
+            return;
+        }
         const filename = "function_callings.json";
         const jsonStr = JSON.stringify(currentFunctionDeclarations, null, 2);
         const blob = new Blob([jsonStr], { type: "application/json" });
@@ -168,49 +178,67 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
         reader.onload = (e) => {
             try {
                 const content = e.target?.result as string;
-                const importedData: LocalFunctionDeclaration[] = JSON.parse(content);
+                const importedData: any[] = JSON.parse(content); // Parse as any[] first for validation
 
                 if (!Array.isArray(importedData)) {
-                    alert("O arquivo importado não contém uma lista válida de funções.");
+                    showDialog({ title: "Import Error", message: "O arquivo importado não contém uma lista válida de funções.", type: "alert" });
                     return;
                 }
 
                 const validatedData: LocalFunctionDeclaration[] = [];
                 for (const item of importedData) {
-                    // Basic validation for required fields
                     if (
                         item &&
                         typeof item.name === 'string' &&
                         typeof item.description === 'string' &&
-                        typeof item.parametersSchema === 'string' &&
+                        typeof item.parametersSchema === 'string' && // Assuming schema is stored as string
                         typeof item.endpointUrl === 'string' &&
                         ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(item.httpMethod)
                     ) {
-                        validatedData.push({ ...item, id: uuidv4() }); // Assign new UUIDs to avoid conflicts
+                        validatedData.push({
+                            id: item.id || uuidv4(), // Use existing ID or generate new one
+                            name: item.name,
+                            description: item.description,
+                            parametersSchema: item.parametersSchema,
+                            endpointUrl: item.endpointUrl,
+                            httpMethod: item.httpMethod,
+                        });
                     } else {
                         console.warn("Skipping invalid function declaration during import:", item);
                     }
                 }
-
+                
                 if (validatedData.length > 0) {
-                    setCurrentFunctionDeclarations(validatedData);
-                    alert(`Importadas ${validatedData.length} funções com sucesso.`);
+                     showDialog({
+                        title: "Confirm Import",
+                        message: `Isso substituirá TODAS as funções atuais por ${validatedData.length} funções do arquivo. Deseja continuar?`,
+                        type: "confirm",
+                        confirmText: "Continuar",
+                        cancelText: "Cancelar",
+                        onConfirm: () => {
+                            setCurrentFunctionDeclarations(validatedData);
+                            showDialog({
+                                title: "Import Successful",
+                                message: `Importadas ${validatedData.length} funções com sucesso.`,
+                                type: "alert",
+                            });
+                        },
+                    });
                 } else {
-                    alert("Nenhuma função válida encontrada no arquivo importado.");
+                    showDialog({ title: "Import Info", message: "Nenhuma função válida encontrada no arquivo importado.", type: "alert" });
                 }
 
             } catch (error) {
                 console.error("Erro ao importar funções:", error);
-                alert("Erro ao processar o arquivo. Certifique-se de que é um JSON válido.");
+                showDialog({ title: "Import Error", message: "Erro ao processar o arquivo. Certifique-se de que é um JSON válido.", type: "alert" });
             } finally {
-                // Clear the file input value to allow importing the same file again
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
             }
         };
         reader.onerror = () => {
-            alert("Erro ao ler o arquivo.");
+            showDialog({ title: "File Read Error", message: "Erro ao ler o arquivo.", type: "alert" });
         };
         reader.readAsText(file);
     };
