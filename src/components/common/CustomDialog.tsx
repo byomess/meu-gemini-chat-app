@@ -1,5 +1,5 @@
 // src/components/common/CustomDialog.tsx
-import React, { Fragment } from 'react';
+import React, { Fragment, useRef, useEffect } from 'react';
 import { Transition } from '@headlessui/react';
 import Button from './Button';
 
@@ -26,6 +26,20 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
   onCancel,
   type = 'alert',
 }) => {
+  const primaryButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Use a timeout to ensure the button is rendered and interactive before focusing
+      // This can help with potential race conditions with the Transition component
+      const timer = setTimeout(() => {
+        primaryButtonRef.current?.focus();
+      }, 100); // A small delay, adjust if needed
+
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
   const handleConfirm = (e: React.MouseEvent) => {
     e.stopPropagation(); // Stop event propagation
     if (onConfirm) onConfirm();
@@ -87,7 +101,12 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
                 </div>
 
                 <div className="flex flex-col-reverse sm:flex-row sm:justify-end space-y-2 space-y-reverse sm:space-y-0 sm:space-x-3">
-                  <Button variant="primary" onClick={primaryAction} className="w-full sm:w-auto">
+                  <Button
+                    variant="primary"
+                    onClick={primaryAction}
+                    className="w-full sm:w-auto"
+                    ref={primaryButtonRef} // Assign the ref here
+                  >
                     {type === 'confirm' && onConfirm ? confirmText : 'OK'}
                   </Button>
                   {type === 'confirm' && (
