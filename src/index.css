@@ -4,12 +4,6 @@
 
 @layer utilities {
   .loox-logo-blue {
-    /* 1) tira a cor original              → grayscale(1)
-       2) escurece um pouco                → brightness(.8)
-       3) dá um tom sépia (traz matiz)     → sepia(1)
-       4) gira para a faixa azul/ciano     → hue-rotate(190deg)
-       5) aumenta a saturação pra “acender”→ saturate(400%)
-    */
     filter: grayscale(1)
             brightness(0.6)
             sepia(1)
@@ -25,8 +19,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   box-sizing: border-box;
   margin: 0;
-  background-color: #f8f9fa; /* Light gray page background */
-  color: #212529; /* Dark gray for main text */
+  background-color: #f8f9fa;
+  color: #212529;
   font-size: 16px;
 }
 
@@ -34,25 +28,23 @@ body {
   box-sizing: inherit;
 }
 
-/* Basic scrollbar styling for a light theme - can be customized further with Tailwind plugins or utilities if needed */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #e9ecef; /* Light track */
+  background: #e9ecef;
 }
 ::-webkit-scrollbar-thumb {
-  background: #adb5bd; /* Neutral scrollbar thumb color */
+  background: #adb5bd;
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #868e96; /* Darker neutral on hover */
+  background: #868e96;
 }
-/* For Firefox */
 html {
   scrollbar-width: thin;
-  scrollbar-color: #adb5bd #e9ecef; /* thumb track */
+  scrollbar-color: #adb5bd #e9ecef;
 }
 
 
@@ -66,6 +58,29 @@ main {
 
 @layer utilities {
   .loox-logo-blue {
-    filter: none; /* Ensure logo is not filtered on light theme */
+    filter: none;
   }
+}
+
+:root {
+    --color-input-container-border: #e0e0e0;
+    --color-input-container-bg: #ffffff;
+    --color-api-key-warning-text: #dc3545;
+    --color-api-key-warning-strong-text: #a71d2a;
+}
+
+body.theme-aulapp {
+    --color-input-container-border: #e0e0e0;
+    --color-input-container-bg: #ffffff;
+    --color-api-key-warning-text: #dc3545;
+    --color-api-key-warning-strong-text: #a71d2a;
+}
+
+body.theme-loox {
+    --color-input-container-border: #333;
+    --color-input-container-bg: #222;
+    --color-api-key-warning-text: #ffc107;
+    --color-api-key-warning-strong-text: #e0a800;
+    background-color: #1a1a1a;
+    color: #f0f0f0;
 }

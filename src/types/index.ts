@@ -1,7 +1,5 @@
 // src/types/index.ts
 
-// Importa e reexporta os tipos diretamente do SDK do Gemini
-// Isso garante que estamos usando os tipos exatos que o SDK espera.
 import type {
     SafetySetting as GenaiSafetySetting,
     Part as GenaiPart
@@ -45,6 +43,7 @@ export interface AppSettings {
     enableWebSearch: boolean;
     enableAttachments: boolean;
     hideNavigation: boolean;
+    theme: 'loox' | 'aulapp';
 }
 
 export interface Memory {

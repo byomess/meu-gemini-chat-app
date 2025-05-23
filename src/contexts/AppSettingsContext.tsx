@@ -1,7 +1,6 @@
 // src/contexts/AppSettingsContext.tsx
-import React, { createContext, useContext, type ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, type ReactNode, useCallback, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-// Importa os tipos do @google/genai diretamente ou via reexportação de src/types
 import { HarmCategory, HarmBlockThreshold, type SafetySetting } from '../types';
 import type { AppSettings, GeminiModelConfig, GeminiModel, FunctionDeclaration } from '../types';
 
@@ -10,7 +9,6 @@ const DEFAULT_GEMINI_MODEL: GeminiModel = "gemini-2.5-pro-preview-05-06";
 
 export const DEFAULT_PERSONALITY_PROMPT = `Você é uma IA professora / tutora de alunos que estão fazendo cursos na plataforma de ensino à distância Aulapp, e seu papel é ajudar os alunos a entenderem melhor o conteúdo do curso, responder perguntas e fornecer feedback sobre a evolução deles. Você deve ser amigável, paciente e encorajador, sempre buscando ajudar os alunos a aprenderem e se desenvolverem.`;
 
-// Definição padrão para safetySettings usando os tipos importados
 const defaultSafetySettings: SafetySetting[] = [
     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
     { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
@@ -34,7 +32,8 @@ const defaultAppSettings: AppSettings = {
     aiAvatarUrl: '',
     enableWebSearch: true,
     enableAttachments: true,
-    hideNavigation: false, // Default value for new setting (false = show navigation)
+    hideNavigation: false,
+    theme: 'aulapp',
 };
 
 interface AppSettingsContextType {
@@ -47,7 +46,8 @@ interface AppSettingsContextType {
     updateAiAvatarUrl: (url: string) => void;
     updateEnableWebSearch: (enabled: boolean) => void;
     updateAttachmentsEnabled: (enabled: boolean) => void;
-    updateHideNavigation: (hidden: boolean) => void; // New function for hideNavigation setting
+    updateHideNavigation: (hidden: boolean) => void;
+    updateTheme: (theme: 'loox' | 'aulapp') => void;
 }
 
 export const AppSettingsContext = createContext<AppSettingsContextType | undefined>(undefined);
@@ -58,6 +58,11 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
         defaultAppSettings
     );
 
+    useEffect(() => {
+        document.body.classList.remove('theme-loox', 'theme-aulapp');
+        document.body.classList.add(`theme-${settings.theme}`);
+    }, [settings.theme]);
+
     React.useEffect(() => {
         if (settings && settings.geminiModelConfig) {
             let needsUpdate = false;
@@ -67,10 +72,9 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
                 currentSafetySettings = defaultSafetySettings;
                 needsUpdate = true;
             } else {
-                // Verifica se todas as categorias default estão presentes
                 for (const defaultSetting of defaultSafetySettings) {
                     if (!currentSafetySettings.find(s => s.category === defaultSetting.category)) {
-                        currentSafetySettings = defaultSafetySettings; // Reseta se incompleto
+                        currentSafetySettings = defaultSafetySettings;
                         needsUpdate = true;
                         break;
                     }
@@ -87,8 +91,7 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
                 }));
             }
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [settings.geminiModelConfig?.safetySettings]); // Dependência mais específica
+    }, [settings.geminiModelConfig?.safetySettings]);
 
     const saveApiKey = useCallback((apiKey: string) => {
         setSettings((prevSettings) => ({ ...prevSettings, apiKey }));
@@ -100,7 +103,6 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
                 ...prevSettings.geminiModelConfig,
                 ...configUpdate,
             };
-            // Assegura que safetySettings seja sempre um array válido
             if (!newModelConfig.safetySettings || !Array.isArray(newModelConfig.safetySettings)) {
                 newModelConfig.safetySettings = defaultSafetySettings;
             }
@@ -146,10 +148,17 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
         }));
     }, [setSettings]);
 
-    const updateHideNavigation = useCallback((hidden: boolean) => { // Implementation for new setting
+    const updateHideNavigation = useCallback((hidden: boolean) => {
         setSettings((prevSettings) => ({
             ...prevSettings,
             hideNavigation: hidden,
+        }));
+    }, [setSettings]);
+
+    const updateTheme = useCallback((theme: 'loox' | 'aulapp') => {
+        setSettings((prevSettings) => ({
+            ...prevSettings,
+            theme: theme,
         }));
     }, [setSettings]);
 
@@ -164,7 +173,8 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
             updateAiAvatarUrl,
             updateEnableWebSearch,
             updateAttachmentsEnabled,
-            updateHideNavigation, // Added to provider value
+            updateHideNavigation,
+            updateTheme,
         }}>
             {children}
         </AppSettingsContext.Provider>
