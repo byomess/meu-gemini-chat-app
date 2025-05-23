@@ -62,56 +62,6 @@ main {
   }
 }
 
-:root {
-    --color-input-container-border: #e0e0e0;
-    --color-input-container-bg: #ffffff;
-    --color-input-form-bg: #ffffff;
-    --color-input-form-border: #d1d5db; /* gray-300 */
-    --color-input-text: #1f2937; /* gray-800 */
-    --color-input-placeholder: #6b7280; /* gray-500 */
-    --color-input-attachment-preview-bg: #f3f4f6; /* gray-100 */
-    --color-input-attachment-preview-border: #e5e7eb; /* gray-200 */
-    --color-api-key-warning-text: #dc3545;
-    --color-api-key-warning-strong-text: #a71d2a;
-    --color-error-bg: #fee2e2; /* red-100 */
-    --color-error-border: #fecaca; /* red-300 */
-    --color-error-text: #b91c1c; /* red-700 */
-    --color-warning-bg: #fef3c7; /* yellow-100 */
-    --color-warning-border: #fde68a; /* yellow-300 */
-    --color-warning-text: #b45309; /* yellow-700 */
-    --color-attached-item-bg: #ffffff;
-    --color-attached-item-generic-bg: #f3f4f6; /* gray-100 */
-    --color-attached-item-generic-text: #374151; /* gray-700 */
-    --color-attached-item-icon: #6b7280; /* gray-500 */
-    --color-attached-item-subtext: #9ca3af; /* gray-400 */
-}
-
-body.theme-aulapp {
-    --color-input-container-border: #444;
-    --color-input-container-bg: #2d2d2d;
-    --color-input-form-bg: #3a3a3a;
-    --color-input-form-border: #555;
-    --color-input-text: #e5e7eb;
-    --color-input-placeholder: #9ca3af;
-    --color-input-attachment-preview-bg: #373737;
-    --color-input-attachment-preview-border: #4a4a4a;
-    --color-api-key-warning-text: #ff6b6b;
-    --color-api-key-warning-strong-text: #ff3b3b;
-    --color-error-bg: #58151c;
-    --color-error-border: #7f1d1d;
-    --color-error-text: #fca5a5;
-    --color-warning-bg: #5a2e02;
-    --color-warning-border: #78350f;
-    --color-warning-text: #fcd34d;
-    --color-attached-item-bg: #3a3a3a;
-    --color-attached-item-generic-bg: #2d2d2d;
-    --color-attached-item-generic-text: #d1d5db;
-    --color-attached-item-icon: #9ca3af;
-    --color-attached-item-subtext: #6b7280;
-    background-color: #1a1a1a;
-    color: #f0f0f0;
-}
-
 body.theme-loox {
     /* General body styling for Loox theme */
     background-color: #1a1a1a; /* This could also be a var from loox.css e.g. var(--color-body-bg) */

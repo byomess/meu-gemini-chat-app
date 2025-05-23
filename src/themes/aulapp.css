@@ -198,11 +198,34 @@
   --color-user-avatar-gradient-from: var(--color-primary);
   --color-user-avatar-gradient-to: var(--color-primary-dark);
 
-  /* Message Input Colors */
-  --color-input-container-border: var(--color-gray-200);
-  --color-input-container-bg: var(--color-gray-50);
-  --color-api-key-warning-text: var(--color-yellow-600);
-  --color-api-key-warning-strong-text: var(--color-yellow-700);
+  /* Message Input Colors (Light Theme - from original :root) */
+  --color-input-container-border: #e0e0e0; /* Default light */
+  --color-input-container-bg: #ffffff;    /* Default light */
+  --color-input-form-bg: #ffffff;
+  --color-input-form-border: #d1d5db; /* gray-300 */
+  --color-input-text: #1f2937; /* gray-800 */
+  --color-input-placeholder: #6b7280; /* gray-500 */
+  --color-input-attachment-preview-bg: #f3f4f6; /* gray-100 */
+  --color-input-attachment-preview-border: #e5e7eb; /* gray-200 */
+  --color-api-key-warning-text: #dc3545; /* Default light - reddish */
+  --color-api-key-warning-strong-text: #a71d2a; /* Default light - darker reddish */
+  
+  /* Error display colors (Light Theme) */
+  --color-error-bg: #fee2e2; /* red-100 */
+  --color-error-border: #fecaca; /* red-300 */
+  --color-error-text: #b91c1c; /* red-700 */
+
+  /* Warning display colors (Light Theme) */
+  --color-warning-bg: #fef3c7; /* yellow-100 */
+  --color-warning-border: #fde68a; /* yellow-300 */
+  --color-warning-text: #b45309; /* yellow-700 */
+
+  /* AttachedFileItem colors (Light Theme) */
+  --color-attached-item-bg: #ffffff;
+  --color-attached-item-generic-bg: #f3f4f6; /* gray-100 */
+  --color-attached-item-generic-text: #374151; /* gray-700 */
+  --color-attached-item-icon: #6b7280; /* gray-500 */
+  --color-attached-item-subtext: #9ca3af; /* gray-400 */
 
   /* Button Colors */
   --color-button-primary-bg: var(--color-primary);
