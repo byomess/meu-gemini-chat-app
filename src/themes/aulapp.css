@@ -35,6 +35,9 @@
   --color-amber-600: #d97706; /* New: for function call request icon */
   --color-amber-700: #b45309; /* New: for function call request text */
   --color-amber-800: #92400e; /* New: for function call request name */
+  --color-green-500: #22c55e; /* New: for floating button autoscroll from */
+  --color-emerald-600: #10b981; /* New: for floating button autoscroll to */
+  --color-orange-600: #ea580c; /* New: for API key missing text/icon */
   --color-white: white;
   --color-black: black;
 
@@ -393,4 +396,34 @@
   --color-settings-model-select-text: var(--color-gray-800);
   --color-settings-model-select-focus-border: var(--color-primary);
   --color-settings-model-select-option-hover-bg: var(--color-gray-100);
+
+  /* Chat Area Colors */
+  --color-chat-area-bg: var(--color-gray-100);
+  --color-chat-area-text: var(--color-gray-800);
+
+  /* Chat Header */
+  --color-chat-header-bg: color-mix(in srgb, var(--color-white) 80%, transparent); /* bg-white/80 */
+  --color-chat-header-border: var(--color-gray-200);
+  --color-chat-header-icon: var(--color-gray-500);
+  --color-chat-header-title: var(--color-gray-800);
+
+  /* Mobile Menu Button (in header) */
+  --color-mobile-menu-button-text: var(--color-gray-600);
+  --color-mobile-menu-button-hover-text: var(--color-gray-900);
+
+  /* Floating Scroll Button */
+  --color-floating-button-shadow: color-mix(in srgb, var(--color-primary) 30%, transparent); /* shadow-[#e04579]/30 */
+  --color-floating-button-text: var(--color-white);
+  --color-floating-button-autoscroll-from: var(--color-green-500);
+  --color-floating-button-autoscroll-to: var(--color-emerald-600);
+  --color-floating-button-default-from: var(--color-primary);
+  --color-floating-button-default-to: var(--color-primary-dark);
+
+  /* Welcome/Empty States */
+  --color-welcome-text-main: var(--color-gray-600);
+  --color-welcome-text-secondary: var(--color-gray-500);
+  --color-api-key-missing-text: var(--color-orange-600);
+  --color-api-key-missing-icon: var(--color-orange-600);
+  --color-no-messages-text-main: var(--color-gray-500);
+  --color-no-messages-icon: var(--color-gray-500);
 }

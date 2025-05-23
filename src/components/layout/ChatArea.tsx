@@ -203,13 +203,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
 
 
     return (
-        <main className="flex flex-col h-screen relative text-gray-800 bg-gray-100">
+        <main className="flex flex-col h-screen relative text-[var(--color-chat-area-text)] bg-[var(--color-chat-area-bg)]">
 
-            <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 backdrop-blur-md bg-white/80 border-b border-gray-200 shadow-sm">
+            <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 backdrop-blur-md bg-[var(--color-chat-header-bg)] border-b border-[var(--color-chat-header-border)] shadow-sm">
                 {isMobile && showMobileMenuButton && (
                     <button
                         onClick={onOpenMobileSidebar}
-                        className="p-1 text-gray-600 hover:text-gray-900"
+                        className="p-1 text-[var(--color-mobile-menu-button-text)] hover:text-[var(--color-mobile-menu-button-hover-text)]"
                         title="Abrir menu"
                         aria-label="Abrir menu"
                     >
@@ -217,8 +217,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                     </button>
                 )}
 
-                <IoChatbubblesOutline size={22} className="flex-shrink-0 text-gray-500" />
-                <h2 className="truncate text-base sm:text-lg font-semibold text-gray-800">{conversationTitle}</h2>
+                <IoChatbubblesOutline size={22} className="flex-shrink-0 text-[var(--color-chat-header-icon)]" />
+                <h2 className="truncate text-base sm:text-lg font-semibold text-[var(--color-chat-header-title)]">{conversationTitle}</h2>
             </div>
 
             {showFloatingButton && (
@@ -227,13 +227,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                     className={`
                         fixed bottom-24 right-6 sm:right-8 z-30
                         p-3 rounded-full
-                        shadow-lg shadow-[#e04579]/30
-                        text-white
+                        shadow-lg shadow-[var(--color-floating-button-shadow)]
+                        text-[var(--color-floating-button-text)]
                         hover:scale-105 active:scale-95
                         transition-all duration-150 ease-in-out
                         ${isAutoScrollActive
-                            ? 'bg-gradient-to-br from-green-500 to-emerald-600'
-                            : 'bg-gradient-to-br from-[#e04579] to-[#c73d6a]'
+                            ? 'bg-gradient-to-br from-[var(--color-floating-button-autoscroll-from)] to-[var(--color-floating-button-autoscroll-to)]'
+                            : 'bg-gradient-to-br from-[var(--color-floating-button-default-from)] to-[var(--color-floating-button-default-to)]'
                         }
                     `}
                     title={isAutoScrollActive
@@ -254,14 +254,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                 className="flex-1 overflow-y-auto px-3 md:px-4 py-4 md:py-6" // Scrollbar styling will be from global CSS or browser default
             >
                 {showWelcome ? (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-500 p-6 text-center">
+                    <div className="h-full flex flex-col items-center justify-center text-[var(--color-welcome-text-secondary)] p-6 text-center">
                         <img
                             src="/logo-aulapp.svg"
                             alt="Logo Loox"
                             className="py-4 w-36 h-auto opacity-70"
                         />
-                        <p className="text-lg font-medium text-gray-600">Bem-vindo, aluno!</p>
-                        <p className="text-sm max-w-xs text-gray-500 mt-4">
+                        <p className="text-lg font-medium text-[var(--color-welcome-text-main)]">Bem-vindo, aluno!</p>
+                        <p className="text-sm max-w-xs text-[var(--color-welcome-text-secondary)] mt-4">
                             {isMobile && showMobileMenuButton
                                 ? "Toque no ícone de menu no canto superior esquerdo para ver suas conversas ou iniciar uma nova."
                                 : "Crie uma nova conversa ou selecione uma existente no painel à esquerda para começar."
@@ -269,8 +269,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                         </p>
                     </div>
                 ) : showApiKeyMissing ? (
-                    <div className="h-full flex flex-col items-center justify-center text-orange-600 p-6 text-center">
-                        <IoLockClosedOutline size={48} className="mb-4 opacity-70" />
+                    <div className="h-full flex flex-col items-center justify-center text-[var(--color-api-key-missing-text)] p-6 text-center">
+                        <IoLockClosedOutline size={48} className="mb-4 opacity-70 text-[var(--color-api-key-missing-icon)]" />
                         <p className="text-lg font-medium">Chave de API necessária</p>
                         <p className="text-sm max-w-xs">
                             Configure sua chave do Google Gemini nas <strong>Configurações</strong> para ativar o
@@ -278,8 +278,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                         </p>
                     </div>
                 ) : messages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-500 p-6 text-center">
-                        <IoChatbubblesOutline size={48} className="mb-4 opacity-50" />
+                    <div className="h-full flex flex-col items-center justify-center text-[var(--color-no-messages-text-main)] p-6 text-center">
+                        <IoChatbubblesOutline size={48} className="mb-4 opacity-50 text-[var(--color-no-messages-icon)]" />
                         <p className="text-lg font-medium">Nenhuma mensagem ainda.</p>
                         <p className="text-sm max-w-xs">Envie uma mensagem abaixo para iniciar a conversa.</p>
                     </div>
