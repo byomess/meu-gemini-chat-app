@@ -201,6 +201,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
     const showApiKeyMissing = activeConversationId && !settings.apiKey
     const showFloatingButton = !showWelcome && !showApiKeyMissing && messages.length > 0;
 
+    // Determine logo and text based on hostname
+    const isAulappDomain = typeof window !== 'undefined' && window.location.hostname === 'aulapp-loox-ai.vercel.app';
+    const logoSrc = isAulappDomain ? '/logo-aulapp.svg' : '/logo-loox.png';
+    const logoAlt = isAulappDomain ? 'Logo Aulapp' : 'Logo Loox';
 
     return (
         <main className="flex flex-col h-screen relative text-[var(--color-chat-area-text)] bg-[var(--color-chat-area-bg)]">
@@ -256,8 +260,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                 {showWelcome ? (
                     <div className="h-full flex flex-col items-center justify-center text-[var(--color-welcome-text-secondary)] p-6 text-center">
                         <img
-                            src="/logo-aulapp.svg"
-                            alt="Logo Loox"
+                            src={logoSrc}
+                            alt={logoAlt}
                             className="py-4 w-36 h-auto opacity-70"
                         />
                         <p className="text-lg font-medium text-[var(--color-welcome-text-main)]">Bem-vindo, aluno!</p>
