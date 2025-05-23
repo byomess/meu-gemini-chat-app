@@ -1,9 +1,8 @@
-// src/components/settings/tabs/GeneralSettingsTab.tsx
 import React from 'react';
 import TextInput from '../../common/TextInput';
 import { DEFAULT_PERSONALITY_PROMPT } from '../../../contexts/AppSettingsContext'; // Import the correct constant
 
-interface GeneralSettingsTabProps {
+export interface GeneralSettingsTabProps {
     currentApiKey: string;
     setCurrentApiKey: (key: string) => void;
     currentCustomPersonalityPrompt: string;
