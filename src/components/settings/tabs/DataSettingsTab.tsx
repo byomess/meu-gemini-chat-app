@@ -1,13 +1,12 @@
-// src/components/settings/tabs/DataSettingsTab.tsx
 import React, { useState, useCallback, useRef } from 'react';
 import Button from '../../common/Button';
 import { IoCloudUploadOutline, IoCloudDownloadOutline, IoTrashOutline, IoCloseOutline } from 'react-icons/io5';
-import type { AppSettings, Conversation, Memory, FunctionDeclaration, GeminiModelConfig } from '../../../types'; // Import GeminiModelConfig
+import type { AppSettings, Conversation, Memory, FunctionDeclaration, GeminiModelConfig } from '../../../types';
 import { useDialog } from '../../../contexts/DialogContext';
-import { useMemories } from '../../../contexts/MemoryContext'; // Import useMemories
-import { useConversations } from '../../../contexts/ConversationContext'; // Import useConversations
+import { useMemories } from '../../../contexts/MemoryContext';
+import { useConversations } from '../../../contexts/ConversationContext';
 
-export type DataSettingsTabProps = object
+export type DataSettingsTabProps = object;
 
 interface UrlConfigFile {
     apiKey?: string;
@@ -18,7 +17,7 @@ interface UrlConfigFile {
     memories?: {
         id?: string;
         content: string;
-        timestamp: string; // ISO string
+        timestamp: string;
         sourceMessageId?: string;
     }[];
     codeSynthaxHighlightEnabled?: boolean;
@@ -29,27 +28,11 @@ interface UrlConfigFile {
 
 const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
     const { showDialog } = useDialog();
-    const { memories, deleteMemory, updateMemory, clearAllMemories, replaceAllMemories } = useMemories(); // Use useMemories hook
-    const { deleteAllConversations } = useConversations(); // Use useConversations hook
+    const { clearAllMemories, replaceAllMemories } = useMemories();
+    const { deleteAllConversations } = useConversations();
 
     const [isDragging, setIsDragging] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
-    const [editedMemoryContent, setEditedMemoryContent] = useState<string>('');
-
-    // Determine active tab for display purposes within this component
-    // This component is used for both "Memories" and "Data" tabs in SettingsModal
-    // We can infer which section to show based on the URL or a prop if passed,
-    // but for simplicity, if it's rendered, it means it's the active tab.
-    // The original code had `activeTab: 'memories' | 'data'` as a prop,
-    // but since this component is now used for both, and the content is conditional,
-    // I'll assume the context of its usage in SettingsModal determines what's shown.
-    // For this file, I'll assume it's always showing the "Data" section,
-    // and MemoriesSettingsTab.tsx handles the "Memories" section.
-    // If this component is *only* for "Data", then the `activeTab` prop is not needed.
-    // If it's meant to render *both* based on an internal state or prop, then that prop is needed.
-    // Given the previous commit structure, it seems `MemoriesSettingsTab.tsx` is separate.
-    // So, this `DataSettingsTab.tsx` will focus only on the Data import/export/clear.
 
     const handleExportData = useCallback(() => {
         showDialog({
@@ -60,7 +43,6 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
             cancelText: "Cancelar",
             onConfirm: async () => {
                 const appSettings: AppSettings = JSON.parse(localStorage.getItem('appSettings') || '{}');
-                // Conversations and memories are already available from hooks, but localStorage is used for consistency with import
                 const conversationsData: Conversation[] = JSON.parse(localStorage.getItem('conversations') || '[]');
                 const memoriesData: Memory[] = JSON.parse(localStorage.getItem('memories') || '[]');
 
@@ -77,7 +59,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                     memories: memoriesData.map(m => ({
                         id: m.id,
                         content: m.content,
-                        timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp, // Ensure ISO string
+                        timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
                         sourceMessageId: m.sourceMessageId
                     }))
                 };
@@ -109,9 +91,8 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
-                const importedData: unknown = JSON.parse(event.target?.result as string); // Parse as unknown
+                const importedData: unknown = JSON.parse(event.target?.result as string);
 
-                // Basic validation for importedData structure
                 if (typeof importedData !== 'object' || importedData === null) {
                     throw new Error("Invalid JSON structure.");
                 }
@@ -131,10 +112,9 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                     cancelText: "Cancelar",
                     onConfirm: () => {
                         if (importedAppSettingsRaw && typeof importedAppSettingsRaw === 'object') {
-                            const importedAppSettings: UrlConfigFile = importedAppSettingsRaw as UrlConfigFile; // Assert after basic check
+                            const importedAppSettings: UrlConfigFile = importedAppSettingsRaw as UrlConfigFile;
                             const currentAppSettings: AppSettings = JSON.parse(localStorage.getItem('appSettings') || '{}');
 
-                            // Merge imported settings with existing ones, prioritizing imported values
                             const newAppSettings: AppSettings = {
                                 ...currentAppSettings,
                                 apiKey: importedAppSettings.apiKey ?? currentAppSettings.apiKey,
@@ -146,14 +126,13 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                                 enableWebSearch: importedAppSettings.enableWebSearch ?? currentAppSettings.enableWebSearch,
                                 enableAttachments: importedAppSettings.enableAttachments ?? currentAppSettings.enableAttachments,
                                 hideNavigation: importedAppSettings.hideNavigation ?? currentAppSettings.hideNavigation,
-                                isDarkModeEnabled: currentAppSettings.isDarkModeEnabled, // Keep existing dark mode setting
+                                isDarkModeEnabled: currentAppSettings.isDarkModeEnabled,
                             };
                             localStorage.setItem('appSettings', JSON.stringify(newAppSettings));
 
-                            // Handle memories separately as they are managed by context
                             if (importedAppSettings.memories && Array.isArray(importedAppSettings.memories)) {
                                 const newMemories: Memory[] = importedAppSettings.memories.map(m => ({
-                                    id: m.id || crypto.randomUUID(), // Ensure ID exists
+                                    id: m.id || crypto.randomUUID(),
                                     content: m.content,
                                     timestamp: new Date(m.timestamp),
                                     sourceMessageId: m.sourceMessageId
@@ -163,7 +142,6 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                         }
 
                         if (importedConversationsRaw && Array.isArray(importedConversationsRaw)) {
-                            // Basic validation for conversations array elements
                             const validatedConversations: Conversation[] = importedConversationsRaw.map((c: any) => ({
                                 id: c.id || crypto.randomUUID(),
                                 title: c.title || 'Untitled Conversation',
@@ -178,8 +156,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                                 updatedAt: new Date(c.updatedAt),
                             }));
                             localStorage.setItem('conversations', JSON.stringify(validatedConversations));
-                            // Force a reload of conversations in context
-                            window.dispatchEvent(new Event('storage')); // Simulate storage event
+                            window.dispatchEvent(new Event('storage'));
                         }
 
                         showDialog({
@@ -187,10 +164,10 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                             message: "Dados importados com sucesso!",
                             type: "alert",
                         });
-                        setSelectedFile(null); // Clear selected file after import
+                        setSelectedFile(null);
                     }
                 });
-            } catch (e: unknown) { // Catch unknown error type
+            } catch (e: unknown) {
                 console.error("Erro ao parsear arquivo JSON:", e);
                 showDialog({
                     title: "Erro de Importação",
@@ -279,7 +256,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                     message: "Por favor, selecione um arquivo JSON.",
                     type: "alert",
                 });
-                e.target.value = ''; // Clear the input
+                e.target.value = '';
             }
         }
     }, [showDialog]);
@@ -289,54 +266,6 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
     const triggerFileInput = useCallback(() => {
         fileInputRef.current?.click();
     }, []);
-
-    // These memory-related functions are now handled by MemoriesSettingsTab.tsx
-    // Keeping them here for completeness if this component were to manage memories directly,
-    // but they are not used in the current component structure.
-    const handleStartEditMemory = useCallback((memory: Memory) => {
-        setEditingMemoryId(memory.id);
-        setEditedMemoryContent(memory.content);
-    }, []);
-
-    const handleSaveMemory = useCallback((memoryId: string) => {
-        if (editedMemoryContent.trim()) {
-            updateMemory(memoryId, editedMemoryContent.trim());
-            setEditingMemoryId(null);
-            setEditedMemoryContent('');
-        } else {
-            showDialog({
-                title: "Conteúdo Vazio",
-                message: "O conteúdo da memória não pode ser vazio.",
-                type: "alert",
-            });
-        }
-    }, [editedMemoryContent, updateMemory, showDialog]);
-
-    const handleCancelEditMemory = useCallback(() => {
-        setEditingMemoryId(null);
-        setEditedMemoryContent('');
-    }, []);
-
-    const handleDeleteMemory = useCallback((memoryId: string) => {
-        showDialog({
-            title: "Confirmar Exclusão de Memória",
-            message: "Tem certeza de que deseja excluir esta memória? Esta ação não pode ser desfeita.",
-            type: "confirm",
-            confirmText: "Excluir",
-            cancelText: "Cancelar",
-            onConfirm: () => {
-                deleteMemory(memoryId);
-                showDialog({
-                    title: "Memória Excluída",
-                    message: "A memória foi excluída com sucesso.",
-                    type: "alert",
-                });
-            }
-        });
-    }, [showDialog, deleteMemory]);
-
-    const sortedMemories = [...memories].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-
 
     return (
         <div className="space-y-6">
