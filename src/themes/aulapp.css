@@ -350,7 +350,6 @@
   --color-table-item-edit-placeholder: var(--color-gray-500);
 
   /* Specific for Function Calling Tab Cards (Display State) */
-  --color-function-card-top-border: var(--color-primary);
   --color-function-card-name-text: var(--color-gray-800);
   --color-function-card-description-text: var(--color-gray-600);
   --color-function-card-http-method-bg: var(--color-gray-100);
