@@ -3,7 +3,7 @@ import React from 'react';
 import TextInput from '../../common/TextInput';
 import { IoSparklesOutline } from 'react-icons/io5';
 
-interface InterfaceSettingsTabProps {
+export interface InterfaceSettingsTabProps {
     currentCodeHighlightEnabled: boolean;
     onToggleCodeHighlight: () => void;
     currentAiAvatarUrl: string;
@@ -55,7 +55,7 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
                                 src={currentAiAvatarUrl}
                                 alt="AI Avatar Preview"
                                 className="w-10 h-10 rounded-full object-cover border border-[var(--color-interface-settings-avatar-preview-border)] shadow-sm"
-                                onError={(e) => {
+                                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { // Explicitly type the event
                                     e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3Cline x1='12' y1='8' x2='12' y2='12'%3E%3C/line%3Cline x1='12' y1='16' x2='12.01' y2='16'%3E%3C/line%3E%3C/svg%3E"; // Fallback to a generic error icon
                                     e.currentTarget.className = "w-10 h-10 rounded-full object-cover border border-[var(--color-interface-settings-avatar-preview-border)] shadow-sm p-2 text-[var(--color-interface-settings-avatar-preview-text)] bg-[var(--color-interface-settings-avatar-preview-bg)]";
                                 }}

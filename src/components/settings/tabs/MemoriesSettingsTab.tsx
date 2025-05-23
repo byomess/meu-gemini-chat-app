@@ -1,5 +1,4 @@
 // src/components/settings/tabs/MemoriesSettingsTab.tsx
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { IoAddCircleOutline, IoDownloadOutline, IoCloudUploadOutline, IoPencilOutline, IoTrashBinOutline, IoSearchOutline } from "react-icons/io5";
 import { LuBrain } from "react-icons/lu";
@@ -127,47 +126,53 @@ const MemoriesSettingsTab: React.FC = () => {
             try {
                 const content = e.target?.result;
                 if (typeof content === "string") {
-                    const importedMemories = JSON.parse(content) as Memory[];
-                    if (
-                        Array.isArray(importedMemories) &&
-                        importedMemories.every(
-                            (mem) =>
-                                typeof mem.id === "string" &&
-                                typeof mem.content === "string" &&
-                                typeof mem.timestamp === "string" // Timestamps will be converted
-                        )
-                    ) {
-                        showDialog({
-                            title: "Confirm Import",
-                            message: `Isso substituirá ${memories.length > 0
-                                ? "TODAS as memórias atuais"
-                                : "suas memórias (atualmente vazias)"
-                                } por ${importedMemories.length
-                                } memórias do arquivo. Deseja continuar?`,
-                            type: "confirm",
-                            confirmText: "Continuar",
-                            cancelText: "Cancelar",
-                            onConfirm: () => {
-                                replaceAllMemories(
-                                    importedMemories.map((mem) => ({
-                                        ...mem,
-                                        timestamp: new Date(mem.timestamp), // Convert string to Date
-                                    }))
-                                );
-                                showDialog({
-                                    title: "Import Successful",
-                                    message: "Memórias importadas com sucesso.",
-                                    type: "alert",
-                                });
-                            },
-                        });
-                    } else {
-                        throw new Error(
-                            "O arquivo JSON não contém um array de memórias válidas (cada memória deve ter 'id', 'content', 'timestamp')."
-                        );
+                    const parsedContent: unknown = JSON.parse(content); // Parse as unknown first
+
+                    if (!Array.isArray(parsedContent)) {
+                        throw new Error("O arquivo JSON não contém um array.");
                     }
+
+                    const importedMemories: Memory[] = parsedContent.map((item: unknown) => {
+                        if (typeof item !== 'object' || item === null) {
+                            throw new Error("Item de memória inválido.");
+                        }
+                        const memoryItem = item as Record<string, unknown>; // Cast to a record to access properties
+                        if (
+                            typeof memoryItem.id !== "string" ||
+                            typeof memoryItem.content !== "string" ||
+                            typeof memoryItem.timestamp !== "string"
+                        ) {
+                            throw new Error("Memória com formato inválido (missing id, content, or timestamp).");
+                        }
+                        return {
+                            id: memoryItem.id,
+                            content: memoryItem.content,
+                            timestamp: new Date(memoryItem.timestamp), // Convert string to Date
+                            sourceMessageId: typeof memoryItem.sourceMessageId === "string" ? memoryItem.sourceMessageId : undefined,
+                        };
+                    });
+
+                    showDialog({
+                        title: "Confirm Import",
+                        message: `Isso substituirá ${memories.length > 0
+                            ? "TODAS as memórias atuais"
+                            : "suas memórias (atualmente vazias)"
+                            } por ${importedMemories.length
+                            } memórias do arquivo. Deseja continuar?`,
+                        type: "confirm",
+                        confirmText: "Continuar",
+                        cancelText: "Cancelar",
+                        onConfirm: () => {
+                            replaceAllMemories(importedMemories);
+                            showDialog({
+                                title: "Import Successful",
+                                message: "Memórias importadas com sucesso.",
+                                type: "alert",
+                            });
+                        },
+                    });
                 }
-            } catch (error) {
+            } catch (error: unknown) { // Catch unknown error type
                 console.error("Erro ao importar memórias:", error);
                 showDialog({
                     title: "Import Error",

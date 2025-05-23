@@ -3,21 +3,12 @@ import React, { useState, useCallback } from 'react';
 import Button from '../../common/Button';
 import TextInput from '../../common/TextInput';
 import { IoAddCircleOutline, IoTrashOutline, IoPencilOutline, IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
-import { FunctionDeclaration } from '../../../types';
+import { FunctionDeclaration } from '../../../types'; // Import FunctionDeclaration
 import { useDialog } from '../../../contexts/DialogContext';
 
-interface FunctionCallingSettingsTabProps {
+export interface FunctionCallingSettingsTabProps {
     currentFunctionDeclarations: FunctionDeclaration[];
     setCurrentFunctionDeclarations: (declarations: FunctionDeclaration[]) => void;
-}
-
-interface LocalFunctionDeclaration {
-    id: string;
-    name: string;
-    description: string;
-    parametersSchema: string;
-    endpointUrl: string;
-    httpMethod: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 }
 
 const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
@@ -26,7 +17,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
 }) => {
     const { showDialog } = useDialog();
     const [editingFunctionId, setEditingFunctionId] = useState<string | null>(null);
-    const [newFunction, setNewFunction] = useState<LocalFunctionDeclaration>({
+    const [newFunction, setNewFunction] = useState<FunctionDeclaration>({ // Use FunctionDeclaration directly
         id: '',
         name: '',
         description: '',
@@ -59,10 +50,10 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
 
         try {
             JSON.parse(newFunction.parametersSchema);
-        } catch (e) {
+        } catch (e: unknown) { // Catch unknown error type
             showDialog({
                 title: "Schema Inválido",
-                message: "O 'Schema de Parâmetros' deve ser um JSON válido.",
+                message: `O 'Schema de Parâmetros' deve ser um JSON válido. Detalhes: ${e instanceof Error ? e.message : String(e)}`,
                 type: "alert",
             });
             return;
@@ -154,7 +145,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                             id={`method-${func.id}`}
                                             name="httpMethod"
                                             value={newFunction.httpMethod}
-                                            onChange={(e) => setNewFunction(prev => ({ ...prev, httpMethod: e.target.value as any }))}
+                                            onChange={(e) => setNewFunction(prev => ({ ...prev, httpMethod: e.target.value as FunctionDeclaration['httpMethod'] }))} // Specific cast
                                             className="w-full p-3 bg-[var(--color-function-method-dropdown-bg)] border border-[var(--color-function-method-dropdown-border)] rounded-lg text-[var(--color-function-method-dropdown-text)] shadow-sm focus:ring-2 focus:ring-[var(--color-text-input-focus-ring)] focus:border-[var(--color-text-input-focus-border)] transition-colors hover:bg-[var(--color-function-method-dropdown-hover-bg)]"
                                         >
                                             <option value="GET">GET</option>
@@ -247,7 +238,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                         id="new-method"
                                         name="httpMethod"
                                         value={newFunction.httpMethod}
-                                        onChange={(e) => setNewFunction(prev => ({ ...prev, httpMethod: e.target.value as any }))}
+                                        onChange={(e) => setNewFunction(prev => ({ ...prev, httpMethod: e.target.value as FunctionDeclaration['httpMethod'] }))} // Specific cast
                                         className="w-full p-3 bg-[var(--color-function-method-dropdown-bg)] border border-[var(--color-function-method-dropdown-border)] rounded-lg text-[var(--color-function-method-dropdown-text)] shadow-sm focus:ring-2 focus:ring-[var(--color-text-input-focus-ring)] focus:border-[var(--color-text-input-focus-border)] transition-colors hover:bg-[var(--color-function-method-dropdown-hover-bg)]"
                                     >
                                         <option value="GET">GET</option>

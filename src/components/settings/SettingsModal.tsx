@@ -23,22 +23,18 @@ import {
 } from "@google/genai";
 import { useDialog } from "../../contexts/DialogContext"; // Import useDialog
 
-// Import new tab components
+// Import new tab components and their specific props interfaces
 import GeneralSettingsTab from "./tabs/GeneralSettingsTab";
-import ModelSettingsTab from "./tabs/ModelSettingsTab";
+import type { GeneralSettingsTabProps } from "./tabs/GeneralSettingsTab";
+import ModelSettingsTab, { AVAILABLE_GEMINI_MODELS, HARM_CATEGORIES_CONFIG, appDefaultSafetySettings } from "./tabs/ModelSettingsTab";
+import type { ModelSettingsTabProps } from "./tabs/ModelSettingsTab";
 import MemoriesSettingsTab from "./tabs/MemoriesSettingsTab";
 import FunctionCallingSettingsTab from "./tabs/FunctionCallingSettingsTab";
+import type { FunctionCallingSettingsTabProps } from "./tabs/FunctionCallingSettingsTab";
 import InterfaceSettingsTab from "./tabs/InterfaceSettingsTab";
+import type { InterfaceSettingsTabProps } from "./tabs/InterfaceSettingsTab";
 import DataSettingsTab from "./tabs/DataSettingsTab";
-
-interface LocalFunctionDeclaration {
-    id: string;
-    name: string;
-    description: string;
-    parametersSchema: string;
-    endpointUrl: string;
-    httpMethod: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-}
+import type { DataSettingsTabProps } from "./tabs/DataSettingsTab"; // Import DataSettingsTabProps
 
 type TabId = "general" | "model" | "memories" | "functionCalling" | "interface" | "data";
 
@@ -46,7 +42,7 @@ interface Tab {
     id: TabId;
     label: string;
     icon: React.ReactElement;
-    component: React.FC<any>;
+    component: React.FC<any>; // Keeping 'any' here for simplicity of the union, but props are passed explicitly below
 }
 
 interface SettingsModalProps {
@@ -59,9 +55,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const { showDialog, dialogProps } = useDialog(); // Use the dialog hook and get dialogProps
     const [currentApiKey, setCurrentApiKey] = useState<string>("");
     const [currentCustomPersonalityPrompt, setCurrentCustomPersonalityPrompt] =
-        useState<string>(""); // Initialized to empty string, actual value set in useEffect
+        useState<string>("");
     const [currentFunctionDeclarations, setCurrentFunctionDeclarations] =
-        useState<LocalFunctionDeclaration[]>([]);
+        useState<AppFunctionDeclaration[]>([]); // Use AppFunctionDeclaration directly
     const [currentAiAvatarUrl, setCurrentAiAvatarUrl] = useState<string>("");
     const [isCodeHighlightEnabledState, setIsCodeHighlightEnabledState] =
         useState<boolean>(settings.codeSynthaxHighlightEnabled);
@@ -130,7 +126,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 effectiveSafetySettings = appDefaultSafetySettings;
             }
 
-            const mergedModelConfig = {
+            const mergedModelConfig: GeminiModelConfig = { // Explicitly type mergedModelConfig
                 ...defaultModelConfigValues,
                 ...(settings.geminiModelConfig || {}),
                 safetySettings: effectiveSafetySettings,
@@ -138,14 +134,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             setLocalModelConfig(mergedModelConfig);
 
             setCurrentCustomPersonalityPrompt(settings.customPersonalityPrompt || "");
-            const loadedFuncDeclarations = (settings.functionDeclarations || []).map(
+            const loadedFuncDeclarations: AppFunctionDeclaration[] = (settings.functionDeclarations || []).map( // Explicitly type loadedFuncDeclarations
                 (fd) => ({
                     id: fd.id,
                     name: fd.name,
                     description: fd.description,
                     parametersSchema: fd.parametersSchema,
                     endpointUrl: fd.endpointUrl || "",
-                    httpMethod: fd.httpMethod || "GET",
+                    httpMethod: fd.httpMethod || "POST", // Default to POST if not specified
                 })
             );
             setCurrentFunctionDeclarations(loadedFuncDeclarations);
@@ -166,7 +162,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
     const handleLocalModelConfigChange = (
         field: keyof GeminiModelConfig | "safetySettings",
-        value: unknown
+        value: string | number | SafetySetting[] // More specific type for value
     ) => {
         if (field === "safetySettings") {
             setLocalModelConfig((prev) => ({
@@ -381,14 +377,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                             <button
                                                 key={tab.id}
                                                 onClick={() => handleTabChange(tab.id)}
-                                                className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ease-in-out group whitespace-nowrap flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-settings-tab-nav-bg)] ${activeTab === tab.id
+                                                className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ease-in-out group whitespace-nowrap flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-settings-tab-nav-bg)] ${activeTab === tab.id
                                                     ? "bg-[var(--color-settings-tab-item-active-bg)] text-[var(--color-settings-tab-item-active-text)] shadow-md scale-[1.02]"
                                                     : "text-[var(--color-settings-tab-item-text)] hover:bg-[var(--color-settings-tab-item-hover-bg)] hover:text-[var(--color-primary)] active:scale-[0.98]"
                                                     }`}
                                                 style={{ flex: "0 0 auto" }}
                                             >
                                                 {React.cloneElement(
-                                                    tab.icon as React.ReactElement<any>,
+                                                    tab.icon as React.ReactElement, // Cast to React.ReactElement
                                                     {
                                                         className: `transition-transform duration-200 ${activeTab === tab.id
                                                             ? "text-[var(--color-white)]"
@@ -433,35 +429,45 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                             className={`w-full h-full ${isTabActive ? "" : "hidden"
                                                                 }`}
                                                         >
-                                                            <TabComponent
-                                                                {...(tab.id === "general" && {
-                                                                    currentApiKey,
-                                                                    setCurrentApiKey,
-                                                                    currentCustomPersonalityPrompt,
-                                                                    setCurrentCustomPersonalityPrompt,
-                                                                })}
-                                                                {...(tab.id === "model" && {
-                                                                    currentModelConfig: localModelConfig,
-                                                                    onModelConfigChange:
-                                                                        handleLocalModelConfigChange,
-                                                                })}
-                                                                {...(tab.id === "functionCalling" && {
-                                                                    currentFunctionDeclarations,
-                                                                    setCurrentFunctionDeclarations,
-                                                                })}
-                                                                {...(tab.id === "interface" && {
-                                                                    currentCodeHighlightEnabled: isCodeHighlightEnabledState,
-                                                                    onToggleCodeHighlight: handleToggleCodeHighlightForTab,
-                                                                    currentAiAvatarUrl: currentAiAvatarUrl,
-                                                                    onAiAvatarUrlChange: setCurrentAiAvatarUrl,
-                                                                    currentEnableWebSearchEnabled: currentEnableWebSearchEnabled,
-                                                                    onToggleEnableWebSearch: handleToggleEnableWebSearchForTab,
-                                                                    currentAttachmentsEnabled: currentAttachmentsEnabled,
-                                                                    onToggleAttachmentsEnabled: handleToggleAttachmentsEnabledForTab,
-                                                                    currentHideNavigation: currentHideNavigation,
-                                                                    onToggleHideNavigation: handleToggleHideNavigationForTab,
-                                                                })}
-                                                            />
+                                                            {/* Pass props explicitly based on tab.id */}
+                                                            {tab.id === "general" && (
+                                                                <TabComponent
+                                                                    currentApiKey={currentApiKey}
+                                                                    setCurrentApiKey={setCurrentApiKey}
+                                                                    currentCustomPersonalityPrompt={currentCustomPersonalityPrompt}
+                                                                    setCurrentCustomPersonalityPrompt={setCurrentCustomPersonalityPrompt}
+                                                                />
+                                                            )}
+                                                            {tab.id === "model" && (
+                                                                <TabComponent
+                                                                    currentGeminiModelConfig={localModelConfig}
+                                                                    setCurrentGeminiModelConfig={setLocalModelConfig}
+                                                                />
+                                                            )}
+                                                            {tab.id === "functionCalling" && (
+                                                                <TabComponent
+                                                                    currentFunctionDeclarations={currentFunctionDeclarations}
+                                                                    setCurrentFunctionDeclarations={setCurrentFunctionDeclarations}
+                                                                />
+                                                            )}
+                                                            {tab.id === "interface" && (
+                                                                <TabComponent
+                                                                    currentCodeHighlightEnabled={isCodeHighlightEnabledState}
+                                                                    onToggleCodeHighlight={handleToggleCodeHighlightForTab}
+                                                                    currentAiAvatarUrl={currentAiAvatarUrl}
+                                                                    onAiAvatarUrlChange={setCurrentAiAvatarUrl}
+                                                                    currentEnableWebSearchEnabled={currentEnableWebSearchEnabled}
+                                                                    onToggleEnableWebSearch={handleToggleEnableWebSearchForTab}
+                                                                    currentAttachmentsEnabled={currentAttachmentsEnabled}
+                                                                    onToggleAttachmentsEnabled={handleToggleAttachmentsEnabledForTab}
+                                                                    currentHideNavigation={currentHideNavigation}
+                                                                    onToggleHideNavigation={handleToggleHideNavigationForTab}
+                                                                />
+                                                            )}
+                                                            {/* For tabs that don't need specific props from SettingsModal */}
+                                                            {(tab.id === "memories" || tab.id === "data") && (
+                                                                <TabComponent />
+                                                            )}
                                                         </div>
                                                     </Transition>
                                                 );
