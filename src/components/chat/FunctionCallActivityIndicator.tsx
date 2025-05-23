@@ -54,13 +54,13 @@ const FunctionCallActivityIndicator: React.FC<FunctionCallActivityIndicatorProps
 
 
     let IconComponent;
-    let iconColorClass = 'text-gray-500';
-    let textColorClass = 'text-gray-700';
-    let bgColorClass = 'bg-gray-100';
-    let borderColorClass = 'border-gray-300';
+    let iconColorClass = 'text-[var(--color-gray-500)]';
+    let textColorClass = 'text-[var(--color-gray-700)]';
+    let bgColorClass = 'bg-[var(--color-gray-100)]';
+    let borderColorClass = 'border-[var(--color-gray-300)]';
     let stageText = '';
     let showSpinner = false;
-    let titleIconColorClass = 'text-gray-600'; // Default for the main IoTerminalOutline
+    let titleIconColorClass = 'text-[var(--color-gray-600)]'; // Default for the main IoTerminalOutline
 
     // This check should ideally be handled by the parent, but as a safeguard:
     if (status.type !== 'function_call_request' &&
@@ -72,61 +72,61 @@ const FunctionCallActivityIndicator: React.FC<FunctionCallActivityIndicatorProps
     // Specific handling for function_call_request failure, as it might not go through other stages
     if (status.type === 'function_call_request' && displayedStage === 'failed') {
         IconComponent = IoCloseCircleOutline;
-        iconColorClass = 'text-red-500';
-        textColorClass = 'text-red-700';
-        bgColorClass = 'bg-red-50';
-        borderColorClass = 'border-red-300';
+        iconColorClass = 'text-[var(--color-red-500)]';
+        textColorClass = 'text-[var(--color-red-700)]';
+        bgColorClass = 'bg-[var(--color-red-50)]';
+        borderColorClass = 'border-[var(--color-red-300)]';
         stageText = 'Falha na Solicitação';
-        titleIconColorClass = 'text-red-600';
+        titleIconColorClass = 'text-[var(--color-red-600)]';
     } else {
         switch (displayedStage) {
             case 'pending':
                 IconComponent = IoHourglassOutline;
-                iconColorClass = 'text-amber-500';
-                textColorClass = 'text-amber-700';
-                bgColorClass = 'bg-amber-50';
-                borderColorClass = 'border-amber-300';
+                iconColorClass = 'text-[var(--color-amber-600)]';
+                textColorClass = 'text-[var(--color-amber-700)]';
+                bgColorClass = 'bg-[var(--color-amber-50)]';
+                borderColorClass = 'border-[var(--color-amber-200)]';
                 stageText = 'Pendente...';
                 showSpinner = true;
-                titleIconColorClass = 'text-amber-600';
+                titleIconColorClass = 'text-[var(--color-amber-600)]';
                 break;
             case 'in_progress':
                 IconComponent = IoHardwareChipOutline; // More specific for execution
-                iconColorClass = 'text-blue-500';
-                textColorClass = 'text-blue-700';
-                bgColorClass = 'bg-blue-50';
-                borderColorClass = 'border-blue-300';
+                iconColorClass = 'text-[var(--color-primary)]';
+                textColorClass = 'text-[var(--color-primary-dark)]';
+                bgColorClass = 'bg-[color:color-mix(in_srgb,var(--color-primary)_5%,transparent)]';
+                borderColorClass = 'border-[color:color-mix(in_srgb,var(--color-primary)_30%,transparent)]';
                 stageText = 'Executando...';
                 showSpinner = true;
-                titleIconColorClass = 'text-blue-600';
+                titleIconColorClass = 'text-[var(--color-primary)]';
                 break;
             case 'awaiting_ai': // Typically for function_call_response
                 IconComponent = IoRocketOutline;
-                iconColorClass = 'text-purple-500';
-                textColorClass = 'text-purple-700';
-                bgColorClass = 'bg-purple-50';
-                borderColorClass = 'border-purple-300';
+                iconColorClass = 'text-[var(--color-purple-500)]';
+                textColorClass = 'text-[var(--color-purple-600)]';
+                bgColorClass = 'bg-[color:color-mix(in_srgb,var(--color-purple-500)_5%,transparent)]';
+                borderColorClass = 'border-[color:color-mix(in_srgb,var(--color-purple-500)_30%,transparent)]';
                 stageText = 'Aguardando IA...';
                 showSpinner = true; 
-                titleIconColorClass = 'text-purple-600';
+                titleIconColorClass = 'text-[var(--color-purple-600)]';
                 break;
             case 'completed': // Typically for function_call_execution before response
                 IconComponent = IoCheckmarkCircleOutline;
-                iconColorClass = 'text-green-500';
-                textColorClass = 'text-green-700';
-                bgColorClass = 'bg-green-50';
-                borderColorClass = 'border-green-300';
+                iconColorClass = 'text-[var(--color-green-500)]';
+                textColorClass = 'text-[var(--color-emerald-600)]';
+                bgColorClass = 'bg-[color:color-mix(in_srgb,var(--color-green-500)_5%,transparent)]';
+                borderColorClass = 'border-[color:color-mix(in_srgb,var(--color-green-500)_30%,transparent)]';
                 stageText = 'Execução Concluída';
-                titleIconColorClass = 'text-green-600';
+                titleIconColorClass = 'text-[var(--color-green-500)]';
                 break;
             case 'failed':
                 IconComponent = IoCloseCircleOutline;
-                iconColorClass = 'text-red-500';
-                textColorClass = 'text-red-700';
-                bgColorClass = 'bg-red-50';
-                borderColorClass = 'border-red-300';
+                iconColorClass = 'text-[var(--color-red-500)]';
+                textColorClass = 'text-[var(--color-red-700)]';
+                bgColorClass = 'bg-[var(--color-red-50)]';
+                borderColorClass = 'border-[var(--color-red-300)]';
                 stageText = 'Falhou';
-                titleIconColorClass = 'text-red-600';
+                titleIconColorClass = 'text-[var(--color-red-600)]';
                 break;
             default:
                 IconComponent = IoTerminalOutline; // Fallback
@@ -155,7 +155,7 @@ const FunctionCallActivityIndicator: React.FC<FunctionCallActivityIndicatorProps
                     <span className={`${textColorClass} font-medium`}>{stageText}</span>
                 </div>
                 {details && <p className={`text-xs ${textColorClass} opacity-80`}>{details}</p>}
-                {errorDetails && <p className="text-xs text-red-700 opacity-90"><strong>Erro:</strong> {errorDetails}</p>}
+                {errorDetails && <p className="text-xs text-[var(--color-red-700)] opacity-90"><strong>Erro:</strong> {errorDetails}</p>}
             </div>
         </div>
     );

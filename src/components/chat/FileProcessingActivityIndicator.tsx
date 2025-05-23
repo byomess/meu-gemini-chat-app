@@ -63,10 +63,10 @@ const FileProcessingActivityIndicator: React.FC<FileProcessingActivityIndicatorP
     }, [status.stage, displayedStage]);
 
     let StageSpecificIconComponent;
-    let iconColorClass = 'text-gray-500';
-    let textColorClass = 'text-gray-700';
-    let bgColorClass = 'bg-gray-100';
-    let borderColorClass = 'border-gray-300';
+    let iconColorClass = 'text-[var(--color-gray-500)]';
+    let textColorClass = 'text-[var(--color-gray-700)]';
+    let bgColorClass = 'bg-[var(--color-gray-100)]';
+    let borderColorClass = 'border-[var(--color-gray-300)]';
     let stageText = '';
     let showSpinner = false;
 
@@ -77,57 +77,57 @@ const FileProcessingActivityIndicator: React.FC<FileProcessingActivityIndicatorP
     else if (fileNameForIcon.match(/\.(mp3|wav|ogg|aac|flac)$/i)) { FileTypeIconComponent = IoMusicalNotesOutline; }
     else if (fileNameForIcon.match(/\.(mp4|mov|avi|webm|mkv)$/i)) { FileTypeIconComponent = IoVideocamOutline; }
     
-    let titleIconColorClass = 'text-gray-600'; // Default for the main FileTypeIconComponent
+    let titleIconColorClass = 'text-[var(--color-gray-600)]'; // Default for the main FileTypeIconComponent
 
     // Determine stage-specific icon, colors, and text
     switch (displayedStage) {
         case 'pending':
             StageSpecificIconComponent = IoHourglassOutline;
-            iconColorClass = 'text-amber-500';
-            textColorClass = 'text-amber-700';
-            bgColorClass = 'bg-amber-50';
-            borderColorClass = 'border-amber-300';
+            iconColorClass = 'text-[var(--color-amber-600)]';
+            textColorClass = 'text-[var(--color-amber-700)]';
+            bgColorClass = 'bg-[var(--color-amber-50)]';
+            borderColorClass = 'border-[var(--color-amber-200)]';
             stageText = status.type === 'user_attachment_upload' ? 'Envio Pendente...' : 'Processamento Pendente...';
             showSpinner = true;
-            titleIconColorClass = 'text-amber-600';
+            titleIconColorClass = 'text-[var(--color-amber-600)]';
             break;
         case 'in_progress':
             StageSpecificIconComponent = status.type === 'user_attachment_upload' ? IoCloudUploadOutline : IoSyncOutline;
-            iconColorClass = status.type === 'user_attachment_upload' ? 'text-sky-500' : 'text-blue-500';
-            textColorClass = status.type === 'user_attachment_upload' ? 'text-sky-700' : 'text-blue-700';
-            bgColorClass = status.type === 'user_attachment_upload' ? 'bg-sky-50' : 'bg-blue-50';
-            borderColorClass = status.type === 'user_attachment_upload' ? 'border-sky-300' : 'border-blue-300';
+            iconColorClass = status.type === 'user_attachment_upload' ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary)]';
+            textColorClass = status.type === 'user_attachment_upload' ? 'text-[var(--color-primary-dark)]' : 'text-[var(--color-primary-dark)]';
+            bgColorClass = status.type === 'user_attachment_upload' ? 'bg-[color:color-mix(in_srgb,var(--color-primary)_5%,transparent)]' : 'bg-[color:color-mix(in_srgb,var(--color-primary)_5%,transparent)]';
+            borderColorClass = status.type === 'user_attachment_upload' ? 'border-[color:color-mix(in_srgb,var(--color-primary)_30%,transparent)]' : 'border-[color:color-mix(in_srgb,var(--color-primary)_30%,transparent)]';
             stageText = status.type === 'user_attachment_upload' ? 'Enviando...' : 'Processando...';
             showSpinner = true;
-            titleIconColorClass = status.type === 'user_attachment_upload' ? 'text-sky-600' : 'text-blue-600';
+            titleIconColorClass = status.type === 'user_attachment_upload' ? 'text-[var(--color-primary)]' : 'text-[var(--color-primary)]';
             break;
         case 'awaiting_ai':
             StageSpecificIconComponent = IoRocketOutline;
-            iconColorClass = 'text-purple-500';
-            textColorClass = 'text-purple-700';
-            bgColorClass = 'bg-purple-50';
-            borderColorClass = 'border-purple-300';
+            iconColorClass = 'text-[var(--color-purple-500)]';
+            textColorClass = 'text-[var(--color-purple-600)]';
+            bgColorClass = 'bg-[color:color-mix(in_srgb,var(--color-purple-500)_5%,transparent)]';
+            borderColorClass = 'border-[color:color-mix(in_srgb,var(--color-purple-500)_30%,transparent)]';
             stageText = 'Aguardando IA...';
             showSpinner = true;
-            titleIconColorClass = 'text-purple-600';
+            titleIconColorClass = 'text-[var(--color-purple-600)]';
             break;
         case 'completed':
             StageSpecificIconComponent = IoCheckmarkCircleOutline;
-            iconColorClass = 'text-green-500';
-            textColorClass = 'text-green-700';
-            bgColorClass = 'bg-green-50';
-            borderColorClass = 'border-green-300';
+            iconColorClass = 'text-[var(--color-green-500)]';
+            textColorClass = 'text-[var(--color-emerald-600)]';
+            bgColorClass = 'bg-[color:color-mix(in_srgb,var(--color-green-500)_5%,transparent)]';
+            borderColorClass = 'border-[color:color-mix(in_srgb,var(--color-green-500)_30%,transparent)]';
             stageText = status.type === 'user_attachment_upload' ? 'Envio Concluído' : 'Processamento Concluído';
-            titleIconColorClass = 'text-green-600';
+            titleIconColorClass = 'text-[var(--color-green-500)]';
             break;
         case 'failed':
             StageSpecificIconComponent = IoCloseCircleOutline;
-            iconColorClass = 'text-red-500';
-            textColorClass = 'text-red-700';
-            bgColorClass = 'bg-red-50';
-            borderColorClass = 'border-red-300';
+            iconColorClass = 'text-[var(--color-red-500)]';
+            textColorClass = 'text-[var(--color-red-700)]';
+            bgColorClass = 'bg-[var(--color-red-50)]';
+            borderColorClass = 'border-[var(--color-red-300)]';
             stageText = status.type === 'user_attachment_upload' ? 'Falha no Envio' : 'Falha no Processamento';
-            titleIconColorClass = 'text-red-600';
+            titleIconColorClass = 'text-[var(--color-red-600)]';
             break;
         default:
             StageSpecificIconComponent = IoDocumentTextOutline; // Fallback
@@ -157,7 +157,7 @@ const FileProcessingActivityIndicator: React.FC<FileProcessingActivityIndicatorP
                     <span className={`${textColorClass} font-medium`}>{stageText}</span>
                 </div>
                 {details && <p className={`text-xs ${textColorClass} opacity-80`}>{details}</p>}
-                {errorDetails && <p className="text-xs text-red-700 opacity-90"><strong>Erro:</strong> {errorDetails}</p>}
+                {errorDetails && <p className="text-xs text-[var(--color-red-700)] opacity-90"><strong>Erro:</strong> {errorDetails}</p>}
             </div>
         </div>
     );
