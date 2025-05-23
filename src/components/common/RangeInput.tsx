@@ -38,7 +38,7 @@ const RangeInput: React.FC<RangeInputProps> = ({
                 value={value}
                 onChange={(e) => onChange(parseFloat(e.target.value))}
                 disabled={disabled}
-                className={`w-full h-2 rounded-lg appearance-none cursor-pointer
+                className={`w-full h-0.5 rounded-lg appearance-none cursor-pointer
                     ${disabled ? 'bg-[var(--color-range-slider-track-bg-disabled)]' : 'bg-[var(--color-model-settings-range-input-bg)]'}
                     {/* Webkit Track */}
                     [&::-webkit-slider-runnable-track]:rounded-lg
@@ -61,7 +61,7 @@ const RangeInput: React.FC<RangeInputProps> = ({
                     [&::-moz-range-thumb]:border-2 /* Consistent border width */
                     [&::-moz-range-thumb]:shadow-lg /* Consistent shadow */
                     ${disabled /* Mozilla Thumb Colors */
-                        ? '[&::-moz-range-thumb]:bg-[var(--color-range-slider-thumb-bg-disabled)] [&::-moz-range-thumb]:border-[var(--color-range-slider-thumb-border-disabled)]'
+                        ? '[&::-moz-range-thumb]:bg-[var(--color-range-slider-thumb-bg-disabled)] [&::-::-moz-range-thumb]:border-[var(--color-range-slider-thumb-border-disabled)]'
                         : '[&::-moz-range-thumb]:bg-[var(--color-model-settings-range-input-thumb)] [&::-moz-range-thumb]:border-[var(--color-model-settings-range-input-thumb-border)]'
                     }
                     {/* Webkit Track Colors (existing logic) */}
@@ -69,7 +69,7 @@ const RangeInput: React.FC<RangeInputProps> = ({
                         ? '[&::-webkit-slider-runnable-track]:bg-[var(--color-range-slider-fill-bg-disabled)]'
                         : '[&::-webkit-slider-runnable-track]:bg-[var(--color-model-settings-range-input-fill)]'
                     }
-                    {/* Firefox Track is styled by the input element's bg & h-2. Add ::-moz-range-track specific styles if further customization is needed. */}
+                    {/* Firefox Track is styled by the input element's bg & h-0.5. Add ::-moz-range-track specific styles if further customization is needed. */}
                     focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)]
                 `}
             />
