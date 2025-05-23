@@ -113,27 +113,10 @@ body.theme-aulapp {
 }
 
 body.theme-loox {
-    --color-input-container-border: #333;
-    --color-input-container-bg: #222;
-    --color-input-form-bg: #2c2c2c;
-    --color-input-form-border: #444;
-    --color-input-text: #d1d5db;
-    --color-input-placeholder: #9ca3af;
-    --color-input-attachment-preview-bg: #252525;
-    --color-input-attachment-preview-border: #383838;
-    --color-api-key-warning-text: #ffc107;
-    --color-api-key-warning-strong-text: #e0a800;
-    --color-error-bg: #450a0a;
-    --color-error-border: #571010;
-    --color-error-text: #fca5a5;
-    --color-warning-bg: #452708;
-    --color-warning-border: #57340c;
-    --color-warning-text: #fcd34d;
-    --color-attached-item-bg: #2c2c2c;
-    --color-attached-item-generic-bg: #222222;
-    --color-attached-item-generic-text: #d1d5db;
-    --color-attached-item-icon: #9ca3af;
-    --color-attached-item-subtext: #6b7280;
-    background-color: #1a1a1a;
-    color: #f0f0f0;
+    /* General body styling for Loox theme */
+    background-color: #1a1a1a; /* This could also be a var from loox.css e.g. var(--color-body-bg) */
+    color: #f0f0f0; /* This could also be a var from loox.css e.g. var(--color-body-text) */
+
+    /* Specific input, error, attachment variables are now defined in src/themes/loox.css */
+    /* This ensures src/themes/loox.css is the single source of truth for these values. */
 }

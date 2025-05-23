@@ -218,10 +218,36 @@
   --color-user-avatar-gradient-to: var(--color-primary-dark);
 
   /* Message Input Colors */
-  --color-input-container-border: var(--color-gray-300);
-  --color-input-container-bg: var(--color-gray-800);
-  --color-api-key-warning-text: var(--color-yellow-600);
-  --color-api-key-warning-strong-text: var(--color-yellow-700);
+  --color-input-container-border: var(--color-gray-300); /* Existing: e.g. #4A5568 */
+  --color-input-container-bg: var(--color-gray-800);   /* Existing: e.g. #151A33 */
+  --color-api-key-warning-text: var(--color-yellow-600); /* Existing */
+  --color-api-key-warning-strong-text: var(--color-yellow-700); /* Existing */
+
+  /* New variables for MessageInputForm and related components */
+  --color-input-form-bg: #2c2c2c; /* Dark gray, similar to Loox --color-gray-100 / --color-gray-200 */
+  --color-input-form-border: #444444; /* Dark gray, similar to Loox --color-gray-300 */
+  --color-input-text: #d1d5db; /* Light gray text, similar to Loox --color-gray-600 */
+  --color-input-placeholder: #9ca3af; /* Medium gray placeholder, similar to Loox --color-gray-400 */
+  
+  --color-input-attachment-preview-bg: #252525; /* Very dark gray */
+  --color-input-attachment-preview-border: #383838; /* Dark gray */
+
+  /* Error display colors (e.g., AI error, file errors) */
+  --color-error-bg: #450a0a;
+  --color-error-border: #571010;
+  --color-error-text: #fca5a5;
+
+  /* Warning display colors (e.g., audio recording error) */
+  --color-warning-bg: #452708;
+  --color-warning-border: #57340c;
+  --color-warning-text: #fcd34d;
+
+  /* AttachedFileItem colors */
+  --color-attached-item-bg: #2c2c2c; /* Consistent with input form background */
+  --color-attached-item-generic-bg: #222222; /* Slightly darker for generic file icon background */
+  --color-attached-item-generic-text: #d1d5db; /* Consistent with input text */
+  --color-attached-item-icon: #9ca3af; /* Consistent with placeholder text for icons */
+  --color-attached-item-subtext: #6b7280; /* Darker gray for file size, etc. */
 
   /* Button Colors */
   --color-button-primary-bg: var(--color-primary);
