@@ -5,7 +5,7 @@
   --color-gray-50: #3A4468; /* Lighter accent for dark theme, e.g., hover states */
   --color-gray-100: #2D375A; /* Used for some backgrounds or darker hover states */
   --color-gray-200: #202746; /* AI Message Bubble BG, secondary button BG */
-  --color-gray-300: #4A5568; /* Borders, icons, disabled elements */
+  --color-gray-300: #1A1F30; /* Borders, icons, disabled elements - Made darker */
   --color-gray-400: #A0AEC0; /* Secondary text, placeholders, icons */
   --color-gray-500: #CBD5E0; /* Primary text for some elements, headings */
   --color-gray-600: #E2E8F0; /* Primary text, bright text on dark BGs */
@@ -18,7 +18,7 @@
   --color-red-50: #452323; /* Error bubble background */
   --color-red-100: #5C2D2D; /* Message actions delete hover bg */
   --color-red-200: #FBB6B6; /* Light red for text on dark red bg, e.g., active convo delete icon */
-  --color-red-300: #C53030; /* Error bubble border */
+  --color-red-300: #A02020; /* Error bubble border - Made darker */
   --color-red-500: #F56565; /* Error text, icons */
   --color-red-600: #E53E3E; /* Error message text, danger button bg */
   --color-red-700: #FC8181; /* Error bubble text, danger button hover bg */
@@ -27,13 +27,13 @@
 
   /* Yellows - adjust for dark theme */
   --color-yellow-50: #4D4420; /* Aborted bubble background */
-  --color-yellow-400: #ECC94B; /* Aborted bubble border */
+  --color-yellow-400: #B09030; /* Aborted bubble border - Made darker */
   --color-yellow-600: #D69E2E; /* Aborted message text */
   --color-yellow-700: #F6E05E; /* Aborted bubble text */
 
   /* Indigos - adjust for dark theme */
   --color-indigo-50: #2A2F4C; /* Function bubble background */
-  --color-indigo-200: #4C51BF; /* Function bubble border */
+  --color-indigo-200: #3A40A0; /* Function bubble border - Made darker */
   --color-indigo-400: #667EEA; /* Function avatar gradient from */
   --color-indigo-600: #A3BFFA; /* Function response text */
   --color-indigo-700: #C3DAFE; /* Function bubble text, function response name */
@@ -45,7 +45,7 @@
 
   /* Ambers - adjust for dark theme */
   --color-amber-50: #4D3C1D; /* Function call request bg */
-  --color-amber-200: #F6AD55; /* Function call request border */
+  --color-amber-200: #C08040; /* Function call request border - Made darker */
   --color-amber-600: #DD6B20; /* Function call request icon */
   --color-amber-700: #ED8936; /* Function call request text */
   --color-amber-800: #F6E05E; /* Function call request name (lighter for contrast) */
@@ -444,6 +444,7 @@
   --color-model-settings-range-input-bg: var(--color-gray-300);
   --color-model-settings-range-input-fill: var(--color-primary);
   --color-model-settings-range-input-thumb: var(--color-gray-700);
+  --color-model-settings-range-input-thumb-border: var(--color-gray-200);
   --color-model-settings-range-input-thumb-border: var(--color-gray-200);
   --color-settings-model-select-bg: var(--color-input-form-bg);
   --color-settings-model-select-border: var(--color-input-form-border);
