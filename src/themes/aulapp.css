@@ -349,7 +349,16 @@
   --color-table-item-edit-text: var(--color-gray-800);
   --color-table-item-edit-placeholder: var(--color-gray-500);
 
-  /* Specific for Function Calling Tab */
+  /* Specific for Function Calling Tab Cards (Display State) */
+  --color-function-card-top-border: var(--color-primary);
+  --color-function-card-name-text: var(--color-gray-800);
+  --color-function-card-description-text: var(--color-gray-600);
+  --color-function-card-http-method-bg: var(--color-gray-100);
+  --color-function-card-http-method-text: var(--color-gray-700);
+  --color-function-card-http-method-border: var(--color-gray-300);
+  --color-function-card-endpoint-text: var(--color-gray-500);
+
+  /* Specific for Function Calling Tab (Edit State) */
   --color-function-param-schema-bg: var(--color-white);
   --color-function-param-schema-border: var(--color-gray-300);
   --color-function-param-schema-text: var(--color-gray-800);

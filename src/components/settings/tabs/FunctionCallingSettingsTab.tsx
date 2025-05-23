@@ -289,17 +289,22 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="text-base font-medium text-[var(--color-table-item-text)]">{func.name}</p>
-                                    <p className="text-sm text-[var(--color-table-item-secondary-text)]">{func.description}</p>
-                                    <p className="text-xs text-[var(--color-table-item-secondary-text)] mt-1">
-                                        <span className="font-mono uppercase text-[var(--color-table-item-text)]">{func.httpMethod}</span>: {func.endpointUrl}
-                                    </p>
+                            <div className="flex justify-between items-start border-t-4 border-[var(--color-function-card-top-border)] pt-3">
+                                <div className="flex-grow">
+                                    <p className="text-lg font-semibold text-[var(--color-function-card-name-text)] mb-1">{func.name}</p>
+                                    <p className="text-sm text-[var(--color-function-card-description-text)] mb-2">{func.description}</p>
+                                    <div className="flex items-center text-xs mt-2">
+                                        <span className="font-mono uppercase px-2 py-0.5 rounded-md bg-[var(--color-function-card-http-method-bg)] text-[var(--color-function-card-http-method-text)] border border-[var(--color-function-card-http-method-border)] mr-2">
+                                            {func.httpMethod}
+                                        </span>
+                                        <span className="font-mono text-[var(--color-function-card-endpoint-text)] truncate" title={func.endpointUrl}>
+                                            {func.endpointUrl}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="flex space-x-1 ml-4 flex-shrink-0">
+                                <div className="flex flex-col space-y-1 ml-3 flex-shrink-0">
                                     <Button variant="ghost" size="icon-sm" onClick={() => handleEditFunction(func)} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-table-item-icon-hover)]">
-                                        <IoPencilOutline size={18} />
+                                        <IoPencilOutline size={19} />
                                     </Button>
                                     <Button variant="ghost" size="icon-sm" onClick={() => handleDeleteFunction(func.id)} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-red-500)]">
                                         <IoTrashOutline size={18} />
