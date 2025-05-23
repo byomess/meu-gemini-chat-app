@@ -133,16 +133,16 @@
 
   /* Message Bubble Edit State */
   --color-message-bubble-edit-border: color-mix(in srgb, var(--color-primary) 70%, transparent);
-  --color-message-bubble-user-edit-bg: color-mix(in srgb, var(--color-primary-dark) 90%, transparent);
-  --color-message-bubble-ai-edit-bg: color-mix(in srgb, var(--color-gray-100) 90%, transparent);
-  --color-message-bubble-user-edit-text: #E0E7FF;
-  --color-message-bubble-user-edit-placeholder: color-mix(in srgb, #E0E7FF 70%, transparent);
-  --color-message-bubble-user-edit-scrollbar-thumb: #A3BFFA;
-  --color-message-bubble-user-edit-scrollbar-track: color-mix(in srgb, var(--color-primary) 50%, transparent);
-  --color-message-bubble-ai-edit-text: var(--color-gray-600);
-  --color-message-bubble-ai-edit-placeholder: color-mix(in srgb, var(--color-gray-400) 70%, transparent);
-  --color-message-bubble-ai-edit-scrollbar-thumb: var(--color-gray-300);
-  --color-message-bubble-ai-edit-scrollbar-track: color-mix(in srgb, var(--color-gray-100) 50%, transparent);
+  --color-message-bubble-user-edit-bg: var(--color-input-form-bg);
+  --color-message-bubble-ai-edit-bg: var(--color-input-form-bg);
+  --color-message-bubble-user-edit-text: var(--color-input-text);
+  --color-message-bubble-user-edit-placeholder: var(--color-input-placeholder);
+  --color-message-bubble-user-edit-scrollbar-thumb: var(--color-scrollbar-thumb);
+  --color-message-bubble-user-edit-scrollbar-track: var(--color-scrollbar-track);
+  --color-message-bubble-ai-edit-text: var(--color-input-text);
+  --color-message-bubble-ai-edit-placeholder: var(--color-input-placeholder);
+  --color-message-bubble-ai-edit-scrollbar-thumb: var(--color-scrollbar-thumb);
+  --color-message-bubble-ai-edit-scrollbar-track: var(--color-scrollbar-track);
 
   /* Message Bubble Edit Buttons */
   --color-message-bubble-user-edit-button-text: #E0E7FF;
@@ -326,12 +326,12 @@
 
   /* TextInput Colors */
   --color-text-input-label-text: var(--color-gray-500);
-  --color-text-input-bg: var(--color-gray-800);
-  --color-text-input-border: var(--color-gray-200); /* Changed to a more subtle border */
+  --color-text-input-bg: var(--color-input-form-bg);
+  --color-text-input-border: var(--color-input-form-border);
   --color-text-input-focus-ring: var(--color-primary);
   --color-text-input-focus-border: var(--color-primary);
-  --color-text-input-placeholder-text: var(--color-gray-400);
-  --color-text-input-text: var(--color-gray-600);
+  --color-text-input-placeholder-text: var(--color-input-placeholder);
+  --color-text-input-text: var(--color-input-text);
   --color-text-input-helper-text: var(--color-gray-400);
   --color-text-input-icon: var(--color-gray-400);
   --color-text-input-icon-hover: var(--color-gray-600);
@@ -404,14 +404,14 @@
   --color-function-card-endpoint-text: var(--color-gray-400);
 
   /* Specific for Function Calling Tab (Edit State) */
-  --color-function-param-schema-bg: var(--color-gray-800);
-  --color-function-param-schema-border: var(--color-gray-300);
-  --color-function-param-schema-text: var(--color-gray-600);
-  --color-function-param-schema-placeholder: var(--color-gray-400);
+  --color-function-param-schema-bg: var(--color-input-form-bg);
+  --color-function-param-schema-border: var(--color-input-form-border);
+  --color-function-param-schema-text: var(--color-input-text);
+  --color-function-param-schema-placeholder: var(--color-input-placeholder);
   --color-function-param-schema-focus-border: var(--color-primary);
-  --color-function-method-dropdown-bg: var(--color-gray-800);
-  --color-function-method-dropdown-border: var(--color-gray-300);
-  --color-function-method-dropdown-text: var(--color-gray-600);
+  --color-function-method-dropdown-bg: var(--color-input-form-bg);
+  --color-function-method-dropdown-border: var(--color-input-form-border);
+  --color-function-method-dropdown-text: var(--color-input-text);
   --color-function-method-dropdown-hover-bg: var(--color-gray-100);
 
   /* Specific for Data Settings Tab */
@@ -427,11 +427,11 @@
   --color-data-drag-drop-file-remove-icon: var(--color-red-500);
 
   /* Specific for General Settings Tab */
-  --color-general-settings-api-key-text: var(--color-gray-600);
-  --color-general-settings-api-key-placeholder: var(--color-gray-400);
+  --color-general-settings-api-key-text: var(--color-input-text);
+  --color-general-settings-api-key-placeholder: var(--color-input-placeholder);
   --color-general-settings-api-key-focus-border: var(--color-primary);
-  --color-general-settings-api-key-bg: var(--color-gray-800);
-  --color-general-settings-api-key-border: var(--color-gray-300);
+  --color-general-settings-api-key-bg: var(--color-input-form-bg);
+  --color-general-settings-api-key-border: var(--color-input-form-border);
 
   /* Specific for Interface Settings Tab */
   --color-interface-settings-avatar-preview-bg: var(--color-gray-100);
@@ -445,9 +445,9 @@
   --color-model-settings-range-input-fill: var(--color-primary);
   --color-model-settings-range-input-thumb: var(--color-gray-700);
   --color-model-settings-range-input-thumb-border: var(--color-gray-200);
-  --color-settings-model-select-bg: var(--color-gray-800);
-  --color-settings-model-select-border: var(--color-gray-300);
-  --color-settings-model-select-text: var(--color-gray-600);
+  --color-settings-model-select-bg: var(--color-input-form-bg);
+  --color-settings-model-select-border: var(--color-input-form-border);
+  --color-settings-model-select-text: var(--color-input-text);
   --color-settings-model-select-focus-border: var(--color-primary);
   --color-settings-model-select-option-hover-bg: var(--color-gray-100);
 
