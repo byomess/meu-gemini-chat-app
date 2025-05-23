@@ -43,7 +43,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
     const actualInputType = type === 'password' && isPasswordVisible ? 'text' : type;
 
     // Base styles matching the original input in GeneralSettingsTab
-    const baseInputClasses = "w-full p-3 bg-[var(--color-text-input-bg)] border border-[var(--color-text-input-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-text-input-focus-ring)] focus:border-[var(--color-text-input-focus-border)] placeholder-[var(--color-text-input-placeholder-text)] text-[var(--color-text-input-text)] shadow-sm transition-colors";
+    const baseInputClasses = "w-full p-3 bg-[var(--color-text-input-bg)] border border-[var(--color-text-input-border)] rounded-xl focus:ring-2 focus:ring-[var(--color-text-input-focus-ring)] focus:border-[var(--color-text-input-focus-border)] placeholder-[var(--color-text-input-placeholder-text)] text-[var(--color-text-input-text)] shadow-sm transition-colors";
     
     const passwordSpecificClasses = type === 'password' ? "pr-12" : ""; // Adjust pr-X as needed for icon spacing
 
@@ -73,7 +73,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
                     <button
                         type="button"
                         onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-                        className="absolute inset-y-0 right-0 px-3 flex items-center text-[var(--color-text-input-icon)] hover:text-[var(--color-text-input-icon-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-text-input-focus-ring)] rounded-r-lg"
+                        className="absolute inset-y-0 right-0 px-3 flex items-center text-[var(--color-text-input-icon)] hover:text-[var(--color-text-input-icon-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-text-input-focus-ring)] rounded-r-xl"
                         aria-label={isPasswordVisible ? "Hide password" : "Show password"}
                     >
                         {isPasswordVisible ? <FiEyeOff size={20} /> : <FiEye size={20} />}

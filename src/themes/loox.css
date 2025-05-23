@@ -57,7 +57,7 @@
   /* Oranges - adjust for dark theme */
   --color-orange-600: #DD6B20; /* API key missing text/icon */
 
-  --color-white: #0F1223; /* Base for elements that were white (now dark) */
+  --color-white: #FFFFFF; /* Base for elements that were white (now dark) */
   --color-black: #FFFFFF; /* Base for elements that were black (now light) */
 
   /* Custom Primary Color - Loox Blue */
@@ -301,7 +301,7 @@
   /* TextInput Colors */
   --color-text-input-label-text: var(--color-gray-500);
   --color-text-input-bg: var(--color-gray-800);
-  --color-text-input-border: var(--color-gray-300);
+  --color-text-input-border: var(--color-gray-200); /* Changed to a more subtle border */
   --color-text-input-focus-ring: var(--color-primary);
   --color-text-input-focus-border: var(--color-primary);
   --color-text-input-placeholder-text: var(--color-gray-400);
@@ -313,29 +313,29 @@
   /* Settings Modal & Tabs Colors */
   --color-settings-modal-overlay-bg: color-mix(in srgb, #0A0C1A 85%, transparent);
   --color-settings-modal-bg: var(--color-gray-800);
-  --color-settings-modal-border: var(--color-gray-300);
-  --color-settings-modal-header-bg: var(--color-gray-100);
-  --color-settings-modal-header-border: var(--color-gray-300);
+  --color-settings-modal-border: var(--color-gray-200); /* Changed to a more subtle border */
+  --color-settings-modal-header-bg: var(--color-gray-800); /* Darkened to match modal bg */
+  --color-settings-modal-header-border: var(--color-gray-200); /* Changed to a more subtle border */
   --color-settings-modal-title-text: var(--color-gray-600);
-  --color-settings-modal-close-button-text: var(--color-gray-400);
+  --color-settings-modal-close-button-text: #FFFFFF; /* Changed to white */
   --color-settings-modal-close-button-hover-bg: var(--color-gray-200);
   --color-settings-modal-close-button-hover-text: var(--color-gray-600);
 
   /* Settings Tabs Navigation */
-  --color-settings-tab-nav-bg: var(--color-gray-100);
-  --color-settings-tab-nav-border: var(--color-gray-300);
+  --color-settings-tab-nav-bg: var(--color-gray-800); /* Darkened to match modal bg */
+  --color-settings-tab-nav-border: var(--color-gray-200); /* Changed to a more subtle border */
   --color-settings-tab-item-text: var(--color-gray-500);
   --color-settings-tab-item-hover-bg: var(--color-gray-200);
   --color-settings-tab-item-active-bg: var(--color-primary);
   --color-settings-tab-item-active-text: #FFFFFF;
-  --color-settings-tab-item-active-border: var(--color-primary);
+  /* --color-settings-tab-item-active-border: var(--color-primary); */ /* Removed as per image */
   --color-settings-tab-item-icon: var(--color-gray-400);
 
   /* Settings Content Area */
   --color-settings-content-bg: var(--color-gray-800);
   --color-settings-section-title-text: var(--color-gray-600);
   --color-settings-section-description-text: var(--color-gray-400);
-  --color-settings-section-border: var(--color-gray-300);
+  --color-settings-section-border: var(--color-gray-200); /* Changed to a more subtle border */
 
   /* Toggle Switch */
   --color-toggle-switch-bg-off: var(--color-gray-300);

@@ -23,7 +23,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
         const variantStyles = {
             primary:
-                `bg-[var(--color-button-primary-bg)] text-[var(--color-button-primary-text)] hover:bg-[var(--color-button-primary-hover-bg)] active:bg-[var(--color-button-primary-active-bg)] focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)] shadow-sm hover:shadow-md`,
+                `bg-[var(--color-button-primary-bg)] text-[var(--color-button-primary-text)] hover:bg-[var(--color-button-primary-hover-bg)] active:bg-[var(--color-button-primary-active-bg)] focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)] shadow-sm hover:shadow-md`, // Removed active:scale-[0.98]
             secondary:
                 `bg-[var(--color-button-secondary-bg)] text-[var(--color-button-secondary-text)] hover:bg-[var(--color-button-secondary-hover-bg)] active:bg-[var(--color-button-secondary-active-bg)] focus:ring-2 focus:ring-[var(--color-button-focus-ring-secondary)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)] shadow-sm hover:shadow-md border border-[var(--color-button-secondary-border)]`,
             danger:

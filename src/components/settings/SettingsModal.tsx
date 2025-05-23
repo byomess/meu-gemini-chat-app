@@ -355,7 +355,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                         >
                             <Dialog.Panel
                                 ref={modalContentRef}
-                                className="bg-[var(--color-settings-modal-bg)] rounded-2xl shadow-2xl w-full max-w-3xl text-gray-800 relative h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden border border-[var(--color-settings-modal-border)] text-left transform transition-all"
+                                className="bg-[var(--color-settings-modal-bg)] rounded-xl shadow-2xl w-full max-w-3xl text-gray-800 relative h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden border border-[var(--color-settings-modal-border)] text-left transform transition-all"
                             >
                                 <div className="flex items-center justify-between p-4 pr-12 sm:p-5 sm:pr-14 border-b border-[var(--color-settings-modal-header-border)] flex-shrink-0 relative bg-[var(--color-settings-modal-header-bg)]">
                                     <Dialog.Title
@@ -381,7 +381,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                 key={tab.id}
                                                 onClick={() => handleTabChange(tab.id)}
                                                 className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ease-in-out group whitespace-nowrap flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-settings-tab-nav-bg)] ${activeTab === tab.id
-                                                    ? "bg-[var(--color-settings-tab-item-active-bg)] text-[var(--color-settings-tab-item-active-text)] shadow-md scale-[1.02]"
+                                                    ? "bg-[var(--color-settings-tab-item-active-bg)] text-[var(--color-settings-tab-item-active-text)] shadow-md" // Removed scale-[1.02]
                                                     : "text-[var(--color-settings-tab-item-text)] hover:bg-[var(--color-settings-tab-item-hover-bg)] hover:text-[var(--color-primary)] active:scale-[0.98]"
                                                     }`}
                                                 style={{ flex: "0 0 auto" }}
