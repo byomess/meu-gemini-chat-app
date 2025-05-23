@@ -6,7 +6,7 @@ import RangeInput from '../../common/RangeInput';
 
 export interface ModelSettingsTabProps {
     currentGeminiModelConfig: GeminiModelConfig;
-    setCurrentGeminiModelConfig: (config: GeminiModelConfig) => void;
+    setCurrentGeminiModelConfig: React.Dispatch<React.SetStateAction<GeminiModelConfig>>; // Changed this line
 }
 
 export const AVAILABLE_GEMINI_MODELS: GeminiModel[] = [
