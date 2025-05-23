@@ -108,7 +108,6 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                                 enableWebSearch: importedAppSettings.enableWebSearch ?? currentAppSettings.enableWebSearch,
                                 enableAttachments: importedAppSettings.enableAttachments ?? currentAppSettings.enableAttachments,
                                 hideNavigation: importedAppSettings.hideNavigation ?? currentAppSettings.hideNavigation,
-                                isDarkModeEnabled: currentAppSettings.isDarkModeEnabled,
                             };
                             localStorage.setItem('appSettings', JSON.stringify(newAppSettings));
 

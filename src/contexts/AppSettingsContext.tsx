@@ -1,10 +1,9 @@
 import React, { createContext, useContext, type ReactNode, useCallback, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { HarmCategory, HarmBlockThreshold, type SafetySetting } from '../types';
-import type { AppSettings, GeminiModelConfig, GeminiModel, FunctionDeclaration } from '../types';
+import type { AppSettings, GeminiModelConfig, FunctionDeclaration } from '../types';
 
 const APP_SETTINGS_KEY = 'geminiChat_appSettings';
-const DEFAULT_GEMINI_MODEL: GeminiModel = "gemini-2.5-pro-preview-05-06";
 
 export const DEFAULT_PERSONALITY_PROMPT = `Você é uma IA professora / tutora de alunos que estão fazendo cursos na plataforma de ensino à distância Aulapp, e seu papel é ajudar os alunos a entenderem melhor o conteúdo do curso, responder perguntas e fornecer feedback sobre a evolução deles. Você deve ser amigável, paciente e encorajador, sempre buscando ajudar os alunos a aprenderem e se desenvolverem.`;
 
@@ -24,6 +23,7 @@ const defaultAppSettings: AppSettings = {
         topK: 0,
         maxOutputTokens: 32768,
         safetySettings: defaultSafetySettings,
+        model: 'gemini-2.5-flash-preview-05-20'
     },
     functionDeclarations: [],
     codeSynthaxHighlightEnabled: false,
