@@ -1,6 +1,7 @@
 // src/components/settings/tabs/GeneralSettingsTab.tsx
 import React from 'react';
 import TextInput from '../../common/TextInput';
+import { DEFAULT_PERSONALITY_PROMPT } from '../../../contexts/AppSettingsContext'; // Import the correct constant
 
 interface GeneralSettingsTabProps {
     currentApiKey: string;
@@ -59,7 +60,15 @@ const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
                         onChange={setCurrentCustomPersonalityPrompt}
                         type="text"
                         placeholder="Ex: Você é um assistente prestativo e amigável."
-                        helperText="Defina um prompt para guiar a personalidade e o comportamento da IA. Deixe em branco para o padrão."
+                        helperText={
+                            <span>
+                                Defina um prompt para guiar a personalidade e o comportamento da IA. Deixe em branco para o padrão.
+                                <br />
+                                <span className="italic text-[var(--color-settings-section-description-text)]">
+                                    Padrão: "{DEFAULT_PERSONALITY_PROMPT}"
+                                </span>
+                            </span>
+                        }
                         inputClassName="bg-[var(--color-general-settings-api-key-bg)] border-[var(--color-general-settings-api-key-border)] text-[var(--color-general-settings-api-key-text)] placeholder-[var(--color-general-settings-api-key-placeholder)] focus:border-[var(--color-general-settings-api-key-focus-border)]"
                     />
                 </div>

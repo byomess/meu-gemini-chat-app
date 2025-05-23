@@ -24,8 +24,8 @@ import {
 import { useDialog } from "../../contexts/DialogContext"; // Import useDialog
 
 // Import new tab components
-import GeneralSettingsTab, { DEFAULT_PERSONALITY_FOR_PLACEHOLDER } from "./tabs/GeneralSettingsTab";
-import ModelSettingsTab, { AVAILABLE_GEMINI_MODELS, HARM_CATEGORIES_CONFIG, appDefaultSafetySettings } from "./tabs/ModelSettingsTab";
+import GeneralSettingsTab from "./tabs/GeneralSettingsTab";
+import ModelSettingsTab from "./tabs/ModelSettingsTab";
 import MemoriesSettingsTab from "./tabs/MemoriesSettingsTab";
 import FunctionCallingSettingsTab from "./tabs/FunctionCallingSettingsTab";
 import InterfaceSettingsTab from "./tabs/InterfaceSettingsTab";
@@ -59,7 +59,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const { showDialog, dialogProps } = useDialog(); // Use the dialog hook and get dialogProps
     const [currentApiKey, setCurrentApiKey] = useState<string>("");
     const [currentCustomPersonalityPrompt, setCurrentCustomPersonalityPrompt] =
-        useState<string>(DEFAULT_PERSONALITY_FOR_PLACEHOLDER);
+        useState<string>(""); // Initialized to empty string, actual value set in useEffect
     const [currentFunctionDeclarations, setCurrentFunctionDeclarations] =
         useState<LocalFunctionDeclaration[]>([]);
     const [currentAiAvatarUrl, setCurrentAiAvatarUrl] = useState<string>("");
