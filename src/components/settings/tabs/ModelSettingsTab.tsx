@@ -1,6 +1,6 @@
 // src/components/settings/tabs/ModelSettingsTab.tsx
 import React from 'react';
-import { GeminiModelConfig, GeminiModel } from '../../../types';
+import type { GeminiModelConfig, GeminiModel } from '../../../types';
 
 interface ModelSettingsTabProps {
     currentGeminiModelConfig: GeminiModelConfig;
