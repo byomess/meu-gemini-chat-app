@@ -7,6 +7,7 @@ import TextInput from "../../common/TextInput"; // Import TextInput
 import { useMemories } from "../../../contexts/MemoryContext";
 import type { Memory } from "../../../types";
 import { useDialog } from "../../../contexts/DialogContext";
+import SettingsCard from "../../common/SettingsCard"; // Import the new SettingsCard
 
 const MemoriesSettingsTab: React.FC = () => {
     const {
@@ -276,12 +277,11 @@ const MemoriesSettingsTab: React.FC = () => {
                 filteredMemories.length > 0 ? (
                     <div className="overflow-y-auto space-y-2 p-3 bg-[var(--color-table-row-bg)] rounded-lg border border-[var(--color-table-row-border)] max-h-[calc(100vh-480px)] sm:max-h-[calc(100vh-450px)] min-h-[100px]">
                         {filteredMemories.map((memory) => (
-                            <div
+                            <SettingsCard
                                 key={memory.id}
-                                className="p-2.5 bg-[var(--color-table-row-bg)] rounded-md shadow transition-shadow hover:shadow-md border border-[var(--color-table-row-border)]"
-                            >
-                                {editingMemory?.id === memory.id ? (
-                                    <div className="flex flex-col gap-2">
+                                isEditing={editingMemory?.id === memory.id}
+                                editForm={
+                                    <div className="flex flex-col gap-2 p-2.5">
                                         <textarea
                                             value={editedMemoryText}
                                             onChange={(e) => setEditedMemoryText(e.target.value)}
@@ -307,34 +307,37 @@ const MemoriesSettingsTab: React.FC = () => {
                                             </Button>
                                         </div>
                                     </div>
-                                ) : (
-                                    <div className="flex items-start justify-between gap-2">
-                                        <p className="text-xs text-[var(--color-table-item-text)] flex-grow break-words py-0.5 pr-1 whitespace-pre-wrap">
-                                            {memory.content}
-                                        </p>
-                                        <div className="flex-shrink-0 flex items-center gap-1">
-                                            <Button
-                                                variant="icon"
-                                                className="!p-1.5 text-[var(--color-table-item-icon)] hover:!text-[var(--color-primary)] hover:!bg-[var(--color-pink-50)]"
-                                                title="Editar memória"
-                                                onClick={() => handleStartEditMemory(memory)}
-                                            >
-                                                {" "}
-                                                <IoPencilOutline size={15} />{" "}
-                                            </Button>
-                                            <Button
-                                                variant="icon"
-                                                className="!p-1.5 text-[var(--color-table-item-icon)] hover:!text-[var(--color-red-500)] hover:!bg-[var(--color-red-100)]"
-                                                title="Excluir memória"
-                                                onClick={() => handleLocalDeleteMemory(memory.id)}
-                                            >
-                                                {" "}
-                                                <IoTrashBinOutline size={15} />{" "}
-                                            </Button>
-                                        </div>
+                                }
+                                actions={
+                                    <div className="flex-shrink-0 flex items-center gap-1">
+                                        <Button
+                                            variant="icon"
+                                            className="!p-1.5 text-[var(--color-table-item-icon)] hover:!text-[var(--color-primary)] hover:!bg-[var(--color-pink-50)]"
+                                            title="Editar memória"
+                                            onClick={() => handleStartEditMemory(memory)}
+                                        >
+                                            {" "}
+                                            <IoPencilOutline size={15} />{" "}
+                                        </Button>
+                                        <Button
+                                            variant="icon"
+                                            className="!p-1.5 text-[var(--color-table-item-icon)] hover:!text-[var(--color-red-500)] hover:!bg-[var(--color-red-100)]"
+                                            title="Excluir memória"
+                                            onClick={() => handleLocalDeleteMemory(memory.id)}
+                                        >
+                                            {" "}
+                                            <IoTrashBinOutline size={15} />{" "}
+                                        </Button>
                                     </div>
-                                )}
-                            </div>
+                                }
+                                className="p-0" // Remove default padding from SettingsCard, content will add its own
+                            >
+                                <div className="flex items-start justify-between gap-2 p-2.5">
+                                    <p className="text-xs text-[var(--color-table-item-text)] flex-grow break-words py-0.5 pr-1 whitespace-pre-wrap">
+                                        {memory.content}
+                                    </p>
+                                </div>
+                            </SettingsCard>
                         ))}
                     </div>
                 ) : (
