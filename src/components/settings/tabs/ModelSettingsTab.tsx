@@ -2,6 +2,7 @@
 import React from 'react';
 import type { GeminiModelConfig, GeminiModel, SafetySetting } from '../../../types';
 import { HarmCategory, HarmBlockThreshold } from '@google/genai'; // Import from @google/genai
+import RangeInput from '../../common/RangeInput'; // Import the new RangeInput component
 
 export interface ModelSettingsTabProps {
     currentGeminiModelConfig: GeminiModelConfig;
@@ -43,53 +44,6 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
         }));
     };
 
-    const renderRangeInput = (
-        id: keyof GeminiModelConfig,
-        label: string,
-        min: number,
-        max: number,
-        step: number,
-        value: number,
-        helperText: string,
-        disabled: boolean = false
-    ) => (
-        <div>
-            <label htmlFor={id} className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] mb-1.5">
-                {label}: <span className={`font-semibold ${disabled ? 'text-[var(--color-range-slider-value-text-disabled)]' : 'text-[var(--color-model-settings-range-value-text)]'}`}>{value}</span>
-            </label>
-            <input
-                type="range"
-                id={id}
-                name={id}
-                min={min}
-                max={max}
-                step={step}
-                value={value}
-                onChange={(e) => handleConfigChange(id, parseFloat(e.target.value))}
-                disabled={disabled}
-                className={`w-full h-2 rounded-lg appearance-none cursor-pointer
-                    ${disabled ? 'bg-[var(--color-range-slider-track-bg-disabled)]' : 'bg-[var(--color-model-settings-range-input-bg)]'}
-                    [&::-webkit-slider-runnable-track]:rounded-lg
-                    [&::-webkit-slider-thumb]:appearance-none
-                    [&::-webkit-slider-thumb]:h-4
-                    [&::-webkit-slider-thumb]:w-4
-                    [&::-webkit-slider-thumb]:rounded-full
-                    [&::-webkit-slider-thumb]:shadow-md
-                    ${disabled
-                        ? '[&::-webkit-slider-thumb]:bg-[var(--color-range-slider-thumb-bg-disabled)] [&::-webkit-slider-thumb]:border-[var(--color-range-slider-thumb-border-disabled)]'
-                        : '[&::-webkit-slider-thumb]:bg-[var(--color-model-settings-range-input-thumb)] [&::-webkit-slider-thumb]:border-[var(--color-model-settings-range-input-thumb-border)]'
-                    }
-                    ${disabled
-                        ? '[&::-webkit-slider-runnable-track]:bg-[var(--color-range-slider-fill-bg-disabled)]'
-                        : '[&::-webkit-slider-runnable-track]:bg-[var(--color-model-settings-range-input-fill)]'
-                    }
-                    focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)]
-                `}
-            />
-            <p className="text-xs text-[var(--color-settings-section-description-text)] mt-1">{helperText}</p>
-        </div>
-    );
-
     return (
         <div className="space-y-6">
             <h2 className="text-xl font-semibold text-[var(--color-settings-section-title-text)]">Configurações do Modelo</h2>
@@ -123,40 +77,52 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                 </div>
 
                 {/* Temperature */}
-                {renderRangeInput(
-                    'temperature',
-                    'Temperatura',
-                    0, 1, 0.01,
-                    currentGeminiModelConfig.temperature,
-                    'Controla a aleatoriedade das respostas. Valores mais altos geram respostas mais criativas, mas potencialmente menos coerentes.'
-                )}
+                <RangeInput
+                    id="temperature"
+                    label="Temperatura"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={currentGeminiModelConfig.temperature}
+                    onChange={(value) => handleConfigChange('temperature', value)}
+                    helperText="Controla a aleatoriedade das respostas. Valores mais altos geram respostas mais criativas, mas potencialmente menos coerentes."
+                />
 
                 {/* Top P */}
-                {renderRangeInput(
-                    'topP',
-                    'Top P',
-                    0, 1, 0.01,
-                    currentGeminiModelConfig.topP,
-                    'Controla a diversidade das respostas. Um valor mais baixo foca em tokens mais prováveis.'
-                )}
+                <RangeInput
+                    id="topP"
+                    label="Top P"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={currentGeminiModelConfig.topP}
+                    onChange={(value) => handleConfigChange('topP', value)}
+                    helperText="Controla a diversidade das respostas. Um valor mais baixo foca em tokens mais prováveis."
+                />
 
                 {/* Top K */}
-                {renderRangeInput(
-                    'topK',
-                    'Top K',
-                    1, 40, 1,
-                    currentGeminiModelConfig.topK,
-                    'Controla o número de tokens a serem considerados em cada etapa da geração.'
-                )}
+                <RangeInput
+                    id="topK"
+                    label="Top K"
+                    min={1}
+                    max={40}
+                    step={1}
+                    value={currentGeminiModelConfig.topK}
+                    onChange={(value) => handleConfigChange('topK', value)}
+                    helperText="Controla o número de tokens a serem considerados em cada etapa da geração."
+                />
 
                 {/* Max Output Tokens */}
-                {renderRangeInput(
-                    'maxOutputTokens',
-                    'Máximo de Tokens de Saída',
-                    1, 2048, 1,
-                    currentGeminiModelConfig.maxOutputTokens,
-                    'Define o número máximo de tokens (palavras/partes de palavras) que a IA pode gerar em uma única resposta.'
-                )}
+                <RangeInput
+                    id="maxOutputTokens"
+                    label="Máximo de Tokens de Saída"
+                    min={1}
+                    max={2048}
+                    step={1}
+                    value={currentGeminiModelConfig.maxOutputTokens}
+                    onChange={(value) => handleConfigChange('maxOutputTokens', value)}
+                    helperText="Define o número máximo de tokens (palavras/partes de palavras) que a IA pode gerar em uma única resposta."
+                />
             </section>
         </div>
     );
