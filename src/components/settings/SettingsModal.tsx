@@ -24,6 +24,7 @@ import {
 import { useDialog } from "../../contexts/DialogContext";
 
 import GeneralSettingsTab from "./tabs/GeneralSettingsTab";
+import type { GeneralSettingsTabProps } from "./tabs/GeneralSettingsTab"; // Added this import
 import ModelSettingsTab, {
     HARM_CATEGORIES_CONFIG,
     appDefaultSafetySettings,
