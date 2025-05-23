@@ -1,8 +1,8 @@
 // src/components/settings/tabs/FunctionCallingSettingsTab.tsx
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import Button from '../../common/Button';
 import TextInput from '../../common/TextInput';
-import { IoAddCircleOutline, IoTrashOutline, IoPencilOutline, IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
+import { IoAddCircleOutline, IoTrashOutline, IoPencilOutline, IoCheckmarkOutline, IoCloseOutline, IoArrowUpCircleOutline, IoArrowDownCircleOutline } from 'react-icons/io5';
 import {type  FunctionDeclaration } from '../../../types'; // Import FunctionDeclaration
 import { useDialog } from '../../../contexts/DialogContext';
 
@@ -25,6 +25,8 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
         endpointUrl: '',
         httpMethod: 'POST',
     });
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleAddFunction = useCallback(() => {
         setEditingFunctionId('new');
@@ -106,6 +108,76 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
             }
         });
     }, [currentFunctionDeclarations, setCurrentFunctionDeclarations, showDialog]);
+
+    const handleExportFunctions = useCallback(() => {
+        const dataStr = JSON.stringify(currentFunctionDeclarations, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'function_declarations.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, [currentFunctionDeclarations]);
+
+    const handleImportFunctions = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const content = e.target?.result as string;
+                const importedData: FunctionDeclaration[] = JSON.parse(content);
+
+                // Basic validation for imported data structure
+                if (!Array.isArray(importedData) || !importedData.every(item =>
+                    typeof item === 'object' && item !== null &&
+                    'id' in item && typeof item.id === 'string' &&
+                    'name' in item && typeof item.name === 'string' &&
+                    'description' in item && typeof item.description === 'string' &&
+                    'parametersSchema' in item && typeof item.parametersSchema === 'string' &&
+                    'endpointUrl' in item && typeof item.endpointUrl === 'string' &&
+                    'httpMethod' in item && typeof item.httpMethod === 'string'
+                )) {
+                    showDialog({
+                        title: "Erro de Importação",
+                        message: "O arquivo JSON não contém uma lista válida de declarações de função. Verifique a estrutura.",
+                        type: "alert",
+                    });
+                    return;
+                }
+
+                // Ensure unique IDs for imported functions to prevent conflicts
+                const existingIds = new Set(currentFunctionDeclarations.map(f => f.id));
+                const functionsToImport = importedData.map(func => ({
+                    ...func,
+                    id: existingIds.has(func.id) ? crypto.randomUUID() : func.id // Generate new ID if conflict
+                }));
+
+                setCurrentFunctionDeclarations([...currentFunctionDeclarations, ...functionsToImport]);
+                showDialog({
+                    title: "Importação Concluída",
+                    message: `Foram importadas ${functionsToImport.length} declarações de função.`,
+                    type: "alert",
+                });
+            } catch (error: unknown) {
+                showDialog({
+                    title: "Erro de Leitura",
+                    message: `Não foi possível ler o arquivo ou o JSON é inválido. Detalhes: ${error instanceof Error ? error.message : String(error)}`,
+                    type: "alert",
+                });
+            }
+        };
+        reader.readAsText(file);
+        // Reset file input value to allow re-importing the same file
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    }, [currentFunctionDeclarations, setCurrentFunctionDeclarations, showDialog]);
+
 
     return (
         <div className="space-y-6">
@@ -289,6 +361,22 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                         <IoAddCircleOutline className="mr-2" size={20} /> Adicionar Nova Função
                     </Button>
                 )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between space-y-2 sm:space-y-0 sm:space-x-2 pt-4 border-t border-[var(--color-settings-section-border)]">
+                <Button variant="secondary" onClick={handleExportFunctions} className="w-full sm:w-auto">
+                    <IoArrowDownCircleOutline className="mr-2" size={20} /> Exportar Funções
+                </Button>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImportFunctions}
+                    accept=".json"
+                    className="hidden"
+                />
+                <Button variant="secondary" onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto">
+                    <IoArrowUpCircleOutline className="mr-2" size={20} /> Importar Funções
+                </Button>
             </div>
         </div>
     );
