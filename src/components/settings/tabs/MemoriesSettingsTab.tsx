@@ -198,7 +198,7 @@ const MemoriesSettingsTab: React.FC = () => {
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-3 mb-1">
-                <h3 className="text-base font-semibold text-gray-800 w-full sm:w-auto">
+                <h3 className="text-base font-semibold text-[var(--color-settings-section-title-text)] w-full sm:w-auto">
                     Gerenciar Memórias ({memories.length})
                 </h3>
                 <div className="flex gap-2.5 flex-wrap">
@@ -253,7 +253,7 @@ const MemoriesSettingsTab: React.FC = () => {
             </div>
             <div className="relative">
                 <IoSearchOutline
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" // Ensure icon is above input
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-table-item-icon)] pointer-events-none z-10" // Ensure icon is above input
                     size={18}
                 />
                 <TextInput
@@ -269,11 +269,11 @@ const MemoriesSettingsTab: React.FC = () => {
             </div>
             {memories.length > 0 ? (
                 filteredMemories.length > 0 ? (
-                    <div className="overflow-y-auto space-y-2 p-3 bg-gray-50 rounded-lg border border-gray-200 max-h-[calc(100vh-480px)] sm:max-h-[calc(100vh-450px)] min-h-[100px]">
+                    <div className="overflow-y-auto space-y-2 p-3 bg-[var(--color-table-row-bg)] rounded-lg border border-[var(--color-table-row-border)] max-h-[calc(100vh-480px)] sm:max-h-[calc(100vh-450px)] min-h-[100px]">
                         {filteredMemories.map((memory) => (
                             <div
                                 key={memory.id}
-                                className="p-2.5 bg-white rounded-md shadow transition-shadow hover:shadow-md border border-gray-200"
+                                className="p-2.5 bg-[var(--color-table-row-bg)] rounded-md shadow transition-shadow hover:shadow-md border border-[var(--color-table-row-border)]"
                             >
                                 {editingMemory?.id === memory.id ? (
                                     <div className="flex flex-col gap-2">
@@ -283,7 +283,7 @@ const MemoriesSettingsTab: React.FC = () => {
                                             onKeyDown={handleEditMemoryKeyDown}
                                             ref={editMemoryInputRef}
                                             rows={3}
-                                            className="w-full p-2 bg-white border border-gray-300 rounded text-xs text-gray-800 focus:border-[#e04579] focus:ring-1 focus:ring-[#e04579] resize-y min-h-[40px]"
+                                            className="w-full p-2 bg-[var(--color-table-item-edit-bg)] border border-[var(--color-table-item-edit-border)] rounded text-xs text-[var(--color-table-item-edit-text)] focus:border-[var(--color-text-input-focus-border)] focus:ring-1 focus:ring-[var(--color-text-input-focus-ring)] resize-y min-h-[40px]"
                                         />
                                         <div className="flex justify-end gap-1.5">
                                             <Button
@@ -304,13 +304,13 @@ const MemoriesSettingsTab: React.FC = () => {
                                     </div>
                                 ) : (
                                     <div className="flex items-start justify-between gap-2">
-                                        <p className="text-xs text-gray-700 flex-grow break-words py-0.5 pr-1 whitespace-pre-wrap">
+                                        <p className="text-xs text-[var(--color-table-item-text)] flex-grow break-words py-0.5 pr-1 whitespace-pre-wrap">
                                             {memory.content}
                                         </p>
                                         <div className="flex-shrink-0 flex items-center gap-1">
                                             <Button
                                                 variant="icon"
-                                                className="!p-1.5 text-gray-500 hover:!text-[#e04579] hover:!bg-pink-100"
+                                                className="!p-1.5 text-[var(--color-table-item-icon)] hover:!text-[var(--color-primary)] hover:!bg-[var(--color-pink-50)]"
                                                 title="Editar memória"
                                                 onClick={() => handleStartEditMemory(memory)}
                                             >
@@ -319,7 +319,7 @@ const MemoriesSettingsTab: React.FC = () => {
                                             </Button>
                                             <Button
                                                 variant="icon"
-                                                className="!p-1.5 text-gray-500 hover:!text-red-500 hover:!bg-red-100"
+                                                className="!p-1.5 text-[var(--color-table-item-icon)] hover:!text-[var(--color-red-500)] hover:!bg-[var(--color-red-100)]"
                                                 title="Excluir memória"
                                                 onClick={() => handleLocalDeleteMemory(memory.id)}
                                             >
@@ -333,24 +333,24 @@ const MemoriesSettingsTab: React.FC = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="p-4 text-center bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="p-4 text-center bg-[var(--color-table-row-bg)] rounded-lg border border-[var(--color-table-row-border)]">
                         <IoSearchOutline
                             size={28}
-                            className="mx-auto text-gray-400 mb-2"
+                            className="mx-auto text-[var(--color-table-item-icon)] mb-2"
                         />
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-[var(--color-settings-section-description-text)]">
                             Nenhuma memória encontrada para "{searchTerm}".
                         </p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-[var(--color-table-item-icon)] mt-1">
                             Tente um termo de busca diferente ou limpe a busca.
                         </p>
                     </div>
                 )
             ) : (
-                <div className="p-4 text-center bg-gray-50 rounded-lg border border-gray-200">
-                    <LuBrain size={28} className="mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-500">Nenhuma memória armazenada.</p>
-                    <p className="text-xs text-gray-400 mt-1">
+                <div className="p-4 text-center bg-[var(--color-table-row-bg)] rounded-lg border border-[var(--color-table-row-border)]">
+                    <LuBrain size={28} className="mx-auto text-[var(--color-table-item-icon)] mb-2" />
+                    <p className="text-sm text-[var(--color-settings-section-description-text)]">Nenhuma memória armazenada.</p>
+                    <p className="text-xs text-[var(--color-table-item-icon)] mt-1">
                         Adicione memórias para personalizar suas interações.
                     </p>
                 </div>
