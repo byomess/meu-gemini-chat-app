@@ -102,6 +102,13 @@ const Sidebar: React.FC<SidebarProps> = ({
     ? `${baseClasses} ${mobileSpecificClasses}` 
     : `${baseClasses} ${desktopSpecificClasses}`;
 
+  // Determine logo and text based on hostname
+  const isAulappDomain = typeof window !== 'undefined' && window.location.hostname === 'aulapp-loox-ai.vercel.app';
+  const logoSrc = isAulappDomain ? '/logo-aulapp.svg' : '/logo-loox.png';
+  const logoText = isAulappDomain ? 'powered by Loox AI ®' : 'by Doublewave ®';
+  const logoAlt = isAulappDomain ? 'Logo Aulapp' : 'Logo Loox';
+
+
   return (
     <aside className={finalAsideClasses}>
       {isMobile && onCloseMobile && isOpen && (
@@ -244,9 +251,9 @@ const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
     <div className="flex flex-col justify-center items-center pt-4">
-      <img src="/logo-aulapp.svg" alt="Logo Loox" className={`w-36 h-auto`} />
+      <img src={logoSrc} alt={logoAlt} className={`w-36 h-auto`} />
       <span className="text-xs text-[var(--color-logo-text)] mb-2.5 px-1.5 tracking-wider whitespace-nowrap">
-        powered by Loox AI ®
+        {logoText}
       </span>
     </div>
 
