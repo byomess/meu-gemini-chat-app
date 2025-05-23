@@ -40,20 +40,36 @@ const RangeInput: React.FC<RangeInputProps> = ({
                 disabled={disabled}
                 className={`w-full h-2 rounded-lg appearance-none cursor-pointer
                     ${disabled ? 'bg-[var(--color-range-slider-track-bg-disabled)]' : 'bg-[var(--color-model-settings-range-input-bg)]'}
+                    {/* Webkit Track */}
                     [&::-webkit-slider-runnable-track]:rounded-lg
+                    {/* Webkit Thumb */}
                     [&::-webkit-slider-thumb]:appearance-none
-                    [&::-webkit-slider-thumb]:h-4
-                    [&::-webkit-slider-thumb]:w-4
+                    [&::-webkit-slider-thumb]:h-5 /* Increased size */
+                    [&::-webkit-slider-thumb]:w-5 /* Increased size */
                     [&::-webkit-slider-thumb]:rounded-full
-                    [&::-webkit-slider-thumb]:shadow-md
-                    ${disabled
+                    [&::-webkit-slider-thumb]:border-2 /* Added border width */
+                    [&::-webkit-slider-thumb]:shadow-lg /* Enhanced shadow */
+                    ${disabled /* Webkit Thumb Colors */
                         ? '[&::-webkit-slider-thumb]:bg-[var(--color-range-slider-thumb-bg-disabled)] [&::-webkit-slider-thumb]:border-[var(--color-range-slider-thumb-border-disabled)]'
                         : '[&::-webkit-slider-thumb]:bg-[var(--color-model-settings-range-input-thumb)] [&::-webkit-slider-thumb]:border-[var(--color-model-settings-range-input-thumb-border)]'
                     }
+                    {/* Mozilla Thumb */}
+                    [&::-moz-range-thumb]:appearance-none
+                    [&::-moz-range-thumb]:h-5 /* Consistent size */
+                    [&::-moz-range-thumb]:w-5 /* Consistent size */
+                    [&::-moz-range-thumb]:rounded-full
+                    [&::-moz-range-thumb]:border-2 /* Consistent border width */
+                    [&::-moz-range-thumb]:shadow-lg /* Consistent shadow */
+                    ${disabled /* Mozilla Thumb Colors */
+                        ? '[&::-moz-range-thumb]:bg-[var(--color-range-slider-thumb-bg-disabled)] [&::-moz-range-thumb]:border-[var(--color-range-slider-thumb-border-disabled)]'
+                        : '[&::-moz-range-thumb]:bg-[var(--color-model-settings-range-input-thumb)] [&::-moz-range-thumb]:border-[var(--color-model-settings-range-input-thumb-border)]'
+                    }
+                    {/* Webkit Track Colors (existing logic) */}
                     ${disabled
                         ? '[&::-webkit-slider-runnable-track]:bg-[var(--color-range-slider-fill-bg-disabled)]'
                         : '[&::-webkit-slider-runnable-track]:bg-[var(--color-model-settings-range-input-fill)]'
                     }
+                    {/* Firefox Track is styled by the input element's bg & h-2. Add ::-moz-range-track specific styles if further customization is needed. */}
                     focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)]
                 `}
             />
