@@ -38,11 +38,14 @@ const RangeInput: React.FC<RangeInputProps> = ({
                 value={value}
                 onChange={(e) => onChange(parseFloat(e.target.value))}
                 disabled={disabled}
-                className={`w-full h-1 rounded-lg appearance-none cursor-pointer
-                    ${disabled ? 'bg-[var(--color-range-slider-track-bg-disabled)]' : 'bg-[var(--color-model-settings-range-input-bg)]'}
+                className={`w-full h-5 rounded-lg appearance-none cursor-pointer bg-transparent
                     {/* Webkit Track */}
                     [&::-webkit-slider-runnable-track]:h-1 /* Explicitly set track height */
                     [&::-webkit-slider-runnable-track]:rounded-lg
+                    ${disabled /* Webkit Track Colors */
+                        ? '[&::-webkit-slider-runnable-track]:bg-[var(--color-range-slider-track-bg-disabled)] [&::-webkit-slider-runnable-track]:bg-[var(--color-range-slider-fill-bg-disabled)]'
+                        : '[&::-webkit-slider-runnable-track]:bg-[var(--color-model-settings-range-input-bg)] [&::-webkit-slider-runnable-track]:bg-[var(--color-model-settings-range-input-fill)]'
+                    }
                     {/* Webkit Thumb */}
                     [&::-webkit-slider-thumb]:appearance-none
                     [&::-webkit-slider-thumb]:h-5 /* Increased size */
@@ -50,7 +53,7 @@ const RangeInput: React.FC<RangeInputProps> = ({
                     [&::-webkit-slider-thumb]:rounded-full
                     [&::-webkit-slider-thumb]:border-2 /* Added border width */
                     [&::-webkit-slider-thumb]:shadow-lg /* Enhanced shadow */
-                    [&::-webkit-slider-thumb]:mt-[-8px] /* Vertically center thumb on track */
+                    /* Removed mt-[-8px] as thumb should naturally center with h-5 input */
                     ${disabled /* Webkit Thumb Colors */
                         ? '[&::-webkit-slider-thumb]:bg-[var(--color-range-slider-thumb-bg-disabled)] [&::-webkit-slider-thumb]:border-[var(--color-range-slider-thumb-border-disabled)]'
                         : '[&::-webkit-slider-thumb]:bg-[var(--color-model-settings-range-input-thumb)] [&::-webkit-slider-thumb]:border-[var(--color-model-settings-range-input-thumb-border)]'
@@ -62,22 +65,17 @@ const RangeInput: React.FC<RangeInputProps> = ({
                     [&::-moz-range-thumb]:rounded-full
                     [&::-moz-range-thumb]:border-2 /* Consistent border width */
                     [&::-moz-range-thumb]:shadow-lg /* Consistent shadow */
-                    [&::-moz-range-thumb]:mt-[-8px] /* Vertically center thumb on track */
+                    /* Removed mt-[-8px] as thumb should naturally center with h-5 input */
                     ${disabled /* Mozilla Thumb Colors */
                         ? '[&::-moz-range-thumb]:bg-[var(--color-range-slider-thumb-bg-disabled)] [&::-::-moz-range-thumb]:border-[var(--color-range-slider-thumb-border-disabled)]'
                         : '[&::-moz-range-thumb]:bg-[var(--color-model-settings-range-input-thumb)] [&::-moz-range-thumb]:border-[var(--color-model-settings-range-input-thumb-border)]'
-                    }
-                    {/* Webkit Track Colors (existing logic) */}
-                    ${disabled
-                        ? '[&::-webkit-slider-runnable-track]:bg-[var(--color-range-slider-fill-bg-disabled)]'
-                        : '[&::-webkit-slider-runnable-track]:bg-[var(--color-model-settings-range-input-fill)]'
                     }
                     {/* Mozilla Track */}
                     [&::-moz-range-track]:h-1 /* Explicitly set track height */
                     [&::-moz-range-track]:rounded-lg
                     ${disabled /* Mozilla Track Colors */
-                        ? '[&::-moz-range-track]:bg-[var(--color-range-slider-fill-bg-disabled)]'
-                        : '[&::-moz-range-track]:bg-[var(--color-model-settings-range-input-fill)]'
+                        ? '[&::-moz-range-track]:bg-[var(--color-range-slider-track-bg-disabled)] [&::-moz-range-track]:bg-[var(--color-range-slider-fill-bg-disabled)]'
+                        : '[&::-moz-range-track]:bg-[var(--color-model-settings-range-input-bg)] [&::-moz-range-track]:bg-[var(--color-model-settings-range-input-fill)]'
                     }
                     focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)]
                 `}
