@@ -393,7 +393,8 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                             </div>
                         }
                     >
-                        {/* No display content when adding new */}
+                        {/* No display content when adding new, but children prop is required */}
+                        <></>
                     </SettingsCard>
                 )}
             </div>

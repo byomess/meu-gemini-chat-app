@@ -38,7 +38,7 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
         field: keyof GeminiModelConfig,
         value: string | number | SafetySetting[]
     ) => {
-        setCurrentGeminiModelConfig(prev => ({
+        setCurrentGeminiModelConfig((prev: GeminiModelConfig) => ({
             ...prev,
             [field]: value,
         }));
