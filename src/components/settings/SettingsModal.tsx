@@ -24,7 +24,7 @@ import {
 import { useDialog } from "../../contexts/DialogContext";
 
 import GeneralSettingsTab from "./tabs/GeneralSettingsTab";
-import type { GeneralSettingsTabProps } from "./tabs/GeneralSettingsTab"; // Added this import
+import type { GeneralSettingsTabProps } from "./tabs/GeneralSettingsTab";
 import ModelSettingsTab, {
     HARM_CATEGORIES_CONFIG,
     appDefaultSafetySettings,
@@ -410,7 +410,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                     <div className="flex flex-col flex-grow min-h-0 bg-[var(--color-settings-content-bg)] relative overflow-hidden">
                                         <div className="flex-grow p-4 sm:p-5 md:p-6 overflow-y-auto">
                                             {tabs.map((tab) => {
-                                                const TabComponent = tab.component;
                                                 const isTabActive = activeTab === tab.id;
                                                 let enterFromClass = "opacity-0";
                                                 let leaveToClass = "opacity-0";
@@ -441,7 +440,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                                 }`}
                                                         >
                                                             {tab.id === "general" && (
-                                                                <TabComponent
+                                                                <GeneralSettingsTab
                                                                     currentApiKey={currentApiKey}
                                                                     setCurrentApiKey={setCurrentApiKey}
                                                                     currentCustomPersonalityPrompt={currentCustomPersonalityPrompt}
@@ -449,19 +448,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                                 />
                                                             )}
                                                             {tab.id === "model" && (
-                                                                <TabComponent
+                                                                <ModelSettingsTab
                                                                     currentGeminiModelConfig={localModelConfig}
                                                                     setCurrentGeminiModelConfig={setLocalModelConfig}
                                                                 />
                                                             )}
                                                             {tab.id === "functionCalling" && (
-                                                                <TabComponent
+                                                                <FunctionCallingSettingsTab
                                                                     currentFunctionDeclarations={currentFunctionDeclarations}
                                                                     setCurrentFunctionDeclarations={setCurrentFunctionDeclarations}
                                                                 />
                                                             )}
                                                             {tab.id === "interface" && (
-                                                                <TabComponent
+                                                                <InterfaceSettingsTab
                                                                     currentCodeHighlightEnabled={isCodeHighlightEnabledState}
                                                                     onToggleCodeHighlight={handleToggleCodeHighlightForTab}
                                                                     currentAiAvatarUrl={currentAiAvatarUrl}
@@ -474,8 +473,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                                     onToggleHideNavigation={handleToggleHideNavigationForTab}
                                                                 />
                                                             )}
-                                                            {(tab.id === "memories" || tab.id === "data") && (
-                                                                <TabComponent />
+                                                            {tab.id === "memories" && (
+                                                                <MemoriesSettingsTab />
+                                                            )}
+                                                            {tab.id === "data" && (
+                                                                <DataSettingsTab />
                                                             )}
                                                         </div>
                                                     </Transition>
