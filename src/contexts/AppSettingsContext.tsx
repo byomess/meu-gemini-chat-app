@@ -20,7 +20,6 @@ const defaultAppSettings: AppSettings = {
     apiKey: '',
     customPersonalityPrompt: DEFAULT_PERSONALITY_PROMPT,
     geminiModelConfig: {
-        model: DEFAULT_GEMINI_MODEL,
         temperature: 0.90,
         topP: 0.95,
         topK: 0,
