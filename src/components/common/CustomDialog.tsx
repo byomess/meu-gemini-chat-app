@@ -98,67 +98,68 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <div className="relative z-[200]">
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div
-            className="fixed inset-0 bg-[var(--color-dialog-overlay-bg)] backdrop-blur-sm"
-            onClick={type === 'confirm' ? handleCancel : onClose}
-          />
-        </Transition.Child>
+        {/* New container for both overlay and dialog content */}
+        <div className="fixed inset-0 overflow-y-auto flex min-h-full items-center justify-center p-4 text-center">
+          {/* Overlay */}
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div
+              className="absolute inset-0 bg-[var(--color-dialog-overlay-bg)] backdrop-blur-sm"
+              onClick={type === 'confirm' ? handleCancel : onClose}
+            />
+          </Transition.Child>
 
-        <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
+          {/* Dialog Panel */}
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0 scale-95"
+            enterTo="opacity-100 scale-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100 scale-100"
+            leaveTo="opacity-0 scale-95"
+          >
+            <div
+              className="relative z-10 w-full max-w-md transform overflow-hidden rounded-xl bg-[var(--color-dialog-bg)] p-5 sm:p-6 text-left align-middle shadow-xl transition-all border border-[var(--color-dialog-border)]"
+              ref={dialogContentRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="dialog-title"
+              aria-describedby="dialog-description"
             >
-              <div
-                className="w-full max-w-md transform overflow-hidden rounded-xl bg-[var(--color-dialog-bg)] p-5 sm:p-6 text-left align-middle shadow-xl transition-all border border-[var(--color-dialog-border)]"
-                ref={dialogContentRef}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="dialog-title"
-                aria-describedby="dialog-description"
-              >
-                <h3 id="dialog-title" className="text-lg sm:text-xl font-semibold leading-6 text-[var(--color-dialog-title-text)] mb-3 sm:mb-4">
-                  {title}
-                </h3>
-                <div id="dialog-description" className="mb-5 sm:mb-6">
-                  <div className="text-sm text-[var(--color-dialog-message-text)] whitespace-pre-wrap">
-                    {message}
-                  </div>
-                </div>
-
-                <div className="flex flex-col-reverse sm:flex-row sm:justify-end space-y-2 space-y-reverse sm:space-y-0 sm:space-x-3">
-                  <Button
-                    variant="primary"
-                    onClick={primaryAction}
-                    className="w-full sm:w-auto"
-                    ref={primaryButtonRef}
-                  >
-                    {type === 'confirm' && onConfirm ? confirmText : 'OK'}
-                  </Button>
-                  {type === 'confirm' && (
-                    <Button variant="secondary" onClick={handleCancel} className="w-full sm:w-auto">
-                      {cancelText}
-                    </Button>
-                  )}
+              <h3 id="dialog-title" className="text-lg sm:text-xl font-semibold leading-6 text-[var(--color-dialog-title-text)] mb-3 sm:mb-4">
+                {title}
+              </h3>
+              <div id="dialog-description" className="mb-5 sm:mb-6">
+                <div className="text-sm text-[var(--color-dialog-message-text)] whitespace-pre-wrap">
+                  {message}
                 </div>
               </div>
-            </Transition.Child>
-          </div>
+
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end space-y-2 space-y-reverse sm:space-y-0 sm:space-x-3">
+                <Button
+                  variant="primary"
+                  onClick={primaryAction}
+                  className="w-full sm:w-auto"
+                  ref={primaryButtonRef}
+                >
+                  {type === 'confirm' && onConfirm ? confirmText : 'OK'}
+                </Button>
+                {type === 'confirm' && (
+                  <Button variant="secondary" onClick={handleCancel} className="w-full sm:w-auto">
+                    {cancelText}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </Transition.Child>
         </div>
       </div>
     </Transition>
