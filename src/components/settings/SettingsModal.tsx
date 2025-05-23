@@ -192,23 +192,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         setActiveTab(newTabId);
     };
 
-    const handleLocalModelConfigChange = (
-        field: keyof GeminiModelConfig | "safetySettings",
-        value: string | number | SafetySetting[]
-    ) => {
-        if (field === "safetySettings") {
-            setLocalModelConfig((prev) => ({
-                ...prev,
-                safetySettings: value as SafetySetting[],
-            }));
-        } else {
-            setLocalModelConfig((prev) => ({
-                ...prev,
-                [field]: value,
-            }));
-        }
-    };
-
     const handleToggleCodeHighlightForTab = () => {
         if (!isCodeHighlightEnabledState) {
             showDialog({
