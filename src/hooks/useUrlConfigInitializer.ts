@@ -32,7 +32,6 @@ interface UrlConfigFile {
     aiAvatarUrl?: string;
     memories?: UrlConfigFileMemory[];
     codeSynthaxHighlightEnabled?: boolean;
-    theme?: 'dark' | 'light';
     enableWebSearch?: boolean;
     enableAttachments?: boolean;
     hideNavigation?: boolean; // Added new setting
@@ -198,10 +197,6 @@ export function useUrlConfigInitializer() {
                         }
                         if (configToApply.codeSynthaxHighlightEnabled !== undefined && newAppSettings.codeSynthaxHighlightEnabled !== configToApply.codeSynthaxHighlightEnabled) {
                             newAppSettings.codeSynthaxHighlightEnabled = configToApply.codeSynthaxHighlightEnabled;
-                            changed = true;
-                        }
-                        if (configToApply.theme !== undefined && newAppSettings.theme !== configToApply.theme) {
-                            newAppSettings.theme = configToApply.theme;
                             changed = true;
                         }
                         if (configToApply.enableWebSearch !== undefined && newAppSettings.enableWebSearch !== configToApply.enableWebSearch) {

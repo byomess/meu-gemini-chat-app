@@ -41,7 +41,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                     memories: memoriesData.map(m => ({
                         id: m.id,
                         content: m.content,
-                        timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp.toString(), // Ensure string for export
+                        timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : String(m.timestamp), // Ensure string for export
                         sourceMessageId: m.sourceMessageId
                     }))
                 };

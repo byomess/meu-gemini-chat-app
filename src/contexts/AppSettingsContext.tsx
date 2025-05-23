@@ -20,7 +20,6 @@ const defaultSafetySettings: SafetySetting[] = [
 
 const defaultAppSettings: AppSettings = {
     apiKey: '',
-    theme: 'dark',
     customPersonalityPrompt: DEFAULT_PERSONALITY_PROMPT,
     geminiModelConfig: {
         model: DEFAULT_GEMINI_MODEL,
