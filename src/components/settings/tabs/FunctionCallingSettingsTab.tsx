@@ -188,7 +188,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
             </p>
 
             {/* New button section */}
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pb-4 border-b border-[var(--color-settings-section-border)]">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pb-4">
                 <Button
                     variant="primary"
                     onClick={handleAddFunction}
@@ -217,7 +217,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
 
             <div className="space-y-4">
                 {currentFunctionDeclarations.map((func) => (
-                    <div key={func.id} className="bg-[var(--color-table-row-bg)] p-4 rounded-lg shadow-sm border border-[var(--color-table-row-border)] hover:bg-[var(--color-table-row-hover-bg)] transition-colors">
+                    <div key={func.id} className="bg-[var(--color-table-row-bg)] p-4 rounded-lg shadow-md border border-[var(--color-table-row-border)] hover:bg-[var(--color-table-row-hover-bg)] transition-colors">
                         {editingFunctionId === func.id ? (
                             <div className="flex flex-col space-y-3">
                                 <TextInput
@@ -311,7 +311,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                 ))}
 
                 {editingFunctionId === 'new' && (
-                    <div className="bg-[var(--color-table-row-bg)] p-4 rounded-lg shadow-sm border border-[var(--color-table-row-border)]">
+                    <div className="bg-[var(--color-table-row-bg)] p-4 rounded-lg shadow-md border border-[var(--color-table-row-border)]">
                         <div className="flex flex-col space-y-3">
                             <TextInput
                                 id="new-name"
@@ -377,7 +377,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                     <IoCloseOutline className="mr-1" /> Cancelar
                                 </Button>
                                 <Button variant="primary" size="sm" onClick={handleSaveFunction}>
-                                    <IoCheckmarkOutline className="mr-1" /> Adicionar
+                                    <IoCheckmarkOutline className="mr-1" /> Salvar
                                 </Button>
                             </div>
                         </div>
