@@ -2,7 +2,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { PrismAsyncLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import RSHLightAsync from 'react-syntax-highlighter/dist/esm/light-async';
-import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Changed from vscDarkPlus to vs
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Changed from vs to vscDarkPlus
 import { IoCopyOutline, IoCheckmarkDoneOutline } from 'react-icons/io5';
 
 import jsx from 'react-syntax-highlighter/dist/esm/languages/prism/jsx';
@@ -67,20 +67,20 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({
         <div className="code-block-wrapper group relative my-3 rounded-lg shadow-md bg-[var(--color-code-block-wrapper-bg)] border border-[var(--color-code-block-wrapper-border)] w-full">
             <div className="flex justify-between items-center px-3 py-1.5 bg-[var(--color-code-block-header-bg)] border-b border-[var(--color-code-block-header-border)] rounded-t-lg">
                 <span className="text-xs text-[var(--color-code-block-language-text)] font-mono select-none">
-                    {language || 'code'} {/* Changed from 'código' to 'code' for consistency */}
+                    {language || 'code'}
                 </span>
                 <button
                     onClick={handleCopy}
                     className="p-1 text-[var(--color-code-block-copy-button-text)] hover:text-[var(--color-code-block-copy-button-hover-text)] rounded-md hover:bg-[var(--color-code-block-copy-button-hover-bg)] transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
-                    title={isCopied ? "Copied!" : "Copy code"} // Translated to English
-                    aria-label={isCopied ? "Code copied to clipboard" : "Copy code to clipboard"} // Translated to English
+                    title={isCopied ? "Copied!" : "Copy code"}
+                    aria-label={isCopied ? "Code copied to clipboard" : "Copy code to clipboard"}
                 >
                     {isCopied ? <IoCheckmarkDoneOutline size={16} className="text-[var(--color-code-block-copy-button-copied-icon)]" /> : <IoCopyOutline size={16} />}
                 </button>
             </div>
             {settings.codeSynthaxHighlightEnabled && language ? (
                 <SyntaxHighlighter
-                    style={vs} // Changed to light theme
+                    style={vscDarkPlus} // Changed to dark theme
                     language={language}
                     PreTag="div"
                     showLineNumbers={false}
@@ -93,7 +93,7 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({
                         lineHeight: '1.6',
                         borderRadius: '0 0 0.5rem 0.5rem',
                         overflowX: 'auto',
-                        // backgroundColor will be set by the 'vs' theme (typically white)
+                        backgroundColor: 'var(--color-gray-800)', // Explicitly set to match wrapper background
                     }}
                     codeTagProps={{
                         style: { 
