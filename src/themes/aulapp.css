@@ -324,7 +324,7 @@
   --color-toggle-switch-handle-shadow: color-mix(in srgb, var(--color-gray-400) 50%, transparent); /* For shadow on handle */
 
   /* Range Slider */
-  --color-range-slider-track-bg: var(--color-gray-200);
+  --color-range-slider-track-bg: var(--color-gray-300); /* Changed from pink-100 */
   --color-range-slider-fill-bg: var(--color-primary);
   --color-range-slider-thumb-bg: var(--color-white);
   --color-range-slider-thumb-border: var(--color-gray-300);
@@ -387,7 +387,7 @@
   /* Specific for Model Settings Tab */
   --color-model-settings-range-label-text: var(--color-gray-700);
   --color-model-settings-range-value-text: var(--color-primary);
-  --color-model-settings-range-input-bg: var(--color-pink-100);
+  --color-model-settings-range-input-bg: var(--color-gray-300); /* Changed from pink-100 */
   --color-model-settings-range-input-fill: var(--color-primary);
   --color-model-settings-range-input-thumb: var(--color-white);
   --color-model-settings-range-input-thumb-border: var(--color-gray-300);
