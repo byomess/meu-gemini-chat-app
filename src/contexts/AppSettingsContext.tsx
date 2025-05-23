@@ -1,4 +1,3 @@
-// src/contexts/AppSettingsContext.tsx
 import React, { createContext, useContext, type ReactNode, useCallback, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { HarmCategory, HarmBlockThreshold, type SafetySetting } from '../types';
