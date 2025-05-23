@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface RangeInputProps {
     id: string;
@@ -23,10 +23,33 @@ const RangeInput: React.FC<RangeInputProps> = ({
     helperText,
     disabled = false,
 }) => {
+    // Use internal state for the slider's immediate visual value
+    const [displayValue, setDisplayValue] = useState(value);
+
+    // Update internal state if the parent's value prop changes (e.g., external reset)
+    useEffect(() => {
+        setDisplayValue(value);
+    }, [value]);
+
+    // Handle immediate slider movement, updating only internal state
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setDisplayValue(parseFloat(e.target.value));
+    };
+
+    // Call the parent's onChange prop only when the user finishes dragging
+    const handleMouseUp = () => {
+        onChange(displayValue);
+    };
+
+    // Handle touch events for mobile devices
+    const handleTouchEnd = () => {
+        onChange(displayValue);
+    };
+
     return (
         <div>
             <label htmlFor={id} className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] mb-1.5">
-                {label}: <span className={`font-semibold ${disabled ? 'text-[var(--color-range-slider-value-text-disabled)]' : 'text-[var(--color-model-settings-range-value-text)]'}`}>{value}</span>
+                {label}: <span className={`font-semibold ${disabled ? 'text-[var(--color-range-slider-value-text-disabled)]' : 'text-[var(--color-model-settings-range-value-text)]'}`}>{displayValue}</span>
             </label>
             <input
                 type="range"
@@ -35,8 +58,10 @@ const RangeInput: React.FC<RangeInputProps> = ({
                 min={min}
                 max={max}
                 step={step}
-                value={value}
-                onChange={(e) => onChange(parseFloat(e.target.value))}
+                value={displayValue} // Bind to internal state
+                onChange={handleInputChange} // Update internal state on every change
+                onMouseUp={handleMouseUp} // Call parent onChange on mouse up
+                onTouchEnd={handleTouchEnd} // Call parent onChange on touch end
                 disabled={disabled}
                 className={`w-full h-5 rounded-lg appearance-none cursor-pointer bg-transparent
                     {/* Webkit Track */}
