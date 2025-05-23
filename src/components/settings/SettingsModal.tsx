@@ -395,7 +395,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                 style={{ flex: "0 0 auto" }}
                                             >
                                                 {React.cloneElement(
-                                                    tab.icon,
+                                                    tab.icon as React.ReactElement<{ className?: string }>,
                                                     {
                                                         className: `transition-transform duration-200 ${activeTab === tab.id
                                                             ? "text-[var(--color-white)]"
