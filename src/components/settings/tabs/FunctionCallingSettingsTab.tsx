@@ -298,7 +298,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                         <IoTrashOutline size={19} />
                                     </Button>
                                 </div>
-                                <div className="pt-4 pb-4 pl-4 pr-18"> {/* Content with padding, pr-18 to avoid icons */}
+                                <div className="p-4"> {/* Content with equal p-4 padding */}
                                     <p className="text-lg font-semibold text-[var(--color-function-card-name-text)] mb-1 truncate">{func.name}</p>
                                     <p className="text-sm text-[var(--color-function-card-description-text)] mb-2 truncate">{func.description}</p>
                                     <div className="flex items-center text-xs mt-2">
