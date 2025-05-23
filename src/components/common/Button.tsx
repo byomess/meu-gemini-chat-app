@@ -5,10 +5,11 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     children: React.ReactNode;
     variant?: 'primary' | 'secondary' | 'danger' | 'icon' | 'ghost'; // Added 'ghost' variant
     size?: 'sm' | 'md' | 'lg' | 'icon-sm' | 'icon-md'; // Added 'icon-sm' and 'icon-md' sizes
+    isActive?: boolean; // Added isActive prop
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ children, variant = 'primary', size = 'md', className, ...props }, ref) => {
+    ({ children, variant = 'primary', size = 'md', className, isActive = false, ...props }, ref) => {
         const baseStyles =
             'inline-flex items-center justify-center font-medium focus:outline-none disabled:opacity-60 disabled:pointer-events-none transition-all duration-150 ease-in-out cursor-pointer'; // Added cursor-pointer
 
@@ -28,7 +29,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             danger:
                 `bg-[var(--color-button-danger-bg)] text-[var(--color-button-danger-text)] hover:bg-[var(--color-button-danger-hover-bg)] active:bg-[var(--color-button-danger-active-bg)] focus:ring-2 focus:ring-[var(--color-red-500)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)] shadow-sm hover:shadow-md`,
             icon:
-                `text-[var(--color-button-icon-text)] hover:text-[var(--color-button-icon-hover-text)] hover:bg-[var(--color-button-icon-hover-bg)] active:bg-[var(--color-button-icon-active-bg)] focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-1 focus:ring-offset-[var(--color-focus-ring-offset)]`, // Removed default padding and border-radius, now handled by 'size'
+                `${isActive ? 'text-[var(--color-button-icon-active-text)]' : 'text-[var(--color-button-icon-text)]'} hover:text-[var(--color-button-icon-hover-text)] hover:bg-[var(--color-button-icon-hover-bg)] active:bg-[var(--color-button-icon-active-bg)] focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-1 focus:ring-offset-[var(--color-focus-ring-offset)]`, // Conditional text color based on isActive
             ghost:
                 `text-[var(--color-button-ghost-text)] hover:bg-[var(--color-button-ghost-hover-bg)] active:bg-[var(--color-button-ghost-active-bg)] focus:ring-2 focus:ring-[var(--color-gray-300)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)]`, // New minimal variant
         };

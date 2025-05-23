@@ -244,6 +244,7 @@
   --color-button-icon-text: var(--color-gray-400);
   --color-button-icon-hover-text: var(--color-primary);
   --color-button-icon-hover-bg: var(--color-gray-100);
+  --color-button-icon-active-text: #FFFFFF; /* Added for active icon color */
   --color-button-icon-active-bg: var(--color-gray-50);
 
   --color-button-ghost-text: var(--color-gray-500);
