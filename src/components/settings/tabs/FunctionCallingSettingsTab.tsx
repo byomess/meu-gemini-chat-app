@@ -3,7 +3,7 @@ import React, { useState, useCallback } from 'react';
 import Button from '../../common/Button';
 import TextInput from '../../common/TextInput';
 import { IoAddCircleOutline, IoTrashOutline, IoPencilOutline, IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
-import { FunctionDeclaration } from '../../../types'; // Import FunctionDeclaration
+import {type  FunctionDeclaration } from '../../../types'; // Import FunctionDeclaration
 import { useDialog } from '../../../contexts/DialogContext';
 
 export interface FunctionCallingSettingsTabProps {
