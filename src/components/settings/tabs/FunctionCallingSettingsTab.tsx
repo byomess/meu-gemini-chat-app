@@ -187,6 +187,33 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                 Certifique-se de que o 'Schema de Parâmetros' seja um JSON Schema válido.
             </p>
 
+            {/* New button section */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pb-4 border-b border-[var(--color-settings-section-border)]">
+                <Button
+                    variant="primary"
+                    onClick={handleAddFunction}
+                    className="w-full sm:w-auto"
+                    disabled={!!editingFunctionId} // Disable if editing or adding
+                >
+                    <IoAddCircleOutline className="mr-2" size={20} /> Adicionar Nova Função
+                </Button>
+                <div className="flex gap-2 flex-wrap justify-end w-full sm:w-auto">
+                    <Button variant="secondary" onClick={handleExportFunctions} className="w-full sm:w-auto">
+                        <IoArrowDownCircleOutline className="mr-2" size={20} /> Exportar Funções
+                    </Button>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImportFunctions}
+                        accept=".json"
+                        className="hidden"
+                    />
+                    <Button variant="secondary" onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto">
+                        <IoArrowUpCircleOutline className="mr-2" size={20} /> Importar Funções
+                    </Button>
+                </div>
+            </div>
+
             <div className="space-y-4">
                 {currentFunctionDeclarations.map((func) => (
                     <div key={func.id} className="bg-[var(--color-table-row-bg)] p-4 rounded-lg shadow-sm border border-[var(--color-table-row-border)] hover:bg-[var(--color-table-row-hover-bg)] transition-colors">
@@ -355,28 +382,6 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                         </div>
                     </div>
                 )}
-
-                {!editingFunctionId && (
-                    <Button variant="secondary" onClick={handleAddFunction} className="w-full">
-                        <IoAddCircleOutline className="mr-2" size={20} /> Adicionar Nova Função
-                    </Button>
-                )}
-            </div>
-
-            <div className="flex flex-col sm:flex-row justify-between space-y-2 sm:space-y-0 sm:space-x-2 pt-4 border-t border-[var(--color-settings-section-border)]">
-                <Button variant="secondary" onClick={handleExportFunctions} className="w-full sm:w-auto">
-                    <IoArrowDownCircleOutline className="mr-2" size={20} /> Exportar Funções
-                </Button>
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleImportFunctions}
-                    accept=".json"
-                    className="hidden"
-                />
-                <Button variant="secondary" onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto">
-                    <IoArrowUpCircleOutline className="mr-2" size={20} /> Importar Funções
-                </Button>
             </div>
         </div>
     );
