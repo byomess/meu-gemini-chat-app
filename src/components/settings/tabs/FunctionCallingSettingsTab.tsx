@@ -290,7 +290,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                             </div>
                         ) : (
                             <div className="relative"> {/* Added relative positioning for the card */}
-                                <div className="absolute top-1 right-1 flex space-x-1"> {/* Positioned icons even closer to edge */}
+                                <div className="absolute top-[1px] right-[1px] flex space-x-1"> {/* Positioned icons very close to edge */}
                                     <Button variant="ghost" size="icon-sm" onClick={() => handleEditFunction(func)} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-table-item-icon-hover)]">
                                         <IoPencilOutline size={19} />
                                     </Button>
@@ -298,7 +298,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                         <IoTrashOutline size={19} />
                                     </Button>
                                 </div>
-                                <div className="flex-grow pr-12"> {/* Further adjusted padding-right */}
+                                <div className="flex-grow pr-18"> {/* Increased padding-right to avoid overlap with icons */}
                                     <p className="text-lg font-semibold text-[var(--color-function-card-name-text)] mb-1 truncate">{func.name}</p>
                                     <p className="text-sm text-[var(--color-function-card-description-text)] mb-2 truncate">{func.description}</p>
                                     <div className="flex items-center text-xs mt-2">
