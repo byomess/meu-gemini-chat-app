@@ -1,30 +1,12 @@
 import React, { useState, useCallback, useRef } from 'react';
 import Button from '../../common/Button';
 import { IoCloudUploadOutline, IoCloudDownloadOutline, IoTrashOutline, IoCloseOutline } from 'react-icons/io5';
-import type { AppSettings, Conversation, Memory, FunctionDeclaration, GeminiModelConfig } from '../../../types';
+import type { AppSettings, Conversation, Memory, UrlConfigFile, RawImportedConversation, RawImportedMessage } from '../../../types';
 import { useDialog } from '../../../contexts/DialogContext';
 import { useMemories } from '../../../contexts/MemoryContext';
 import { useConversations } from '../../../contexts/ConversationContext';
 
 export type DataSettingsTabProps = object;
-
-interface UrlConfigFile {
-    apiKey?: string;
-    geminiModelConfig?: Partial<GeminiModelConfig>;
-    customPersonalityPrompt?: string;
-    functionDeclarations?: FunctionDeclaration[];
-    aiAvatarUrl?: string;
-    memories?: {
-        id?: string;
-        content: string;
-        timestamp: string;
-        sourceMessageId?: string;
-    }[];
-    codeSynthaxHighlightEnabled?: boolean;
-    enableWebSearch?: boolean;
-    enableAttachments?: boolean;
-    hideNavigation?: boolean;
-}
 
 const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
     const { showDialog } = useDialog();
@@ -59,7 +41,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                     memories: memoriesData.map(m => ({
                         id: m.id,
                         content: m.content,
-                        timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
+                        timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp.toString(), // Ensure string for export
                         sourceMessageId: m.sourceMessageId
                     }))
                 };
@@ -142,18 +124,18 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                         }
 
                         if (importedConversationsRaw && Array.isArray(importedConversationsRaw)) {
-                            const validatedConversations: Conversation[] = importedConversationsRaw.map((c: any) => ({
+                            const validatedConversations: Conversation[] = importedConversationsRaw.map((c: RawImportedConversation) => ({
                                 id: c.id || crypto.randomUUID(),
                                 title: c.title || 'Untitled Conversation',
-                                messages: Array.isArray(c.messages) ? c.messages.map((m: any) => ({
+                                messages: Array.isArray(c.messages) ? c.messages.map((m: RawImportedMessage) => ({
                                     id: m.id || crypto.randomUUID(),
                                     text: m.text || '',
                                     sender: m.sender || 'user',
-                                    timestamp: new Date(m.timestamp),
+                                    timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
                                     metadata: m.metadata,
                                 })) : [],
-                                createdAt: new Date(c.createdAt),
-                                updatedAt: new Date(c.updatedAt),
+                                createdAt: c.createdAt ? new Date(c.createdAt) : new Date(),
+                                updatedAt: c.updatedAt ? new Date(c.updatedAt) : new Date(),
                             }));
                             localStorage.setItem('conversations', JSON.stringify(validatedConversations));
                             window.dispatchEvent(new Event('storage'));

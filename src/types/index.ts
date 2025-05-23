@@ -121,3 +121,38 @@ export interface Conversation {
     createdAt: Date;
     updatedAt: Date;
 }
+
+// Types for import/export functionality
+export interface UrlConfigFile {
+    apiKey?: string;
+    geminiModelConfig?: Partial<GeminiModelConfig>;
+    customPersonalityPrompt?: string;
+    functionDeclarations?: FunctionDeclaration[];
+    aiAvatarUrl?: string;
+    memories?: {
+        id?: string;
+        content: string;
+        timestamp: string; // Stored as string in JSON
+        sourceMessageId?: string;
+    }[];
+    codeSynthaxHighlightEnabled?: boolean;
+    enableWebSearch?: boolean;
+    enableAttachments?: boolean;
+    hideNavigation?: boolean;
+}
+
+export interface RawImportedMessage {
+    id?: string;
+    text?: string;
+    sender?: 'user' | 'model' | 'function';
+    timestamp?: string; // Expecting string from JSON
+    metadata?: MessageMetadata;
+}
+
+export interface RawImportedConversation {
+    id?: string;
+    title?: string;
+    messages?: RawImportedMessage[];
+    createdAt?: string; // Expecting string from JSON
+    updatedAt?: string; // Expecting string from JSON
+}
