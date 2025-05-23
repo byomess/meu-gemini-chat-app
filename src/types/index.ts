@@ -4,13 +4,13 @@
 // Isso garante que estamos usando os tipos exatos que o SDK espera.
 import type {
     SafetySetting as GenaiSafetySetting,
-    Part as GenaiPart // Adicionado para rawParts
+    Part as GenaiPart
 } from '@google/genai';
 
 export { HarmCategory, HarmBlockThreshold } from '@google/genai';
 
-export type SafetySetting = GenaiSafetySetting; // Usaremos este tipo do SDK
-export type Part = GenaiPart; // Reexportando Part
+export type SafetySetting = GenaiSafetySetting;
+export type Part = GenaiPart;
 
 export type GeminiModel =
     | "gemini-2.5-pro-preview-05-06"
@@ -44,8 +44,8 @@ export interface AppSettings {
     aiAvatarUrl?: string;
     enableWebSearch: boolean;
     enableAttachments: boolean;
-    hideNavigation: boolean; // New setting for hiding navigation
-    isDarkModeEnabled: boolean; // New setting for dark mode
+    hideNavigation: boolean;
+    isDarkModeEnabled: boolean;
 }
 
 export interface Memory {
@@ -65,36 +65,34 @@ export interface AttachedFileInfo {
     dataUrl?: string;
 }
 
-// Novo: Tipos para o status de processamento
 export type ProcessingType =
-    | 'function_call_request'         // IA decidiu chamar uma função
-    | 'function_call_execution'       // Loox está executando a função (chamada HTTP, etc.)
-    | 'function_call_response'        // Resposta da função recebida, aguardando IA processar
-    | 'user_attachment_upload'        // Upload de arquivos do usuário para a API Gemini
-    | 'file_from_function_processing';// Arquivo retornado por função sendo processado/disponibilizado para IA
+    | 'function_call_request'
+    | 'function_call_execution'
+    | 'function_call_response'
+    | 'user_attachment_upload'
+    | 'file_from_function_processing';
 
 export type ProcessingStage =
-    | 'pending'                       // Ação iniciada, aguardando
-    | 'in_progress'                   // Em execução
-    | 'awaiting_ai'                   // Submetido à IA, aguardando que ela use/processe
-    | 'completed'                     // Concluído com sucesso (pode ser um estágio intermediário)
-    | 'failed';                       // Falhou
+    | 'pending'
+    | 'in_progress'
+    | 'awaiting_ai'
+    | 'completed'
+    | 'failed';
 
 export interface ProcessingStatus {
     type: ProcessingType;
     stage: ProcessingStage;
-    name?: string; // Nome da função, nome do arquivo
-    details?: string; // Mensagem adicional de status, ex: "Aguardando API externa...", "Analisando conteúdo..."
-    error?: string; // Mensagem de erro se stage for 'failed'
+    name?: string;
+    details?: string;
+    error?: string;
 }
-// Fim do Novo
 
 export interface MessageMetadata {
     temp?: boolean;
     isLoading?: boolean;
-    error?: boolean | string; // Mantido para erros gerais da mensagem
+    error?: boolean | string;
     abortedByUser?: boolean;
-    userFacingError?: string; // Mantido para erros gerais da mensagem
+    userFacingError?: string;
     attachedFilesInfo?: AttachedFileInfo[];
     memorizedMemoryActions?: {
         id: string;
@@ -102,14 +100,14 @@ export interface MessageMetadata {
         originalContent?: string;
         action: MemoryActionType;
     }[];
-    rawParts?: Part[]; // Usando o tipo Part importado
-    processingStatus?: ProcessingStatus; // Novo campo para status detalhado
+    rawParts?: Part[];
+    processingStatus?: ProcessingStatus;
 }
 
 export interface Message {
     id: string;
     text: string;
-    sender: 'user' | 'model' | 'function'; // 'function' é para a RESPOSTA da função, não o pedido
+    sender: 'user' | 'model' | 'function';
     timestamp: Date;
     metadata?: MessageMetadata;
 }
@@ -122,7 +120,6 @@ export interface Conversation {
     updatedAt: Date;
 }
 
-// Types for import/export functionality
 export interface UrlConfigFile {
     apiKey?: string;
     geminiModelConfig?: Partial<GeminiModelConfig>;
@@ -132,7 +129,7 @@ export interface UrlConfigFile {
     memories?: {
         id?: string;
         content: string;
-        timestamp: string; // Stored as string in JSON
+        timestamp: string;
         sourceMessageId?: string;
     }[];
     codeSynthaxHighlightEnabled?: boolean;
@@ -145,7 +142,7 @@ export interface RawImportedMessage {
     id?: string;
     text?: string;
     sender?: 'user' | 'model' | 'function';
-    timestamp?: string; // Expecting string from JSON
+    timestamp?: string;
     metadata?: MessageMetadata;
 }
 
@@ -153,6 +150,9 @@ export interface RawImportedConversation {
     id?: string;
     title?: string;
     messages?: RawImportedMessage[];
-    createdAt?: string; // Expecting string from JSON
-    updatedAt?: string; // Expecting string from JSON
+    createdAt?: string;
+    updatedAt?: string;
 }
+
+export type DataSettingsTabProps = object;
+export type MemoriesSettingsTabProps = object;

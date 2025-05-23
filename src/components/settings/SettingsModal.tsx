@@ -1,4 +1,3 @@
-// src/components/settings/SettingsModal.tsx
 import React, { useState, useEffect, useRef, Fragment, useMemo } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import {
@@ -17,19 +16,20 @@ import type {
     GeminiModelConfig,
     FunctionDeclaration as AppFunctionDeclaration,
     SafetySetting,
+    MemoriesSettingsTabProps
 } from "../../types";
 import {
     HarmBlockThreshold as GenaiHarmBlockThresholdEnum,
 } from "@google/genai";
-import { useDialog } from "../../contexts/DialogContext"; // Import useDialog
+import { useDialog } from "../../contexts/DialogContext";
 
-// Import new tab components and their specific props interfaces
 import GeneralSettingsTab from "./tabs/GeneralSettingsTab";
 import type { GeneralSettingsTabProps } from "./tabs/GeneralSettingsTab";
-import ModelSettingsTab from "./tabs/ModelSettingsTab";
-import HARM_CATEGORIES_CONFIG from "./tabs/ModelSettingsTab";
-import appDefaultSafetySettings from "./tabs/ModelSettingsTab";
-import AVAILABLE_GEMINI_MODELS from "./tabs/ModelSettingsTab";
+import ModelSettingsTab, {
+    HARM_CATEGORIES_CONFIG,
+    appDefaultSafetySettings,
+    AVAILABLE_GEMINI_MODELS
+} from "./tabs/ModelSettingsTab";
 import type { ModelSettingsTabProps } from "./tabs/ModelSettingsTab";
 import MemoriesSettingsTab from "./tabs/MemoriesSettingsTab";
 import FunctionCallingSettingsTab from "./tabs/FunctionCallingSettingsTab";
@@ -37,16 +37,47 @@ import type { FunctionCallingSettingsTabProps } from "./tabs/FunctionCallingSett
 import InterfaceSettingsTab from "./tabs/InterfaceSettingsTab";
 import type { InterfaceSettingsTabProps } from "./tabs/InterfaceSettingsTab";
 import DataSettingsTab from "./tabs/DataSettingsTab";
-import type { DataSettingsTabProps } from "./tabs/DataSettingsTab"; // Import DataSettingsTabProps
+import type { DataSettingsTabProps } from "./tabs/DataSettingsTab";
 
 type TabId = "general" | "model" | "memories" | "functionCalling" | "interface" | "data";
 
-interface Tab {
+interface BaseTab {
     id: TabId;
     label: string;
     icon: React.ReactElement;
-    component: React.FC<any>; // Keeping 'any' here for simplicity of the union, but props are passed explicitly below
 }
+
+interface GeneralTab extends BaseTab {
+    id: "general";
+    component: React.FC<GeneralSettingsTabProps>;
+}
+
+interface ModelTab extends BaseTab {
+    id: "model";
+    component: React.FC<ModelSettingsTabProps>;
+}
+
+interface MemoriesTab extends BaseTab {
+    id: "memories";
+    component: React.FC<MemoriesSettingsTabProps>;
+}
+
+interface FunctionCallingTab extends BaseTab {
+    id: "functionCalling";
+    component: React.FC<FunctionCallingSettingsTabProps>;
+}
+
+interface InterfaceTab extends BaseTab {
+    id: "interface";
+    component: React.FC<InterfaceSettingsTabProps>;
+}
+
+interface DataTab extends BaseTab {
+    id: "data";
+    component: React.FC<DataSettingsTabProps>;
+}
+
+type Tab = GeneralTab | ModelTab | MemoriesTab | FunctionCallingTab | InterfaceTab | DataTab;
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -55,12 +86,12 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const { settings, setSettings } = useAppSettings();
-    const { showDialog, dialogProps } = useDialog(); // Use the dialog hook and get dialogProps
+    const { dialogProps, showDialog } = useDialog();
     const [currentApiKey, setCurrentApiKey] = useState<string>("");
     const [currentCustomPersonalityPrompt, setCurrentCustomPersonalityPrompt] =
         useState<string>("");
     const [currentFunctionDeclarations, setCurrentFunctionDeclarations] =
-        useState<AppFunctionDeclaration[]>([]); // Use AppFunctionDeclaration directly
+        useState<AppFunctionDeclaration[]>([]);
     const [currentAiAvatarUrl, setCurrentAiAvatarUrl] = useState<string>("");
     const [isCodeHighlightEnabledState, setIsCodeHighlightEnabledState] =
         useState<boolean>(settings.codeSynthaxHighlightEnabled);
@@ -71,12 +102,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const [currentHideNavigation, setCurrentHideNavigation] =
         useState<boolean>(settings.hideNavigation);
 
-
     const [activeTab, setActiveTab] = useState<TabId>("general");
     const modalContentRef = useRef<HTMLDivElement>(null);
     const [previousTab, setPreviousTab] = useState<TabId | null>(null);
 
-    const defaultModelConfigValues = useMemo((): GeminiModelConfig => {
+    const defaultModelConfigValues: GeminiModelConfig = useMemo(() => {
         const defaultFirstModel =
             AVAILABLE_GEMINI_MODELS[0] || "gemini-2.5-flash-preview-04-17";
         return {
@@ -108,7 +138,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             setCurrentAttachmentsEnabled(settings.enableAttachments);
             setCurrentHideNavigation(settings.hideNavigation);
 
-
             const currentSettingsSafety = settings.geminiModelConfig?.safetySettings;
             let effectiveSafetySettings: SafetySetting[];
 
@@ -129,7 +158,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 effectiveSafetySettings = appDefaultSafetySettings;
             }
 
-            const mergedModelConfig: GeminiModelConfig = { // Explicitly type mergedModelConfig
+            const mergedModelConfig: GeminiModelConfig = {
                 ...defaultModelConfigValues,
                 ...(settings.geminiModelConfig || {}),
                 safetySettings: effectiveSafetySettings,
@@ -137,14 +166,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             setLocalModelConfig(mergedModelConfig);
 
             setCurrentCustomPersonalityPrompt(settings.customPersonalityPrompt || "");
-            const loadedFuncDeclarations: AppFunctionDeclaration[] = (settings.functionDeclarations || []).map( // Explicitly type loadedFuncDeclarations
+            const loadedFuncDeclarations: AppFunctionDeclaration[] = (settings.functionDeclarations || []).map(
                 (fd) => ({
                     id: fd.id,
                     name: fd.name,
                     description: fd.description,
                     parametersSchema: fd.parametersSchema,
                     endpointUrl: fd.endpointUrl || "",
-                    httpMethod: fd.httpMethod || "POST", // Default to POST if not specified
+                    httpMethod: fd.httpMethod || "POST",
                 })
             );
             setCurrentFunctionDeclarations(loadedFuncDeclarations);
@@ -165,7 +194,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
     const handleLocalModelConfigChange = (
         field: keyof GeminiModelConfig | "safetySettings",
-        value: string | number | SafetySetting[] // More specific type for value
+        value: string | number | SafetySetting[]
     ) => {
         if (field === "safetySettings") {
             setLocalModelConfig((prev) => ({
@@ -175,7 +204,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         } else {
             setLocalModelConfig((prev) => ({
                 ...prev,
-                [field as keyof GeminiModelConfig]: value,
+                [field]: value,
             }));
         }
     };
@@ -198,17 +227,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     };
 
     const handleToggleEnableWebSearchForTab = () => {
-        setCurrentEnableWebSearchEnabled(prev => !prev);
+        setCurrentEnableWebSearchEnabled((prev) => !prev);
     };
 
     const handleToggleAttachmentsEnabledForTab = () => {
-        setCurrentAttachmentsEnabled(prev => !prev);
+        setCurrentAttachmentsEnabled((prev) => !prev);
     };
 
     const handleToggleHideNavigationForTab = () => {
-        setCurrentHideNavigation(prev => !prev);
+        setCurrentHideNavigation((prev) => !prev);
     };
-
 
     const handleSaveAllSettings = () => {
         if (localModelConfig.temperature < 0 || localModelConfig.temperature > 2) {
@@ -269,7 +297,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             hideNavigation: currentHideNavigation,
         }));
         showDialog({ title: "Success", message: "Configurações salvas com sucesso!", type: "alert" });
-        // onClose(); // Optionally close the modal after saving
     };
 
     const tabs: Tab[] = [
@@ -327,7 +354,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             <Dialog
                 as="div"
                 className="relative z-[100]"
-                // Conditionally disable onClose if CustomDialog is open
                 onClose={dialogProps?.isOpen ? () => {} : onClose}
                 initialFocus={modalContentRef}
             >
@@ -370,8 +396,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                         variant="icon"
                                         aria-label="Fechar modal"
                                     >
-                                        {" "}
-                                        <IoClose size={24} />{" "}
+                                        <IoClose size={24} />
                                     </Button>
                                 </div>
                                 <div className="flex flex-col md:flex-row flex-grow min-h-0">
@@ -381,13 +406,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                 key={tab.id}
                                                 onClick={() => handleTabChange(tab.id)}
                                                 className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ease-in-out group whitespace-nowrap flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-settings-tab-nav-bg)] ${activeTab === tab.id
-                                                    ? "bg-[var(--color-settings-tab-item-active-bg)] text-[var(--color-settings-tab-item-active-text)] shadow-md" // Removed scale-[1.02]
+                                                    ? "bg-[var(--color-settings-tab-item-active-bg)] text-[var(--color-settings-tab-item-active-text)] shadow-md"
                                                     : "text-[var(--color-settings-tab-item-text)] hover:bg-[var(--color-settings-tab-item-hover-bg)] hover:text-[var(--color-primary)] active:scale-[0.98]"
                                                     }`}
                                                 style={{ flex: "0 0 auto" }}
                                             >
                                                 {React.cloneElement(
-                                                    tab.icon as React.ReactElement, // Cast to React.ReactElement
+                                                    tab.icon,
                                                     {
                                                         className: `transition-transform duration-200 ${activeTab === tab.id
                                                             ? "text-[var(--color-white)]"
@@ -432,7 +457,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                             className={`w-full h-full ${isTabActive ? "" : "hidden"
                                                                 }`}
                                                         >
-                                                            {/* Pass props explicitly based on tab.id */}
                                                             {tab.id === "general" && (
                                                                 <TabComponent
                                                                     currentApiKey={currentApiKey}
@@ -467,7 +491,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                                     onToggleHideNavigation={handleToggleHideNavigationForTab}
                                                                 />
                                                             )}
-                                                            {/* For tabs that don't need specific props from SettingsModal */}
                                                             {(tab.id === "memories" || tab.id === "data") && (
                                                                 <TabComponent />
                                                             )}
@@ -482,7 +505,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                 onClick={handleSaveAllSettings}
                                                 className="!py-2.5 !px-5 !font-semibold shadow-md hover:shadow-lg transform active:scale-[0.98] transition-all"
                                             >
-                                                <IoCheckmarkCircleOutline size={18} className="mr-1.5" />{" "}
+                                                <IoCheckmarkCircleOutline size={18} className="mr-1.5" />
                                                 Salvar Configurações
                                             </Button>
                                         </div>
