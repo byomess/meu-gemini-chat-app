@@ -383,8 +383,8 @@
   --color-range-slider-thumb-border-disabled: var(--color-gray-300);
 
   /* Table/List items (for Function Calling, Data, Memories) */
-  --color-table-row-bg: var(--color-gray-800);
-  --color-table-row-hover-bg: var(--color-gray-100);
+  --color-table-row-bg: var(--color-gray-100);
+  --color-table-row-hover-bg: var(--color-gray-50);
   --color-table-row-border: var(--color-gray-300);
   --color-table-item-text: var(--color-gray-600);
   --color-table-item-secondary-text: var(--color-gray-500);
