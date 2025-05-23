@@ -194,12 +194,13 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                     onClick={handleAddFunction}
                     className="w-full sm:w-auto"
                     disabled={!!editingFunctionId} // Disable if editing or adding
+                    size="sm" // Reduced size
                 >
-                    <IoAddCircleOutline className="mr-2" size={20} /> Adicionar Nova Função
+                    <IoAddCircleOutline className="mr-2" size={20} /> Adicionar
                 </Button>
                 <div className="flex gap-2 flex-wrap justify-end w-full sm:w-auto">
-                    <Button variant="secondary" onClick={handleExportFunctions} className="w-full sm:w-auto">
-                        <IoArrowDownCircleOutline className="mr-2" size={20} /> Exportar Funções
+                    <Button variant="secondary" onClick={handleExportFunctions} className="w-full sm:w-auto" size="sm"> {/* Reduced size */}
+                        <IoArrowDownCircleOutline className="mr-2" size={20} /> Exportar
                     </Button>
                     <input
                         type="file"
@@ -208,8 +209,8 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                         accept=".json"
                         className="hidden"
                     />
-                    <Button variant="secondary" onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto">
-                        <IoArrowUpCircleOutline className="mr-2" size={20} /> Importar Funções
+                    <Button variant="secondary" onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto" size="sm"> {/* Reduced size */}
+                        <IoArrowUpCircleOutline className="mr-2" size={20} /> Importar
                     </Button>
                 </div>
             </div>
