@@ -1,16 +1,16 @@
-// src/components/common/CustomDialog.tsx
 import React, { Fragment, useRef, useEffect, useCallback } from 'react';
 import Button from './Button';
+import { Transition } from '@headlessui/react';
 
 export interface CustomDialogProps {
   isOpen: boolean;
   title: string;
   message: string | React.ReactNode;
-  onClose: () => void; // For simple dismissal or when a choice is made
+  onClose: () => void;
   confirmText?: string;
   onConfirm?: () => void;
   cancelText?: string;
-  onCancel?: () => void; // Could be the same as onClose if no specific cancel action
+  onCancel?: () => void;
   type?: 'alert' | 'confirm';
 }
 
@@ -26,43 +26,39 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
   type = 'alert',
 }) => {
   const primaryButtonRef = useRef<HTMLButtonElement>(null);
-  const dialogContentRef = useRef<HTMLDivElement>(null); // Ref for the dialog content
+  const dialogContentRef = useRef<HTMLDivElement>(null);
 
-  // Memoize handleConfirm and handleCancel to ensure stable references
   const handleConfirm = useCallback(() => {
     if (onConfirm) onConfirm();
-    onClose(); // Always close after confirm
+    onClose();
   }, [onConfirm, onClose]);
 
   const handleCancel = useCallback(() => {
     if (onCancel) onCancel();
-    onClose(); // Always close after cancel
+    onClose();
   }, [onCancel, onClose]);
 
-  // This function handles the primary action (OK/Confirm) and stops propagation
   const primaryAction = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation(); // Stop event propagation for the button click
+    e.stopPropagation();
     if (type === 'confirm' && onConfirm) {
       handleConfirm();
     } else {
-      onClose(); // Call onClose directly for alert type
+      onClose();
     }
   }, [type, onConfirm, handleConfirm, onClose]);
 
   useEffect(() => {
     if (isOpen) {
-      // Focus the primary button when the dialog opens
       const timer = setTimeout(() => {
         primaryButtonRef.current?.focus();
-      }, 100); // A small delay, adjust if needed
+      }, 100);
 
-      // Add event listener for Escape key and Tab key for focus trapping
       const handleKeyDown = (event: KeyboardEvent) => {
         if (event.key === 'Escape') {
           if (type === 'confirm') {
-            handleCancel(); // Call cancel logic for confirm type
+            handleCancel();
           } else {
-            onClose(); // Just close for alert type
+            onClose();
           }
         } else if (event.key === 'Tab' && dialogContentRef.current) {
           const focusableElements = Array.from(
@@ -71,17 +67,17 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
             )
           ) as HTMLElement[];
 
-          if (focusableElements.length === 0) return; // No focusable elements to trap
+          if (focusableElements.length === 0) return;
 
           const firstFocusableEl = focusableElements[0];
           const lastFocusableEl = focusableElements[focusableElements.length - 1];
 
-          if (event.shiftKey) { // Shift + Tab
+          if (event.shiftKey) {
             if (document.activeElement === firstFocusableEl) {
               lastFocusableEl.focus();
               event.preventDefault();
             }
-          } else { // Tab
+          } else {
             if (document.activeElement === lastFocusableEl) {
               firstFocusableEl.focus();
               event.preventDefault();
@@ -97,7 +93,7 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
         document.removeEventListener('keydown', handleKeyDown);
       };
     }
-  }, [isOpen, type, handleCancel, onClose]); // Dependencies for the useEffect
+  }, [isOpen, type, handleCancel, onClose]);
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -111,10 +107,9 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          {/* Very light transparent black background with blur */}
           <div
             className="fixed inset-0 bg-[var(--color-dialog-overlay-bg)] backdrop-blur-sm"
-            onClick={type === 'confirm' ? handleCancel : onClose} // Handle click outside
+            onClick={type === 'confirm' ? handleCancel : onClose}
           />
         </Transition.Child>
 
@@ -129,14 +124,13 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              {/* White dialog panel with gray border and dark text */}
               <div
                 className="w-full max-w-md transform overflow-hidden rounded-xl bg-[var(--color-dialog-bg)] p-5 sm:p-6 text-left align-middle shadow-xl transition-all border border-[var(--color-dialog-border)]"
-                ref={dialogContentRef} // Assign the ref here
-                role="dialog" // ARIA role for accessibility
-                aria-modal="true" // ARIA attribute for modal dialogs
-                aria-labelledby="dialog-title" // Link to the title for screen readers
-                aria-describedby="dialog-description" // Link to the message for screen readers
+                ref={dialogContentRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="dialog-title"
+                aria-describedby="dialog-description"
               >
                 <h3 id="dialog-title" className="text-lg sm:text-xl font-semibold leading-6 text-[var(--color-dialog-title-text)] mb-3 sm:mb-4">
                   {title}
@@ -152,7 +146,7 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
                     variant="primary"
                     onClick={primaryAction}
                     className="w-full sm:w-auto"
-                    ref={primaryButtonRef} // Assign the ref here
+                    ref={primaryButtonRef}
                   >
                     {type === 'confirm' && onConfirm ? confirmText : 'OK'}
                   </Button>
