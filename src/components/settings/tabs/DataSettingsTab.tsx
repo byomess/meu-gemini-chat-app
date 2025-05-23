@@ -1,16 +1,21 @@
 // src/components/settings/tabs/DataSettingsTab.tsx
-import React, { useRef, useContext } from "react";
-import { IoTrashOutline, IoArrowUpOutline, IoArrowDownOutline } from "react-icons/io5"; // Added IoArrowUpOutline, IoArrowDownOutline
-import Button from "../../common/Button";
-import { useMemories } from "../../../contexts/MemoryContext";
-import { useConversations } from "../../../contexts/ConversationContext";
-import { AppSettingsContext } from "../../../contexts/AppSettingsContext"; // Added AppSettingsContext
-import type { AppSettings, Memory, FunctionDeclaration, GeminiModelConfig } from "../../../types"; // Added type imports
-import { v4 as uuidv4 } from 'uuid'; // Added uuid
+import React, { useState, useCallback, useRef } from 'react';
+import Button from '../../common/Button';
+import { IoCloudUploadOutline, IoCloudDownloadOutline, IoTrashOutline, IoCloseOutline, IoCheckmarkOutline } from 'react-icons/io5';
+import { AppSettings, Conversation, Memory, FunctionDeclaration } from '../../../types';
+import { useDialog } from '../../../contexts/DialogContext';
+import TextInput from '../../common/TextInput';
+import { useMemories } from '../../../contexts/MemoryContext'; // Import useMemories
+import { useConversations } from '../../../contexts/ConversationContext'; // Import useConversations
 
-// Define the structure for the URL config file, mirroring useUrlConfigInitializer's UrlConfigFile
-// This interface is defined here to ensure it's specific to the import/export functionality
-// and can handle potential variations like 'showNavigation' from external files.
+interface DataSettingsTabProps {
+    activeTab: 'memories' | 'data';
+    // These props are no longer needed as contexts are used directly
+    // deleteAllConversations: () => void;
+    // clearAllMemories: () => void;
+    // replaceAllMemories: (newMemories: Memory[]) => void;
+}
+
 interface UrlConfigFile {
     apiKey?: string;
     geminiModelConfig?: Partial<GeminiModelConfig>;
@@ -26,302 +31,437 @@ interface UrlConfigFile {
     codeSynthaxHighlightEnabled?: boolean;
     enableWebSearch?: boolean;
     enableAttachments?: boolean;
-    hideNavigation?: boolean; // Matches AppSettings and useUrlConfigInitializer
-    showNavigation?: boolean; // For compatibility with external files that might use this
+    hideNavigation?: boolean;
 }
 
-const DataSettingsTab: React.FC = () => {
-    const { clearAllMemories, memories, replaceAllMemories } = useMemories(); // Added replaceAllMemories
-    const { deleteAllConversations, conversations } = useConversations();
-    const importFileInputRef = useRef<HTMLInputElement>(null); // Added ref for file input
-    const appSettingsContext = useContext(AppSettingsContext); // Added AppSettingsContext usage
+interface GeminiModelConfig {
+    model: string;
+    temperature: number;
+    topP: number;
+    topK: number;
+    maxOutputTokens: number;
+}
 
-    // Added null check for context
-    if (!appSettingsContext) {
-        console.error("AppSettingsContext not found in DataSettingsTab.");
-        return null; 
-    }
-    const { settings, setSettings } = appSettingsContext; // Destructure settings and setSettings
+const DataSettingsTab: React.FC<DataSettingsTabProps> = ({
+    activeTab,
+}) => {
+    const { showDialog } = useDialog();
+    const { memories, deleteMemory, updateMemory, clearAllMemories, replaceAllMemories } = useMemories(); // Use useMemories hook
+    const { conversations, deleteAllConversations } = useConversations(); // Use useConversations hook
 
-    const handleLocalClearAllMemories = () => {
-        if (
-            window.confirm(
-                "Tem certeza de que deseja apagar TODAS as memórias? Esta ação não pode ser desfeita."
-            )
-        ) {
-            clearAllMemories();
-        }
-    };
+    const [isDragging, setIsDragging] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
+    const [editedMemoryContent, setEditedMemoryContent] = useState<string>('');
 
-    const handleLocalDeleteAllConversations = () => {
-        if (
-            window.confirm(
-                "Tem certeza de que deseja apagar TODAS as conversas? Esta ação não pode ser desfeita e apagará todo o seu histórico."
-            )
-        ) {
-            deleteAllConversations();
-        }
-    };
+    const handleExportData = useCallback(() => {
+        showDialog({
+            title: "Exportar Dados",
+            message: "Selecione quais dados você deseja exportar:",
+            type: "confirm",
+            confirmText: "Exportar",
+            cancelText: "Cancelar",
+            onConfirm: async () => {
+                const appSettings: AppSettings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                // Conversations and memories are already available from hooks, but localStorage is used for consistency with import
+                const conversationsData: Conversation[] = JSON.parse(localStorage.getItem('conversations') || '[]');
+                const memoriesData: Memory[] = JSON.parse(localStorage.getItem('memories') || '[]');
 
-    // Added handleExportSettings function
-    const handleExportSettings = () => {
-        const exportData: UrlConfigFile = {
-            apiKey: settings.apiKey,
-            geminiModelConfig: settings.geminiModelConfig,
-            customPersonalityPrompt: settings.customPersonalityPrompt,
-            functionDeclarations: settings.functionDeclarations,
-            aiAvatarUrl: settings.aiAvatarUrl,
-            codeSynthaxHighlightEnabled: settings.codeSynthaxHighlightEnabled,
-            enableWebSearch: settings.enableWebSearch,
-            enableAttachments: settings.enableAttachments,
-            hideNavigation: settings.hideNavigation, // Exporting as hideNavigation
-            memories: memories.map(mem => {
-                let timestampStr: string;
-                if (mem.timestamp instanceof Date) {
-                    timestampStr = mem.timestamp.toISOString();
-                } else if (typeof mem.timestamp === 'string') {
-                    const date = new Date(mem.timestamp);
-                    if (!isNaN(date.getTime())) {
-                        timestampStr = date.toISOString();
-                    } else {
-                        // Fallback for invalid date string
-                        console.warn(`Invalid date string for memory ID ${mem.id}:`, mem.timestamp, ". Using current time for export.");
-                        timestampStr = new Date().toISOString();
-                    }
-                } else {
-                    // Fallback for unexpected types
-                    console.warn(`Unexpected timestamp type for memory ID ${mem.id}:`, mem.timestamp, ". Using current time for export.");
-                    timestampStr = new Date().toISOString();
-                }
-                return {
-                    id: mem.id,
-                    content: mem.content,
-                    timestamp: timestampStr,
-                    sourceMessageId: mem.sourceMessageId,
+                const exportData: UrlConfigFile = {
+                    apiKey: appSettings.apiKey,
+                    geminiModelConfig: appSettings.geminiModelConfig,
+                    customPersonalityPrompt: appSettings.customPersonalityPrompt,
+                    functionDeclarations: appSettings.functionDeclarations,
+                    aiAvatarUrl: appSettings.aiAvatarUrl,
+                    codeSynthaxHighlightEnabled: appSettings.codeSynthaxHighlightEnabled,
+                    enableWebSearch: appSettings.enableWebSearch,
+                    enableAttachments: appSettings.enableAttachments,
+                    hideNavigation: appSettings.hideNavigation,
+                    memories: memoriesData.map(m => ({
+                        id: m.id,
+                        content: m.content,
+                        timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp, // Ensure ISO string
+                        sourceMessageId: m.sourceMessageId
+                    }))
                 };
-            }),
-        };
 
-        const filename = `loox_settings_export_${new Date().toISOString().slice(0, 10)}.json`;
-        const jsonStr = JSON.stringify(exportData, null, 2);
-        const blob = new Blob([jsonStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    };
+                const dataStr = JSON.stringify({ appSettings: exportData, conversations: conversationsData }, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `loox_ai_backup_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        });
+    }, [showDialog]);
 
-    // Added handleImportSettingsClick function
-    const handleImportSettingsClick = () => {
-        importFileInputRef.current?.click();
-    };
-
-    // Added handleImportSettings function
-    const handleImportSettings = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
+    const handleImportData = useCallback(() => {
+        if (!selectedFile) {
+            showDialog({
+                title: "Erro de Importação",
+                message: "Por favor, selecione um arquivo JSON para importar.",
+                type: "alert",
+            });
+            return;
+        }
 
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = (event) => {
             try {
-                const importedData: UrlConfigFile = JSON.parse(e.target?.result as string);
+                const importedData = JSON.parse(event.target?.result as string);
 
-                // Apply AppSettings
-                setSettings((prevSettings: AppSettings) => {
-                    const newSettings: AppSettings = { ...prevSettings };
-                    let changed = false;
+                showDialog({
+                    title: "Confirmar Importação",
+                    message: (
+                        <div>
+                            <p>Você está prestes a importar dados. Isso <strong>substituirá</strong> suas configurações e conversas atuais.</p>
+                            <p className="mt-2">Deseja continuar?</p>
+                        </div>
+                    ),
+                    type: "confirm",
+                    confirmText: "Importar e Substituir",
+                    cancelText: "Cancelar",
+                    onConfirm: () => {
+                        if (importedData.appSettings) {
+                            const importedAppSettings: UrlConfigFile = importedData.appSettings;
+                            const currentAppSettings: AppSettings = JSON.parse(localStorage.getItem('appSettings') || '{}');
 
-                    if (importedData.apiKey !== undefined && newSettings.apiKey !== importedData.apiKey) {
-                        newSettings.apiKey = importedData.apiKey;
-                        changed = true;
-                    }
-                    if (importedData.geminiModelConfig !== undefined) {
-                        const mergedConfig = { ...newSettings.geminiModelConfig, ...importedData.geminiModelConfig };
-                        if (importedData.geminiModelConfig.safetySettings) {
-                            mergedConfig.safetySettings = importedData.geminiModelConfig.safetySettings.map(ss => ({ ...ss }));
+                            // Merge imported settings with existing ones, prioritizing imported values
+                            const newAppSettings: AppSettings = {
+                                ...currentAppSettings,
+                                apiKey: importedAppSettings.apiKey ?? currentAppSettings.apiKey,
+                                geminiModelConfig: { ...currentAppSettings.geminiModelConfig, ...importedAppSettings.geminiModelConfig },
+                                customPersonalityPrompt: importedAppSettings.customPersonalityPrompt ?? currentAppSettings.customPersonalityPrompt,
+                                functionDeclarations: importedAppSettings.functionDeclarations ?? currentAppSettings.functionDeclarations,
+                                aiAvatarUrl: importedAppSettings.aiAvatarUrl ?? currentAppSettings.aiAvatarUrl,
+                                codeSynthaxHighlightEnabled: importedAppSettings.codeSynthaxHighlightEnabled ?? currentAppSettings.codeSynthaxHighlightEnabled,
+                                enableWebSearch: importedAppSettings.enableWebSearch ?? currentAppSettings.enableWebSearch,
+                                enableAttachments: importedAppSettings.enableAttachments ?? currentAppSettings.enableAttachments,
+                                hideNavigation: importedAppSettings.hideNavigation ?? currentAppSettings.hideNavigation,
+                            };
+                            localStorage.setItem('appSettings', JSON.stringify(newAppSettings));
+
+                            // Handle memories separately as they are managed by context
+                            if (importedAppSettings.memories) {
+                                const newMemories: Memory[] = importedAppSettings.memories.map(m => ({
+                                    id: m.id || crypto.randomUUID(), // Ensure ID exists
+                                    content: m.content,
+                                    timestamp: new Date(m.timestamp),
+                                    sourceMessageId: m.sourceMessageId
+                                }));
+                                replaceAllMemories(newMemories);
+                            }
                         }
-                        if (JSON.stringify(newSettings.geminiModelConfig) !== JSON.stringify(mergedConfig)) {
-                            newSettings.geminiModelConfig = mergedConfig;
-                            changed = true;
+
+                        if (importedData.conversations) {
+                            localStorage.setItem('conversations', JSON.stringify(importedData.conversations));
+                            // Force a reload of conversations in context
+                            window.dispatchEvent(new Event('storage')); // Simulate storage event
                         }
-                    }
-                    if (importedData.customPersonalityPrompt !== undefined && newSettings.customPersonalityPrompt !== importedData.customPersonalityPrompt) {
-                        newSettings.customPersonalityPrompt = importedData.customPersonalityPrompt;
-                        changed = true;
-                    }
-                    if (importedData.functionDeclarations !== undefined) {
-                        const newDeclarations = importedData.functionDeclarations.map(fd => ({ ...fd, id: fd.id || uuidv4() }));
-                        if (JSON.stringify(newSettings.functionDeclarations) !== JSON.stringify(newDeclarations)) {
-                            newSettings.functionDeclarations = newDeclarations;
-                            changed = true;
-                        }
-                    }
-                    if (importedData.aiAvatarUrl !== undefined && newSettings.aiAvatarUrl !== importedData.aiAvatarUrl) {
-                        newSettings.aiAvatarUrl = importedData.aiAvatarUrl;
-                        changed = true;
-                    }
-                    if (importedData.codeSynthaxHighlightEnabled !== undefined && newSettings.codeSynthaxHighlightEnabled !== importedData.codeSynthaxHighlightEnabled) {
-                        newSettings.codeSynthaxHighlightEnabled = importedData.codeSynthaxHighlightEnabled;
-                        changed = true;
-                    }
-                    if (importedData.enableWebSearch !== undefined && newSettings.enableWebSearch !== importedData.enableWebSearch) {
-                        newSettings.enableWebSearch = importedData.enableWebSearch;
-                        changed = true;
-                    }
-                    if (importedData.enableAttachments !== undefined && newSettings.enableAttachments !== importedData.enableAttachments) {
-                        newSettings.enableAttachments = importedData.enableAttachments;
-                        changed = true;
-                    }
 
-                    let newHideNavigationValue: boolean | undefined;
-                    if (importedData.hideNavigation !== undefined) {
-                        newHideNavigationValue = importedData.hideNavigation;
-                    } else if (importedData.showNavigation !== undefined) {
-                        newHideNavigationValue = !importedData.showNavigation; 
+                        showDialog({
+                            title: "Importação Concluída",
+                            message: "Dados importados com sucesso!",
+                            type: "alert",
+                        });
+                        setSelectedFile(null); // Clear selected file after import
                     }
-
-                    if (newHideNavigationValue !== undefined && newSettings.hideNavigation !== newHideNavigationValue) {
-                        newSettings.hideNavigation = newHideNavigationValue;
-                        changed = true;
-                    }
-
-                    return changed ? newSettings : prevSettings;
                 });
-
-                if (importedData.memories) {
-                    const parsedMemories: Memory[] = importedData.memories.map(mem => {
-                        const timestampDate = new Date(mem.timestamp);
-                        return {
-                            id: mem.id || uuidv4(),
-                            content: mem.content,
-                            timestamp: isNaN(timestampDate.getTime()) ? new Date() : timestampDate,
-                            sourceMessageId: mem.sourceMessageId,
-                        };
-                    });
-                    replaceAllMemories(parsedMemories);
-                }
-
-                alert("Configurações importadas com sucesso!");
-            } catch (error) {
-                console.error("Erro ao importar configurações:", error);
-                alert("Erro ao importar configurações. Verifique se o arquivo está no formato correto.");
-            } finally {
-                if (importFileInputRef.current) {
-                    importFileInputRef.current.value = '';
-                }
+            } catch (e) {
+                console.error("Erro ao parsear arquivo JSON:", e);
+                showDialog({
+                    title: "Erro de Importação",
+                    message: "O arquivo selecionado não é um JSON válido ou está corrompido.",
+                    type: "alert",
+                });
             }
         };
-        reader.readAsText(file);
-    };
+        reader.readAsText(selectedFile);
+    }, [selectedFile, showDialog, replaceAllMemories]);
+
+    const handleClearAllConversations = useCallback(() => {
+        showDialog({
+            title: "Confirmar Exclusão de Conversas",
+            message: "Tem certeza de que deseja excluir TODAS as suas conversas? Esta ação não pode ser desfeita.",
+            type: "confirm",
+            confirmText: "Excluir Tudo",
+            cancelText: "Cancelar",
+            onConfirm: () => {
+                deleteAllConversations();
+                showDialog({
+                    title: "Conversas Excluídas",
+                    message: "Todas as conversas foram excluídas com sucesso.",
+                    type: "alert",
+                });
+            }
+        });
+    }, [showDialog, deleteAllConversations]);
+
+    const handleClearAllMemories = useCallback(() => {
+        showDialog({
+            title: "Confirmar Exclusão de Memórias",
+            message: "Tem certeza de que deseja excluir TODAS as suas memórias? Esta ação não pode ser desfeita.",
+            type: "confirm",
+            confirmText: "Excluir Tudo",
+            cancelText: "Cancelar",
+            onConfirm: () => {
+                clearAllMemories();
+                showDialog({
+                    title: "Memórias Excluídas",
+                    message: "Todas as memórias foram excluídas com sucesso.",
+                    type: "alert",
+                });
+            }
+        });
+    }, [showDialog, clearAllMemories]);
+
+    const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(true);
+    }, []);
+
+    const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+    }, []);
+
+    const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            const file = e.dataTransfer.files[0];
+            if (file.type === 'application/json') {
+                setSelectedFile(file);
+            } else {
+                showDialog({
+                    title: "Arquivo Inválido",
+                    message: "Por favor, arraste e solte um arquivo JSON.",
+                    type: "alert",
+                });
+            }
+        }
+    }, [showDialog]);
+
+    const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            if (file.type === 'application/json') {
+                setSelectedFile(file);
+            } else {
+                showDialog({
+                    title: "Arquivo Inválido",
+                    message: "Por favor, selecione um arquivo JSON.",
+                    type: "alert",
+                });
+                e.target.value = ''; // Clear the input
+            }
+        }
+    }, [showDialog]);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const triggerFileInput = useCallback(() => {
+        fileInputRef.current?.click();
+    }, []);
+
+    const handleStartEditMemory = useCallback((memory: Memory) => {
+        setEditingMemoryId(memory.id);
+        setEditedMemoryContent(memory.content);
+    }, []);
+
+    const handleSaveMemory = useCallback((memoryId: string) => {
+        if (editedMemoryContent.trim()) {
+            updateMemory(memoryId, editedMemoryContent.trim());
+            setEditingMemoryId(null);
+            setEditedMemoryContent('');
+        } else {
+            showDialog({
+                title: "Conteúdo Vazio",
+                message: "O conteúdo da memória não pode ser vazio.",
+                type: "alert",
+            });
+        }
+    }, [editedMemoryContent, updateMemory, showDialog]);
+
+    const handleCancelEditMemory = useCallback(() => {
+        setEditingMemoryId(null);
+        setEditedMemoryContent('');
+    }, []);
+
+    const handleDeleteMemory = useCallback((memoryId: string) => {
+        showDialog({
+            title: "Confirmar Exclusão de Memória",
+            message: "Tem certeza de que deseja excluir esta memória? Esta ação não pode ser desfeita.",
+            type: "confirm",
+            confirmText: "Excluir",
+            cancelText: "Cancelar",
+            onConfirm: () => {
+                deleteMemory(memoryId);
+                showDialog({
+                    title: "Memória Excluída",
+                    message: "A memória foi excluída com sucesso.",
+                    type: "alert",
+                });
+            }
+        });
+    }, [showDialog, deleteMemory]);
+
+    const sortedMemories = [...memories].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
     return (
         <div className="space-y-6">
-            <div>
-                <h3 className="text-base font-semibold text-gray-800 mb-3">
-                    Gerenciamento de Dados
-                </h3>
-                <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-4 shadow">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        <div className="flex-grow">
-                            <p className="text-sm font-medium text-gray-700">
-                                Apagar todas as memórias
-                            </p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                Remove todas as memórias armazenadas pela IA.
-                            </p>
-                        </div>
-                        <Button
-                            variant="danger"
-                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0 w-full sm:w-[180px]"
-                            onClick={handleLocalClearAllMemories}
-                            disabled={memories.length === 0}
-                        >
-                            {" "}
-                            <IoTrashOutline className="mr-1.5" /> Limpar Memórias{" "}
-                        </Button>
-                    </div>
-                    <hr className="border-gray-200 my-3" />
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        <div className="flex-grow">
-                            <p className="text-sm font-medium text-gray-700">
-                                Apagar todas as conversas
-                            </p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                Remove todo o seu histórico de conversas.
-                            </p>
-                        </div>
-                        <Button
-                            variant="danger"
-                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0 w-full sm:w-[180px]"
-                            onClick={handleLocalDeleteAllConversations}
-                            disabled={conversations.length === 0}
-                        >
-                            {" "}
-                            <IoTrashOutline className="mr-1.5" /> Limpar Conversas{" "}
-                        </Button>
-                    </div>
-                </div>
-                <p className="text-xs text-gray-500 mt-4 text-center">
-                    Todas as ações de exclusão de dados são irreversíveis.
-                </p>
-            </div>
+            <h2 className="text-xl font-semibold text-[var(--color-settings-section-title-text)]">
+                {activeTab === 'memories' ? 'Gerenciar Memórias' : 'Importar/Exportar Dados'}
+            </h2>
+            <p className="text-sm text-[var(--color-settings-section-description-text)] pb-4 border-b border-[var(--color-settings-section-border)]">
+                {activeTab === 'memories'
+                    ? 'Visualize, edite ou exclua as memórias que a IA aprendeu sobre você e suas conversas.'
+                    : 'Importe ou exporte suas configurações, conversas e memórias para backup ou transferência.'}
+            </p>
 
-            {/* New section for Import/Export */}
-            <div>
-                <h3 className="text-base font-semibold text-gray-800 mb-3">
-                    Importar/Exportar Configurações
-                </h3>
-                <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-4 shadow">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        <div className="flex-grow">
-                            <p className="text-sm font-medium text-gray-700">
-                                Exportar todas as configurações
-                            </p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                Salva todas as configurações e memórias em um arquivo JSON.
-                            </p>
-                        </div>
-                        <Button
-                            variant="secondary"
-                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0 w-full sm:w-[180px]"
-                            onClick={handleExportSettings}
-                        >
-                            {" "}
-                            <IoArrowUpOutline className="mr-1.5" /> Exportar{" "}
+            {activeTab === 'data' && (
+                <section className="space-y-4">
+                    <div className="bg-[var(--color-data-import-export-bg)] p-4 rounded-lg border border-[var(--color-data-import-export-border)] shadow-sm">
+                        <h3 className="text-lg font-medium text-[var(--color-data-import-export-text)] mb-3">Exportar Dados</h3>
+                        <p className="text-sm text-[var(--color-data-import-export-text)] mb-4">
+                            Crie um backup de suas configurações e conversas.
+                        </p>
+                        <Button variant="secondary" onClick={handleExportData} className="w-full sm:w-auto">
+                            <IoCloudDownloadOutline className="mr-2" size={20} /> Exportar Dados
                         </Button>
                     </div>
-                    <hr className="border-gray-200 my-3" />
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        <div className="flex-grow">
-                            <p className="text-sm font-medium text-gray-700">
-                                Importar configurações
-                            </p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                Carrega configurações de um arquivo JSON.
-                            </p>
-                        </div>
-                        <input
-                            type="file"
-                            accept=".json"
-                            ref={importFileInputRef}
-                            onChange={handleImportSettings}
-                            className="hidden"
-                        />
-                        <Button
-                            variant="secondary"
-                            className="!text-sm !py-2 !px-4 !font-medium flex-shrink-0 w-full sm:w-[180px]"
-                            onClick={handleImportSettingsClick}
+
+                    <div className="bg-[var(--color-data-import-export-bg)] p-4 rounded-lg border border-[var(--color-data-import-export-border)] shadow-sm">
+                        <h3 className="text-lg font-medium text-[var(--color-data-import-export-text)] mb-3">Importar Dados</h3>
+                        <p className="text-sm text-[var(--color-data-import-export-text)] mb-4">
+                            Carregue um arquivo de backup para restaurar suas configurações e conversas.
+                            Isso substituirá os dados existentes.
+                        </p>
+                        <div
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg transition-all duration-200 ease-in-out
+                                ${isDragging ? 'border-[var(--color-data-drag-drop-active-border)] bg-[var(--color-data-drag-drop-hover-bg)] text-[var(--color-data-drag-drop-active-text)]' : 'border-[var(--color-data-drag-drop-border)] bg-transparent text-[var(--color-data-drag-drop-text)] hover:bg-[var(--color-data-drag-drop-hover-bg)]'}`}
                         >
-                            {" "}
-                            <IoArrowDownOutline className="mr-1.5" /> Importar{" "}
+                            <IoCloudUploadOutline size={40} className="mb-3" />
+                            <p className="text-center text-sm">
+                                Arraste e solte seu arquivo JSON aqui, ou
+                            </p>
+                            <Button variant="secondary" onClick={triggerFileInput} className="mt-3">
+                                Selecionar Arquivo
+                            </Button>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                                accept="application/json"
+                                className="hidden"
+                            />
+                            {selectedFile && (
+                                <p className="mt-3 text-sm text-[var(--color-data-drag-drop-file-text)]">
+                                    Arquivo selecionado: <span className="font-medium">{selectedFile.name}</span>
+                                    <Button variant="ghost" size="icon-sm" onClick={() => setSelectedFile(null)} className="ml-2 text-[var(--color-data-drag-drop-file-remove-icon)] hover:bg-transparent">
+                                        <IoCloseOutline size={18} />
+                                    </Button>
+                                </p>
+                            )}
+                        </div>
+                        <Button
+                            variant="primary"
+                            onClick={handleImportData}
+                            disabled={!selectedFile}
+                            className="w-full sm:w-auto mt-4"
+                        >
+                            Importar Dados
                         </Button>
                     </div>
-                </div>
-            </div>
+
+                    <div className="bg-[var(--color-data-import-export-bg)] p-4 rounded-lg border border-[var(--color-data-import-export-border)] shadow-sm">
+                        <h3 className="text-lg font-medium text-[var(--color-data-import-export-text)] mb-3">Limpar Dados</h3>
+                        <p className="text-sm text-[var(--color-data-import-export-text)] mb-4">
+                            Exclua todas as suas conversas ou memórias. Esta ação é irreversível.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <Button variant="danger" onClick={handleClearAllConversations} className="w-full sm:w-auto">
+                                <IoTrashOutline className="mr-2" size={20} /> Excluir Todas as Conversas
+                            </Button>
+                            <Button variant="danger" onClick={handleClearAllMemories} className="w-full sm:w-auto">
+                                <IoTrashOutline className="mr-2" size={20} /> Excluir Todas as Memórias
+                            </Button>
+                        </div>
+                    </div>
+                </section>
+            )}
+
+            {activeTab === 'memories' && (
+                <section className="space-y-4">
+                    {sortedMemories.length === 0 ? (
+                        <p className="text-sm text-[var(--color-settings-section-description-text)] text-center py-8">
+                            Nenhuma memória encontrada. A IA aprenderá e armazenará memórias automaticamente durante suas conversas.
+                        </p>
+                    ) : (
+                        <ul className="space-y-3">
+                            {sortedMemories.map((memory) => (
+                                <li key={memory.id} className="bg-[var(--color-table-row-bg)] p-4 rounded-lg shadow-sm border border-[var(--color-table-row-border)] hover:bg-[var(--color-table-row-hover-bg)] transition-colors">
+                                    {editingMemoryId === memory.id ? (
+                                        <div className="flex flex-col space-y-3">
+                                            <TextInput
+                                                id={`edit-memory-${memory.id}`}
+                                                name={`edit-memory-${memory.id}`}
+                                                value={editedMemoryContent}
+                                                onChange={setEditedMemoryContent}
+                                                type="text"
+                                                placeholder="Editar conteúdo da memória"
+                                                inputClassName="bg-[var(--color-table-item-edit-bg)] border-[var(--color-table-item-edit-border)] text-[var(--color-table-item-edit-text)] placeholder-[var(--color-table-item-edit-placeholder)]"
+                                            />
+                                            <div className="flex justify-end space-x-2">
+                                                <Button variant="secondary" size="sm" onClick={handleCancelEditMemory}>
+                                                    <IoCloseOutline className="mr-1" /> Cancelar
+                                                </Button>
+                                                <Button variant="primary" size="sm" onClick={() => handleSaveMemory(memory.id)}>
+                                                    <IoCheckmarkOutline className="mr-1" /> Salvar
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="text-sm text-[var(--color-table-item-text)]">{memory.content}</p>
+                                                <p className="text-xs text-[var(--color-table-item-secondary-text)] mt-1">
+                                                    Adicionado em: {new Date(memory.timestamp).toLocaleString()}
+                                                </p>
+                                            </div>
+                                            <div className="flex space-x-1 ml-4 flex-shrink-0">
+                                                <Button variant="ghost" size="icon-sm" onClick={() => handleStartEditMemory(memory)} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-table-item-icon-hover)]">
+                                                    <IoPencilOutline size={18} />
+                                                </Button>
+                                                <Button variant="ghost" size="icon-sm" onClick={() => handleDeleteMemory(memory.id)} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-red-500)]">
+                                                    <IoTrashOutline size={18} />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                    {sortedMemories.length > 0 && (
+                        <div className="flex justify-end mt-6">
+                            <Button variant="danger" onClick={handleClearAllMemories}>
+                                <IoTrashOutline className="mr-2" size={20} /> Limpar Todas as Memórias
+                            </Button>
+                        </div>
+                    )}
+                </section>
+            )}
         </div>
     );
 };

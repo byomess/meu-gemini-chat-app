@@ -1,5 +1,4 @@
 // src/components/settings/SettingsModal.tsx
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useRef, Fragment, useMemo } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import {
@@ -342,7 +341,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
+                    <div className="fixed inset-0 bg-[var(--color-settings-modal-overlay-bg)] backdrop-blur-sm" />
                 </Transition.Child>
                 <div className="fixed inset-0 overflow-y-auto">
                     <div className="flex min-h-full items-center justify-center p-3 sm:p-4 text-center">
@@ -357,18 +356,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                         >
                             <Dialog.Panel
                                 ref={modalContentRef}
-                                className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl text-gray-800 relative h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden border border-gray-200 text-left transform transition-all"
+                                className="bg-[var(--color-settings-modal-bg)] rounded-2xl shadow-2xl w-full max-w-3xl text-gray-800 relative h-[90vh] sm:h-[85vh] flex flex-col overflow-hidden border border-[var(--color-settings-modal-border)] text-left transform transition-all"
                             >
-                                <div className="flex items-center justify-between p-4 pr-12 sm:p-5 sm:pr-14 border-b border-gray-200 flex-shrink-0 relative bg-white">
+                                <div className="flex items-center justify-between p-4 pr-12 sm:p-5 sm:pr-14 border-b border-[var(--color-settings-modal-header-border)] flex-shrink-0 relative bg-[var(--color-settings-modal-header-bg)]">
                                     <Dialog.Title
                                         as="h2"
-                                        className="text-lg font-semibold text-gray-800"
+                                        className="text-lg font-semibold text-[var(--color-settings-modal-title-text)]"
                                     >
                                         Configurações do Aplicativo
                                     </Dialog.Title>
                                     <Button
                                         onClick={onClose}
-                                        className="!absolute top-1/2 -translate-y-1/2 right-3 !p-2 text-gray-500 hover:text-gray-700 rounded-full hover:!bg-gray-100 z-10"
+                                        className="!absolute top-1/2 -translate-y-1/2 right-3 !p-2 text-[var(--color-settings-modal-close-button-text)] hover:text-[var(--color-settings-modal-close-button-hover-text)] rounded-full hover:!bg-[var(--color-settings-modal-close-button-hover-bg)] z-10"
                                         variant="icon"
                                         aria-label="Fechar modal"
                                     >
@@ -377,14 +376,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                     </Button>
                                 </div>
                                 <div className="flex flex-col md:flex-row flex-grow min-h-0">
-                                    <nav className="w-full md:w-52 flex-shrink-0 flex md:flex-col bg-gray-50 p-2 md:p-3 space-x-1 md:space-x-0 md:space-y-1.5 border-b md:border-b-0 md:border-r border-gray-200 overflow-x-auto md:overflow-x-hidden">
+                                    <nav className="w-full md:w-52 flex-shrink-0 flex md:flex-col bg-[var(--color-settings-tab-nav-bg)] p-2 md:p-3 space-x-1 md:space-x-0 md:space-y-1.5 border-b md:border-b-0 md:border-r border-[var(--color-settings-tab-nav-border)] overflow-x-auto md:overflow-x-hidden">
                                         {tabs.map((tab) => (
                                             <button
                                                 key={tab.id}
                                                 onClick={() => handleTabChange(tab.id)}
-                                                className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ease-in-out group whitespace-nowrap flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e04579] focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50 ${activeTab === tab.id
-                                                    ? "bg-[#e04579] text-white shadow-md scale-[1.02]"
-                                                    : "text-gray-600 hover:bg-pink-50 hover:text-[#e04579] active:scale-[0.98]"
+                                                className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ease-in-out group whitespace-nowrap flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-settings-tab-nav-bg)] ${activeTab === tab.id
+                                                    ? "bg-[var(--color-settings-tab-item-active-bg)] text-[var(--color-settings-tab-item-active-text)] shadow-md scale-[1.02]"
+                                                    : "text-[var(--color-settings-tab-item-text)] hover:bg-[var(--color-settings-tab-item-hover-bg)] hover:text-[var(--color-primary)] active:scale-[0.98]"
                                                     }`}
                                                 style={{ flex: "0 0 auto" }}
                                             >
@@ -392,8 +391,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                     tab.icon as React.ReactElement<any>,
                                                     {
                                                         className: `transition-transform duration-200 ${activeTab === tab.id
-                                                            ? "text-white"
-                                                            : "text-gray-400 group-hover:text-[#e04579]"
+                                                            ? "text-[var(--color-white)]"
+                                                            : "text-[var(--color-settings-tab-item-icon)] group-hover:text-[var(--color-primary)]"
                                                             }`,
                                                     }
                                                 )}
@@ -401,7 +400,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                             </button>
                                         ))}
                                     </nav>
-                                    <div className="flex flex-col flex-grow min-h-0 bg-gray-50 relative overflow-hidden">
+                                    <div className="flex flex-col flex-grow min-h-0 bg-[var(--color-settings-content-bg)] relative overflow-hidden">
                                         <div className="flex-grow p-4 sm:p-5 md:p-6 overflow-y-auto">
                                             {tabs.map((tab) => {
                                                 const TabComponent = tab.component;
@@ -468,7 +467,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                 );
                                             })}
                                         </div>
-                                        <div className="p-4 border-t border-gray-200 flex-shrink-0 bg-gray-50 flex justify-end">
+                                        <div className="p-4 border-t border-[var(--color-settings-modal-header-border)] flex-shrink-0 bg-[var(--color-settings-modal-header-bg)] flex justify-end">
                                             <Button
                                                 variant="primary"
                                                 onClick={handleSaveAllSettings}
