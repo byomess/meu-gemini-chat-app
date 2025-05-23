@@ -68,10 +68,10 @@ const MessageInputForm: React.FC<MessageInputFormProps> = ({
 
 
     const recordingPlaceholder = (
-        <div className="flex items-center text-sm text-gray-500">
+        <div className="flex items-center text-sm text-[var(--color-input-placeholder)]">
             <div className="relative w-3 h-3 mr-2 flex items-center justify-center">
-                <span className="absolute inline-flex w-2 h-2 bg-red-500 rounded-full opacity-75 animate-ping"></span>
-                <span className="relative inline-block w-2 h-2 bg-red-500 rounded-full"></span>
+                <span className="absolute inline-flex w-2 h-2 bg-[var(--color-red-500)] rounded-full opacity-75 animate-ping"></span>
+                <span className="relative inline-block w-2 h-2 bg-[var(--color-red-500)] rounded-full"></span>
             </div>
             <span className="whitespace-nowrap">Gravando áudio...</span>
         </div>
@@ -89,27 +89,27 @@ const MessageInputForm: React.FC<MessageInputFormProps> = ({
                 else { e.preventDefault(); } // Prevent form submission if recording
             }}
             className={`flex items-end bg-[var(--color-input-form-bg)] border border-[var(--color-input-form-border)] rounded-xl p-1.5 shadow-lg
-                        focus-within:ring-2 focus-within:ring-[#e04579] focus-within:border-[#e04579]/70
+                        focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)] focus-within:border-[var(--color-focus-ring)]/70
                         transition-all duration-200 ease-in-out
-                        ${isRecording ? 'ring-2 !ring-red-500/80 !border-red-500/80' : ''}
-                        ${isTextareaFocused && !isRecording ? '!border-[#e04579]/70 ring-2 ring-[#e04579]' : ''}`}
+                        ${isRecording ? 'ring-2 !ring-[var(--color-red-500)]/80 !border-[var(--color-red-500)]/80' : ''}
+                        ${isTextareaFocused && !isRecording ? '!border-[var(--color-focus-ring)]/70 ring-2 ring-[var(--color-focus-ring)]' : ''}`}
         >
             <div className="flex-shrink-0 p-0.5 flex items-center space-x-0.5">
                 {enableWebSearch && (
                     <Button type="button" variant="icon"
-                        className={`!p-2.5 rounded-lg transform active:scale-90 transition-colors duration-150 ${isWebSearchEnabledForNextMessage ? 'bg-[#e04579] text-white hover:bg-[#c73d6a]' : 'text-gray-500 hover:text-[#e04579] hover:bg-pink-50'}`}
+                        className={`!p-2.5 rounded-lg transform active:scale-90 transition-colors duration-150 ${isWebSearchEnabledForNextMessage ? 'bg-[var(--color-button-primary-bg)] text-[var(--color-button-primary-text)] hover:bg-[var(--color-button-primary-hover-bg)]' : 'text-[var(--color-button-icon-text)] hover:text-[var(--color-button-icon-hover-text)] hover:bg-[var(--color-button-icon-hover-bg)]'}`}
                         onClick={onToggleWebSearch} disabled={isWebSearchButtonDisabled}
                         aria-label={isWebSearchEnabledForNextMessage ? "Desativar busca na web para a próxima mensagem" : "Ativar busca na web para a próxima mensagem"}
                         title={isWebSearchEnabledForNextMessage ? "Busca na web ATIVADA para a próxima mensagem. Clique para desativar." : "Ativar busca na web para a próxima mensagem."}
                     > <IoEarthOutline size={20} /> </Button>
                 )}
                 {isRecording ? (
-                    <Button type="button" variant="icon" className="!p-2.5 text-red-500 hover:text-red-700 !bg-red-100 hover:!bg-red-200 rounded-lg transform active:scale-90" onClick={onCancelRecording} aria-label="Cancelar gravação" title="Cancelar gravação">
+                    <Button type="button" variant="danger" className="!p-2.5 text-[var(--color-red-500)] hover:text-[var(--color-red-700)] !bg-[var(--color-red-100)] hover:!bg-[var(--color-red-200)] rounded-lg transform active:scale-90" onClick={onCancelRecording} aria-label="Cancelar gravação" title="Cancelar gravação">
                         <IoClose size={22} />
                     </Button>
                 ) : (
                     enableAttachments && (
-                        <Button type="button" variant="icon" className="!p-2.5 text-gray-500 hover:text-[#e04579] hover:bg-pink-50 rounded-lg transform active:scale-90" onClick={onAttachClick} disabled={isAttachButtonDisabled} aria-label="Anexar arquivos" title="Anexar arquivos">
+                        <Button type="button" variant="icon" className="!p-2.5 text-[var(--color-button-icon-text)] hover:text-[var(--color-button-icon-hover-text)] hover:bg-[var(--color-button-icon-hover-bg)] rounded-lg transform active:scale-90" onClick={onAttachClick} disabled={isAttachButtonDisabled} aria-label="Anexar arquivos" title="Anexar arquivos">
                             <IoAttach size={20} />
                         </Button>
                     )
@@ -126,7 +126,7 @@ const MessageInputForm: React.FC<MessageInputFormProps> = ({
                 <textarea ref={textareaRef} rows={1} value={text} onChange={(e) => onTextChange(e.target.value)}
                     onKeyDown={onKeyDown} onFocus={onTextFocus} onBlur={onTextBlur}
                     placeholder={effectivePlaceholder}
-                    className={`w-full bg-transparent text-[var(--color-input-text)] placeholder-[var(--color-input-placeholder)] focus:outline-none py-2.5 resize-none leading-tight transition-all duration-200 ease-in-out ${isRecording ? 'text-transparent caret-transparent' : ''} ${isCurrentlyLoading && !isRecording ? 'placeholder-gray-400' : ''}`}
+                    className={`w-full bg-transparent text-[var(--color-input-text)] placeholder-[var(--color-input-placeholder)] focus:outline-none py-2.5 resize-none leading-tight transition-all duration-200 ease-in-out ${isRecording ? 'text-transparent caret-transparent' : ''} ${isCurrentlyLoading && !isRecording ? 'placeholder-[var(--color-input-placeholder)]' : ''}`}
                     style={{ maxHeight: isTextareaFocused ? `${window.innerHeight * (FOCUSED_TEXTAREA_MAX_HEIGHT_VH / 100)}px` : `${getPixelValueFromRem(UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM)}px`, minHeight: `${getPixelValueFromRem(UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM)}px` }}
                     disabled={textareaDisabled}
                     aria-label="Campo de entrada de mensagem"
@@ -135,16 +135,16 @@ const MessageInputForm: React.FC<MessageInputFormProps> = ({
 
             <div className="flex-shrink-0 p-0.5 flex items-center space-x-1.5">
                 <Button type="button" variant={isRecording ? "danger" : "icon"}
-                    className={`!p-2.5 rounded-lg transform active:scale-90 ${isRecording ? '!bg-red-600 hover:!bg-red-700 text-white animate-pulseRing' : 'text-gray-500 hover:text-[#e04579] hover:bg-pink-50'}`}
+                    className={`!p-2.5 rounded-lg transform active:scale-90 ${isRecording ? '!bg-[var(--color-button-danger-bg)] hover:!bg-[var(--color-button-danger-hover-bg)] text-[var(--color-button-danger-text)] animate-pulseRing' : 'text-[var(--color-button-icon-text)] hover:text-[var(--color-button-icon-hover-text)] hover:bg-[var(--color-button-icon-hover-bg)]'}`}
                     onClick={onMicButtonClick} disabled={isMicDisabled}
-                    aria-label={isRecording ? "Parar gravação e anexar áudio" : "Iniciar gravação de áudio"}
+                    aria-label={isRecording ? "Parar gravação e anexar áudio" : "Iniciar gravação de audio"}
                     title={isRecording ? "Parar gravação e anexar áudio" : "Iniciar gravação de áudio"}
                 > {isRecording ? <IoStopCircleOutline size={20} /> : <IoMicOutline size={20} />} </Button>
                 
                 {!isRecording && (
                     <Button type={isCurrentlyLoading ? "button" : "submit"} onClick={isCurrentlyLoading ? onAbort : undefined}
                         variant={isCurrentlyLoading ? "danger" : "primary"}
-                        className={`!p-2.5 rounded-lg transform active:scale-90 group overflow-hidden ${isCurrentlyLoading ? 'hover:!bg-red-700' : canSubmitEffectively ? 'hover:!bg-[#c73d6a]' : '!bg-gray-300 !text-gray-500 cursor-not-allowed'}`}
+                        className={`!p-2.5 rounded-lg transform active:scale-90 group overflow-hidden ${isCurrentlyLoading ? 'hover:!bg-[var(--color-button-danger-hover-bg)]' : canSubmitEffectively ? 'hover:!bg-[var(--color-button-primary-hover-bg)]' : '!bg-[var(--color-button-secondary-bg)] !text-[var(--color-button-secondary-text)] cursor-not-allowed'}`}
                         disabled={isCurrentlyLoading ? false : !canSubmitEffectively}
                         aria-label={isCurrentlyLoading ? "Abortar resposta" : "Enviar mensagem"}
                         title={isCurrentlyLoading ? "Abortar resposta" : "Enviar mensagem"}
