@@ -307,7 +307,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                         <IoPencilOutline size={19} />
                                     </Button>
                                     <Button variant="ghost" size="icon-sm" onClick={() => handleDeleteFunction(func.id)} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-red-500)]">
-                                        <IoTrashOutline size={18} />
+                                        <IoTrashOutline size={19} />
                                     </Button>
                                 </div>
                             </div>
