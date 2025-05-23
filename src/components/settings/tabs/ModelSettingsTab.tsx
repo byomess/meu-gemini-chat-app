@@ -1,17 +1,17 @@
 // src/components/settings/tabs/ModelSettingsTab.tsx
 import React from 'react';
 import type { GeminiModelConfig, GeminiModel, SafetySetting } from '../../../types';
-import { HarmCategory, HarmBlockThreshold } from '@google/genai'; // Import from @google/genai
-import RangeInput from '../../common/RangeInput'; // Import the new RangeInput component
+import { HarmCategory, HarmBlockThreshold } from '@google/genai';
+import RangeInput from '../../common/RangeInput';
 
 export interface ModelSettingsTabProps {
     currentGeminiModelConfig: GeminiModelConfig;
     setCurrentGeminiModelConfig: (config: GeminiModelConfig) => void;
 }
 
-// Define constants used in SettingsModal and this component
 export const AVAILABLE_GEMINI_MODELS: GeminiModel[] = [
     "gemini-2.5-pro-preview-05-06",
+    "gemini-2.5-flash-preview-05-20",
     "gemini-2.5-flash-preview-04-17",
 ];
 
@@ -36,7 +36,7 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
 }) => {
     const handleConfigChange = (
         field: keyof GeminiModelConfig,
-        value: string | number | SafetySetting[] // More specific type for value
+        value: string | number | SafetySetting[]
     ) => {
         setCurrentGeminiModelConfig(prev => ({
             ...prev,
