@@ -1,16 +1,13 @@
 // src/components/settings/tabs/DataSettingsTab.tsx
 import React, { useState, useCallback, useRef } from 'react';
 import Button from '../../common/Button';
-import { IoCloudUploadOutline, IoCloudDownloadOutline, IoTrashOutline, IoCloseOutline, IoCheckmarkOutline, IoPencilOutline } from 'react-icons/io5';
-import { AppSettings, Conversation, Memory, FunctionDeclaration, GeminiModelConfig } from '../../../types'; // Import GeminiModelConfig
+import { IoCloudUploadOutline, IoCloudDownloadOutline, IoTrashOutline, IoCloseOutline } from 'react-icons/io5';
+import type { AppSettings, Conversation, Memory, FunctionDeclaration, GeminiModelConfig } from '../../../types'; // Import GeminiModelConfig
 import { useDialog } from '../../../contexts/DialogContext';
-import TextInput from '../../common/TextInput';
 import { useMemories } from '../../../contexts/MemoryContext'; // Import useMemories
 import { useConversations } from '../../../contexts/ConversationContext'; // Import useConversations
 
-export interface DataSettingsTabProps {
-    // No props needed here, as contexts are used directly
-}
+export type DataSettingsTabProps = object
 
 interface UrlConfigFile {
     apiKey?: string;
