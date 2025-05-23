@@ -26,7 +26,10 @@ import { useDialog } from "../../contexts/DialogContext"; // Import useDialog
 // Import new tab components and their specific props interfaces
 import GeneralSettingsTab from "./tabs/GeneralSettingsTab";
 import type { GeneralSettingsTabProps } from "./tabs/GeneralSettingsTab";
-import ModelSettingsTab, { AVAILABLE_GEMINI_MODELS, HARM_CATEGORIES_CONFIG, appDefaultSafetySettings } from "./tabs/ModelSettingsTab";
+import ModelSettingsTab from "./tabs/ModelSettingsTab";
+import HARM_CATEGORIES_CONFIG from "./tabs/ModelSettingsTab";
+import appDefaultSafetySettings from "./tabs/ModelSettingsTab";
+import AVAILABLE_GEMINI_MODELS from "./tabs/ModelSettingsTab";
 import type { ModelSettingsTabProps } from "./tabs/ModelSettingsTab";
 import MemoriesSettingsTab from "./tabs/MemoriesSettingsTab";
 import FunctionCallingSettingsTab from "./tabs/FunctionCallingSettingsTab";
