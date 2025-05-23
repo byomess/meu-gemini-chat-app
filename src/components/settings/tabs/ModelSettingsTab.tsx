@@ -22,6 +22,13 @@ export const HARM_CATEGORIES_CONFIG = [
     { id: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, label: "Conteúdo Perigoso" },
 ];
 
+export const HARM_BLOCK_THRESHOLDS = [
+    { value: HarmBlockThreshold.BLOCK_NONE, label: "Não Bloquear" },
+    { value: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE, label: "Bloquear Baixo e Acima" },
+    { value: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE, label: "Bloquear Médio e Acima" },
+    { value: HarmBlockThreshold.BLOCK_HIGH_AND_ABOVE, label: "Bloquear Alto e Acima" },
+];
+
 export const appDefaultSafetySettings: SafetySetting[] = [
     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
     { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
@@ -41,6 +48,21 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
         setCurrentGeminiModelConfig((prev: GeminiModelConfig) => {
             const updatedConfig = { ...prev, [field]: value } as GeminiModelConfig;
             return updatedConfig;
+        });
+    };
+
+    const handleSafetySettingChange = (category: HarmCategory, newThreshold: HarmBlockThreshold) => {
+        setCurrentGeminiModelConfig(prevConfig => {
+            const updatedSafetySettings = prevConfig.safetySettings?.map(setting =>
+                setting.category === category
+                    ? { ...setting, threshold: newThreshold }
+                    : setting
+            ) || []; // Ensure it's an array, even if prevConfig.safetySettings is undefined
+
+            return {
+                ...prevConfig,
+                safetySettings: updatedSafetySettings,
+            };
         });
     };
 
@@ -123,6 +145,48 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                     onChange={(value) => handleConfigChange('maxOutputTokens', value)}
                     helperText="Define o número máximo de tokens (palavras/partes de palavras) que a IA pode gerar em uma única resposta."
                 />
+            </section>
+
+            <h2 className="text-xl font-semibold text-[var(--color-settings-section-title-text)] pt-4 border-t border-[var(--color-settings-section-border)]">Configurações de Segurança</h2>
+            <p className="text-sm text-[var(--color-settings-section-description-text)] pb-4">
+                Ajuste o nível de bloqueio para diferentes categorias de conteúdo potencialmente prejudicial.
+            </p>
+
+            <section className="space-y-5">
+                {HARM_CATEGORIES_CONFIG.map((harmCategory) => {
+                    const currentThreshold = currentGeminiModelConfig.safetySettings?.find(
+                        (s) => s.category === harmCategory.id
+                    )?.threshold || HarmBlockThreshold.BLOCK_NONE; // Default to BLOCK_NONE if not found
+
+                    return (
+                        <div key={harmCategory.id}>
+                            <label htmlFor={`safety-setting-${harmCategory.id}`} className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] mb-1.5">
+                                {harmCategory.label}
+                            </label>
+                            <select
+                                id={`safety-setting-${harmCategory.id}`}
+                                value={currentThreshold}
+                                onChange={(e) =>
+                                    handleSafetySettingChange(
+                                        harmCategory.id,
+                                        e.target.value as HarmBlockThreshold
+                                    )
+                                }
+                                className="w-full p-3 bg-[var(--color-settings-model-select-bg)] border border-[var(--color-settings-model-select-border)] rounded-lg text-[var(--color-settings-model-select-text)] shadow-sm focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:border-[var(--color-settings-model-select-focus-border)] transition-colors
+                                    [&>option]:bg-[var(--color-settings-model-select-bg)] [&>option]:text-[var(--color-settings-model-select-text)] [&>option:hover]:bg-[var(--color-settings-model-select-option-hover-bg)]"
+                            >
+                                {HARM_BLOCK_THRESHOLDS.map((thresholdOption) => (
+                                    <option key={thresholdOption.value} value={thresholdOption.value}>
+                                        {thresholdOption.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-[var(--color-settings-section-description-text)] mt-1">
+                                Define o nível de sensibilidade para bloquear conteúdo relacionado a "{harmCategory.label}".
+                            </p>
+                        </div>
+                    );
+                })}
             </section>
         </div>
     );
