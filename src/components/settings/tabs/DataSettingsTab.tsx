@@ -24,7 +24,6 @@ interface UrlConfigFile {
         sourceMessageId?: string;
     }[];
     codeSynthaxHighlightEnabled?: boolean;
-    theme?: 'dark' | 'light';
     enableWebSearch?: boolean;
     enableAttachments?: boolean;
     hideNavigation?: boolean; // Matches AppSettings and useUrlConfigInitializer
@@ -73,7 +72,6 @@ const DataSettingsTab: React.FC = () => {
             functionDeclarations: settings.functionDeclarations,
             aiAvatarUrl: settings.aiAvatarUrl,
             codeSynthaxHighlightEnabled: settings.codeSynthaxHighlightEnabled,
-            theme: settings.theme,
             enableWebSearch: settings.enableWebSearch,
             enableAttachments: settings.enableAttachments,
             hideNavigation: settings.hideNavigation, // Exporting as hideNavigation
@@ -168,10 +166,6 @@ const DataSettingsTab: React.FC = () => {
                     }
                     if (importedData.codeSynthaxHighlightEnabled !== undefined && newSettings.codeSynthaxHighlightEnabled !== importedData.codeSynthaxHighlightEnabled) {
                         newSettings.codeSynthaxHighlightEnabled = importedData.codeSynthaxHighlightEnabled;
-                        changed = true;
-                    }
-                    if (importedData.theme !== undefined && newSettings.theme !== importedData.theme) {
-                        newSettings.theme = importedData.theme;
                         changed = true;
                     }
                     if (importedData.enableWebSearch !== undefined && newSettings.enableWebSearch !== importedData.enableWebSearch) {
