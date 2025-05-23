@@ -88,7 +88,7 @@ const MessageInputForm: React.FC<MessageInputFormProps> = ({
                 else if (!isRecording) { onSubmit(e); }
                 else { e.preventDefault(); } // Prevent form submission if recording
             }}
-            className={`flex items-end bg-white border border-gray-300 rounded-xl p-1.5 shadow-lg
+            className={`flex items-end bg-[var(--color-input-form-bg)] border border-[var(--color-input-form-border)] rounded-xl p-1.5 shadow-lg
                         focus-within:ring-2 focus-within:ring-[#e04579] focus-within:border-[#e04579]/70
                         transition-all duration-200 ease-in-out
                         ${isRecording ? 'ring-2 !ring-red-500/80 !border-red-500/80' : ''}
@@ -126,7 +126,7 @@ const MessageInputForm: React.FC<MessageInputFormProps> = ({
                 <textarea ref={textareaRef} rows={1} value={text} onChange={(e) => onTextChange(e.target.value)}
                     onKeyDown={onKeyDown} onFocus={onTextFocus} onBlur={onTextBlur}
                     placeholder={effectivePlaceholder}
-                    className={`w-full bg-transparent text-gray-800 placeholder-gray-500 focus:outline-none py-2.5 resize-none leading-tight transition-all duration-200 ease-in-out ${isRecording ? 'text-transparent caret-transparent' : ''} ${isCurrentlyLoading && !isRecording ? 'placeholder-gray-400' : ''}`}
+                    className={`w-full bg-transparent text-[var(--color-input-text)] placeholder-[var(--color-input-placeholder)] focus:outline-none py-2.5 resize-none leading-tight transition-all duration-200 ease-in-out ${isRecording ? 'text-transparent caret-transparent' : ''} ${isCurrentlyLoading && !isRecording ? 'placeholder-gray-400' : ''}`}
                     style={{ maxHeight: isTextareaFocused ? `${window.innerHeight * (FOCUSED_TEXTAREA_MAX_HEIGHT_VH / 100)}px` : `${getPixelValueFromRem(UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM)}px`, minHeight: `${getPixelValueFromRem(UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM)}px` }}
                     disabled={textareaDisabled}
                     aria-label="Campo de entrada de mensagem"

@@ -29,7 +29,7 @@ const AttachedFilesPreview: React.FC<AttachedFilesPreviewProps> = ({
     }
 
     return (
-        <div className="mb-2 p-2 bg-gray-100 border border-gray-200 rounded-lg flex gap-2.5 items-center max-h-60 overflow-y-auto shadow-sm">
+        <div className="mb-2 p-2 bg-[var(--color-input-attachment-preview-bg)] border border-[var(--color-input-attachment-preview-border)] rounded-lg flex gap-2.5 items-center max-h-60 overflow-y-auto shadow-sm">
             {attachedFiles.map(item => {
                 // Filter here again for safety, ensuring non-audio files are only shown if enableAttachments is true
                 if (!item.file.type.startsWith('audio/') && !enableAttachments) {

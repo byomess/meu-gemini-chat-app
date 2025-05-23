@@ -40,7 +40,7 @@ const AttachedFileItem: React.FC<AttachedFileItemProps> = ({ item, onRemove, onP
 
     if (item.type.startsWith('audio/') && item.previewUrl) {
         return (
-            <div key={item.id} className="relative group w-full max-w-xs bg-transparent p-0 rounded-lg">
+            <div key={item.id} className="relative group w-full max-w-xs bg-transparent p-0 rounded-lg"> {/* Audio items are transparent by design */}
                 <CustomAudioPlayer src={item.previewUrl} fileName={item.name} />
                 <Button
                     variant="icon"
@@ -52,7 +52,7 @@ const AttachedFileItem: React.FC<AttachedFileItemProps> = ({ item, onRemove, onP
         );
     } else if (item.type.startsWith('image/') && item.previewUrl) {
         return (
-            <div key={item.id} className="relative group bg-white p-1.5 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200 self-start max-w-[calc(100%-1rem)]">
+            <div key={item.id} className="relative group bg-[var(--color-attached-item-bg)] p-1.5 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200 self-start max-w-[calc(100%-1rem)]">
                 <img
                     src={item.previewUrl} alt={`Preview ${item.name}`}
                     className={`object-cover rounded-md ${mediaClasses}`}
@@ -71,7 +71,7 @@ const AttachedFileItem: React.FC<AttachedFileItemProps> = ({ item, onRemove, onP
         );
     } else if (item.type.startsWith('video/') && item.previewUrl) {
         return (
-            <div key={item.id} className="relative group bg-white p-1.5 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200 self-start max-w-[calc(100%-1rem)]">
+            <div key={item.id} className="relative group bg-[var(--color-attached-item-bg)] p-1.5 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200 self-start max-w-[calc(100%-1rem)]">
                 <div
                     className={`relative w-full h-full object-cover rounded-md flex items-center justify-center bg-black ${mediaClasses}`}
                     style={{ maxWidth: `${maxThumbnailSize * 2}px`, maxHeight: `${maxThumbnailSize * 1.5}px` }}
@@ -103,13 +103,13 @@ const AttachedFileItem: React.FC<AttachedFileItemProps> = ({ item, onRemove, onP
     }
     // Generic file display (non-audio, non-image, non-video with preview, or preview failed)
     return (
-        <div key={item.id} className="relative group bg-white p-1.5 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200 self-start" style={{ width: `${maxThumbnailSize}px`, height: `${maxThumbnailSize}px` }}>
-            <div className="flex flex-col items-center justify-center bg-gray-100 text-gray-700 rounded-sm text-[10px] p-1 break-all w-full h-full" style={{ overflowWrap: 'break-word', wordBreak: 'break-all', whiteSpace: 'normal', lineHeight: 'tight' }} title={item.name}>
-                {item.type.startsWith('image/') ? <IoImageOutline size={26} className="mb-1 text-gray-500" />
-                    : item.type.startsWith('video/') ? <IoVideocamOutline size={26} className="mb-1 text-gray-500" />
-                        : <IoDocumentTextOutline size={26} className="mb-1 text-gray-500" />}
+        <div key={item.id} className="relative group bg-[var(--color-attached-item-bg)] p-1.5 rounded-md shadow-md hover:shadow-lg transition-shadow duration-200 self-start" style={{ width: `${maxThumbnailSize}px`, height: `${maxThumbnailSize}px` }}>
+            <div className="flex flex-col items-center justify-center bg-[var(--color-attached-item-generic-bg)] text-[var(--color-attached-item-generic-text)] rounded-sm text-[10px] p-1 break-all w-full h-full" style={{ overflowWrap: 'break-word', wordBreak: 'break-all', whiteSpace: 'normal', lineHeight: 'tight' }} title={item.name}>
+                {item.type.startsWith('image/') ? <IoImageOutline size={26} className="mb-1 text-[var(--color-attached-item-icon)]" />
+                    : item.type.startsWith('video/') ? <IoVideocamOutline size={26} className="mb-1 text-[var(--color-attached-item-icon)]" />
+                        : <IoDocumentTextOutline size={26} className="mb-1 text-[var(--color-attached-item-icon)]" />}
                 <span className='truncate w-full text-center'>{item.name}</span>
-                <span className='text-gray-400 text-[9px] mt-0.5'>{Math.round(item.size / 1024)} KB</span>
+                <span className='text-[var(--color-attached-item-subtext)] text-[9px] mt-0.5'>{Math.round(item.size / 1024)} KB</span>
             </div>
             <Button
                 variant="icon"

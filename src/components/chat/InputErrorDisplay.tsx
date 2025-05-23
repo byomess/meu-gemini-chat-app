@@ -15,12 +15,12 @@ const InputErrorDisplay: React.FC<InputErrorDisplayProps> = ({ aiError, audioErr
     return (
         <>
             {aiError && (
-                <div className="mb-2 p-2 text-xs text-red-700 bg-red-100 border border-red-300 rounded-md flex items-center gap-2">
+                <div className="mb-2 p-2 text-xs text-[var(--color-error-text)] bg-[var(--color-error-bg)] border border-[var(--color-error-border)] rounded-md flex items-center gap-2">
                     <IoWarningOutline className="flex-shrink-0 text-base" /> <span>{aiError}</span>
                 </div>
             )}
             {audioError && (
-                <div className="mb-2 p-2 text-xs text-yellow-700 bg-yellow-100 border border-yellow-300 rounded-md flex items-center gap-2">
+                <div className="mb-2 p-2 text-xs text-[var(--color-warning-text)] bg-[var(--color-warning-bg)] border border-[var(--color-warning-border)] rounded-md flex items-center gap-2">
                     <IoWarningOutline className="flex-shrink-0 text-base" /> <span>{audioError}</span>
                 </div>
             )}
