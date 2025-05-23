@@ -28,25 +28,6 @@ body {
   box-sizing: inherit;
 }
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: #e9ecef;
-}
-::-webkit-scrollbar-thumb {
-  background: #adb5bd;
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #868e96;
-}
-html {
-  scrollbar-width: thin;
-  scrollbar-color: #adb5bd #e9ecef;
-}
-
 
 body.mobile-sidebar-open {
   overflow: hidden;

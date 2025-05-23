@@ -457,4 +457,28 @@
   --color-api-key-missing-icon: var(--color-orange-600);
   --color-no-messages-text-main: var(--color-gray-500);
   --color-no-messages-icon: var(--color-gray-500);
+
+  /* Scrollbar Colors */
+  --color-scrollbar-track: var(--color-gray-100);
+  --color-scrollbar-thumb: var(--color-gray-400);
+  --color-scrollbar-thumb-hover: var(--color-gray-500);
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-scrollbar-track);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-scrollbar-thumb);
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-scrollbar-thumb-hover);
+  }
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+  }
 }
