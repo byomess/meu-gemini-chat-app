@@ -70,10 +70,12 @@ main {
 }
 
 body.theme-aulapp {
-    --color-input-container-border: #e0e0e0;
-    --color-input-container-bg: #ffffff;
-    --color-api-key-warning-text: #dc3545;
-    --color-api-key-warning-strong-text: #a71d2a;
+    --color-input-container-border: #444;
+    --color-input-container-bg: #2d2d2d;
+    --color-api-key-warning-text: #ff6b6b;
+    --color-api-key-warning-strong-text: #ff3b3b;
+    background-color: #1a1a1a;
+    color: #f0f0f0;
 }
 
 body.theme-loox {
