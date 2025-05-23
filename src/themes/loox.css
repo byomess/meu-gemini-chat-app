@@ -175,9 +175,9 @@
   --color-function-response-name: var(--color-indigo-700);
 
   /* Markdown/Prose Styling */
-  --color-inline-code-text: #FBB6CE;
-  --color-inline-code-bg: #4A2A40;
-  --color-inline-code-border: #693B58;
+  --color-inline-code-text: var(--color-indigo-600);
+  --color-inline-code-bg: var(--color-indigo-50);
+  --color-inline-code-border: var(--color-indigo-200);
   --color-inline-code-loading-bg: var(--color-gray-100);
   --color-code-block-loading-bg: var(--color-gray-800);
   --color-code-block-loading-border: var(--color-gray-300);
