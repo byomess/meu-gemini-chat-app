@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// src/components/ChatArea/ChatArea.tsx
 import {
     IoChatbubblesOutline,
     IoArrowDownCircleOutline,
@@ -23,7 +21,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
     const {
         activeConversation,
         activeConversationId,
-        // isGeneratingResponse // Poderia ser usado para refinar ainda mais, se necessário
     } = useConversations()
     const { settings } = useAppSettings()
     const isMobile = useIsMobile()
@@ -36,9 +33,45 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
     const messages = activeConversation?.messages || []
     const conversationTitle = activeConversation?.title || 'Chat'
 
-    const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
-        messagesEndRef.current?.scrollIntoView({ behavior })
+    const scrollToBottom = useCallback(() => {
+        const container = chatContainerRef.current
+        if (container && messagesEndRef.current) {
+            const scrollHeight = container.scrollHeight
+            const clientHeight = container.clientHeight
+            const scrollTop = container.scrollTop
+            const targetScrollTop = scrollHeight - clientHeight
+            const distanceToBottom = targetScrollTop - scrollTop
+            const duration = 300 // Duration in ms
+            const startTime = performance.now()
+            const animateScroll = (currentTime: number) => {
+                const elapsedTime = currentTime - startTime
+                const progress = Math.min(elapsedTime / duration, 1)
+                const easing = 0.5 - Math.cos(progress * Math.PI) / 2
+                container.scrollTop = scrollTop + distanceToBottom * easing
+                if (progress < 1) {
+                    requestAnimationFrame(animateScroll)
+                }
+            }
+            requestAnimationFrame(animateScroll)
+        }
     }, [])
+
+    useEffect(() => {
+        // Auto scroll to bottom when new messages are added
+        console.log(`New messages added: ${messages.length}`)
+        console.log(`isAtBottom: ${isAtBottom}`)
+        console.log(`scrollToBottom: ${scrollToBottom}`)
+        if (messagesEndRef.current) {
+            const container = chatContainerRef.current
+            if (container) {
+                const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 10
+                if (isAtBottom) {
+                    scrollToBottom()
+                }
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [messages, scrollToBottom])
 
     useEffect(() => {
         const container = chatContainerRef.current
@@ -55,7 +88,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                         const currentContainer = chatContainerRef.current
                         const stillNearTop = currentContainer.scrollTop < currentContainer.clientHeight / 2
                         if (stillNearTop) {
-                            scrollToBottom('auto') // Keep 'auto' for initial load/new conversation snap
+                            scrollToBottom()
                         }
                     }
                 }, 50)
@@ -97,7 +130,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
 
 
     const handleFloatingButtonClick = () => {
-        scrollToBottom('smooth') // Changed to 'smooth' for button click
+        scrollToBottom()
     }
 
     const showWelcome = !activeConversationId
