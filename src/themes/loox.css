@@ -335,6 +335,7 @@
   --color-text-input-helper-text: var(--color-gray-400);
   --color-text-input-icon: var(--color-gray-400);
   --color-text-input-icon-hover: var(--color-gray-600);
+  --color-text-input-label-icon: var(--color-gray-700); /* Added for tooltip icon in Loox theme */
 
   /* Settings Modal & Tabs Colors */
   --color-settings-modal-overlay-bg: color-mix(in srgb, #0A0C1A 85%, transparent);
