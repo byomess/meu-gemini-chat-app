@@ -335,7 +335,7 @@
   --color-text-input-helper-text: var(--color-gray-400);
   --color-text-input-icon: var(--color-gray-400);
   --color-text-input-icon-hover: var(--color-gray-600);
-  --color-text-input-label-icon: var(--color-gray-700); /* Added for tooltip icon in Loox theme */
+  --color-text-input-label-icon: var(--color-gray-400); /* Changed to light gray for Loox theme */
 
   /* Settings Modal & Tabs Colors */
   --color-settings-modal-overlay-bg: color-mix(in srgb, #0A0C1A 85%, transparent);
@@ -374,7 +374,7 @@
   --color-range-slider-track-bg: var(--color-gray-300);
   --color-range-slider-fill-bg: var(--color-primary);
   --color-range-slider-thumb-bg: var(--color-gray-700);
-  --color-range-slider-thumb-border: var(--color-gray-200);
+  --color-range-slider-thumb-border: transparent; /* Removed outline for Loox theme */
   --color-range-slider-value-text: var(--color-primary);
   --color-range-slider-label-text-disabled: var(--color-gray-300);
   --color-range-slider-value-text-disabled: var(--color-gray-400);
