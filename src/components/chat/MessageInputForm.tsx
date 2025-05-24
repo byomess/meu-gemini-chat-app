@@ -66,6 +66,13 @@ const MessageInputForm: React.FC<MessageInputFormProps> = ({
         adjustTextareaHeight();
     }, [text, isTextareaFocused, adjustTextareaHeight]);
 
+    // Automatically focus the textarea when the active conversation changes
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.focus();
+        }
+    }, [activeConversationId, textareaRef]);
+
 
     const recordingPlaceholder = (
         <div className="flex items-center text-sm text-[var(--color-input-placeholder)]">
