@@ -26,7 +26,7 @@ export const HARM_BLOCK_THRESHOLDS = [
     { value: HarmBlockThreshold.BLOCK_NONE, label: "Não Bloquear" },
     { value: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE, label: "Bloquear Baixo e Acima" },
     { value: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE, label: "Bloquear Médio e Acima" },
-    { value: HarmBlockThreshold.BLOCK_HIGH_AND_ABOVE, label: "Bloquear Alto e Acima" },
+    { value: HarmBlockThreshold.BLOCK_ONLY_HIGH, label: "Bloquear Alto e Acima" },
 ];
 
 export const appDefaultSafetySettings: SafetySetting[] = [
