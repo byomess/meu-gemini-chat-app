@@ -8,6 +8,7 @@ import { useMemories } from "../../../contexts/MemoryContext";
 import type { Memory } from "../../../types";
 import { useDialog } from "../../../contexts/DialogContext";
 import SettingsCard from "../../common/SettingsCard"; // Import the new SettingsCard
+import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
 
 const MemoriesSettingsTab: React.FC = () => {
     const {
@@ -203,166 +204,171 @@ const MemoriesSettingsTab: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-3 mb-1">
-                <h3 className="text-base font-semibold text-[var(--color-settings-section-title-text)] w-full sm:w-auto">
-                    Gerenciar Memórias ({memories.length})
-                </h3>
-                <div className="flex gap-2.5 flex-wrap">
-                    <Button
-                        variant="secondary"
-                        className="!text-xs !py-2 !px-3.5 !font-medium"
-                        onClick={handleExportMemories}
-                        disabled={memories.length === 0}
-                    >
-                        {" "}
-                        <IoDownloadOutline className="mr-1.5" /> Exportar{" "}
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        className="!text-xs !py-2 !px-3.5 !font-medium"
-                        onClick={() => fileInputRef.current?.click()}
-                    >
-                        {" "}
-                        <IoCloudUploadOutline className="mr-1.5" /> Importar{" "}
-                    </Button>
-                    <input
-                        type="file"
-                        accept=".json"
-                        ref={fileInputRef}
-                        onChange={handleImportMemories}
-                        className="hidden"
-                    />
+            <SettingsPanel
+                title="Gerenciar Memórias"
+                description="Visualize, edite, importe e exporte suas memórias. Memórias são usadas pela IA para lembrar informações importantes entre as conversas."
+            >
+                <div className="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-3 mb-1">
+                    <h3 className="text-base font-semibold text-[var(--color-settings-section-title-text)] w-full sm:w-auto">
+                        Memórias Atuais ({memories.length})
+                    </h3>
+                    <div className="flex gap-2.5 flex-wrap">
+                        <Button
+                            variant="secondary"
+                            className="!text-xs !py-2 !px-3.5 !font-medium"
+                            onClick={handleExportMemories}
+                            disabled={memories.length === 0}
+                        >
+                            {" "}
+                            <IoDownloadOutline className="mr-1.5" /> Exportar{" "}
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            className="!text-xs !py-2 !px-3.5 !font-medium"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            {" "}
+                            <IoCloudUploadOutline className="mr-1.5" /> Importar{" "}
+                        </Button>
+                        <input
+                            type="file"
+                            accept=".json"
+                            ref={fileInputRef}
+                            onChange={handleImportMemories}
+                            className="hidden"
+                        />
+                    </div>
                 </div>
-            </div>
-            <div className="flex items-center gap-2.5 mt-2">
-                <div onKeyDown={handleNewMemoryKeyDown} className="flex-grow">
+                <div className="flex items-center gap-2.5 mt-2">
+                    <div onKeyDown={handleNewMemoryKeyDown} className="flex-grow">
+                        <TextInput
+                            ref={newMemoryInputRef}
+                            id="newMemory"
+                            name="newMemory"
+                            value={newMemoryText}
+                            onChange={setNewMemoryText}
+                            placeholder="Adicionar nova memória..."
+                            containerClassName="w-full"
+                            inputClassName="p-2.5 text-sm" // Match original styling
+                        />
+                    </div>
+                    <Button
+                        variant="primary"
+                        onClick={handleAddNewMemory}
+                        className="!py-2.5 !px-3 flex-shrink-0" // Adjusted padding to better match TextInput
+                        disabled={!newMemoryText.trim()}
+                    >
+                        {" "}
+                        <IoAddCircleOutline size={20} />{" "}
+                    </Button>
+                </div>
+                <div className="relative">
+                    <IoSearchOutline
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-table-item-icon)] pointer-events-none z-10" // Ensure icon is above input
+                        size={18}
+                    />
                     <TextInput
-                        ref={newMemoryInputRef}
-                        id="newMemory"
-                        name="newMemory"
-                        value={newMemoryText}
-                        onChange={setNewMemoryText}
-                        placeholder="Adicionar nova memória..."
-                        containerClassName="w-full"
-                        inputClassName="p-2.5 text-sm" // Match original styling
+                        id="searchMemories"
+                        name="searchMemories"
+                        placeholder="Buscar memórias..."
+                        value={searchTerm}
+                        onChange={setSearchTerm}
+                        // Add pl-10 to inputClassName to make space for the icon
+                        inputClassName="px-2.5 py-1.5 text-sm pl-10" // Match original styling and add padding for icon
+                        // containerClassName="w-full" // Ensure TextInput takes full width if needed
                     />
                 </div>
-                <Button
-                    variant="primary"
-                    onClick={handleAddNewMemory}
-                    className="!py-2.5 !px-3 flex-shrink-0" // Adjusted padding to better match TextInput
-                    disabled={!newMemoryText.trim()}
-                >
-                    {" "}
-                    <IoAddCircleOutline size={20} />{" "}
-                </Button>
-            </div>
-            <div className="relative">
-                <IoSearchOutline
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-table-item-icon)] pointer-events-none z-10" // Ensure icon is above input
-                    size={18}
-                />
-                <TextInput
-                    id="searchMemories"
-                    name="searchMemories"
-                    placeholder="Buscar memórias..."
-                    value={searchTerm}
-                    onChange={setSearchTerm}
-                    // Add pl-10 to inputClassName to make space for the icon
-                    inputClassName="px-2.5 py-1.5 text-sm pl-10" // Match original styling and add padding for icon
-                    // containerClassName="w-full" // Ensure TextInput takes full width if needed
-                />
-            </div>
-            {memories.length > 0 ? (
-                filteredMemories.length > 0 ? (
-                    <div className="overflow-y-auto space-y-2 p-3 bg-[var(--color-table-row-bg)] rounded-lg border border-[var(--color-table-row-border)] max-h-[calc(100vh-480px)] sm:max-h-[calc(100vh-450px)] min-h-[100px]">
-                        {filteredMemories.map((memory) => (
-                            <SettingsCard
-                                key={memory.id}
-                                isEditing={editingMemory?.id === memory.id}
-                                editForm={
-                                    <div className="flex flex-col gap-2 p-2.5">
-                                        <textarea
-                                            value={editedMemoryText}
-                                            onChange={(e) => setEditedMemoryText(e.target.value)}
-                                            onKeyDown={handleEditMemoryKeyDown}
-                                            ref={editMemoryInputRef}
-                                            rows={3}
-                                            className="w-full p-2 bg-[var(--color-table-item-edit-bg)] border border-[var(--color-table-item-edit-border)] rounded text-xs text-[var(--color-table-item-edit-text)] focus:border-[var(--color-text-input-focus-border)] focus:ring-1 focus:ring-[var(--color-text-input-focus-ring)] resize-y min-h-[40px]"
-                                        />
-                                        <div className="flex justify-end gap-1.5">
+                {memories.length > 0 ? (
+                    filteredMemories.length > 0 ? (
+                        <div className="overflow-y-auto space-y-2 p-3 bg-[var(--color-table-row-bg)] rounded-lg border border-[var(--color-table-row-border)] max-h-[calc(100vh-480px)] sm:max-h-[calc(100vh-450px)] min-h-[100px]">
+                            {filteredMemories.map((memory) => (
+                                <SettingsCard
+                                    key={memory.id}
+                                    isEditing={editingMemory?.id === memory.id}
+                                    editForm={
+                                        <div className="flex flex-col gap-2 p-2.5">
+                                            <textarea
+                                                value={editedMemoryText}
+                                                onChange={(e) => setEditedMemoryText(e.target.value)}
+                                                onKeyDown={handleEditMemoryKeyDown}
+                                                ref={editMemoryInputRef}
+                                                rows={3}
+                                                className="w-full p-2 bg-[var(--color-table-item-edit-bg)] border border-[var(--color-table-item-edit-border)] rounded text-xs text-[var(--color-table-item-edit-text)] focus:border-[var(--color-text-input-focus-border)] focus:ring-1 focus:ring-[var(--color-text-input-focus-ring)] resize-y min-h-[40px]"
+                                            />
+                                            <div className="flex justify-end gap-1.5">
+                                                <Button
+                                                    variant="secondary"
+                                                    onClick={handleCancelMemoryEdit}
+                                                    className="!text-xs !py-1 !px-2.5"
+                                                >
+                                                    Cancelar
+                                                </Button>
+                                                <Button
+                                                    variant="primary"
+                                                    onClick={handleSaveMemoryEdit}
+                                                    className="!text-xs !py-1 !px-2.5"
+                                                >
+                                                    Salvar
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    }
+                                    actions={
+                                        <div className="flex-shrink-0 flex items-center gap-1">
                                             <Button
-                                                variant="secondary"
-                                                onClick={handleCancelMemoryEdit}
-                                                className="!text-xs !py-1 !px-2.5"
+                                                variant="icon"
+                                                className="!p-1.5 text-[var(--color-table-item-icon)] hover:!text-[var(--color-primary)] hover:!bg-[var(--color-pink-50)]"
+                                                title="Editar memória"
+                                                onClick={() => handleStartEditMemory(memory)}
                                             >
-                                                Cancelar
+                                                {" "}
+                                                <IoPencilOutline size={15} />{" "}
                                             </Button>
                                             <Button
-                                                variant="primary"
-                                                onClick={handleSaveMemoryEdit}
-                                                className="!text-xs !py-1 !px-2.5"
+                                                variant="icon"
+                                                className="!p-1.5 text-[var(--color-table-item-icon)] hover:!text-[var(--color-red-500)] hover:!bg-[var(--color-red-100)]"
+                                                title="Excluir memória"
+                                                onClick={() => handleLocalDeleteMemory(memory.id)}
                                             >
-                                                Salvar
+                                                {" "}
+                                                <IoTrashBinOutline size={15} />{" "}
                                             </Button>
                                         </div>
+                                    }
+                                    className="p-0" // Remove default padding from SettingsCard, content will add its own
+                                >
+                                    <div className="flex items-start justify-between gap-2 p-2.5">
+                                        <p className="text-xs text-[var(--color-table-item-text)] flex-grow break-words py-0.5 pr-1 whitespace-pre-wrap">
+                                            {memory.content}
+                                        </p>
                                     </div>
-                                }
-                                actions={
-                                    <div className="flex-shrink-0 flex items-center gap-1">
-                                        <Button
-                                            variant="icon"
-                                            className="!p-1.5 text-[var(--color-table-item-icon)] hover:!text-[var(--color-primary)] hover:!bg-[var(--color-pink-50)]"
-                                            title="Editar memória"
-                                            onClick={() => handleStartEditMemory(memory)}
-                                        >
-                                            {" "}
-                                            <IoPencilOutline size={15} />{" "}
-                                        </Button>
-                                        <Button
-                                            variant="icon"
-                                            className="!p-1.5 text-[var(--color-table-item-icon)] hover:!text-[var(--color-red-500)] hover:!bg-[var(--color-red-100)]"
-                                            title="Excluir memória"
-                                            onClick={() => handleLocalDeleteMemory(memory.id)}
-                                        >
-                                            {" "}
-                                            <IoTrashBinOutline size={15} />{" "}
-                                        </Button>
-                                    </div>
-                                }
-                                className="p-0" // Remove default padding from SettingsCard, content will add its own
-                            >
-                                <div className="flex items-start justify-between gap-2 p-2.5">
-                                    <p className="text-xs text-[var(--color-table-item-text)] flex-grow break-words py-0.5 pr-1 whitespace-pre-wrap">
-                                        {memory.content}
-                                    </p>
-                                </div>
-                            </SettingsCard>
-                        ))}
-                    </div>
+                                </SettingsCard>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="p-4 text-center bg-[var(--color-table-row-bg)] rounded-lg border border-[var(--color-table-row-border)]">
+                            <IoSearchOutline
+                                size={28}
+                                className="mx-auto text-[var(--color-table-item-icon)] mb-2"
+                            />
+                            <p className="text-sm text-[var(--color-settings-section-description-text)]">
+                                Nenhuma memória encontrada para "{searchTerm}".
+                            </p>
+                            <p className="text-xs text-[var(--color-table-item-icon)] mt-1">
+                                Tente um termo de busca diferente ou limpe a busca.
+                            </p>
+                        </div>
+                    )
                 ) : (
                     <div className="p-4 text-center bg-[var(--color-table-row-bg)] rounded-lg border border-[var(--color-table-row-border)]">
-                        <IoSearchOutline
-                            size={28}
-                            className="mx-auto text-[var(--color-table-item-icon)] mb-2"
-                        />
-                        <p className="text-sm text-[var(--color-settings-section-description-text)]">
-                            Nenhuma memória encontrada para "{searchTerm}".
-                        </p>
+                        <LuBrain size={28} className="mx-auto text-[var(--color-table-item-icon)] mb-2" />
+                        <p className="text-sm text-[var(--color-settings-section-description-text)]">Nenhuma memória armazenada.</p>
                         <p className="text-xs text-[var(--color-table-item-icon)] mt-1">
-                            Tente um termo de busca diferente ou limpe a busca.
+                            Adicione memórias para personalizar suas interações.
                         </p>
                     </div>
-                )
-            ) : (
-                <div className="p-4 text-center bg-[var(--color-table-row-bg)] rounded-lg border border-[var(--color-table-row-border)]">
-                    <LuBrain size={28} className="mx-auto text-[var(--color-table-item-icon)] mb-2" />
-                    <p className="text-sm text-[var(--color-settings-section-description-text)]">Nenhuma memória armazenada.</p>
-                    <p className="text-xs text-[var(--color-table-item-icon)] mt-1">
-                        Adicione memórias para personalizar suas interações.
-                    </p>
-                </div>
-            )}
+                )}
+            </SettingsPanel>
         </div>
     );
 };

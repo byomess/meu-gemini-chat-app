@@ -5,6 +5,7 @@ import type { AppSettings, Conversation, Memory, UrlConfigFile, RawImportedConve
 import { useDialog } from '../../../contexts/DialogContext';
 import { useMemories } from '../../../contexts/MemoryContext';
 import { useConversations } from '../../../contexts/ConversationContext';
+import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
 
 export type DataSettingsTabProps = object;
 
@@ -250,85 +251,83 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
 
     return (
         <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-[var(--color-settings-section-title-text)]">
-                Importar/Exportar Dados
-            </h2>
-            <p className="text-sm text-[var(--color-settings-section-description-text)] pb-4 border-b border-[var(--color-settings-section-border)]">
-                Importe ou exporte suas configurações, conversas e memórias para backup ou transferência.
-            </p>
-
-            <section className="space-y-4">
-                <div className="bg-[var(--color-data-import-export-bg)] p-4 rounded-lg border border-[var(--color-data-import-export-border)] shadow-sm">
-                    <h3 className="text-lg font-medium text-[var(--color-data-import-export-text)] mb-3">Exportar Dados</h3>
-                    <p className="text-sm text-[var(--color-data-import-export-text)] mb-4">
-                        Crie um backup de suas configurações e conversas.
-                    </p>
-                    <Button variant="secondary" onClick={handleExportData} className="w-full sm:w-auto">
-                        <IoCloudDownloadOutline className="mr-2" size={20} /> Exportar Dados
-                    </Button>
-                </div>
-
-                <div className="bg-[var(--color-data-import-export-bg)] p-4 rounded-lg border border-[var(--color-data-import-export-border)] shadow-sm">
-                    <h3 className="text-lg font-medium text-[var(--color-data-import-export-text)] mb-3">Importar Dados</h3>
-                    <p className="text-sm text-[var(--color-data-import-export-text)] mb-4">
-                        Carregue um arquivo de backup para restaurar suas configurações e conversas.
-                        Isso substituirá os dados existentes.
-                    </p>
-                    <div
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg transition-all duration-200 ease-in-out
-                            ${isDragging ? 'border-[var(--color-data-drag-drop-active-border)] bg-[var(--color-data-drag-drop-hover-bg)] text-[var(--color-data-drag-drop-active-text)]' : 'border-[var(--color-data-drag-drop-border)] bg-transparent text-[var(--color-data-drag-drop-text)] hover:bg-[var(--color-data-drag-drop-hover-bg)]'}`}
-                    >
-                        <IoCloudUploadOutline size={40} className="mb-3" />
-                        <p className="text-center text-sm">
-                            Arraste e solte seu arquivo JSON aqui, ou
+            <SettingsPanel
+                title="Importar/Exportar Dados"
+                description="Importe ou exporte suas configurações, conversas e memórias para backup ou transferência."
+            >
+                <section className="space-y-4">
+                    <div className="bg-[var(--color-data-import-export-bg)] p-4 rounded-lg border border-[var(--color-data-import-export-border)] shadow-sm">
+                        <h3 className="text-lg font-medium text-[var(--color-data-import-export-text)] mb-3">Exportar Dados</h3>
+                        <p className="text-sm text-[var(--color-data-import-export-text)] mb-4">
+                            Crie um backup de suas configurações e conversas.
                         </p>
-                        <Button variant="secondary" onClick={triggerFileInput} className="mt-3">
-                            Selecionar Arquivo
+                        <Button variant="secondary" onClick={handleExportData} className="w-full sm:w-auto">
+                            <IoCloudDownloadOutline className="mr-2" size={20} /> Exportar Dados
                         </Button>
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            accept="application/json"
-                            className="hidden"
-                        />
-                        {selectedFile && (
-                            <p className="mt-3 text-sm text-[var(--color-data-drag-drop-file-text)]">
-                                Arquivo selecionado: <span className="font-medium">{selectedFile.name}</span>
-                                <Button variant="ghost" size="icon-sm" onClick={() => setSelectedFile(null)} className="ml-2 text-[var(--color-data-drag-drop-file-remove-icon)] hover:bg-transparent">
-                                    <IoCloseOutline size={18} />
-                                </Button>
-                            </p>
-                        )}
                     </div>
-                    <Button
-                        variant="primary"
-                        onClick={handleImportData}
-                        disabled={!selectedFile}
-                        className="w-full sm:w-auto mt-4"
-                    >
-                        Importar Dados
-                    </Button>
-                </div>
 
-                <div className="bg-[var(--color-data-import-export-bg)] p-4 rounded-lg border border-[var(--color-data-import-export-border)] shadow-sm">
-                    <h3 className="text-lg font-medium text-[var(--color-data-import-export-text)] mb-3">Limpar Dados</h3>
-                    <p className="text-sm text-[var(--color-data-import-export-text)] mb-4">
-                        Exclua todas as suas conversas ou memórias. Esta ação é irreversível.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <Button variant="danger" onClick={handleClearAllConversations} className="w-full sm:w-auto">
-                            <IoTrashOutline className="mr-2" size={20} /> Excluir Todas as Conversas
-                        </Button>
-                        <Button variant="danger" onClick={handleClearAllMemories} className="w-full sm:w-auto">
-                            <IoTrashOutline className="mr-2" size={20} /> Excluir Todas as Memórias
+                    <div className="bg-[var(--color-data-import-export-bg)] p-4 rounded-lg border border-[var(--color-data-import-export-border)] shadow-sm">
+                        <h3 className="text-lg font-medium text-[var(--color-data-import-export-text)] mb-3">Importar Dados</h3>
+                        <p className="text-sm text-[var(--color-data-import-export-text)] mb-4">
+                            Carregue um arquivo de backup para restaurar suas configurações e conversas.
+                            Isso substituirá os dados existentes.
+                        </p>
+                        <div
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg transition-all duration-200 ease-in-out
+                                ${isDragging ? 'border-[var(--color-data-drag-drop-active-border)] bg-[var(--color-data-drag-drop-hover-bg)] text-[var(--color-data-drag-drop-active-text)]' : 'border-[var(--color-data-drag-drop-border)] bg-transparent text-[var(--color-data-drag-drop-text)] hover:bg-[var(--color-data-drag-drop-hover-bg)]'}`}
+                        >
+                            <IoCloudUploadOutline size={40} className="mb-3" />
+                            <p className="text-center text-sm">
+                                Arraste e solte seu arquivo JSON aqui, ou
+                            </p>
+                            <Button variant="secondary" onClick={triggerFileInput} className="mt-3">
+                                Selecionar Arquivo
+                            </Button>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                                accept="application/json"
+                                className="hidden"
+                            />
+                            {selectedFile && (
+                                <p className="mt-3 text-sm text-[var(--color-data-drag-drop-file-text)]">
+                                    Arquivo selecionado: <span className="font-medium">{selectedFile.name}</span>
+                                    <Button variant="ghost" size="icon-sm" onClick={() => setSelectedFile(null)} className="ml-2 text-[var(--color-data-drag-drop-file-remove-icon)] hover:bg-transparent">
+                                        <IoCloseOutline size={18} />
+                                    </Button>
+                                </p>
+                            )}
+                        </div>
+                        <Button
+                            variant="primary"
+                            onClick={handleImportData}
+                            disabled={!selectedFile}
+                            className="w-full sm:w-auto mt-4"
+                        >
+                            Importar Dados
                         </Button>
                     </div>
-                </div>
-            </section>
+
+                    <div className="bg-[var(--color-data-import-export-bg)] p-4 rounded-lg border border-[var(--color-data-import-export-border)] shadow-sm">
+                        <h3 className="text-lg font-medium text-[var(--color-data-import-export-text)] mb-3">Limpar Dados</h3>
+                        <p className="text-sm text-[var(--color-data-import-export-text)] mb-4">
+                            Exclua todas as suas conversas ou memórias. Esta ação é irreversível.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <Button variant="danger" onClick={handleClearAllConversations} className="w-full sm:w-auto">
+                                <IoTrashOutline className="mr-2" size={20} /> Excluir Todas as Conversas
+                            </Button>
+                            <Button variant="danger" onClick={handleClearAllMemories} className="w-full sm:w-auto">
+                                <IoTrashOutline className="mr-2" size={20} /> Excluir Todas as Memórias
+                            </Button>
+                        </div>
+                    </div>
+                </section>
+            </SettingsPanel>
         </div>
     );
 };
