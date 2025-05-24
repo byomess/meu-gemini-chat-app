@@ -562,7 +562,9 @@ export async function* streamMessageToGemini(
             };
 
             // Pass the abortSignal directly to the generateContentStream call
-            const streamResult: AsyncIterable<GenerateContentResponse> = await genAI.models.generateContentStream(requestPayloadForAPI, { signal: abortSignal });
+            // const streamResult: AsyncIterable<GenerateContentResponse> = await genAI.models.generateContentStream(requestPayloadForAPI, { signal: abortSignal });
+            // TODO: find out how to send abort signal to the stream
+            const streamResult: AsyncIterable<GenerateContentResponse> = await genAI.models.generateContentStream(requestPayloadForAPI);
 
             let modelResponsePartsAggregatedThisTurn: Part[] = [];
             let hasFunctionCallInThisTurn = false;
