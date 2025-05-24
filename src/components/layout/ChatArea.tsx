@@ -117,7 +117,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
         };
 
         container.addEventListener('scroll', handleScroll, { passive: true });
-        // Initial check on mount
+        // Initial check on mount AND when activeConversationId changes
         handleScroll();
 
         return () => {
@@ -126,7 +126,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                 clearTimeout(scrollTimeoutRef.current);
             }
         };
-    }, []); // Empty dependency array means this runs once on mount and cleans up on unmount
+    }, [activeConversationId]); // Add activeConversationId to dependencies
 
 
     const handleFloatingButtonClick = () => {
