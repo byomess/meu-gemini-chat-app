@@ -549,9 +549,11 @@ export async function* streamMessageToGemini(
                 ...(safetySettingsForAPI && { safetySettings: safetySettingsForAPI }),
                 systemInstruction: systemInstructionForAPI,
                 tools: toolsForApiNextTurn,
-                thinkingConfig: {
-                    thinkingBudget: 1024
-                }
+                ...(modelConfig.thinkingBudget !== undefined && modelConfig.thinkingBudget > 0 && { // Modified line
+                    thinkingConfig: {
+                        thinkingBudget: modelConfig.thinkingBudget
+                    }
+                })
             };
             const requestPayloadForAPI: GenerateContentParameters = {
                 model: modelConfig.model,

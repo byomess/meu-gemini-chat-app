@@ -23,7 +23,8 @@ const defaultAppSettings: AppSettings = {
         topK: 0,
         maxOutputTokens: 32768,
         safetySettings: defaultSafetySettings,
-        model: 'gemini-2.5-flash-preview-05-20'
+        model: 'gemini-2.5-flash-preview-05-20',
+        thinkingBudget: 1024, // Add this line with a default value
     },
     functionDeclarations: [],
     codeSynthaxHighlightEnabled: false,

@@ -145,6 +145,18 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                     onChange={(value) => handleConfigChange('maxOutputTokens', value)}
                     helperText="Define o número máximo de tokens (palavras/partes de palavras) que a IA pode gerar em uma única resposta."
                 />
+
+                {/* New: Thinking Budget */}
+                <RangeInput
+                    id="thinkingBudget"
+                    label="Orçamento de Pensamento (Tokens)"
+                    min={0} // Minimum value, 0 means no budget
+                    max={4096} // A reasonable maximum, adjust as needed
+                    step={128} // Step size for the slider
+                    value={currentGeminiModelConfig.thinkingBudget ?? 0} // Use 0 if undefined
+                    onChange={(value) => handleConfigChange('thinkingBudget', value)}
+                    helperText="Define o número máximo de tokens que o modelo pode usar para 'pensar' antes de gerar a resposta. Valores mais altos podem levar a respostas mais complexas, mas consomem mais recursos."
+                />
             </section>
 
             <h2 className="text-xl font-semibold text-[var(--color-settings-section-title-text)] pt-4 border-t border-[var(--color-settings-section-border)]">Configurações de Segurança</h2>

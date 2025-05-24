@@ -23,6 +23,7 @@ export interface GeminiModelConfig {
     topK: number;
     maxOutputTokens: number;
     safetySettings?: SafetySetting[];
+    thinkingBudget?: number; // Add this line
 }
 
 export interface FunctionDeclaration {
