@@ -570,7 +570,13 @@ export async function* streamMessageToGemini(
             let functionCallRequestStatusEmitted = false;
 
             for await (const chunk of streamResult) {
+                if (abortSignal?.aborted) {
+                    // This will be caught by the outer try/catch block of streamMessageToGemini
+                    // and will yield the standard "Resposta abortada pelo usuário." message.
+                    throw new DOMException("Aborted by user during stream processing.", "AbortError");
+                }
                 // The stream will throw an AbortError if aborted, so no manual check needed here.
+                // Adding the check above as a safeguard for immediate termination.
                 const candidate = chunk.candidates?.[0];
                 if (!candidate || !candidate.content || !candidate.content.parts) continue;
 
