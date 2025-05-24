@@ -445,8 +445,7 @@
   --color-model-settings-range-input-bg: var(--color-gray-300);
   --color-model-settings-range-input-fill: var(--color-primary);
   --color-model-settings-range-input-thumb: var(--color-gray-700);
-  --color-model-settings-range-input-thumb-border: var(--color-gray-200);
-  --color-model-settings-range-input-thumb-border: var(--color-gray-200);
+  --color-model-settings-range-input-thumb-border: transparent; /* Removed outline for Loox theme */
   --color-settings-model-select-bg: var(--color-input-form-bg);
   --color-settings-model-select-border: var(--color-input-form-border);
   --color-settings-model-select-text: var(--color-input-text);
