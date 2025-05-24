@@ -58,41 +58,37 @@ const RangeInput: React.FC<RangeInputProps> = ({
                 onTouchEnd={handleTouchEnd} // Call parent onChange on touch end
                 disabled={disabled}
                 className={`w-full h-5 rounded-lg appearance-none cursor-pointer bg-transparent
-                    {/* Webkit Track */}
-                    [&::-webkit-slider-runnable-track]:h-1 /* Explicitly set track height */
+                    [&::-webkit-slider-runnable-track]:h-1
                     [&::-webkit-slider-runnable-track]:rounded-lg
-                    ${disabled /* Webkit Track Colors */
+                    ${disabled
                         ? '[&::-webkit-slider-runnable-track]:bg-[var(--color-range-slider-track-bg-disabled)] [&::-webkit-slider-runnable-track]:bg-[var(--color-range-slider-fill-bg-disabled)]'
                         : '[&::-webkit-slider-runnable-track]:bg-[var(--color-model-settings-range-input-bg)] [&::-webkit-slider-runnable-track]:bg-[var(--color-model-settings-range-input-fill)]'
                     }
-                    {/* Webkit Thumb */}
                     [&::-webkit-slider-thumb]:appearance-none
-                    [&::-webkit-slider-thumb]:h-5 /* Increased size */
-                    [&::-webkit-slider-thumb]:w-5 /* Increased size */
+                    [&::-webkit-slider-thumb]:h-5
+                    [&::-webkit-slider-thumb]:w-5
                     [&::-webkit-slider-thumb]:rounded-full
-                    [&::-webkit-slider-thumb]:border-2 /* Added border width */
-                    [&::-webkit-slider-thumb]:shadow-lg /* Enhanced shadow */
-                    [&::-webkit-slider-thumb]:mt-[-8px] /* Re-added to vertically center thumb on track */
-                    ${disabled /* Webkit Thumb Colors */
+                    [&::-webkit-slider-thumb]:border-2
+                    [&::-webkit-slider-thumb]:shadow-lg
+                    [&::-webkit-slider-thumb]:mt-[-8px]
+                    ${disabled
                         ? '[&::-webkit-slider-thumb]:bg-[var(--color-range-slider-thumb-bg-disabled)] [&::-webkit-slider-thumb]:border-[var(--color-range-slider-thumb-border-disabled)]'
                         : '[&::-webkit-slider-thumb]:bg-[var(--color-model-settings-range-input-thumb)] [&::-webkit-slider-thumb]:border-[var(--color-model-settings-range-input-thumb-border)]'
                     }
-                    {/* Mozilla Thumb */}
                     [&::-moz-range-thumb]:appearance-none
-                    [&::-moz-range-thumb]:h-5 /* Consistent size */
-                    [&::-moz-range-thumb]:w-5 /* Consistent size */
+                    [&::-moz-range-thumb]:h-5
+                    [&::-moz-range-thumb]:w-5
                     [&::-moz-range-thumb]:rounded-full
-                    [&::-::-moz-range-thumb]:border-2 /* Consistent border width */
-                    [&::-moz-range-thumb]:shadow-lg /* Consistent shadow */
-                    [&::-moz-range-thumb]:mt-[-8px] /* Re-added to vertically center thumb on track */
-                    ${disabled /* Mozilla Thumb Colors */
+                    [&::-::-moz-range-thumb]:border-2
+                    [&::-moz-range-thumb]:shadow-lg
+                    [&::-moz-range-thumb]:mt-[-8px]
+                    ${disabled
                         ? '[&::-moz-range-thumb]:bg-[var(--color-range-slider-thumb-bg-disabled)] [&::-::-moz-range-thumb]:border-[var(--color-range-slider-thumb-border-disabled)]'
                         : '[&::-moz-range-thumb]:bg-[var(--color-model-settings-range-input-thumb)] [&::-moz-range-thumb]:border-[var(--color-model-settings-range-input-thumb-border)]'
                     }
-                    {/* Mozilla Track */}
-                    [&::-moz-range-track]:h-1 /* Explicitly set track height */
+                    [&::-moz-range-track]:h-1
                     [&::-moz-range-track]:rounded-lg
-                    ${disabled /* Mozilla Track Colors */
+                    ${disabled
                         ? '[&::-moz-range-track]:bg-[var(--color-range-slider-track-bg-disabled)] [&::-moz-range-track]:bg-[var(--color-range-slider-fill-bg-disabled)]'
                         : '[&::-moz-range-track]:bg-[var(--color-model-settings-range-input-bg)] [&::-moz-range-track]:bg-[var(--color-model-settings-range-input-fill)]'
                     }
