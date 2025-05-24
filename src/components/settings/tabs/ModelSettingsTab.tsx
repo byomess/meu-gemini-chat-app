@@ -6,6 +6,7 @@ import RangeInput from '../../common/RangeInput';
 import TextInput from '../../common/TextInput';
 import Tooltip from '../../common/Tooltip'; // Import the new Tooltip component
 import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
+import { IoInformationCircleOutline } from 'react-icons/io5'; // Import info icon
 
 export interface ModelSettingsTabProps {
     currentGeminiModelConfig: GeminiModelConfig;
@@ -80,9 +81,9 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                     <div>
                         <div className="flex items-center mb-1.5">
                             <Tooltip content="Escolha o modelo Gemini a ser utilizado.">
-                                {/* Default info icon will be used */}
+                                <IoInformationCircleOutline size={18} className="text-[var(--color-text-input-label-icon)] mr-2" />
                             </Tooltip>
-                            <label htmlFor="model-select" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
+                            <label htmlFor="model-select" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)]">
                                 Modelo Gemini
                             </label>
                         </div>
@@ -104,18 +105,12 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
 
                     {/* Max Output Tokens */}
                     <div>
-                        <div className="flex items-center mb-1.5">
-                            <Tooltip content="Define o número máximo de tokens (palavras/partes de palavras) que a IA pode gerar em uma única resposta.">
-                                {/* Default info icon will be used */}
-                            </Tooltip>
-                            <label htmlFor="maxOutputTokens" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
-                                Máximo de Tokens de Saída
-                            </label>
-                        </div>
                         <TextInput
                             id="maxOutputTokens"
                             name="maxOutputTokens"
                             type="number"
+                            label="Máximo de Tokens de Saída"
+                            tooltipContent="Define o número máximo de tokens (palavras/partes de palavras) que a IA pode gerar em uma única resposta."
                             value={currentGeminiModelConfig.maxOutputTokens.toString()}
                             onChange={(value) => handleConfigChange('maxOutputTokens', parseInt(value, 10) || 1)}
                         />
@@ -125,9 +120,9 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                     <div>
                         <div className="flex items-center mb-1.5">
                             <Tooltip content="Controla a aleatoriedade das respostas. Valores mais altos geram respostas mais criativas, mas potencialmente menos coerentes.">
-                                {/* Default info icon will be used */}
+                                <IoInformationCircleOutline size={18} className="text-[var(--color-text-input-label-icon)] mr-2" />
                             </Tooltip>
-                            <label htmlFor="temperature" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
+                            <label htmlFor="temperature" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)]">
                                 Temperatura
                             </label>
                             {/* Display value next to label */}
@@ -149,9 +144,9 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                     <div>
                         <div className="flex items-center mb-1.5">
                             <Tooltip content="Controla a diversidade das respostas. Um valor mais baixo foca em tokens mais prováveis.">
-                                {/* Default info icon will be used */}
+                                <IoInformationCircleOutline size={18} className="text-[var(--color-text-input-label-icon)] mr-2" />
                             </Tooltip>
-                            <label htmlFor="topP" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
+                            <label htmlFor="topP" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)]">
                                 Top P
                             </label>
                             {/* Display value next to label */}
@@ -173,9 +168,9 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                     <div>
                         <div className="flex items-center mb-1.5">
                             <Tooltip content="Controla o número de tokens a serem considerados em cada etapa da geração.">
-                                {/* Default info icon will be used */}
+                                <IoInformationCircleOutline size={18} className="text-[var(--color-text-input-label-icon)] mr-2" />
                             </Tooltip>
-                            <label htmlFor="topK" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
+                            <label htmlFor="topK" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)]">
                                 Top K
                             </label>
                             {/* Display value next to label */}
@@ -197,9 +192,9 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                     <div>
                         <div className="flex items-center mb-1.5">
                             <Tooltip content="Define o número máximo de tokens que o modelo pode usar para 'pensar' antes de gerar a resposta. Valores mais altos podem levar a respostas mais complexas, mas consomem mais recursos.">
-                                {/* Default info icon will be used */}
+                                <IoInformationCircleOutline size={18} className="text-[var(--color-text-input-label-icon)] mr-2" />
                             </Tooltip>
-                            <label htmlFor="thinkingBudget" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
+                            <label htmlFor="thinkingBudget" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)]">
                                 Orçamento de Pensamento (Tokens)
                             </label>
                             {/* Display value next to label */}
@@ -233,9 +228,9 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                             <div key={harmCategory.id}>
                                 <div className="flex items-center mb-1.5">
                                     <Tooltip content={`Define o nível de sensibilidade para bloquear conteúdo relacionado a "${harmCategory.label}".`}>
-                                        {/* Default info icon will be used */}
+                                        <IoInformationCircleOutline size={18} className="text-[var(--color-text-input-label-icon)] mr-2" />
                                     </Tooltip>
-                                    <label htmlFor={`safety-setting-${harmCategory.id}`} className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
+                                    <label htmlFor={`safety-setting-${harmCategory.id}`} className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)]">
                                         {harmCategory.label}
                                     </label>
                                 </div>

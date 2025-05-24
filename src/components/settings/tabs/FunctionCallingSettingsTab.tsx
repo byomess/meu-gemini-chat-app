@@ -2,11 +2,12 @@
 import React, { useState, useCallback, useRef } from 'react';
 import Button from '../../common/Button';
 import TextInput from '../../common/TextInput';
-import { IoAddCircleOutline, IoTrashOutline, IoPencilOutline, IoCheckmarkOutline, IoCloseOutline, IoArrowUpCircleOutline, IoArrowDownCircleOutline } from 'react-icons/io5';
+import { IoAddCircleOutline, IoTrashOutline, IoPencilOutline, IoCheckmarkOutline, IoCloseOutline, IoArrowUpCircleOutline, IoArrowDownCircleOutline, IoInformationCircleOutline } from 'react-icons/io5';
 import {type  FunctionDeclaration } from '../../../types'; // Import FunctionDeclaration
 import { useDialog } from '../../../contexts/DialogContext';
 import SettingsCard from '../../common/SettingsCard'; // Import the new SettingsCard
 import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
+import Tooltip from '../../common/Tooltip'; // Import Tooltip for select elements
 
 export interface FunctionCallingSettingsTabProps {
     currentFunctionDeclarations: FunctionDeclaration[];
@@ -226,6 +227,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                         id={`name-${func.id}`}
                                         name="name"
                                         label="Nome da Função"
+                                        tooltipContent="O nome único da função que a IA usará para chamá-la. Deve ser descritivo e em camelCase."
                                         value={newFunction.name}
                                         onChange={(val) => setNewFunction(prev => ({ ...prev, name: val }))}
                                         placeholder="Ex: getWeather"
@@ -235,6 +237,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                         id={`description-${func.id}`}
                                         name="description"
                                         label="Descrição"
+                                        tooltipContent="Uma breve descrição do que a função faz. Isso ajuda a IA a decidir quando usar a função."
                                         value={newFunction.description}
                                         onChange={(val) => setNewFunction(prev => ({ ...prev, description: val }))}
                                         placeholder="Ex: Obtém a previsão do tempo para uma cidade"
@@ -242,7 +245,12 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                     />
                                     <div className="flex flex-col sm:flex-row sm:space-x-3 space-y-3 sm:space-y-0">
                                         <div className="flex-1">
-                                            <label htmlFor={`method-${func.id}`} className="block text-sm font-medium text-[var(--color-text-input-label-text)] mb-1.5">Método HTTP</label>
+                                            <div className="flex items-center mb-1.5">
+                                                <Tooltip content="O método HTTP a ser usado para a requisição ao endpoint da função.">
+                                                    <IoInformationCircleOutline size={18} className="text-[var(--color-text-input-label-icon)] mr-2" />
+                                                </Tooltip>
+                                                <label htmlFor={`method-${func.id}`} className="block text-sm font-medium text-[var(--color-text-input-label-text)]">Método HTTP</label>
+                                            </div>
                                             <select
                                                 id={`method-${func.id}`}
                                                 name="httpMethod"
@@ -261,6 +269,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                             id={`endpoint-${func.id}`}
                                             name="endpointUrl"
                                             label="URL do Endpoint"
+                                            tooltipContent="O URL completo para onde a requisição da função será enviada."
                                             value={newFunction.endpointUrl}
                                             onChange={(val) => setNewFunction(prev => ({ ...prev, endpointUrl: val }))}
                                             placeholder="Ex: https://api.example.com/weather"
@@ -270,7 +279,12 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                         />
                                     </div>
                                     <div className="flex flex-col">
-                                        <label htmlFor={`schema-${func.id}`} className="block text-sm font-medium text-[var(--color-text-input-label-text)] mb-1.5">Schema de Parâmetros (JSON)</label>
+                                        <div className="flex items-center mb-1.5">
+                                            <Tooltip content="Um JSON Schema que descreve os parâmetros que a função aceita. Isso é crucial para a IA saber como chamar a função corretamente.">
+                                                <IoInformationCircleOutline size={18} className="text-[var(--color-text-input-label-icon)] mr-2" />
+                                            </Tooltip>
+                                            <label htmlFor={`schema-${func.id}`} className="block text-sm font-medium text-[var(--color-text-input-label-text)]">Schema de Parâmetros (JSON)</label>
+                                        </div>
                                         <textarea
                                             id={`schema-${func.id}`}
                                             name="parametersSchema"
@@ -326,6 +340,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                         id="new-name"
                                         name="name"
                                         label="Nome da Função"
+                                        tooltipContent="O nome único da função que a IA usará para chamá-la. Deve ser descritivo e em camelCase."
                                         value={newFunction.name}
                                         onChange={(val) => setNewFunction(prev => ({ ...prev, name: val }))}
                                         placeholder="Ex: getWeather"
@@ -335,6 +350,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                         id="new-description"
                                         name="description"
                                         label="Descrição"
+                                        tooltipContent="Uma breve descrição do que a função faz. Isso ajuda a IA a decidir quando usar a função."
                                         value={newFunction.description}
                                         onChange={(val) => setNewFunction(prev => ({ ...prev, description: val }))}
                                         placeholder="Ex: Obtém a previsão do tempo para uma cidade"
@@ -342,7 +358,12 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                     />
                                     <div className="flex flex-col sm:flex-row sm:space-x-3 space-y-3 sm:space-y-0">
                                         <div className="flex-1">
-                                            <label htmlFor="new-method" className="block text-sm font-medium text-[var(--color-text-input-label-text)] mb-1.5">Método HTTP</label>
+                                            <div className="flex items-center mb-1.5">
+                                                <Tooltip content="O método HTTP a ser usado para a requisição ao endpoint da função.">
+                                                    <IoInformationCircleOutline size={18} className="text-[var(--color-text-input-label-icon)] mr-2" />
+                                                </Tooltip>
+                                                <label htmlFor="new-method" className="block text-sm font-medium text-[var(--color-text-input-label-text)]">Método HTTP</label>
+                                            </div>
                                             <select
                                                 id="new-method"
                                                 name="httpMethod"
@@ -361,6 +382,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                             id="new-endpoint"
                                             name="endpointUrl"
                                             label="URL do Endpoint"
+                                            tooltipContent="O URL completo para onde a requisição da função será enviada."
                                             value={newFunction.endpointUrl}
                                             onChange={(val) => setNewFunction(prev => ({ ...prev, endpointUrl: val }))}
                                             placeholder="Ex: https://api.example.com/weather"
@@ -370,7 +392,12 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                         />
                                     </div>
                                     <div className="flex flex-col">
-                                        <label htmlFor="new-schema" className="block text-sm font-medium text-[var(--color-text-input-label-text)] mb-1.5">Schema de Parâmetros (JSON)</label>
+                                        <div className="flex items-center mb-1.5">
+                                            <Tooltip content="Um JSON Schema que descreve os parâmetros que a função aceita. Isso é crucial para a IA saber como chamar a função corretamente.">
+                                                <IoInformationCircleOutline size={18} className="text-[var(--color-text-input-label-icon)] mr-2" />
+                                            </Tooltip>
+                                            <label htmlFor="new-schema" className="block text-sm font-medium text-[var(--color-text-input-label-text)]">Schema de Parâmetros (JSON)</label>
+                                        </div>
                                         <textarea
                                             id="new-schema"
                                             name="parametersSchema"

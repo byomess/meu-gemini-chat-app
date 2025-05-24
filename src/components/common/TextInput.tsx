@@ -1,42 +1,42 @@
 import React, { useState, forwardRef } from 'react';
 import { FiEye, FiEyeOff } from 'react-icons/fi'; // Assuming react-icons is installed
+import { IoInformationCircleOutline } from 'react-icons/io5'; // Import info icon
+import Tooltip from './Tooltip'; // Import Tooltip component
 
 interface TextInputProps {
     id: string;
     name: string;
-    // label?: string | React.ReactNode; // Removed label prop
+    label?: string | React.ReactNode; // Re-added label prop
     value: string;
     onChange: (value: string) => void; // Passes the string value directly
     type?: 'text' | 'password' | 'email' | 'url' | 'number';
     placeholder?: string;
-    // helperText?: string | React.ReactNode; // Removed helperText prop
     disabled?: boolean;
     autoComplete?: string;
+    tooltipContent?: React.ReactNode; // New prop for tooltip content
 
     // Styling props
     containerClassName?: string;
-    // labelClassName?: string; // Removed labelClassName prop
+    labelClassName?: string; // Re-added labelClassName prop
     inputWrapperClassName?: string;
     inputClassName?: string; // Custom classes for the input element
-    // helperTextClassName?: string; // Removed helperTextClassName prop
 }
 
 const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
     id,
     name,
-    // label, // Removed
+    label, // Re-added
     value,
     onChange,
     type = 'text',
     placeholder,
-    // helperText, // Removed
     disabled = false,
     autoComplete,
+    tooltipContent, // New prop
     containerClassName = '', // Default: no extra classes for the main container
-    // labelClassName = "block text-sm font-medium text-[var(--color-text-input-label-text)] mb-1.5", // Removed
+    labelClassName = "block text-sm font-medium text-[var(--color-text-input-label-text)] mb-1.5", // Re-added
     inputWrapperClassName = "relative", // For the div wrapping input and icon
     inputClassName: customInputClassName = "", // User-provided custom classes for input
-    // helperTextClassName = "text-xs text-[var(--color-text-input-helper-text)] mt-2", // Removed
 }, ref) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
@@ -51,7 +51,18 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
 
     return (
         <div className={containerClassName}>
-            {/* Label rendering moved to parent component */}
+            {label && (
+                <div className="flex items-center mb-1.5">
+                    {tooltipContent && (
+                        <Tooltip content={tooltipContent}>
+                            <IoInformationCircleOutline size={18} className="text-[var(--color-text-input-label-icon)] mr-2" />
+                        </Tooltip>
+                    )}
+                    <label htmlFor={id} className={labelClassName}>
+                        {label}
+                    </label>
+                </div>
+            )}
             <div className={inputWrapperClassName}>
                 <input
                     type={actualInputType}
@@ -76,7 +87,6 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
                     </button>
                 )}
             </div>
-            {/* HelperText rendering removed as per previous instructions */}
         </div>
     );
 });
