@@ -11,7 +11,7 @@ import MessageBubble from '../chat/MessageBubble'
 import { useConversations } from '../../contexts/ConversationContext'
 import { useAppSettings } from '../../contexts/AppSettingsContext'
 import useIsMobile from '../../hooks/useIsMobile'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react' // Added useState
 import React from 'react'
 
 interface ChatAreaProps {
@@ -30,6 +30,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
 
     const chatContainerRef = useRef<HTMLDivElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
+    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null); // For debouncing scroll
+    const [isAtBottom, setIsAtBottom] = useState(true); // New state to track if user is at bottom
 
     const messages = activeConversation?.messages || []
     const conversationTitle = activeConversation?.title || 'Chat'
@@ -53,7 +55,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                         const currentContainer = chatContainerRef.current
                         const stillNearTop = currentContainer.scrollTop < currentContainer.clientHeight / 2
                         if (stillNearTop) {
-                            scrollToBottom('auto')
+                            scrollToBottom('auto') // Keep 'auto' for initial load/new conversation snap
                         }
                     }
                 }, 50)
@@ -62,14 +64,46 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeConversationId, messages.length, scrollToBottom])
 
+    // Effect to handle scroll detection and update isAtBottom state
+    useEffect(() => {
+        const container = chatContainerRef.current;
+        if (!container) return;
+
+        const handleScroll = () => {
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
+            scrollTimeoutRef.current = setTimeout(() => {
+                if (!chatContainerRef.current) return;
+
+                const currentContainer = chatContainerRef.current;
+                const threshold = 10; // Pixels from bottom to consider "at bottom"
+                const atBottom = currentContainer.scrollHeight - currentContainer.scrollTop - currentContainer.clientHeight < threshold;
+                setIsAtBottom(atBottom);
+            }, 100); // Debounce time
+        };
+
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        // Initial check on mount
+        handleScroll();
+
+        return () => {
+            container.removeEventListener('scroll', handleScroll);
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
+        };
+    }, []); // Empty dependency array means this runs once on mount and cleans up on unmount
+
 
     const handleFloatingButtonClick = () => {
-        scrollToBottom('auto')
+        scrollToBottom('smooth') // Changed to 'smooth' for button click
     }
 
     const showWelcome = !activeConversationId
     const showApiKeyMissing = activeConversationId && !settings.apiKey
-    const showFloatingButton = !showWelcome && !showApiKeyMissing && messages.length > 0;
+    // Button is shown only if not welcome, not API key missing, messages exist, AND not at bottom
+    const showFloatingButton = !showWelcome && !showApiKeyMissing && messages.length > 0 && !isAtBottom;
 
     // Determine logo and text based on hostname
     const isAulappDomain = typeof window !== 'undefined' && window.location.hostname === 'aulapp-loox-ai.vercel.app';
