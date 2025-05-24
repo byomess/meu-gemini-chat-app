@@ -309,7 +309,7 @@ async function* _executeDeclaredFunctionAndProcessResult(
 ): AsyncGenerator<StreamedGeminiResponseChunk, { functionResponseContent: unknown; fileDataPartForUserContext?: Part }, undefined> {
     const funcName = declaredFunction.name;
     let functionResponseContent: unknown;
-    let fileDataPartForUserContext: Part | undefined = undefined;
+    let fileDataPartForUserContext = undefined;
 
     yield {
         delta: `\n\n[Loox: Chamando '${funcName}'...]\n`,

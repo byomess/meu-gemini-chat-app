@@ -57,7 +57,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
     const { memories: globalMemoriesFromHook, addMemory, updateMemory, deleteMemory: deleteMemoryFromHook } = useMemories();
 
     const chunkQueueRef = useRef<string[]>([]);
-    const accumulatedTextRef = useRef<string>("");
+    const accumulatedTextRef = useRef<string>(""); // This will now only accumulate actual AI response text
     const currentAiMessageIdRef = useRef<string | null>(null);
     const currentConversationIdRef = useRef<string | null>(null);
     const renderIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -192,6 +192,9 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             if (chunkQueueRef.current.length > 0) {
                 const chunkToRender = chunkQueueRef.current.join("");
                 chunkQueueRef.current = []; // Limpa a fila de texto
+                // Note: In ConversationContext, chunkQueueRef.current only receives actual AI text
+                // because streamMessageToGemini yields processingStatus separately, and we filter delta.
+                // So, we can directly accumulate here.
                 textToUpdate += chunkToRender;
                 accumulatedTextRef.current = textToUpdate; // Atualiza o acumulado
             }
@@ -252,7 +255,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
         if (convoId && msgId) {
             updateMessageInConversation(convoId, msgId, {
-                text: accumulatedTextRef.current.replace(/▍$/, ''),
+                text: "", // Clear the message text on abort
                 metadata: {
                     isLoading: false,
                     error: false, // ou true se o aborto for considerado um erro
@@ -413,7 +416,11 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                     break;
                 }
                 if (streamResponse.delta) {
-                    chunkQueueRef.current.push(streamResponse.delta);
+                    // Only add delta to chunkQueue if it's not a processing status message.
+                    // This ensures chunkQueueRef.current only contains actual AI text.
+                    if (!streamResponse.processingStatus || streamResponse.processingStatus.stage === 'completed') {
+                        chunkQueueRef.current.push(streamResponse.delta);
+                    }
                 }
                 if (streamResponse.processingStatus) {
                     lastProcessingStatusRef.current = streamResponse.processingStatus;
@@ -446,11 +453,12 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
 
         } catch (error) {
-            if (!((error as Error).name === 'AbortError' || signal.aborted)) {
+            const isAbortError = (error as Error)?.name === 'AbortError';
+            if (isAbortError || signal.aborted) {
+                streamError = "Resposta abortada pelo usuário.";
+            } else {
                 console.error("Erro ao regenerar resposta:", error);
                 streamError = (error as Error).message || "Erro desconhecido na regeneração";
-            } else if (signal.aborted && !streamError) {
-                streamError = "Resposta abortada pelo usuário.";
             }
         } finally {
             streamHasFinishedRef.current = true;
@@ -460,62 +468,62 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             }
             const finalMetadata: Partial<MessageMetadata> = {
                 isLoading: false,
-                abortedByUser: streamError === "Resposta abortada pelo usuário." || (signal.aborted && !streamError) ? true : undefined,
+                abortedByUser: streamError === "Resposta abortada pelo usuário." ? true : undefined,
                 processingStatus: lastProcessingStatusRef.current || undefined,
                 rawParts: accumulatedRawPartsRef.current.length > 0 ? [...accumulatedRawPartsRef.current] : undefined,
             };
 
-            if (streamError && !finalMetadata.abortedByUser) {
+            if (streamError && finalMetadata.abortedByUser) { // If it was an abort error
+                // Clear the text if it was an abort and no actual AI text was generated
+                updateMessageInConversation(conversationId, newAiMessageId, {
+                    text: "",
+                    metadata: finalMetadata
+                });
+            } else if (streamError && !finalMetadata.abortedByUser) { // If it was a non-abort error
                 finalMetadata.error = streamError; // Pode ser string ou boolean
                 finalMetadata.userFacingError = streamError;
                 if (lastProcessingStatusRef.current && lastProcessingStatusRef.current.stage !== 'completed') {
                     finalMetadata.processingStatus = { ...lastProcessingStatusRef.current, stage: 'failed', error: streamError };
                 }
-            }
-
-            const textForFinalMessage = (finalAiResponseText || accumulatedTextRef.current).replace(/▍$/, '');
-            if (streamError && !finalMetadata.abortedByUser && !textForFinalMessage.includes(streamError)) {
-                // Apenas adiciona o erro se não for um aborto e o texto não o contiver
-                // textForFinalMessage = textForFinalMessage.trim() ? `${textForFinalMessage}\n\n⚠️ ${streamError}` : `⚠️ ${streamError}`;
-            } else if (textForFinalMessage.includes('\n\n⚠️ ') && !streamError && !finalMetadata.abortedByUser) {
-                // textForFinalMessage = textForFinalMessage.replace(/\n\n⚠️ .+$/, '').trim();
-            }
-            // A exibição do erro textual será gerenciada pelo MessageBubble com base no metadata.error e metadata.userFacingError
-
-            if (!streamError || finalMetadata.abortedByUser) {
-                const processedMemoryActions: Required<MessageMetadata>['memorizedMemoryActions'] = [];
-                if (memoryOperationsFromServer && memoryOperationsFromServer.length > 0) {
-                    memoryOperationsFromServer.forEach(op => {
-                        if (op.action === 'create' && op.content) {
-                            const newMem = addMemory(op.content);
-                            if (newMem) processedMemoryActions.push({ ...newMem, action: 'created' });
-                        } else if (op.action === 'update' && op.targetMemoryContent && op.content) {
-                            const memToUpdate = globalMemoriesFromHook.find(m => m.content.toLowerCase() === op.targetMemoryContent?.toLowerCase());
-                            if (memToUpdate) {
-                                updateMemory(memToUpdate.id, op.content);
-                                processedMemoryActions.push({ id: memToUpdate.id, content: op.content, originalContent: memToUpdate.content, action: 'updated' });
-                            } else {
+                updateMessageInConversation(conversationId, newAiMessageId, {
+                    text: (finalAiResponseText || accumulatedTextRef.current).replace(/▍$/, ''),
+                    metadata: finalMetadata
+                });
+            } else { // No error, stream finished successfully
+                if (!streamError || finalMetadata.abortedByUser) {
+                    const processedMemoryActions: Required<MessageMetadata>['memorizedMemoryActions'] = [];
+                    if (memoryOperationsFromServer && memoryOperationsFromServer.length > 0) {
+                        memoryOperationsFromServer.forEach(op => {
+                            if (op.action === 'create' && op.content) {
                                 const newMem = addMemory(op.content);
                                 if (newMem) processedMemoryActions.push({ ...newMem, action: 'created' });
+                            } else if (op.action === 'update' && op.targetMemoryContent && op.content) {
+                                const memToUpdate = globalMemoriesFromHook.find(m => m.content.toLowerCase() === op.targetMemoryContent?.toLowerCase());
+                                if (memToUpdate) {
+                                    updateMemory(memToUpdate.id, op.content);
+                                    processedMemoryActions.push({ id: memToUpdate.id, content: op.content, originalContent: memToUpdate.content, action: 'updated' });
+                                } else {
+                                    const newMem = addMemory(op.content);
+                                    if (newMem) processedMemoryActions.push({ ...newMem, action: 'created' });
+                                }
+                            } else if (op.action === 'delete_by_ai_suggestion' && op.targetMemoryContent) {
+                                const memToDelete = globalMemoriesFromHook.find(m => m.content.toLowerCase() === op.targetMemoryContent?.toLowerCase());
+                                if (memToDelete) {
+                                    deleteMemoryFromHook(memToDelete.id);
+                                    processedMemoryActions.push({ ...memToDelete, originalContent: memToDelete.content, action: 'deleted_by_ai' });
+                                }
                             }
-                        } else if (op.action === 'delete_by_ai_suggestion' && op.targetMemoryContent) {
-                            const memToDelete = globalMemoriesFromHook.find(m => m.content.toLowerCase() === op.targetMemoryContent?.toLowerCase());
-                            if (memToDelete) {
-                                deleteMemoryFromHook(memToDelete.id);
-                                processedMemoryActions.push({ ...memToDelete, originalContent: memToDelete.content, action: 'deleted_by_ai' });
-                            }
+                        });
+                        if (processedMemoryActions.length > 0) {
+                            finalMetadata.memorizedMemoryActions = processedMemoryActions;
                         }
-                    });
-                    if (processedMemoryActions.length > 0) {
-                        finalMetadata.memorizedMemoryActions = processedMemoryActions;
                     }
                 }
+                updateMessageInConversation(conversationId, newAiMessageId, {
+                    text: (finalAiResponseText || accumulatedTextRef.current).replace(/▍$/, ''),
+                    metadata: finalMetadata
+                });
             }
-
-            updateMessageInConversation(conversationId, newAiMessageId, {
-                text: textForFinalMessage,
-                metadata: finalMetadata
-            });
 
             currentAiMessageIdRef.current = null;
             currentConversationIdRef.current = null;

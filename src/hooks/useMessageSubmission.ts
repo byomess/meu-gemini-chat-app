@@ -78,7 +78,7 @@ export function useMessageSubmission({
 
         lastProcessingStatusForInputRef.current = null;
         accumulatedRawPartsForInputRef.current = [];
-        let accumulatedAiText = "";
+        let accumulatedAiText = ""; // This will now only accumulate actual AI response text
 
         const currentTextForAI = trimmedText;
         const currentConversation = conversations.find(c => c.id === activeConversationId);
@@ -147,7 +147,14 @@ export function useMessageSubmission({
                 // No need for manual signal.aborted check here.
 
                 if (streamResponse.delta) {
-                    accumulatedAiText += streamResponse.delta;
+                    // Only accumulate delta if it's not a processing status message.
+                    // Processing status messages are handled by the processingStatus metadata.
+                    // If processingStatus is present AND its stage is not 'completed',
+                    // then this delta is likely a temporary processing message.
+                    // Otherwise, it's actual AI text.
+                    if (!streamResponse.processingStatus || streamResponse.processingStatus.stage === 'completed') {
+                        accumulatedAiText += streamResponse.delta;
+                    }
                 }
                 if (streamResponse.processingStatus) {
                     lastProcessingStatusForInputRef.current = streamResponse.processingStatus;
@@ -250,15 +257,20 @@ export function useMessageSubmission({
             if (isAbortError) {
                 finalMetadataUpdate.abortedByUser = true;
                 finalMetadataUpdate.error = false; // No error for user abort
+                // If aborted, and no actual AI text was generated (accumulatedAiText is empty), clear the message.
+                updateMessageInConversation(activeConversationId, aiMessageId, {
+                    text: "", // Clear the message text
+                    metadata: finalMetadataUpdate
+                });
             } else {
                 const clientErrorMessage = error instanceof Error ? error.message : "Desculpe, ocorreu uma falha desconhecida no processamento da resposta.";
                 finalMetadataUpdate.error = clientErrorMessage;
                 finalMetadataUpdate.userFacingError = clientErrorMessage;
                 setErrorFromAI(clientErrorMessage); // Set local error state for the input
+                updateMessageInConversation(activeConversationId, aiMessageId, {
+                    text: accumulatedAiText.replace(/▍$/, ''), metadata: finalMetadataUpdate
+                });
             }
-            updateMessageInConversation(activeConversationId, aiMessageId, {
-                text: accumulatedAiText.replace(/▍$/, ''), metadata: finalMetadataUpdate
-            });
         } finally {
             setIsLoadingAI(false); // Ensure loading state is false
             if (abortStreamControllerRef.current && abortStreamControllerRef.current.signal === signal) {
