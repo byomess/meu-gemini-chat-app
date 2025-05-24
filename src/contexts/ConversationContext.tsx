@@ -474,9 +474,10 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             };
 
             if (streamError && finalMetadata.abortedByUser) { // If it was an abort error
-                // Clear the text if it was an abort and no actual AI text was generated
+                // Preserve partial text if any was received before abort.
+                // finalAiResponseText will contain it, or be empty if nothing was received.
                 updateMessageInConversation(conversationId, newAiMessageId, {
-                    text: "",
+                    text: (finalAiResponseText || accumulatedTextRef.current).replace(/▍$/, ''),
                     metadata: finalMetadata
                 });
             } else if (streamError && !finalMetadata.abortedByUser) { // If it was a non-abort error
