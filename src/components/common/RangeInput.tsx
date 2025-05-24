@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 
 interface RangeInputProps {
     id: string;
-    label: string;
+    label: string | React.ReactNode; // Changed to React.ReactNode to allow Tooltip
     min: number;
     max: number;
     step: number;
     value: number;
     onChange: (value: number) => void;
-    helperText: string;
+    helperText?: string; // Made optional as it will be moved to Tooltip
     disabled?: boolean;
 }
 
@@ -20,7 +20,7 @@ const RangeInput: React.FC<RangeInputProps> = ({
     step,
     value,
     onChange,
-    helperText,
+    helperText, // This prop will no longer be used for rendering directly
     disabled = false,
 }) => {
     // Use internal state for the slider's immediate visual value
@@ -105,7 +105,7 @@ const RangeInput: React.FC<RangeInputProps> = ({
                     focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)]
                 `}
             />
-            <p className="text-xs text-[var(--color-settings-section-description-text)] mt-1">{helperText}</p>
+            {/* Removed: <p className="text-xs text-[var(--color-settings-section-description-text)] mt-1">{helperText}</p> */}
         </div>
     );
 };

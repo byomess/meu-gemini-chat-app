@@ -4,12 +4,12 @@ import { FiEye, FiEyeOff } from 'react-icons/fi'; // Assuming react-icons is ins
 interface TextInputProps {
     id: string;
     name: string;
-    label?: string; // Made optional
+    label?: string | React.ReactNode; // Changed to React.ReactNode to allow Tooltip
     value: string;
     onChange: (value: string) => void; // Passes the string value directly
     type?: 'text' | 'password' | 'email' | 'url' | 'number';
     placeholder?: string;
-    helperText?: string | React.ReactNode;
+    helperText?: string | React.ReactNode; // This prop will no longer be used for rendering directly
     disabled?: boolean;
     autoComplete?: string;
 
@@ -29,7 +29,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
     onChange,
     type = 'text',
     placeholder,
-    helperText,
+    helperText, // This prop will no longer be used for rendering directly
     disabled = false,
     autoComplete,
     containerClassName = '', // Default: no extra classes for the main container
@@ -80,11 +80,11 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
                     </button>
                 )}
             </div>
-            {helperText && (
+            {/* Removed: {helperText && (
                 <p className={helperTextClassName}>
                     {helperText}
                 </p>
-            )}
+            )} */}
         </div>
     );
 });
