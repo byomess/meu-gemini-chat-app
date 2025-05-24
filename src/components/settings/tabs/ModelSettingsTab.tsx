@@ -99,6 +99,17 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                     </p>
                 </div>
 
+                {/* Max Output Tokens - Moved here */}
+                <TextInput
+                    id="maxOutputTokens"
+                    name="maxOutputTokens"
+                    label="Máximo de Tokens de Saída"
+                    type="number"
+                    value={currentGeminiModelConfig.maxOutputTokens.toString()} // Convert number to string for TextInput
+                    onChange={(value) => handleConfigChange('maxOutputTokens', parseInt(value, 10) || 1)} // Convert back to number, default to 1 if invalid
+                    helperText="Define o número máximo de tokens (palavras/partes de palavras) que a IA pode gerar em uma única resposta."
+                />
+
                 {/* Temperature */}
                 <RangeInput
                     id="temperature"
@@ -135,18 +146,7 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                     helperText="Controla o número de tokens a serem considerados em cada etapa da geração."
                 />
 
-                {/* Max Output Tokens - Changed to TextInput */}
-                <TextInput
-                    id="maxOutputTokens"
-                    name="maxOutputTokens"
-                    label="Máximo de Tokens de Saída"
-                    type="number"
-                    value={currentGeminiModelConfig.maxOutputTokens.toString()} // Convert number to string for TextInput
-                    onChange={(value) => handleConfigChange('maxOutputTokens', parseInt(value, 10) || 1)} // Convert back to number, default to 1 if invalid
-                    helperText="Define o número máximo de tokens (palavras/partes de palavras) que a IA pode gerar em uma única resposta."
-                />
-
-                {/* New: Thinking Budget */}
+                {/* Thinking Budget */}
                 <RangeInput
                     id="thinkingBudget"
                     label="Orçamento de Pensamento (Tokens)"
