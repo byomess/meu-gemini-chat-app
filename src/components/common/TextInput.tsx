@@ -4,39 +4,39 @@ import { FiEye, FiEyeOff } from 'react-icons/fi'; // Assuming react-icons is ins
 interface TextInputProps {
     id: string;
     name: string;
-    label?: string | React.ReactNode; // Changed to React.ReactNode to allow Tooltip
+    // label?: string | React.ReactNode; // Removed label prop
     value: string;
     onChange: (value: string) => void; // Passes the string value directly
     type?: 'text' | 'password' | 'email' | 'url' | 'number';
     placeholder?: string;
-    helperText?: string | React.ReactNode; // This prop will no longer be used for rendering directly
+    // helperText?: string | React.ReactNode; // Removed helperText prop
     disabled?: boolean;
     autoComplete?: string;
 
     // Styling props
     containerClassName?: string;
-    labelClassName?: string;
+    // labelClassName?: string; // Removed labelClassName prop
     inputWrapperClassName?: string;
     inputClassName?: string; // Custom classes for the input element
-    helperTextClassName?: string;
+    // helperTextClassName?: string; // Removed helperTextClassName prop
 }
 
 const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
     id,
     name,
-    label,
+    // label, // Removed
     value,
     onChange,
     type = 'text',
     placeholder,
-    helperText, // This prop will no longer be used for rendering directly
+    // helperText, // Removed
     disabled = false,
     autoComplete,
     containerClassName = '', // Default: no extra classes for the main container
-    labelClassName = "block text-sm font-medium text-[var(--color-text-input-label-text)] mb-1.5",
+    // labelClassName = "block text-sm font-medium text-[var(--color-text-input-label-text)] mb-1.5", // Removed
     inputWrapperClassName = "relative", // For the div wrapping input and icon
     inputClassName: customInputClassName = "", // User-provided custom classes for input
-    helperTextClassName = "text-xs text-[var(--color-text-input-helper-text)] mt-2",
+    // helperTextClassName = "text-xs text-[var(--color-text-input-helper-text)] mt-2", // Removed
 }, ref) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
@@ -51,11 +51,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
 
     return (
         <div className={containerClassName}>
-            {label && ( // Render label only if it is provided
-                <label htmlFor={id} className={labelClassName}>
-                    {label}
-                </label>
-            )}
+            {/* Label rendering moved to parent component */}
             <div className={inputWrapperClassName}>
                 <input
                     type={actualInputType}
@@ -80,11 +76,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
                     </button>
                 )}
             </div>
-            {/* Removed: {helperText && (
-                <p className={helperTextClassName}>
-                    {helperText}
-                </p>
-            )} */}
+            {/* HelperText rendering removed as per previous instructions */}
         </div>
     );
 });

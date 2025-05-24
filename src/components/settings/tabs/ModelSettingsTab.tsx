@@ -78,7 +78,6 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
             <section className="space-y-5">
                 {/* Model Selection */}
                 <div>
-                    {/* Changed to flex items-center and reordered Tooltip and label */}
                     <div className="flex items-center mb-1.5">
                         <Tooltip content="Escolha o modelo Gemini a ser utilizado.">
                             {/* Default info icon will be used */}
@@ -105,7 +104,6 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
 
                 {/* Max Output Tokens */}
                 <div>
-                    {/* Changed to flex items-center and reordered Tooltip and label */}
                     <div className="flex items-center mb-1.5">
                         <Tooltip content="Define o número máximo de tokens (palavras/partes de palavras) que a IA pode gerar em uma única resposta.">
                             {/* Default info icon will be used */}
@@ -125,7 +123,6 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
 
                 {/* Temperature */}
                 <div>
-                    {/* Changed to flex items-center and reordered Tooltip and label */}
                     <div className="flex items-center mb-1.5">
                         <Tooltip content="Controla a aleatoriedade das respostas. Valores mais altos geram respostas mais criativas, mas potencialmente menos coerentes.">
                             {/* Default info icon will be used */}
@@ -133,6 +130,10 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                         <label htmlFor="temperature" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
                             Temperatura
                         </label>
+                        {/* Display value next to label */}
+                        <span className="font-semibold text-[var(--color-model-settings-range-value-text)] ml-2">
+                            : {currentGeminiModelConfig.temperature}
+                        </span>
                     </div>
                     <RangeInput
                         id="temperature"
@@ -146,7 +147,6 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
 
                 {/* Top P */}
                 <div>
-                    {/* Changed to flex items-center and reordered Tooltip and label */}
                     <div className="flex items-center mb-1.5">
                         <Tooltip content="Controla a diversidade das respostas. Um valor mais baixo foca em tokens mais prováveis.">
                             {/* Default info icon will be used */}
@@ -154,6 +154,10 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                         <label htmlFor="topP" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
                             Top P
                         </label>
+                        {/* Display value next to label */}
+                        <span className="font-semibold text-[var(--color-model-settings-range-value-text)] ml-2">
+                            : {currentGeminiModelConfig.topP}
+                        </span>
                     </div>
                     <RangeInput
                         id="topP"
@@ -167,7 +171,6 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
 
                 {/* Top K */}
                 <div>
-                    {/* Changed to flex items-center and reordered Tooltip and label */}
                     <div className="flex items-center mb-1.5">
                         <Tooltip content="Controla o número de tokens a serem considerados em cada etapa da geração.">
                             {/* Default info icon will be used */}
@@ -175,6 +178,10 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                         <label htmlFor="topK" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
                             Top K
                         </label>
+                        {/* Display value next to label */}
+                        <span className="font-semibold text-[var(--color-model-settings-range-value-text)] ml-2">
+                            : {currentGeminiModelConfig.topK}
+                        </span>
                     </div>
                     <RangeInput
                         id="topK"
@@ -188,7 +195,6 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
 
                 {/* Thinking Budget */}
                 <div>
-                    {/* Changed to flex items-center and reordered Tooltip and label */}
                     <div className="flex items-center mb-1.5">
                         <Tooltip content="Define o número máximo de tokens que o modelo pode usar para 'pensar' antes de gerar a resposta. Valores mais altos podem levar a respostas mais complexas, mas consomem mais recursos.">
                             {/* Default info icon will be used */}
@@ -196,6 +202,10 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                         <label htmlFor="thinkingBudget" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
                             Orçamento de Pensamento (Tokens)
                         </label>
+                        {/* Display value next to label */}
+                        <span className="font-semibold text-[var(--color-model-settings-range-value-text)] ml-2">
+                            : {currentGeminiModelConfig.thinkingBudget ?? 0}
+                        </span>
                     </div>
                     <RangeInput
                         id="thinkingBudget"
@@ -221,7 +231,6 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
 
                     return (
                         <div key={harmCategory.id}>
-                            {/* Changed to flex items-center and reordered Tooltip and label */}
                             <div className="flex items-center mb-1.5">
                                 <Tooltip content={`Define o nível de sensibilidade para bloquear conteúdo relacionado a "${harmCategory.label}".`}>
                                     {/* Default info icon will be used */}
