@@ -462,6 +462,11 @@
   --color-scrollbar-track: var(--color-gray-100);
   --color-scrollbar-thumb: var(--color-gray-400);
   --color-scrollbar-thumb-hover: var(--color-gray-500);
+
+  /* Tooltip Colors */
+  --color-tooltip-bg: var(--color-gray-800); /* Dark background for tooltip */
+  --color-tooltip-text: var(--color-white); /* White text for tooltip */
+  --color-tooltip-icon: var(--color-gray-500); /* Info icon color */
 }
 
 /* Scrollbar styles moved outside @theme block */
