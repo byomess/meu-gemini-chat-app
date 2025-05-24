@@ -217,51 +217,51 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                         />
                     </div>
                 </section>
-            </SettingsPanel>
 
-            <h2 className="text-xl font-semibold text-[var(--color-settings-section-title-text)] pt-4 border-t border-[var(--color-settings-section-border)]">Configurações de Segurança</h2>
-            <p className="text-sm text-[var(--color-settings-section-description-text)] pb-4">
-                Ajuste o nível de bloqueio para diferentes categorias de conteúdo potencialmente prejudicial.
-            </p>
+                <section className="space-y-5">
+                    <h2 className="text-xl font-semibold text-[var(--color-settings-section-title-text)] pt-4 border-t border-[var(--color-settings-section-border)]">Configurações de Segurança</h2>
+                    <p className="text-sm text-[var(--color-settings-section-description-text)] pb-4">
+                        Ajuste o nível de bloqueio para diferentes categorias de conteúdo potencialmente prejudicial.
+                    </p>
+                    
+                    {HARM_CATEGORIES_CONFIG.map((harmCategory) => {
+                        const currentThreshold = currentGeminiModelConfig.safetySettings?.find(
+                            (s) => s.category === harmCategory.id
+                        )?.threshold || HarmBlockThreshold.BLOCK_NONE;
 
-            <section className="space-y-5">
-                {HARM_CATEGORIES_CONFIG.map((harmCategory) => {
-                    const currentThreshold = currentGeminiModelConfig.safetySettings?.find(
-                        (s) => s.category === harmCategory.id
-                    )?.threshold || HarmBlockThreshold.BLOCK_NONE;
-
-                    return (
-                        <div key={harmCategory.id}>
-                            <div className="flex items-center mb-1.5">
-                                <Tooltip content={`Define o nível de sensibilidade para bloquear conteúdo relacionado a "${harmCategory.label}".`}>
-                                    {/* Default info icon will be used */}
-                                </Tooltip>
-                                <label htmlFor={`safety-setting-${harmCategory.id}`} className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
-                                    {harmCategory.label}
-                                </label>
-                            </div>
-                            <select
-                                id={`safety-setting-${harmCategory.id}`}
-                                value={currentThreshold}
-                                onChange={(e) =>
-                                    handleSafetySettingChange(
-                                        harmCategory.id,
-                                        e.target.value as HarmBlockThreshold
-                                    )
-                                }
-                                className="w-full p-3 bg-[var(--color-settings-model-select-bg)] border border-[var(--color-settings-model-select-border)] rounded-lg text-[var(--color-settings-model-select-text)] shadow-sm focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:border-[var(--color-settings-model-select-focus-border)] transition-colors
+                        return (
+                            <div key={harmCategory.id}>
+                                <div className="flex items-center mb-1.5">
+                                    <Tooltip content={`Define o nível de sensibilidade para bloquear conteúdo relacionado a "${harmCategory.label}".`}>
+                                        {/* Default info icon will be used */}
+                                    </Tooltip>
+                                    <label htmlFor={`safety-setting-${harmCategory.id}`} className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
+                                        {harmCategory.label}
+                                    </label>
+                                </div>
+                                <select
+                                    id={`safety-setting-${harmCategory.id}`}
+                                    value={currentThreshold}
+                                    onChange={(e) =>
+                                        handleSafetySettingChange(
+                                            harmCategory.id,
+                                            e.target.value as HarmBlockThreshold
+                                        )
+                                    }
+                                    className="w-full p-3 bg-[var(--color-settings-model-select-bg)] border border-[var(--color-settings-model-select-border)] rounded-lg text-[var(--color-settings-model-select-text)] shadow-sm focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:border-[var(--color-settings-model-select-focus-border)] transition-colors
                                     [&>option]:bg-[var(--color-settings-model-select-bg)] [&>option]:text-[var(--color-settings-model-select-text)] [&>option:hover]:bg-[var(--color-settings-model-select-option-hover-bg)]"
-                            >
-                                {HARM_BLOCK_THRESHOLDS.map((thresholdOption) => (
-                                    <option key={thresholdOption.value} value={thresholdOption.value}>
-                                        {thresholdOption.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    );
-                })}
-            </section>
+                                >
+                                    {HARM_BLOCK_THRESHOLDS.map((thresholdOption) => (
+                                        <option key={thresholdOption.value} value={thresholdOption.value}>
+                                            {thresholdOption.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        );
+                    })}
+                </section>
+            </SettingsPanel>
         </div>
     );
 };
