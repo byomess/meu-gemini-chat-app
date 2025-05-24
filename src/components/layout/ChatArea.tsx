@@ -74,28 +74,24 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
     }, [messages, scrollToBottom])
 
     useEffect(() => {
-        const container = chatContainerRef.current
+        const container = chatContainerRef.current;
         if (!container) {
-            return
+            return;
         }
 
         if (activeConversationId) {
-            const isNewConversationJustLoadedAndAtTop = messages.length > 0 && container.scrollTop < 50
-
-            if (isNewConversationJustLoadedAndAtTop) {
-                setTimeout(() => {
-                    if (chatContainerRef.current) {
-                        const currentContainer = chatContainerRef.current
-                        const stillNearTop = currentContainer.scrollTop < currentContainer.clientHeight / 2
-                        if (stillNearTop) {
-                            scrollToBottom()
-                        }
-                    }
-                }, 50)
-            }
+            // When the active conversation changes, scroll to the bottom instantly.
+            // setTimeout ensures this runs after the DOM has updated with the new messages,
+            // so scrollHeight is calculated correctly.
+            setTimeout(() => {
+                if (chatContainerRef.current) {
+                    chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+                }
+            }, 0); // 0ms delay defers execution until after the current browser repaint.
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeConversationId, messages.length, scrollToBottom])
+    }, [activeConversationId, messages.length]); // messages.length ensures effect runs when messages for the new conversation are loaded.
+                                                // scrollToBottom is removed from dependencies as it's no longer used here.
 
     // Effect to handle scroll detection and update isAtBottom state
     useEffect(() => {
