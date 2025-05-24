@@ -488,9 +488,9 @@
   --color-scrollbar-thumb-hover: var(--color-gray-400);
 
   /* Tooltip Colors */
-  --color-tooltip-bg: var(--color-gray-200); /* Darker background for tooltip */
-  --color-tooltip-text: var(--color-gray-600); /* Lighter text for tooltip */
-  --color-tooltip-icon: var(--color-gray-400); /* Info icon color */
+  --color-tooltip-bg: var(--color-gray-400); /* Changed to a lighter gray for background */
+  --color-tooltip-text: var(--color-gray-800); /* Changed to a darker gray for text */
+  --color-tooltip-icon: var(--color-gray-600); /* Changed to a darker gray for the icon */
 }
 
 /* Scrollbar styles moved outside @theme block */
