@@ -540,9 +540,9 @@ export async function* streamMessageToGemini(
         // 5. Main interaction loop (handles potential function calls)
         // eslint-disable-next-line no-constant-condition
         while (true) {
-            if (abortSignal?.aborted) {
-                throw new DOMException("Aborted by user during API interaction", "AbortError");
-            }
+            // The AbortSignal is now passed directly to generateContentStream,
+            // which will throw an AbortError if the signal is aborted.
+            // No need for manual check here.
 
             const requestConfig: Omit<GenerateContentConfig, 'model' | 'contents'> = {
                 ...generationConfig,
@@ -561,7 +561,8 @@ export async function* streamMessageToGemini(
                 config: requestConfig
             };
 
-            const streamResult: AsyncIterable<GenerateContentResponse> = await genAI.models.generateContentStream(requestPayloadForAPI);
+            // Pass the abortSignal directly to the generateContentStream call
+            const streamResult: AsyncIterable<GenerateContentResponse> = await genAI.models.generateContentStream(requestPayloadForAPI, { signal: abortSignal });
 
             let modelResponsePartsAggregatedThisTurn: Part[] = [];
             let hasFunctionCallInThisTurn = false;
@@ -569,9 +570,7 @@ export async function* streamMessageToGemini(
             let functionCallRequestStatusEmitted = false;
 
             for await (const chunk of streamResult) {
-                if (abortSignal?.aborted) {
-                    throw new DOMException("Aborted by user in service stream", "AbortError");
-                }
+                // The stream will throw an AbortError if aborted, so no manual check needed here.
                 const candidate = chunk.candidates?.[0];
                 if (!candidate || !candidate.content || !candidate.content.parts) continue;
 

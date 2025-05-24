@@ -63,7 +63,7 @@ export function useMessageSubmission({
                 text: "Erro: Chave de API não configurada.", sender: 'model', metadata: { error: true }
             });
             onSubmissionStart?.(); // Clear text, attachments
-            onSubmissionEnd?.({ focusTextarea: false });
+            onSubmissionEnd?.({ focusTextarea: false, errorOccurred: true });
             return;
         }
 
@@ -124,7 +124,7 @@ export function useMessageSubmission({
         }
 
         let memoryOperationsFromServer: StreamedGeminiResponseChunk['memoryOperations'] = [];
-        let streamError: string | null = null;
+        let streamError: string | null = null; // This variable captures errors reported within the stream chunks
 
         try {
             const currentGlobalMemoriesWithObjects = globalMemoriesFromHook.map(mem => ({ id: mem.id, content: mem.content }));
@@ -143,7 +143,8 @@ export function useMessageSubmission({
             );
 
             for await (const streamResponse of streamGenerator) {
-                if (signal.aborted) { streamError = "Resposta abortada pelo usuário."; break; }
+                // The streamGenerator itself will throw an AbortError if the signal is aborted.
+                // No need for manual signal.aborted check here.
 
                 if (streamResponse.delta) {
                     accumulatedAiText += streamResponse.delta;
@@ -171,7 +172,7 @@ export function useMessageSubmission({
                 });
 
                 if (streamResponse.error) {
-                    streamError = streamResponse.error;
+                    streamError = streamResponse.error; // Capture error reported by the service
                 }
                 if (streamResponse.isFinished) {
                     accumulatedAiText = streamResponse.finalText || accumulatedAiText.replace(/▍$/, '');
@@ -182,12 +183,14 @@ export function useMessageSubmission({
 
             const finalMetadata: Partial<MessageMetadata> = {
                 isLoading: false,
-                abortedByUser: streamError === "Resposta abortada pelo usuário." || (signal.aborted && !streamError) ? true : undefined,
+                // If streamError is set, it means an API-reported error occurred.
+                // If signal.aborted is true, it means user aborted.
+                abortedByUser: signal.aborted ? true : undefined,
                 processingStatus: lastProcessingStatusForInputRef.current || undefined,
                 rawParts: accumulatedRawPartsForInputRef.current.length > 0 ? [...accumulatedRawPartsForInputRef.current] : undefined,
             };
 
-            if (streamError && !finalMetadata.abortedByUser) {
+            if (streamError && !finalMetadata.abortedByUser) { // Only set error if it's not a user abort
                 finalMetadata.error = streamError;
                 finalMetadata.userFacingError = streamError;
                 if (lastProcessingStatusForInputRef.current && lastProcessingStatusForInputRef.current.stage !== 'completed' && lastProcessingStatusForInputRef.current.stage !== 'failed') {
@@ -195,7 +198,7 @@ export function useMessageSubmission({
                 }
             }
 
-            if (!streamError || finalMetadata.abortedByUser) {
+            if (!streamError || finalMetadata.abortedByUser) { // Process memories only if no stream error or if it was aborted by user
                 const processedMemoryActions: Required<MessageMetadata>['memorizedMemoryActions'] = [];
                 if (memoryOperationsFromServer && memoryOperationsFromServer.length > 0) {
                     memoryOperationsFromServer.forEach(op => {
@@ -241,8 +244,12 @@ export function useMessageSubmission({
                 processingStatus: lastProcessingStatusForInputRef.current || undefined,
                 rawParts: accumulatedRawPartsForInputRef.current.length > 0 ? [...accumulatedRawPartsForInputRef.current] : undefined,
             };
-            if ((error as Error).name === 'AbortError' || signal.aborted) {
-                finalMetadataUpdate.abortedByUser = true; finalMetadataUpdate.error = false;
+
+            const isAbortError = (error as Error)?.name === 'AbortError';
+
+            if (isAbortError) {
+                finalMetadataUpdate.abortedByUser = true;
+                finalMetadataUpdate.error = false; // No error for user abort
             } else {
                 const clientErrorMessage = error instanceof Error ? error.message : "Desculpe, ocorreu uma falha desconhecida no processamento da resposta.";
                 finalMetadataUpdate.error = clientErrorMessage;
@@ -253,24 +260,33 @@ export function useMessageSubmission({
                 text: accumulatedAiText.replace(/▍$/, ''), metadata: finalMetadataUpdate
             });
         } finally {
-            setIsLoadingAI(false);
+            setIsLoadingAI(false); // Ensure loading state is false
             if (abortStreamControllerRef.current && abortStreamControllerRef.current.signal === signal) {
                 abortStreamControllerRef.current = null;
             }
             lastProcessingStatusForInputRef.current = null;
             accumulatedRawPartsForInputRef.current = [];
-            onSubmissionEnd?.({ focusTextarea: !errorFromAI && !streamError, errorOccurred: !!errorFromAI || !!streamError });
+
+            // Determine if an error occurred that was NOT an abort by user
+            const errorOccurred = errorFromAI !== null; // errorFromAI is only set for non-abort errors
+
+            onSubmissionEnd?.({
+                focusTextarea: true,
+                errorOccurred: errorOccurred
+            });
         }
     };
 
     const handleAbortAIResponse = () => {
         if (isLoadingAI && abortStreamControllerRef.current && !abortStreamControllerRef.current.signal.aborted) {
             abortStreamControllerRef.current.abort("User aborted direct stream");
-            // The stream loop and finally block in handleSubmit will handle state updates
+            setIsLoadingAI(false); // Immediate UI feedback
         } else if (isProcessingEditedMessage) { // This part might be specific to MessageInput's direct handling
             abortEditedMessageResponse();
+            setIsLoadingAI(false); // Assuming abortEditedMessageResponse doesn't handle this
         }
-        onSubmissionEnd?.({ focusTextarea: true });
+        // The onSubmissionEnd will be called by the finally block of handleSubmit
+        // once the promise chain resolves/rejects due to the abort.
     };
     
     // Cleanup abort controller on unmount
