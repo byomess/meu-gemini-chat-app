@@ -14,6 +14,7 @@ interface TextInputProps {
     disabled?: boolean;
     autoComplete?: string;
     tooltipContent?: React.ReactNode; // New prop for tooltip content
+    helperText?: React.ReactNode; // New prop for helper text
 
     // Styling props
     containerClassName?: string;
@@ -33,6 +34,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
     disabled = false,
     autoComplete,
     tooltipContent, // New prop
+    helperText, // New prop
     containerClassName = '', // Default: no extra classes for the main container
     labelClassName = "block text-sm font-medium text-[var(--color-text-input-label-text)] mb-1.5", // Re-added
     inputWrapperClassName = "relative", // For the div wrapping input and icon
@@ -87,6 +89,11 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
                     </button>
                 )}
             </div>
+            {helperText && (
+                <div className="mt-1.5 text-xs text-[var(--color-text-input-helper-text)]">
+                    {helperText}
+                </div>
+            )}
         </div>
     );
 });
