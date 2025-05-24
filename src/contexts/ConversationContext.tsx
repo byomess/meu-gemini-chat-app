@@ -446,11 +446,20 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 }
             }
             streamHasFinishedRef.current = true; // Indica que o stream terminou
-            // Limpa o intervalo e chama processChunkQueue uma última vez para renderizar o estado final
-            if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
-            renderIntervalRef.current = null; // Garante que não haverá mais execuções agendadas
-            processChunkQueue();
-
+            // Call processChunkQueue one last time ONLY IF NOT ABORTED BY USER,
+            // as abortEditedMessageResponse handles UI and ref cleanup in that case.
+            // The signal.aborted check is crucial here.
+            if (!signal.aborted) {
+                if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
+                renderIntervalRef.current = null;
+                processChunkQueue();
+            } else {
+                // If aborted by user, ensure render interval is cleared if abortEditedMessageResponse didn't already.
+                if (renderIntervalRef.current) {
+                    clearTimeout(renderIntervalRef.current);
+                    renderIntervalRef.current = null;
+                }
+            }
 
         } catch (error) {
             const isAbortError = (error as Error)?.name === 'AbortError';
@@ -461,26 +470,31 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 streamError = (error as Error).message || "Erro desconhecido na regeneração";
             }
         } finally {
-            streamHasFinishedRef.current = true;
-            if (renderIntervalRef.current) {
+            streamHasFinishedRef.current = true; // Ensure this is set
+            if (renderIntervalRef.current) { // Clear any lingering interval
                 clearTimeout(renderIntervalRef.current);
                 renderIntervalRef.current = null;
             }
+
+            const wasAbortedByUserViaSignal = signal.aborted; // Primary check for user abort
             const finalMetadata: Partial<MessageMetadata> = {
                 isLoading: false,
-                abortedByUser: streamError === "Resposta abortada pelo usuário." ? true : undefined,
+                // Ensure abortedByUser reflects the signal if streamError isn't "Resposta abortada..."
+                // This can happen if the abort is very quick.
+                abortedByUser: wasAbortedByUserViaSignal || (streamError === "Resposta abortada pelo usuário."),
                 processingStatus: lastProcessingStatusRef.current || undefined,
                 rawParts: accumulatedRawPartsRef.current.length > 0 ? [...accumulatedRawPartsRef.current] : undefined,
             };
 
-            if (streamError && finalMetadata.abortedByUser) { // If it was an abort error
-                // Preserve partial text if any was received before abort.
-                // finalAiResponseText will contain it, or be empty if nothing was received.
+
+            if (finalMetadata.abortedByUser) {
+                // If aborted by user, abortEditedMessageResponse has already set the text.
+                // We only update metadata here to ensure it's consistent.
                 updateMessageInConversation(conversationId, newAiMessageId, {
-                    text: (finalAiResponseText || accumulatedTextRef.current).replace(/▍$/, ''),
+                    // TEXT IS OMITTED HERE to preserve what abortEditedMessageResponse set
                     metadata: finalMetadata
                 });
-            } else if (streamError && !finalMetadata.abortedByUser) { // If it was a non-abort error
+            } else if (streamError) { // If it was a non-abort error
                 finalMetadata.error = streamError; // Pode ser string ou boolean
                 finalMetadata.userFacingError = streamError;
                 if (lastProcessingStatusRef.current && lastProcessingStatusRef.current.stage !== 'completed') {
