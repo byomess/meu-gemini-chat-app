@@ -3,6 +3,7 @@ import React from 'react';
 import type { GeminiModelConfig, GeminiModel, SafetySetting } from '../../../types';
 import { HarmCategory, HarmBlockThreshold } from '@google/genai';
 import RangeInput from '../../common/RangeInput';
+import TextInput from '../../common/TextInput'; // Import TextInput
 
 export interface ModelSettingsTabProps {
     currentGeminiModelConfig: GeminiModelConfig;
@@ -134,15 +135,14 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                     helperText="Controla o número de tokens a serem considerados em cada etapa da geração."
                 />
 
-                {/* Max Output Tokens */}
-                <RangeInput
+                {/* Max Output Tokens - Changed to TextInput */}
+                <TextInput
                     id="maxOutputTokens"
+                    name="maxOutputTokens"
                     label="Máximo de Tokens de Saída"
-                    min={1}
-                    max={2048}
-                    step={1}
-                    value={currentGeminiModelConfig.maxOutputTokens}
-                    onChange={(value) => handleConfigChange('maxOutputTokens', value)}
+                    type="number"
+                    value={currentGeminiModelConfig.maxOutputTokens.toString()} // Convert number to string for TextInput
+                    onChange={(value) => handleConfigChange('maxOutputTokens', parseInt(value, 10) || 1)} // Convert back to number, default to 1 if invalid
                     helperText="Define o número máximo de tokens (palavras/partes de palavras) que a IA pode gerar em uma única resposta."
                 />
 
