@@ -250,21 +250,21 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             localAbortEditedMessageControllerRef.current.abort("User aborted edited message");
         }
 
-        const convoId = currentConversationIdRef.current;
+        const convoId = currentConversationIdRef.current; // Use refs for current state
         const msgId = currentAiMessageIdRef.current;
+        const currentTextSnapshot = accumulatedTextRef.current; // Capture text before clearing refs below
 
         if (convoId && msgId) {
             updateMessageInConversation(convoId, msgId, {
-                text: "", // Clear the message text on abort
+                text: currentTextSnapshot.replace(/▍$/, ''), // Preserve accumulated text
                 metadata: {
                     isLoading: false,
-                    error: false, // ou true se o aborto for considerado um erro
+                    error: false, 
                     abortedByUser: true,
                     processingStatus: lastProcessingStatusRef.current?.stage !== 'completed' && lastProcessingStatusRef.current?.stage !== 'failed' ?
                         { ...(lastProcessingStatusRef.current || {} as ProcessingStatus), stage: 'failed', error: 'Abortado pelo usuário' }
                         : lastProcessingStatusRef.current || undefined,
                     rawParts: accumulatedRawPartsRef.current.length > 0 ? [...accumulatedRawPartsRef.current] : undefined,
-
                 }
             });
         }
