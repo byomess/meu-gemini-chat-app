@@ -5,17 +5,14 @@ import {
     IoArrowDownCircleOutline,
     IoLockClosedOutline,
     IoMenuOutline,
-    IoCheckmarkCircleOutline, // Ícone para auto-scroll ativado
 } from 'react-icons/io5'
 import MessageInput from '../chat/MessageInput'
 import MessageBubble from '../chat/MessageBubble'
 import { useConversations } from '../../contexts/ConversationContext'
 import { useAppSettings } from '../../contexts/AppSettingsContext'
 import useIsMobile from '../../hooks/useIsMobile'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import React from 'react'
-
-const AUTO_SCROLL_INTERVAL = 500;
 
 interface ChatAreaProps {
     onOpenMobileSidebar: () => void;
@@ -33,121 +30,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
 
     const chatContainerRef = useRef<HTMLDivElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
-    const userManuallyScrolledRef = useRef(false) // Flag para detectar scroll manual
-    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null) // Para debounce do scroll
-
-    const [isUserScrolledUp, setIsUserScrolledUp] = useState(false)
-    const [isAutoScrollActive, setIsAutoScrollActive] = useState(false)
-    const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
     const messages = activeConversation?.messages || []
     const conversationTitle = activeConversation?.title || 'Chat'
 
     const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
-        userManuallyScrolledRef.current = false
         messagesEndRef.current?.scrollIntoView({ behavior })
     }, [])
 
-    const stopAutoScrollInterval = useCallback(() => {
-        if (autoScrollIntervalRef.current) {
-            clearInterval(autoScrollIntervalRef.current)
-            autoScrollIntervalRef.current = null
-        }
-    }, [])
-
-    const startAutoScrollInterval = useCallback(() => {
-        stopAutoScrollInterval()
-        autoScrollIntervalRef.current = setInterval(() => {
-            if (chatContainerRef.current && !userManuallyScrolledRef.current) { 
-                const container = chatContainerRef.current
-                const threshold = 10
-                const atBottom =
-                    container.scrollHeight -
-                    container.scrollTop -
-                    container.clientHeight <
-                    threshold
-                if (!atBottom) {
-                    scrollToBottom('smooth')
-                }
-            }
-        }, AUTO_SCROLL_INTERVAL);
-    }, [scrollToBottom, stopAutoScrollInterval])
-
     useEffect(() => {
-        if (isAutoScrollActive) {
-            startAutoScrollInterval()
-        } else {
-            stopAutoScrollInterval()
-        }
-        return () => {
-            stopAutoScrollInterval()
-        }
-    }, [isAutoScrollActive, startAutoScrollInterval, stopAutoScrollInterval])
-
-    useEffect(() => {
-        const container = chatContainerRef.current
-        if (!container) return
-
-        const setUserScrolledManually = () => {
-            userManuallyScrolledRef.current = true
-        }
-
-        container.addEventListener('wheel', setUserScrolledManually, { passive: true })
-        container.addEventListener('touchstart', setUserScrolledManually, { passive: true })
-        
-        return () => {
-            container.removeEventListener('wheel', setUserScrolledManually)
-            container.removeEventListener('touchstart', setUserScrolledManually)
-        }
-    }, [])
-
-
-    useEffect(() => {
-        const container = chatContainerRef.current
-        if (!container) return
-
-        const handleScroll = () => {
-            if (scrollTimeoutRef.current) {
-                clearTimeout(scrollTimeoutRef.current)
-            }
-            scrollTimeoutRef.current = setTimeout(() => {
-                if (!chatContainerRef.current) return 
-
-                const currentContainer = chatContainerRef.current
-                const threshold = 80
-                const atBottom = currentContainer.scrollHeight - currentContainer.scrollTop - currentContainer.clientHeight < threshold
-
-                setIsUserScrolledUp(!atBottom)
-
-                if (isAutoScrollActive && userManuallyScrolledRef.current && !atBottom) {
-                    setIsAutoScrollActive(false)
-                }
-                userManuallyScrolledRef.current = false
-
-            }, 60) 
-        }
-
-        container.addEventListener('scroll', handleScroll, { passive: true })
-        handleScroll() 
-
-        return () => {
-            container.removeEventListener('scroll', handleScroll)
-            if (scrollTimeoutRef.current) {
-                clearTimeout(scrollTimeoutRef.current)
-            }
-        }
-    }, [isAutoScrollActive]) 
-
-
-    useEffect(() => {
-        if (isAutoScrollActive) {
-            setIsAutoScrollActive(false)
-        }
-        userManuallyScrolledRef.current = false 
-
         const container = chatContainerRef.current
         if (!container) {
-            if (!activeConversationId) setIsUserScrolledUp(false)
             return
         }
 
@@ -158,43 +51,20 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                 setTimeout(() => {
                     if (chatContainerRef.current) {
                         const currentContainer = chatContainerRef.current
-                        if (!userManuallyScrolledRef.current) {
-                            const stillNearTop = currentContainer.scrollTop < currentContainer.clientHeight / 2
-                            if (stillNearTop) {
-                                scrollToBottom('auto')
-                            }
+                        const stillNearTop = currentContainer.scrollTop < currentContainer.clientHeight / 2
+                        if (stillNearTop) {
+                            scrollToBottom('auto')
                         }
-                        const atBottomAfterPossibleScroll = currentContainer.scrollHeight - currentContainer.scrollTop - currentContainer.clientHeight < 5
-                        setIsUserScrolledUp(!atBottomAfterPossibleScroll)
                     }
                 }, 50)
-            } else {
-                const threshold = 80
-                const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold
-                setIsUserScrolledUp(!atBottom)
             }
-        } else {
-            setIsUserScrolledUp(false)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeConversationId, messages.length, scrollToBottom])
 
 
     const handleFloatingButtonClick = () => {
-        userManuallyScrolledRef.current = false 
-        if (isAutoScrollActive) {
-            setIsAutoScrollActive(false)
-            if (chatContainerRef.current) {
-                const container = chatContainerRef.current;
-                const threshold = 80;
-                const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
-                setIsUserScrolledUp(!atBottom);
-            }
-        } else {
-            scrollToBottom('auto')
-            setIsUserScrolledUp(false)
-            setIsAutoScrollActive(true)
-        }
+        scrollToBottom('auto')
     }
 
     const showWelcome = !activeConversationId
@@ -235,21 +105,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                         text-[var(--color-floating-button-text)]
                         hover:scale-105 active:scale-95
                         transition-all duration-150 ease-in-out
-                        ${isAutoScrollActive
-                            ? 'bg-gradient-to-br from-[var(--color-floating-button-autoscroll-from)] to-[var(--color-floating-button-autoscroll-to)]'
-                            : 'bg-gradient-to-br from-[var(--color-floating-button-default-from)] to-[var(--color-floating-button-default-to)]'
-                        }
+                        bg-gradient-to-br from-[var(--color-floating-button-default-from)] to-[var(--color-floating-button-default-to)]
                     `}
-                    title={isAutoScrollActive
-                        ? "Desativar rolagem automática"
-                        : (isUserScrolledUp ? "Rolar para o fim e ativar rolagem automática" : "Ativar rolagem automática")}
-                    aria-label={isAutoScrollActive
-                        ? "Desativar rolagem automática"
-                        : (isUserScrolledUp ? "Rolar para o fim e ativar rolagem automática" : "Ativar rolagem automática")}
+                    title="Rolar para o fim"
+                    aria-label="Rolar para o fim"
                 >
-                    {isAutoScrollActive
-                        ? <IoCheckmarkCircleOutline size={24} />
-                        : <IoArrowDownCircleOutline size={24} />}
+                    <IoArrowDownCircleOutline size={24} />
                 </button>
             )}
 
