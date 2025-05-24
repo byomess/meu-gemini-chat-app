@@ -185,7 +185,7 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                         </div>
                         <RangeInput
                             id="topK"
-                            min={0} {/* Changed from 1 to 0 */}
+                            min={0}
                             max={40}
                             step={1}
                             value={currentGeminiModelConfig.topK}
