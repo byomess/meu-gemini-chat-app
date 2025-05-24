@@ -5,18 +5,19 @@ import ChatArea from './components/layout/ChatArea';
 import SettingsModal from './components/settings/SettingsModal';
 import useIsMobile from './hooks/useIsMobile';
 import React from 'react';
-import { useUrlConfigInitializer } from './hooks/useUrlConfigInitializer'; // Import the hook
-import { useConversations } from './contexts/ConversationContext'; // Import useConversations
-import { useAppSettings } from './contexts/AppSettingsContext'; // Import useAppSettings
-import { DialogProvider, useDialog } from './contexts/DialogContext';
-import CustomDialog from './components/common/CustomDialog';
+import { useUrlConfigInitializer } from './hooks/useUrlConfigInitializer';
+import { useConversations } from './contexts/ConversationContext';
+import { useAppSettings } from './contexts/AppSettingsContext';
+// useDialog não é mais necessário em AppContent se ele não mostrar/esconder dialogs diretamente
+import { DialogProvider } from './contexts/DialogContext';
+// CustomDialog não é mais importado/usado diretamente em AppContent
 
-// Helper component to render the dialog and main app content, as App itself is not inside DialogProvider initially
 const AppContent = () => {
-    const { dialogProps } = useDialog();
+    // const { dialogProps } = useDialog(); // NÃO MAIS NECESSÁRIO AQUI
     const { settings } = useAppSettings();
     const { conversations, createNewConversation, activeConversationId } = useConversations();
 
+    // ... (resto do estado e lógica do AppContent permanece o mesmo)
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const isMobile = useIsMobile();
@@ -64,11 +65,12 @@ const AppContent = () => {
         }
     }, [conversations, createNewConversation, activeConversationId]);
 
+
     return (
         <>
             <div className="flex h-screen bg-slate-950 text-white selection:bg-blue-600 selection:text-white overflow-hidden">
-
-                {!isMobile && showNavigation && (
+                {/* ... Conteúdo do Sidebar e ChatArea ... */}
+                 {!isMobile && showNavigation && (
                     <Sidebar
                         onOpenSettings={handleOpenSettingsModal}
                         isMobile={false}
@@ -106,8 +108,8 @@ const AppContent = () => {
                     onClose={handleCloseSettingsModal}
                 />
             </div>
-            {/* Render CustomDialog if dialogProps exist, letting its internal Transition handle the isOpen state */}
-            {dialogProps && <CustomDialog {...dialogProps} />}
+            {/* CustomDialog NÃO é mais renderizado aqui. O DialogProvider cuida disso via Portal. */}
+            {/* {dialogProps && <CustomDialog {...dialogProps} />}  // REMOVA ESTA LINHA */}
         </>
     );
 }
@@ -116,6 +118,7 @@ function App() {
     useUrlConfigInitializer();
 
     return (
+        // DialogProvider agora envolve AppContent e gerencia a renderização do CustomDialog
         <DialogProvider>
             <AppContent />
         </DialogProvider>

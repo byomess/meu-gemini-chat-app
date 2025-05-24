@@ -1,53 +1,78 @@
 // src/contexts/DialogContext.tsx
-import React, { createContext, useState, useContext, useCallback, type ReactNode } from 'react';
-import type { CustomDialogProps } from '../components/common/CustomDialog'; // Adjust path as needed
+import React, { createContext, useState, useContext, useCallback, useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import CustomDialog, { type CustomDialogProps } from '../components/common/CustomDialog';
 
-// Exclude isOpen and onClose from DialogOptions as they are managed by the context
-type DialogOptions = Omit<CustomDialogProps, 'isOpen' | 'onClose'> & {
-    onCloseCallback?: () => void; // Optional callback when dialog is closed by any means
+export type DialogOptions = Omit<CustomDialogProps, 'isOpen' | 'onClose'> & {
+    onAfterClose?: () => void;
 };
-
 
 interface DialogContextType {
   showDialog: (options: DialogOptions) => void;
   hideDialog: () => void;
-  dialogProps: CustomDialogProps | null;
+  isDialogActive: boolean; // NOVA FLAG
 }
 
 const DialogContext = createContext<DialogContextType | undefined>(undefined);
 
+const PORTAL_ID = 'custom-dialog-portal-root';
+
 export const DialogProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [dialogProps, setDialogProps] = useState<CustomDialogProps | null>(null);
-  const [onCloseCallback, setOnCloseCallback] = useState<(() => void) | undefined>(undefined);
+  const [dialogConfig, setDialogConfig] = useState<CustomDialogProps | null>(null);
+  const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
 
+  useEffect(() => {
+    let node = document.getElementById(PORTAL_ID);
+    let nodeCreated = false;
+    if (!node) {
+      nodeCreated = true;
+      node = document.createElement('div');
+      node.setAttribute('id', PORTAL_ID);
+      document.body.appendChild(node);
+    }
+    setPortalNode(node);
 
-  const hideDialog = useCallback(() => {
-    setDialogProps(prevProps => {
-      if (prevProps?.isOpen && onCloseCallback) {
-        onCloseCallback();
+    return () => {
+      if (nodeCreated && node?.parentNode) {
+        node.parentNode.removeChild(node);
       }
-      return prevProps ? { ...prevProps, isOpen: false } : null;
+    };
+  }, []);
+
+  const internalHideDialog = useCallback(() => {
+    setDialogConfig(prevConfig => {
+      return prevConfig ? { ...prevConfig, isOpen: false } : null;
     });
-    setOnCloseCallback(undefined);
-    // Optional: Delay clearing props if you have animations
-    // setTimeout(() => setDialogProps(null), 300); 
-  }, [onCloseCallback]);
+  }, []);
 
   const showDialog = useCallback((options: DialogOptions) => {
-    const { onCloseCallback: customOnClose, ...restOptions } = options;
-    setOnCloseCallback(() => customOnClose); // Store the custom onClose callback
-
-    setDialogProps({
+    const { onAfterClose, ...restOptions } = options;
+    setDialogConfig({
       ...restOptions,
       isOpen: true,
-      onClose: hideDialog, // Internal onClose always calls hideDialog
+      onClose: () => {
+        internalHideDialog();
+        if (onAfterClose) {
+          onAfterClose();
+        }
+      },
     });
-  }, [hideDialog]);
+  }, [internalHideDialog]);
 
+  const hideDialog = internalHideDialog;
+
+  // Determina se um diálogo está "ativo" (visível ou em processo de fechamento com animação)
+  const isDialogActive = !!(dialogConfig && dialogConfig.isOpen);
 
   return (
-    <DialogContext.Provider value={{ showDialog, hideDialog, dialogProps }}>
+    <DialogContext.Provider value={{ showDialog, hideDialog, isDialogActive }}> {/* ADICIONADO isDialogActive */}
       {children}
+      {portalNode && dialogConfig && ( // dialogConfig ainda controla a renderização
+        createPortal(
+          <CustomDialog {...dialogConfig} />,
+          portalNode
+        )
+      )}
     </DialogContext.Provider>
   );
 };
