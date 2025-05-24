@@ -78,12 +78,15 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
             <section className="space-y-5">
                 {/* Model Selection */}
                 <div>
-                    <label htmlFor="model-select" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] mb-1.5">
-                        Modelo Gemini{' '}
+                    {/* Changed to flex items-center and reordered Tooltip and label */}
+                    <div className="flex items-center mb-1.5">
                         <Tooltip content="Escolha o modelo Gemini a ser utilizado.">
                             {/* Default info icon will be used */}
                         </Tooltip>
-                    </label>
+                        <label htmlFor="model-select" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
+                            Modelo Gemini
+                        </label>
+                    </div>
                     <select
                         id="model-select"
                         name="model"
@@ -98,102 +101,111 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                             </option>
                         ))}
                     </select>
-                    {/* Removed: <p className="text-xs text-[var(--color-settings-section-description-text)] mt-1">Escolha o modelo Gemini a ser utilizado.</p> */}
                 </div>
 
-                {/* Max Output Tokens - Changed to TextInput */}
-                <TextInput
-                    id="maxOutputTokens"
-                    name="maxOutputTokens"
-                    label={
-                        <>
-                            Máximo de Tokens de Saída{' '}
-                            <Tooltip content="Define o número máximo de tokens (palavras/partes de palavras) que a IA pode gerar em uma única resposta.">
-                                {/* Default info icon will be used */}
-                            </Tooltip>
-                        </>
-                    }
-                    type="number"
-                    value={currentGeminiModelConfig.maxOutputTokens.toString()}
-                    onChange={(value) => handleConfigChange('maxOutputTokens', parseInt(value, 10) || 1)}
-                    // Removed helperText prop
-                />
+                {/* Max Output Tokens */}
+                <div>
+                    {/* Changed to flex items-center and reordered Tooltip and label */}
+                    <div className="flex items-center mb-1.5">
+                        <Tooltip content="Define o número máximo de tokens (palavras/partes de palavras) que a IA pode gerar em uma única resposta.">
+                            {/* Default info icon will be used */}
+                        </Tooltip>
+                        <label htmlFor="maxOutputTokens" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
+                            Máximo de Tokens de Saída
+                        </label>
+                    </div>
+                    <TextInput
+                        id="maxOutputTokens"
+                        name="maxOutputTokens"
+                        type="number"
+                        value={currentGeminiModelConfig.maxOutputTokens.toString()}
+                        onChange={(value) => handleConfigChange('maxOutputTokens', parseInt(value, 10) || 1)}
+                    />
+                </div>
 
                 {/* Temperature */}
-                <RangeInput
-                    id="temperature"
-                    label={
-                        <>
-                            Temperatura{' '}
-                            <Tooltip content="Controla a aleatoriedade das respostas. Valores mais altos geram respostas mais criativas, mas potencialmente menos coerentes.">
-                                {/* Default info icon will be used */}
-                            </Tooltip>
-                        </>
-                    }
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    value={currentGeminiModelConfig.temperature}
-                    onChange={(value) => handleConfigChange('temperature', value)}
-                    // Removed helperText prop
-                />
+                <div>
+                    {/* Changed to flex items-center and reordered Tooltip and label */}
+                    <div className="flex items-center mb-1.5">
+                        <Tooltip content="Controla a aleatoriedade das respostas. Valores mais altos geram respostas mais criativas, mas potencialmente menos coerentes.">
+                            {/* Default info icon will be used */}
+                        </Tooltip>
+                        <label htmlFor="temperature" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
+                            Temperatura
+                        </label>
+                    </div>
+                    <RangeInput
+                        id="temperature"
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        value={currentGeminiModelConfig.temperature}
+                        onChange={(value) => handleConfigChange('temperature', value)}
+                    />
+                </div>
 
                 {/* Top P */}
-                <RangeInput
-                    id="topP"
-                    label={
-                        <>
-                            Top P{' '}
-                            <Tooltip content="Controla a diversidade das respostas. Um valor mais baixo foca em tokens mais prováveis.">
-                                {/* Default info icon will be used */}
-                            </Tooltip>
-                        </>
-                    }
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    value={currentGeminiModelConfig.topP}
-                    onChange={(value) => handleConfigChange('topP', value)}
-                    // Removed helperText prop
-                />
+                <div>
+                    {/* Changed to flex items-center and reordered Tooltip and label */}
+                    <div className="flex items-center mb-1.5">
+                        <Tooltip content="Controla a diversidade das respostas. Um valor mais baixo foca em tokens mais prováveis.">
+                            {/* Default info icon will be used */}
+                        </Tooltip>
+                        <label htmlFor="topP" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
+                            Top P
+                        </label>
+                    </div>
+                    <RangeInput
+                        id="topP"
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        value={currentGeminiModelConfig.topP}
+                        onChange={(value) => handleConfigChange('topP', value)}
+                    />
+                </div>
 
                 {/* Top K */}
-                <RangeInput
-                    id="topK"
-                    label={
-                        <>
-                            Top K{' '}
-                            <Tooltip content="Controla o número de tokens a serem considerados em cada etapa da geração.">
-                                {/* Default info icon will be used */}
-                            </Tooltip>
-                        </>
-                    }
-                    min={1}
-                    max={40}
-                    step={1}
-                    value={currentGeminiModelConfig.topK}
-                    onChange={(value) => handleConfigChange('topK', value)}
-                    // Removed helperText prop
-                />
+                <div>
+                    {/* Changed to flex items-center and reordered Tooltip and label */}
+                    <div className="flex items-center mb-1.5">
+                        <Tooltip content="Controla o número de tokens a serem considerados em cada etapa da geração.">
+                            {/* Default info icon will be used */}
+                        </Tooltip>
+                        <label htmlFor="topK" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
+                            Top K
+                        </label>
+                    </div>
+                    <RangeInput
+                        id="topK"
+                        min={1}
+                        max={40}
+                        step={1}
+                        value={currentGeminiModelConfig.topK}
+                        onChange={(value) => handleConfigChange('topK', value)}
+                    />
+                </div>
 
                 {/* Thinking Budget */}
-                <RangeInput
-                    id="thinkingBudget"
-                    label={
-                        <>
-                            Orçamento de Pensamento (Tokens){' '}
-                            <Tooltip content="Define o número máximo de tokens que o modelo pode usar para 'pensar' antes de gerar a resposta. Valores mais altos podem levar a respostas mais complexas, mas consomem mais recursos.">
-                                {/* Default info icon will be used */}
-                            </Tooltip>
-                        </>
-                    }
-                    min={0}
-                    max={4096}
-                    step={128}
-                    value={currentGeminiModelConfig.thinkingBudget ?? 0}
-                    onChange={(value) => handleConfigChange('thinkingBudget', value)}
-                    // Removed helperText prop
-                />
+                <div>
+                    {/* Changed to flex items-center and reordered Tooltip and label */}
+                    <div className="flex items-center mb-1.5">
+                        <Tooltip content="Define o número máximo de tokens que o modelo pode usar para 'pensar' antes de gerar a resposta. Valores mais altos podem levar a respostas mais complexas, mas consomem mais recursos.">
+                            {/* Default info icon will be used */}
+                        </Tooltip>
+                        <label htmlFor="thinkingBudget" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
+                            Orçamento de Pensamento (Tokens)
+                        </label>
+                    </div>
+                    <RangeInput
+                        id="thinkingBudget"
+                        min={0}
+                        max={4096}
+                        step={128}
+                        value={currentGeminiModelConfig.thinkingBudget ?? 0}
+                        onChange={(value) => handleConfigChange('thinkingBudget', value)}
+                    />
+                </div>
             </section>
 
             <h2 className="text-xl font-semibold text-[var(--color-settings-section-title-text)] pt-4 border-t border-[var(--color-settings-section-border)]">Configurações de Segurança</h2>
@@ -209,12 +221,15 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
 
                     return (
                         <div key={harmCategory.id}>
-                            <label htmlFor={`safety-setting-${harmCategory.id}`} className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] mb-1.5">
-                                {harmCategory.label}{' '}
+                            {/* Changed to flex items-center and reordered Tooltip and label */}
+                            <div className="flex items-center mb-1.5">
                                 <Tooltip content={`Define o nível de sensibilidade para bloquear conteúdo relacionado a "${harmCategory.label}".`}>
                                     {/* Default info icon will be used */}
                                 </Tooltip>
-                            </label>
+                                <label htmlFor={`safety-setting-${harmCategory.id}`} className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)] ml-2"> {/* Added ml-2 for spacing */}
+                                    {harmCategory.label}
+                                </label>
+                            </div>
                             <select
                                 id={`safety-setting-${harmCategory.id}`}
                                 value={currentThreshold}
@@ -233,7 +248,6 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                                     </option>
                                 ))}
                             </select>
-                            {/* Removed: <p className="text-xs text-[var(--color-settings-section-description-text)] mt-1">Define o nível de sensibilidade para bloquear conteúdo relacionado a "{harmCategory.label}".</p> */}
                         </div>
                     );
                 })}
