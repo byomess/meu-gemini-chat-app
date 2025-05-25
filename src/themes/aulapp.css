@@ -64,6 +64,17 @@
   --color-convo-item-hover-icon: var(--color-gray-700);
   --color-convo-item-active-icon: var(--color-white);
 
+  /* Incognito Chat Item Styles */
+  --color-convo-item-incognito-bg: var(--color-gray-100); /* Slightly different background */
+  --color-convo-item-incognito-text: var(--color-gray-600); /* Slightly muted text */
+  --color-convo-item-incognito-icon: var(--color-gray-500); /* Muted icon */
+  --color-convo-item-incognito-hover-bg: var(--color-gray-200); /* Hover state */
+  --color-convo-item-incognito-hover-text: var(--color-gray-700);
+  --color-convo-item-incognito-active-bg: var(--color-indigo-50); /* Active incognito */
+  --color-convo-item-incognito-active-text: var(--color-indigo-700);
+  --color-convo-item-incognito-active-icon: var(--color-indigo-600);
+
+
   --color-convo-item-actions-bg: color-mix(in srgb, var(--color-gray-100) 50%, transparent);
   --color-convo-item-actions-hover-bg: color-mix(in srgb, var(--color-gray-200) 80%, transparent);
   --color-convo-item-actions-button-hover-bg: color-mix(in srgb, var(--color-gray-300) 80%, transparent);

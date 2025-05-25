@@ -207,8 +207,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                           ${editingConversationId === convo.id
                               ? 'bg-[var(--color-convo-item-edit-bg)] shadow-inner cursor-default'
                               : convo.id === activeConversationId
-                                  ? `text-[var(--color-convo-item-active-text)] font-semibold bg-[var(--color-convo-item-active-bg)] shadow-md hover:bg-[var(--color-primary-dark)] cursor-pointer`
-                                  : `text-[var(--color-convo-item-text)] hover:bg-[var(--color-convo-item-hover-bg)] hover:text-[var(--color-convo-item-hover-text)] cursor-pointer`
+                                  ? `text-[var(--color-convo-item-active-text)] font-semibold ${convo.isIncognito ? 'bg-[var(--color-convo-item-incognito-active-bg)]' : 'bg-[var(--color-convo-item-active-bg)]'} shadow-md hover:bg-[var(--color-primary-dark)] cursor-pointer`
+                                  : `${convo.isIncognito ? 'bg-[var(--color-convo-item-incognito-bg)] text-[var(--color-convo-item-incognito-text)] hover:bg-[var(--color-convo-item-incognito-hover-bg)] hover:text-[var(--color-convo-item-incognito-hover-text)]' : 'text-[var(--color-convo-item-text)] hover:bg-[var(--color-convo-item-hover-bg)] hover:text-[var(--color-convo-item-hover-text)]'} cursor-pointer`
                           }`}
             >
               {editingConversationId === convo.id ? (
@@ -243,20 +243,20 @@ const Sidebar: React.FC<SidebarProps> = ({
                     size={19}
                     className={`flex-shrink-0 transition-colors duration-200
                                 ${convo.id === activeConversationId
-                                    ? 'text-[var(--color-convo-item-active-icon)]'
-                                    : 'text-[var(--color-convo-item-icon)] group-hover/convoItem:text-[var(--color-convo-item-hover-icon)]'
+                                    ? `${convo.isIncognito ? 'text-[var(--color-convo-item-incognito-active-icon)]' : 'text-[var(--color-convo-item-active-icon)]'}`
+                                    : `${convo.isIncognito ? 'text-[var(--color-convo-item-incognito-icon)] group-hover/convoItem:text-[var(--color-convo-item-incognito-hover-icon)]' : 'text-[var(--color-convo-item-icon)] group-hover/convoItem:text-[var(--color-convo-item-hover-icon)]'}`
                                 }`}
                   />
                   <span className="truncate flex-1 text-sm">
                     {convo.title}
                     {convo.isIncognito && (
                       <Tooltip content="Conversa Incógnita">
-                        <GhostIcon size={14} className="inline-block ml-2 text-[var(--color-text-secondary)]" />
+                        <GhostIcon size={14} className="inline-block ml-2 text-[var(--color-convo-item-incognito-icon)]" />
                       </Tooltip>
                     )}
                   </span>
                   {convo.id === activeConversationId && !isMobile && (
-                    <IoChevronForward size={16} className="text-[var(--color-convo-item-active-icon)] opacity-80 ml-auto" />
+                    <IoChevronForward size={16} className={`${convo.isIncognito ? 'text-[var(--color-convo-item-incognito-active-icon)]' : 'text-[var(--color-convo-item-active-icon)]'} opacity-80 ml-auto`} />
                   )}
                 </>
               )}
