@@ -40,6 +40,7 @@ interface ConversationContextType {
     //     editedMessageId: string,
     //     newText: string
     // ) => Promise<void>;
+    removeMessagesAfterId: (conversationId: string, messageId: string) => Conversation | null; // Modified return type
     // abortEditedMessageResponse: () => void; // Will be removed
 }
 
@@ -158,6 +159,31 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         );
     }, [setConversations]);
 
+    const removeMessagesAfterId = useCallback((conversationId: string, messageId: string): Conversation | null => {
+        let updatedConversation: Conversation | null = null;
+        setConversations(prevConvos => {
+            const newConvos = prevConvos.map(c => {
+                if (c.id === conversationId) {
+                    const messageIndex = c.messages.findIndex(msg => msg.id === messageId);
+                    if (messageIndex === -1) {
+                        // If message to anchor deletion is not found, return original conversation for this iteration
+                        // and updatedConversation will remain null or its previous state from another iteration (if any).
+                        // This specific conversation 'c' is not the one we're looking for or modifying.
+                        return c;
+                    }
+                    // Keep messages up to and including the found message
+                    const updatedMessages = c.messages.slice(0, messageIndex + 1);
+                    const modifiedConversation = { ...c, messages: updatedMessages, updatedAt: new Date() };
+                    updatedConversation = modifiedConversation; // Capture the successfully modified conversation
+                    return modifiedConversation;
+                }
+                return c;
+            });
+            return newConvos.sort(sortByUpdatedAtDesc);
+        });
+        return updatedConversation; // Return the captured, modified conversation (or null if not found/modified)
+    }, [setConversations]);
+
     const removeMessageById = useCallback((conversationId: string, messageId: string) => {
         setConversations(prevConvos =>
             prevConvos.map(c =>
@@ -265,6 +291,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             updateMessageInConversation,
             updateConversationTitle,
             removeMessageById,
+            removeMessagesAfterId, // Added (or signature updated if previously present)
             // regenerateResponseForEditedMessage, // Removed
             // abortEditedMessageResponse, // Removed
         }}>

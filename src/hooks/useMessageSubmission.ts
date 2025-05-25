@@ -36,6 +36,7 @@ export function useMessageSubmission({
     const {
         addMessageToConversation,
         updateMessageInConversation,
+        removeMessagesAfterId, // Now using this from context
         // abortEditedMessageResponse will be handled by this hook's abort logic
         // isProcessingEditedMessage will be replaced by this hook's isLoadingAI
     } = useConversations();
@@ -149,40 +150,33 @@ export function useMessageSubmission({
             });
 
             // History for API is up to and including the edited message
-            // Subsequent AI/function messages related to the *original* user message are effectively orphaned
-            // and will be "overwritten" by the new AI response stream.
-            // The ConversationContext's `addMessageToConversation` for the new AI message will place it correctly.
-            const messagesUpToAndIncludingEdited = currentConversation.messages.slice(0, messageIndex + 1).map((msg, idx) => {
-                if (idx === messageIndex) { // This is the message being edited
-                    return {
-                        ...msg,
-                        text: trimmedText, // Use the new text
-                        metadata: { // Use the new metadata
-                            ...msg.metadata,
-                            attachedFilesInfo: filesInfoForUIMessage.length > 0 ? filesInfoForUIMessage : undefined,
-                            error: undefined,
-                            abortedByUser: undefined,
-                            userFacingError: undefined,
-                            processingStatus: undefined,
-                        }
-                    };
-                }
-                return msg;
-            });
+            // Subsequent AI/function messages related to the *original* user message are effectively orphaned.
+            // removeMessagesAfterId will prune them.
+            const conversationAfterPruning = removeMessagesAfterId(activeConversationId, messageToEditId);
 
+            if (!conversationAfterPruning) {
+                console.error("Conversation not found after pruning for edit, or messageToEditId not found within it.");
+                setIsLoadingAI(false);
+                onSubmissionEnd?.({ focusTextarea: true, errorOccurred: true });
+                return;
+            }
 
-            historyForAPI = messagesUpToAndIncludingEdited
+            // History for API is now directly from conversationAfterPruning.messages.
+            // The user message (last in this list) already has its text and metadata updated
+            // by the preceding updateMessageInConversation call.
+            historyForAPI = conversationAfterPruning.messages
                 .map(msg => {
                     if (msg.metadata?.rawParts && (msg.sender === 'model' || msg.sender === 'function')) {
                         return { sender: msg.sender, parts: msg.metadata.rawParts as Part[] };
                     }
-                    // For the user message being edited, its text is already updated in messagesUpToAndIncludingEdited
+                    // For user messages (including the edited one), or others without rawParts, use text.
                     return { sender: msg.sender, text: msg.text };
                 });
             
-            textForAI = trimmedText; // The AI will respond to this new text
+            textForAI = trimmedText; // The AI will respond to this new text (which is the text of the last message in historyForAPI)
 
-            // Add a new placeholder for the AI's response to the edited message
+            // Add a new placeholder for the AI's response to the edited message.
+            // This new AI message will follow the edited user message in the conversation state.
             // This new AI message will follow the edited user message.
             aiMessageIdToStreamTo = addMessageToConversation(activeConversationId, {
                 text: "", sender: 'model', metadata: { isLoading: true, respondingToUserMessageId: messageToEditId }
