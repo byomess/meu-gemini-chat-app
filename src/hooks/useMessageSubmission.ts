@@ -383,5 +383,6 @@ export function useMessageSubmission({
         setErrorFromAI,
         handleSubmit,
         handleAbortAIResponse,
+        messageToEditId, // Added this line
     };
 }
