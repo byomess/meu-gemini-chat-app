@@ -46,8 +46,8 @@ export function useMessageSubmission({
 
     const abortStreamControllerRef = useRef<AbortController | null>(null);
     const lastProcessingStatusForInputRef = useRef<ProcessingStatus | null>(null);
-    const accumulatedRawPartsForInputRef = useRef<Part[]>([]);
-    const accumulatedAttachedFilesInfoRef = useRef<AttachedFileInfo[]>([]);
+    accumulatedRawPartsForInputRef.current = [];
+    accumulatedAttachedFilesInfoRef.current = [];
 
     const handleSubmit = async () => {
         setErrorFromAI(null);
@@ -91,6 +91,7 @@ export function useMessageSubmission({
         }
 
         const webSearchActiveForThisSubmission = settings.enableWebSearch && isWebSearchEnabledForNextMessage;
+        const isIncognitoConversation = currentConversation.isIncognito || false; // Get incognito status
 
         // filesInfoForUIMessage includes all files (placeholders from edit and new ones)
         // to correctly update the user message metadata in the UI.
@@ -195,7 +196,8 @@ export function useMessageSubmission({
         let streamError: string | null = null;
 
         try {
-            const currentGlobalMemoriesWithObjects = globalMemoriesFromHook.map(mem => ({ id: mem.id, content: mem.content }));
+            // If incognito, pass an empty array for global memories
+            const currentGlobalMemoriesWithObjects = isIncognitoConversation ? [] : globalMemoriesFromHook.map(mem => ({ id: mem.id, content: mem.content }));
             const rawFilesForAPI: RawFileAttachment[] = filesToSendToAI
                 .map(localFile => ({ file: localFile.file }));
 
@@ -205,7 +207,8 @@ export function useMessageSubmission({
             const systemInstructionText = systemMessage({
                 conversationTitle: currentConversation?.title,
                 messageCountInConversation: historyForAPI.length,
-                customPersonalityPrompt: settings.customPersonalityPrompt
+                customPersonalityPrompt: settings.customPersonalityPrompt,
+                isIncognito: isIncognitoConversation, // Pass incognito status to system message
             });
 
             const streamGenerator = streamMessageToGemini(
@@ -213,9 +216,13 @@ export function useMessageSubmission({
                 historyToSendToGemini,
                 textForAI,
                 rawFilesForAPI,
-                currentGlobalMemoriesWithObjects, settings.geminiModelConfig, systemInstructionText,
-                settings.functionDeclarations || [], signal,
-                webSearchActiveForThisSubmission
+                currentGlobalMemoriesWithObjects,
+                settings.geminiModelConfig,
+                systemInstructionText,
+                settings.functionDeclarations || [],
+                signal,
+                webSearchActiveForThisSubmission,
+                isIncognitoConversation // Pass incognito status to geminiService
             );
 
             for await (const streamResponse of streamGenerator) {
@@ -258,7 +265,8 @@ export function useMessageSubmission({
                 }
                 if (streamResponse.isFinished) {
                     accumulatedAiText = streamResponse.finalText || accumulatedAiText.replace(/▍$/, '');
-                    memoryOperationsFromServer = streamResponse.memoryOperations || [];
+                    // Only process memory operations if not in incognito mode
+                    memoryOperationsFromServer = isIncognitoConversation ? [] : (streamResponse.memoryOperations || []);
                     break;
                 }
             }
@@ -279,7 +287,8 @@ export function useMessageSubmission({
                 }
             }
 
-            if (!streamError || finalMetadata.abortedByUser) {
+            // Only apply memory operations if not in incognito mode
+            if (!isIncognitoConversation && (!streamError || finalMetadata.abortedByUser)) {
                 const processedMemoryActions: Required<MessageMetadata>['memorizedMemoryActions'] = [];
                 if (memoryOperationsFromServer && memoryOperationsFromServer.length > 0) {
                     memoryOperationsFromServer.forEach(op => {

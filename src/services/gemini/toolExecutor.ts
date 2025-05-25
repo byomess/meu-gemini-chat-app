@@ -37,14 +37,24 @@ function parseFunctionParametersSchema(schemaString: string, functionName: strin
  */
 export function buildApiTools(
     webSearchEnabled?: boolean,
-    functionDeclarations?: AppFunctionDeclaration[]
+    functionDeclarations?: AppFunctionDeclaration[],
+    isIncognito: boolean = false // Added isIncognito parameter
 ): { functionDeclarations: GeminiFunctionDeclaration[] }[] | { googleSearch: Record<string, never> }[] | undefined {
     if (webSearchEnabled) {
         return [{ googleSearch: {} }];
     }
     if (functionDeclarations && functionDeclarations.length > 0) {
+        // Filter out memory-related functions if in incognito mode
+        const filteredFunctionDeclarations = isIncognito
+            ? functionDeclarations.filter(fd => !['create_memory', 'update_memory', 'delete_memory'].includes(fd.name))
+            : functionDeclarations;
+
+        if (filteredFunctionDeclarations.length === 0) {
+            return undefined; // No functions left after filtering
+        }
+
         return [{
-            functionDeclarations: functionDeclarations.map((fd): GeminiFunctionDeclaration => ({
+            functionDeclarations: filteredFunctionDeclarations.map((fd): GeminiFunctionDeclaration => ({
                 name: fd.name,
                 description: fd.description,
                 parameters: parseFunctionParametersSchema(fd.parametersSchema, fd.name),

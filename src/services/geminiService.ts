@@ -7,7 +7,7 @@ import {
     type Part,
     type GenerateContentResponse,
     type FunctionCall,
-    type GenerateContentParameters, // Added this import
+    type GenerateContentParameters,
 } from "@google/genai";
 
 import type {
@@ -55,6 +55,7 @@ export async function* streamMessageToGemini(
     functionDeclarations: AppFunctionDeclaration[],
     abortSignal?: AbortSignal,
     webSearchEnabled?: boolean,
+    isIncognito: boolean = false, // Added isIncognito parameter
 ): AsyncGenerator<StreamedGeminiResponseChunk, void, undefined> {
     if (!apiKey) {
         yield { error: "Chave de API não fornecida.", isFinished: true };
@@ -66,7 +67,8 @@ export async function* streamMessageToGemini(
     }
 
     const genAI = new GoogleGenAI({ apiKey: apiKey });
-    const globalMemoriesContent = globalMemoriesObjects.map(mem => mem.content);
+    // If incognito, do not pass global memories to the AI context
+    const globalMemoriesContent = isIncognito ? [] : globalMemoriesObjects.map(mem => mem.content);
     const currentChatHistory: Content[] = buildChatHistory(conversationHistory, globalMemoriesContent);
     const initialUserParts: Part[] = [];
 
@@ -122,7 +124,8 @@ export async function* streamMessageToGemini(
         };
 
         let accumulatedTextForFinalResponse = "";
-        let toolsForApiNextTurn = buildApiTools(webSearchEnabled, functionDeclarations);
+        // Pass isIncognito to buildApiTools to filter out memory functions
+        let toolsForApiNextTurn = buildApiTools(webSearchEnabled, functionDeclarations, isIncognito);
 
         // 5. Main interaction loop (handles potential function calls)
         while (true) {
@@ -250,7 +253,8 @@ export async function* streamMessageToGemini(
                         };
                     }
 
-                    toolsForApiNextTurn = buildApiTools(webSearchEnabled, functionDeclarations);
+                    // Pass isIncognito to buildApiTools again for the next turn
+                    toolsForApiNextTurn = buildApiTools(webSearchEnabled, functionDeclarations, isIncognito);
                     functionCallRequestStatusEmitted = false;
                     continue;
                 }
@@ -259,7 +263,8 @@ export async function* streamMessageToGemini(
             const { cleanedResponse, operations } = parseMemoryOperations(accumulatedTextForFinalResponse);
             yield {
                 finalText: cleanedResponse,
-                memoryOperations: operations,
+                // Only return memory operations if not in incognito mode
+                memoryOperations: isIncognito ? [] : operations,
                 isFinished: true,
                 functionAttachedFilesInfo: attachedFilesFromFunctionThisTurn.length > 0 ? attachedFilesFromFunctionThisTurn : undefined,
             };
