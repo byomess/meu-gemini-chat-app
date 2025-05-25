@@ -156,12 +156,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                     </button>
                 )}
 
-                <IoChatbubblesOutline size={22} className="flex-shrink-0 text-[var(--color-chat-header-icon)]" />
+                {isIncognito ? (
+                    <GhostIcon size={22} className="flex-shrink-0 text-[var(--color-chat-header-icon)]" />
+                ) : (
+                    <IoChatbubblesOutline size={22} className="flex-shrink-0 text-[var(--color-chat-header-icon)]" />
+                )}
                 <h2 className="truncate text-base sm:text-lg font-semibold text-[var(--color-chat-header-title)]">
                     {conversationTitle}
-                    {isIncognito && (
-                        <GhostIcon size={18} className="inline-block ml-2 text-[var(--color-text-secondary)]" aria-label="Conversa Incógnita" />
-                    )}
+                    {/* Removed GhostIcon from here as it's now the main icon */}
                 </h2>
             </div>
 
