@@ -4,6 +4,7 @@ import {
     type Schema as GeminiSchema,
     Type as GeminiType,
     type Part,
+    type FunctionCall,
 } from "@google/genai";
 
 import type {
@@ -60,7 +61,7 @@ export function buildApiTools(
  */
 async function processMediaFromFunctionResponseJson(
     genAI: GoogleGenAI,
-    jsonResponse: any,
+    jsonResponse: Record<string, unknown>, // Changed from 'any' to 'Record<string, unknown>'
     funcName: string,
     abortSignal?: AbortSignal,
 ): Promise<AttachedFileInfo[]> {
@@ -94,9 +95,9 @@ async function processMediaFromFunctionResponseJson(
     for (const mediaType of base64MediaTypes) {
         if (jsonResponse[mediaType.key] && typeof jsonResponse[mediaType.key] === 'string') {
             try {
-                const base64Data = jsonResponse[mediaType.key];
-                const mimeType = jsonResponse[`${mediaType.key}_mime_type`] || `${mediaType.mimePrefix}jpeg`;
-                const fileName = jsonResponse[`${mediaType.key}_name`] || `${mediaType.defaultName}_${funcName}_${Date.now()}.${mimeType.split('/')[1] || 'bin'}`;
+                const base64Data = jsonResponse[mediaType.key] as string; // Added type assertion
+                const mimeType = (jsonResponse[`${mediaType.key}_mime_type`] as string) || `${mediaType.mimePrefix}jpeg`; // Added type assertion
+                const fileName = (jsonResponse[`${mediaType.key}_name`] as string) || `${mediaType.defaultName}_${funcName}_${Date.now()}.${mimeType.split('/')[1] || 'bin'}`; // Added type assertion
 
                 const byteCharacters = atob(base64Data);
                 const byteNumbers = new Array(byteCharacters.length);
@@ -115,9 +116,9 @@ async function processMediaFromFunctionResponseJson(
 
     if (jsonResponse.file_url && typeof jsonResponse.file_url === 'string' && jsonResponse.mime_type && typeof jsonResponse.mime_type === 'string') {
         try {
-            const fileUrl = jsonResponse.file_url;
-            const mimeType = jsonResponse.mime_type;
-            const fileName = jsonResponse.file_name || `file_${funcName}_${Date.now()}.${mimeType.split('/')[1] || 'bin'}`;
+            const fileUrl = jsonResponse.file_url as string; // Added type assertion
+            const mimeType = jsonResponse.mime_type as string; // Added type assertion
+            const fileName = (jsonResponse.file_name as string) || `file_${funcName}_${Date.now()}.${mimeType.split('/')[1] || 'bin'}`; // Added type assertion
 
             const response = await fetch(fileUrl, { signal: abortSignal });
             if (!response.ok) throw new Error(`Failed to fetch file from URL: ${response.statusText}`);

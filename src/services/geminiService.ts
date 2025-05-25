@@ -7,6 +7,7 @@ import {
     type Part,
     type GenerateContentResponse,
     type FunctionCall,
+    type GenerateContentRequest, // Added this import
 } from "@google/genai";
 
 import type {
@@ -139,7 +140,7 @@ export async function* streamMessageToGemini(
                     }
                 })
             };
-            const requestPayloadForAPI: GenerateContentParameters = {
+            const requestPayloadForAPI: GenerateContentRequest = { // Changed type here
                 model: modelConfig.model,
                 contents: currentChatHistory,
                 config: requestConfig
