@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Button from '../common/Button'; // Certifique-se que o caminho está correto
 import {
   IoSettingsOutline,
@@ -11,6 +11,10 @@ import {
 } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
 import type { Conversation } from '../../types';
+import { Tooltip } from '../common/Tooltip'; // Assuming Tooltip is available
+
+// Import GhostIcon from lucide-react or similar if available, otherwise use a placeholder or another icon
+import { GhostIcon } from 'lucide-react'; // Example: if you have lucide-react installed
 
 interface SidebarProps {
   onOpenSettings: () => void;
@@ -38,6 +42,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
   const [tempTitle, setTempTitle] = useState<string>('');
+  const [showNewChatOptions, setShowNewChatOptions] = useState(false);
+  const newChatButtonRef = useRef<HTMLButtonElement>(null);
+  const newChatOptionsRef = useRef<HTMLDivElement>(null);
+
 
   const sortedConversations = [...conversations]; 
 
@@ -91,6 +99,26 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   }, [setActiveConversationId, isMobile, onSelectConversation]);
 
+  const handleNewChatClick = useCallback((isIncognito: boolean = false) => {
+    createNewConversation({ isIncognito });
+    setShowNewChatOptions(false); // Close options after selection
+    if(isMobile && onSelectConversation) onSelectConversation();
+  }, [createNewConversation, isMobile, onSelectConversation]);
+
+  // Close new chat options when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (newChatOptionsRef.current && !newChatOptionsRef.current.contains(event.target as Node) &&
+          newChatButtonRef.current && !newChatButtonRef.current.contains(event.target as Node)) {
+        setShowNewChatOptions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const baseClasses = `bg-[var(--color-sidebar-bg)] text-[var(--color-sidebar-text)] h-screen flex flex-col p-3 transition-all duration-300 ease-in-out shadow-xl`;
   
   const desktopSpecificClasses = `w-64 md:w-72 border-r border-[var(--color-sidebar-border)] relative`;
@@ -124,24 +152,43 @@ const Sidebar: React.FC<SidebarProps> = ({
           </Button>
       )}
 
-      <div className="mb-3">
+      <div className="mb-3 relative"> {/* Added relative for positioning options */}
         <Button
+          ref={newChatButtonRef}
           variant="primary"
           className={`w-full !py-2.5 flex items-center justify-center space-x-2.5 rounded-lg
                       text-sm font-semibold shadow-md hover:shadow-lg 
                       focus:ring-offset-[var(--color-focus-ring-offset)] 
                       transition-all duration-200 ease-in-out group/newConvo transform active:scale-[0.98]
                       bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]`}
-          onClick={() => {
-              createNewConversation();
-              if(isMobile && onSelectConversation) onSelectConversation();
-          }}
+          onClick={() => setShowNewChatOptions(!showNewChatOptions)} // Toggle options
           title={isMobile ? "Nova Conversa" : ""}
           aria-label="Nova Conversa"
         >
           <IoAddCircleOutline size={22} className={'group-hover/newConvo:scale-110 group-hover/newConvo:rotate-90 transition-transform duration-300'} />
           <span className="whitespace-nowrap">Nova Conversa</span>
         </Button>
+        {showNewChatOptions && (
+          <div
+            ref={newChatOptionsRef}
+            className="absolute z-10 top-full left-0 right-0 mt-2 bg-[var(--color-sidebar-bg)] border border-[var(--color-sidebar-border)] rounded-md shadow-lg overflow-hidden"
+          >
+            <Button
+              variant="ghost"
+              className="w-full justify-start px-4 py-2 hover:bg-[var(--color-hover-bg)] text-[var(--color-sidebar-text)]"
+              onClick={() => handleNewChatClick(false)}
+            >
+              <IoChatbubbleEllipsesOutline size={18} className="mr-2" /> Conversa Padrão
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start px-4 py-2 hover:bg-[var(--color-hover-bg)] text-[var(--color-sidebar-text)]"
+              onClick={() => handleNewChatClick(true)}
+            >
+              <GhostIcon size={18} className="mr-2" /> Conversa Incógnita
+            </Button>
+          </div>
+        )}
       </div>
 
       <nav className={`flex-grow flex flex-col min-h-0`}>
@@ -200,7 +247,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     : 'text-[var(--color-convo-item-icon)] group-hover/convoItem:text-[var(--color-convo-item-hover-icon)]'
                                 }`}
                   />
-                  <span className="truncate flex-1 text-sm">{convo.title}</span>
+                  <span className="truncate flex-1 text-sm">
+                    {convo.title}
+                    {convo.isIncognito && (
+                      <Tooltip content="Conversa Incógnita">
+                        <GhostIcon size={14} className="inline-block ml-2 text-[var(--color-text-secondary)]" />
+                      </Tooltip>
+                    )}
+                  </span>
                   {convo.id === activeConversationId && !isMobile && (
                     <IoChevronForward size={16} className="text-[var(--color-convo-item-active-icon)] opacity-80 ml-auto" />
                   )}

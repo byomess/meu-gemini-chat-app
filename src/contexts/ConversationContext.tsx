@@ -14,7 +14,7 @@ interface ConversationContextType {
     activeConversationId: string | null;
     activeConversation: Conversation | null;
     setActiveConversationId: (id: string | null) => void;
-    createNewConversation: () => Conversation;
+    createNewConversation: (options?: { isIncognito?: boolean }) => Conversation; // Modified signature
     deleteConversation: (id: string) => void;
     deleteAllConversations: () => void;
     addMessageToConversation: (
@@ -43,13 +43,14 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
     const setActiveConversationId = useCallback((id: string | null) => setActiveId(id), [setActiveId]);
 
-    const createNewConversation = useCallback((): Conversation => {
+    const createNewConversation = useCallback((options?: { isIncognito?: boolean }): Conversation => { // Modified to accept options
         const newConversation: Conversation = {
             id: uuidv4(),
             title: 'Nova Conversa',
             messages: [],
             createdAt: new Date(),
             updatedAt: new Date(),
+            isIncognito: options?.isIncognito || false, // Set incognito status
         };
         setConversations(prev => [newConversation, ...prev].sort(sortByUpdatedAtDesc));
         setActiveId(newConversation.id);
