@@ -11,6 +11,7 @@ import { useAppSettings } from '../../contexts/AppSettingsContext'
 import useIsMobile from '../../hooks/useIsMobile'
 import { useCallback, useEffect, useRef, useState } from 'react' // Added useState
 import React from 'react'
+import { GhostIcon } from 'lucide-react' // Import GhostIcon
 
 interface ChatAreaProps {
     onOpenMobileSidebar: () => void;
@@ -32,6 +33,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
 
     const messages = activeConversation?.messages || []
     const conversationTitle = activeConversation?.title || 'Chat'
+    const isIncognito = activeConversation?.isIncognito || false; // Get incognito status
 
     const scrollToBottom = useCallback(() => {
         const container = chatContainerRef.current
@@ -155,7 +157,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                 )}
 
                 <IoChatbubblesOutline size={22} className="flex-shrink-0 text-[var(--color-chat-header-icon)]" />
-                <h2 className="truncate text-base sm:text-lg font-semibold text-[var(--color-chat-header-title)]">{conversationTitle}</h2>
+                <h2 className="truncate text-base sm:text-lg font-semibold text-[var(--color-chat-header-title)]">
+                    {conversationTitle}
+                    {isIncognito && (
+                        <GhostIcon size={18} className="inline-block ml-2 text-[var(--color-text-secondary)]" title="Conversa Incógnita" />
+                    )}
+                </h2>
             </div>
 
             {showFloatingButton && (
