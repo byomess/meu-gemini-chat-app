@@ -565,7 +565,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                             )}
 
                             <div className={`relative flex ${isUser || isFunctionRole ? 'justify-end' : 'justify-start'} max-w-full ${isUser && hasAttachedFiles ? 'mt-0' : ''} `}>
-                                {isEditing && !isThisUserMessageBeingReprocessed ? (
+                                {isEditing && !isThisUserMessageBeingReprocessedByHook ? (
                                     <div className={editContainerClasses}>
                                         <textarea ref={editTextareaRef} value={editedText} onChange={(e) => setEditedText(e.target.value)} onKeyDown={handleEditKeyDown} className={editTextareaClasses} rows={1} aria-label="Editar mensagem" />
                                         <div className="flex justify-end gap-1.5 mt-2 px-1">
