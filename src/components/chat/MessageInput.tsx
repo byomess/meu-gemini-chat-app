@@ -26,7 +26,7 @@ const getPixelValueFromRem = (rem: number) => {
 };
 
 const MessageInput: React.FC = () => {
-    const { conversations, activeConversationId, isProcessingEditedMessage: isProcessingEditedMessageContext } = useConversations();
+    const { conversations, activeConversationId } = useConversations(); // Removed isProcessingEditedMessageContext
     const { settings } = useAppSettings();
     // useMemories is used internally by useMessageSubmission
 
@@ -159,7 +159,9 @@ const MessageInput: React.FC = () => {
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (isRecording || messageSubmission.isProcessingEditedMessage || messageSubmission.isLoadingAI) {
+        // messageSubmission.isProcessingEditedMessage was removed from the hook's return.
+        // messageSubmission.isLoadingAI now covers all loading states from the hook.
+        if (isRecording || messageSubmission.isLoadingAI) {
             if (e.key === 'Enter') e.preventDefault();
             return;
         }
@@ -198,7 +200,8 @@ const MessageInput: React.FC = () => {
             (settings.apiKey ? "Digite a mensagem..." : "Configure sua API Key.") :
             "Crie uma nova conversa.";
 
-    const isCurrentlyLoadingOverall = messageSubmission.isLoadingAI || isProcessingEditedMessageContext;
+    // isProcessingEditedMessageContext was removed. messageSubmission.isLoadingAI is the source of truth.
+    const isCurrentlyLoadingOverall = messageSubmission.isLoadingAI;
     const canSubmitEffectively = (text.trim().length > 0 || ((settings.enableAttachments || fileAttachments.attachedFiles.some(f => f.file.type.startsWith('audio/'))) && fileAttachments.attachedFiles.length > 0)) &&
                                 !!activeConversationId && !isCurrentlyLoadingOverall && !!settings.apiKey && !isRecording;
 

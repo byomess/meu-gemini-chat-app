@@ -11,6 +11,8 @@ import {
 } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { useMessageSubmission } from '../../hooks/useMessageSubmission'; // Added
+import type { LocalAttachedFile } from '../../hooks/useFileAttachments'; // Added
 import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -45,10 +47,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const {
         removeMessageById,
         updateMessageInConversation,
-        regenerateResponseForEditedMessage,
-        isProcessingEditedMessage,
+        // regenerateResponseForEditedMessage, // Will be replaced by useMessageSubmission
+        // isProcessingEditedMessage, // Will be replaced by useMessageSubmission's isLoadingAI
         activeConversation,
-        isGeneratingResponse,
+        conversations, // Added: needed for useMessageSubmission
+        isGeneratingResponse, // This might also be covered by isLoadingAI from the hook
     } = useConversations();
     const { settings } = useAppSettings();
 
@@ -159,6 +162,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const [editedText, setEditedText] = useState<string>(message.text);
     const [showActions, setShowActions] = useState<boolean>(false);
     const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+    // State for attachments if editing could change them. For now, assume no change.
+    const [editedAttachedFiles, setEditedAttachedFiles] = useState<LocalAttachedFile[]>([]);
+
+
+    const messageSubmission = useMessageSubmission({
+        activeConversationId: conversationId,
+        conversations,
+        text: editedText,
+        attachedFiles: editedAttachedFiles, // Pass empty if edits don't change files, or manage state for this
+        isWebSearchEnabledForNextMessage: false, // Edits typically don't toggle web search
+        onSubmissionStart: () => {
+            setIsEditing(false);
+        },
+        onSubmissionEnd: () => {
+            // Optional: focus management or other cleanup after edit submission
+        },
+        messageToEditId: message.id,
+    });
 
     const [mediaModalOpen, setMediaModalOpen] = useState(false);
     const [selectedMedia, setSelectedMedia] = useState<AttachedFileInfo | null>(null);
@@ -216,15 +237,46 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const handleSaveEdit = async (): Promise<void> => {
         const newText = editedText.trim();
         setIsEditing(false);
-        if (newText === '' && !hasAttachedFiles) {
+        if (newText === '' && !hasAttachedFiles && editedAttachedFiles.length === 0) { // Check editedAttachedFiles as well
             if (message.text.replace(/▍$/, '').trim() !== '' && window.confirm('O texto está vazio e não há anexos. Deseja excluir a mensagem?')) {
                 removeMessageById(conversationId, message.id);
             }
             return;
         }
+
         if (isUser) {
-            await regenerateResponseForEditedMessage(conversationId, message.id, newText);
-        } else {
+            // Map original attachments to LocalAttachedFile[] if they should be re-sent.
+            // For now, sending empty, assuming the hook handles history correctly.
+            // If edits could change attachments, `editedAttachedFiles` would be populated by the UI.
+            const originalAttachmentsAsLocal: LocalAttachedFile[] = (message.metadata?.attachedFilesInfo || []).map(afi => ({
+                id: afi.id,
+                // We don't have the File object here, which is a limitation.
+                // The hook expects File objects for *new* uploads.
+                // For edits, the history mechanism should preserve original files.
+                // So, we pass an empty array for `attachedFiles` to the hook,
+                // signifying no *new* files are being added with this edit action.
+                file: new File([], afi.name, { type: afi.type }), // Placeholder, not ideal
+                name: afi.name,
+                type: afi.type,
+                size: afi.size,
+                previewUrl: afi.dataUrl,
+            }));
+            // setEditedAttachedFiles(originalAttachmentsAsLocal); // If we were to manage them
+
+            // Call handleSubmit from the hook for user messages
+            // Ensure `editedText` is up-to-date in the hook's closure if it relies on prop `text`
+            // Or, pass it directly if the hook's handleSubmit accepts it.
+            // The hook is set up to use `text` from its props, which is `editedText` from this component's state.
+            
+            // For edited messages, we are not re-submitting files via the `attachedFiles` prop of the hook.
+            // The original files (if any) are part of the message history that the hook prepares.
+            // So, `editedAttachedFiles` passed to the hook constructor should be `[]` unless the edit UI allows changing files.
+            // For simplicity, let's ensure `editedAttachedFiles` is empty when calling submit for an edit,
+            // unless a more complex file editing UI is implemented in MessageBubble.
+            // The hook's `messageToEditId` signals it's an edit.
+            await messageSubmission.handleSubmit();
+
+        } else { // Editing AI message (local update only)
             const newMetadata: Partial<MessageMetadata> = {
                 ...message.metadata,
                 abortedByUser: false,
@@ -247,7 +299,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         else if (e.key === 'Escape') { e.preventDefault(); handleCancelEdit(); }
     };
 
-    const isThisUserMessageBeingReprocessed = isUser && isProcessingEditedMessage && (activeConversation?.messages.some((m) => m.id === message.id) ?? false) && Boolean(activeConversation?.messages[activeConversation.messages.length - 1]?.metadata?.isLoading) && ((activeConversation?.messages.findIndex((m) => m.id === message.id) ?? 0) < ((activeConversation?.messages.length ?? 1) - 1));
+    // Use isLoadingAI from the submission hook for user messages being edited.
+    // isProcessingEditedMessage from context is being removed.
+    const isThisUserMessageBeingReprocessedByHook = isUser && messageSubmission.isLoadingAI && message.id === messageSubmission.messageToEditId;
 
     const currentMessageText = message.text.replace(/▍$/, '').trim();
     const isLogMessage = currentMessageText.startsWith("[Loox:");
@@ -290,8 +344,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const showAITypingIndicator = !isUser && !isFunctionRole && isLoading && !showActivityIndicator &&
         !functionCallPart && !functionResponsePart && !shouldRenderTextContent;
 
-    const canPerformActionsOnMessage = !isFunctionRole && !isLoading && !isActualErrorForStyling && !isProcessingEditedMessage && !isThisUserMessageBeingReprocessed && !showActivityIndicator;
-    const syntaxHighlightEnabledGlobally = !isGeneratingResponse && settings.codeSynthaxHighlightEnabled;
+    // Replace isProcessingEditedMessage and isThisUserMessageBeingReprocessed with hook's isLoadingAI
+    const canPerformActionsOnMessage = !isFunctionRole && !isLoading && !isActualErrorForStyling && !messageSubmission.isLoadingAI && !showActivityIndicator;
+    const syntaxHighlightEnabledGlobally = !isGeneratingResponse && settings.codeSynthaxHighlightEnabled; // isGeneratingResponse might also be replaced by hook's isLoadingAI if it covers all generation
     
     const markdownComponents: Components = {
         code: ({ inline, className, children, ...props }: CustomCodeRendererProps) => {
@@ -514,13 +569,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                     <div className={editContainerClasses}>
                                         <textarea ref={editTextareaRef} value={editedText} onChange={(e) => setEditedText(e.target.value)} onKeyDown={handleEditKeyDown} className={editTextareaClasses} rows={1} aria-label="Editar mensagem" />
                                         <div className="flex justify-end gap-1.5 mt-2 px-1">
-                                            <Button variant='icon' onClick={handleCancelEdit} className={editButtonClasses} title="Cancelar edição (Esc)"> <IoCloseOutline size={20} /> </Button>
-                                            <Button variant='icon' onClick={handleSaveEdit} className={`${editButtonClasses} ${editedText.trim() === '' && !hasAttachedFiles ? '!text-gray-400 !bg-gray-200/50 cursor-not-allowed' : (isUser ? '!bg-[var(--color-primary-dark)] hover:!bg-[var(--color-primary-dark)]' : '!bg-[var(--color-gray-300)] hover:!bg-[var(--color-gray-400)]')}`} title="Salvar edição (Enter)" disabled={isProcessingEditedMessage || (editedText.trim() === '' && !hasAttachedFiles && message.text === '')}> <IoCheckmarkOutline size={20} /> </Button>
+                                            <Button variant='icon' onClick={handleCancelEdit} className={editButtonClasses} title="Cancelar edição (Esc)" disabled={messageSubmission.isLoadingAI}> <IoCloseOutline size={20} /> </Button>
+                                            <Button variant='icon' onClick={handleSaveEdit} className={`${editButtonClasses} ${editedText.trim() === '' && !hasAttachedFiles && editedAttachedFiles.length === 0 ? '!text-gray-400 !bg-gray-200/50 cursor-not-allowed' : (isUser ? '!bg-[var(--color-primary-dark)] hover:!bg-[var(--color-primary-dark)]' : '!bg-[var(--color-gray-300)] hover:!bg-[var(--color-gray-400)]')}`} title="Salvar edição (Enter)" disabled={messageSubmission.isLoadingAI || (editedText.trim() === '' && !hasAttachedFiles && editedAttachedFiles.length === 0 && message.text === '')}> <IoCheckmarkOutline size={20} /> </Button>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className={messageContainerClasses}>
-                                        {isThisUserMessageBeingReprocessed && (<div className="absolute -top-1.5 -right-1.5 p-0.5 bg-[var(--color-message-bubble-reprocess-icon-bg)] rounded-full shadow z-10"> <IoSyncOutline size={12} className="text-[var(--color-message-bubble-reprocess-icon-text)] animate-spin" /> </div>)}
+                                        {isThisUserMessageBeingReprocessedByHook && (<div className="absolute -top-1.5 -right-1.5 p-0.5 bg-[var(--color-message-bubble-reprocess-icon-bg)] rounded-full shadow z-10"> <IoSyncOutline size={12} className="text-[var(--color-message-bubble-reprocess-icon-text)] animate-spin" /> </div>)}
 
                                         {showActivityIndicator && statusToDisplay && (
                                             <>
@@ -593,8 +648,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                     (isMobile ? 'left-0 top-4' : 'left-11 sm:left-12 -top-6')
                                 }
                                         ${showActions ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 -translate-y-2 pointer-events-none'}`}>
-                                {!isFunctionRole && <Button variant='icon' onClick={handleEdit} className="!p-1.5 text-[var(--color-message-actions-button-text)] hover:!text-[var(--color-message-actions-edit-button-hover-text)] hover:!bg-[var(--color-message-actions-edit-button-hover-bg)]" title="Editar mensagem" disabled={isProcessingEditedMessage || (!isUser && isThisUserMessageBeingReprocessed)}> <IoPencilOutline size={16} /> </Button>}
-                                <Button variant='icon' onClick={handleDelete} className="!p-1.5 text-[var(--color-message-actions-button-text)] hover:!text-[var(--color-message-actions-delete-button-hover-text)] hover:!bg-[var(--color-message-actions-delete-button-hover-bg)]" title="Excluir mensagem" disabled={isProcessingEditedMessage}> <IoTrashOutline size={16} /> </Button>
+                                {!isFunctionRole && <Button variant='icon' onClick={handleEdit} className="!p-1.5 text-[var(--color-message-actions-button-text)] hover:!text-[var(--color-message-actions-edit-button-hover-text)] hover:!bg-[var(--color-message-actions-edit-button-hover-bg)]" title="Editar mensagem" disabled={messageSubmission.isLoadingAI}> <IoPencilOutline size={16} /> </Button>}
+                                <Button variant='icon' onClick={handleDelete} className="!p-1.5 text-[var(--color-message-actions-button-text)] hover:!text-[var(--color-message-actions-delete-button-hover-text)] hover:!bg-[var(--color-message-actions-delete-button-hover-bg)]" title="Excluir mensagem" disabled={messageSubmission.isLoadingAI}> <IoTrashOutline size={16} /> </Button>
                             </div>
                         )}
                     </div>

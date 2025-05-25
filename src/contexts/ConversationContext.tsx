@@ -18,8 +18,8 @@ interface ConversationContextType {
     conversations: Conversation[];
     activeConversationId: string | null;
     activeConversation: Conversation | null;
-    isProcessingEditedMessage: boolean;
-    isGeneratingResponse: boolean;
+    // isProcessingEditedMessage: boolean; // Will be removed
+    // isGeneratingResponse: boolean; // Will be removed
     setActiveConversationId: (id: string | null) => void;
     createNewConversation: () => Conversation;
     deleteConversation: (id: string) => void;
@@ -35,12 +35,12 @@ interface ConversationContextType {
     ) => void;
     updateConversationTitle: (id: string, newTitle: string) => void;
     removeMessageById: (conversationId: string, messageId: string) => void;
-    regenerateResponseForEditedMessage: (
-        conversationId: string,
-        editedMessageId: string,
-        newText: string
-    ) => Promise<void>;
-    abortEditedMessageResponse: () => void;
+    // regenerateResponseForEditedMessage: ( // Will be removed
+    //     conversationId: string,
+    //     editedMessageId: string,
+    //     newText: string
+    // ) => Promise<void>;
+    // abortEditedMessageResponse: () => void; // Will be removed
 }
 
 const ConversationContext = createContext<ConversationContextType | undefined>(undefined);
@@ -50,11 +50,11 @@ const sortByUpdatedAtDesc = (a: Conversation, b: Conversation) => new Date(b.upd
 export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [conversations, setConversations] = useLocalStorage<Conversation[]>(CONVERSATIONS_KEY, []);
     const [activeId, setActiveId] = useLocalStorage<string | null>(ACTIVE_CONVERSATION_ID_KEY, null);
-    const [isProcessingEditedMessage, setIsProcessingEditedMessage] = useState<boolean>(false);
-    const [isGeneratingResponse, setIsGeneratingResponse] = useState<boolean>(false);
+    // const [isProcessingEditedMessage, setIsProcessingEditedMessage] = useState<boolean>(false); // Removed
+    // const [isGeneratingResponse, setIsGeneratingResponse] = useState<boolean>(false); // Removed
 
-    const { settings } = useAppSettings();
-    const { memories: globalMemoriesFromHook, addMemory, updateMemory, deleteMemory: deleteMemoryFromHook } = useMemories();
+    // const { settings } = useAppSettings(); // No longer needed directly for regeneration
+    // const { memories: globalMemoriesFromHook, addMemory, updateMemory, deleteMemory: deleteMemoryFromHook } = useMemories(); // No longer needed directly for regeneration
 
     const chunkQueueRef = useRef<string[]>([]);
     const accumulatedTextRef = useRef<string>(""); // This will now only accumulate actual AI response text
@@ -66,7 +66,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
     const accumulatedRawPartsRef = useRef<Part[]>([]);
 
 
-    const localAbortEditedMessageControllerRef = useRef<AbortController | null>(null);
+    // const localAbortEditedMessageControllerRef = useRef<AbortController | null>(null); // Removed
 
     const activeConversation = conversations.find(c => c.id === activeId) || null;
 
@@ -239,325 +239,15 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
     useEffect(() => {
         return () => {
             if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
-            if (localAbortEditedMessageControllerRef.current && !localAbortEditedMessageControllerRef.current.signal.aborted) {
-                localAbortEditedMessageControllerRef.current.abort("Context unmounting");
-            }
+            // if (localAbortEditedMessageControllerRef.current && !localAbortEditedMessageControllerRef.current.signal.aborted) { // Removed
+            //     localAbortEditedMessageControllerRef.current.abort("Context unmounting");
+            // }
         };
     }, []);
 
-    const abortEditedMessageResponse = useCallback(() => {
-        if (localAbortEditedMessageControllerRef.current && !localAbortEditedMessageControllerRef.current.signal.aborted) {
-            localAbortEditedMessageControllerRef.current.abort("User aborted edited message");
-        }
+    // abortEditedMessageResponse is removed as useMessageSubmission handles its own aborting.
 
-        const convoId = currentConversationIdRef.current; // Use refs for current state
-        const msgId = currentAiMessageIdRef.current;
-        const currentTextSnapshot = accumulatedTextRef.current; // Capture text before clearing refs below
-
-        if (convoId && msgId) {
-            updateMessageInConversation(convoId, msgId, {
-                text: currentTextSnapshot.replace(/▍$/, ''), // Preserve accumulated text
-                metadata: {
-                    isLoading: false,
-                    error: false, 
-                    abortedByUser: true,
-                    processingStatus: lastProcessingStatusRef.current?.stage !== 'completed' && lastProcessingStatusRef.current?.stage !== 'failed' ?
-                        { ...(lastProcessingStatusRef.current || {} as ProcessingStatus), stage: 'failed', error: 'Abortado pelo usuário' }
-                        : lastProcessingStatusRef.current || undefined,
-                    rawParts: accumulatedRawPartsRef.current.length > 0 ? [...accumulatedRawPartsRef.current] : undefined,
-                }
-            });
-        }
-
-        if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
-        renderIntervalRef.current = null;
-        setIsProcessingEditedMessage(false);
-        setIsGeneratingResponse(false);
-        chunkQueueRef.current = [];
-        accumulatedTextRef.current = "";
-        streamHasFinishedRef.current = true;
-        currentAiMessageIdRef.current = null;
-        currentConversationIdRef.current = null;
-        lastProcessingStatusRef.current = null;
-        accumulatedRawPartsRef.current = [];
-        if (localAbortEditedMessageControllerRef.current) {
-            localAbortEditedMessageControllerRef.current = null;
-        }
-    }, [updateMessageInConversation]);
-
-
-    const regenerateResponseForEditedMessage = useCallback(async (
-        conversationId: string,
-        editedMessageId: string,
-        newText: string
-    ): Promise<void> => {
-
-        if (isProcessingEditedMessage) return;
-
-        if (localAbortEditedMessageControllerRef.current && !localAbortEditedMessageControllerRef.current.signal.aborted) {
-            localAbortEditedMessageControllerRef.current.abort("New regeneration started");
-        }
-        localAbortEditedMessageControllerRef.current = new AbortController();
-        const signal = localAbortEditedMessageControllerRef.current.signal;
-
-        if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
-        chunkQueueRef.current = [];
-        accumulatedTextRef.current = "";
-        streamHasFinishedRef.current = false;
-        lastProcessingStatusRef.current = null;
-        accumulatedRawPartsRef.current = [];
-        setIsProcessingEditedMessage(true);
-        setIsGeneratingResponse(true);
-
-        if (!settings.apiKey) {
-            // const errorMsgId = addMessageToConversation(conversationId, {
-            //     text: "Erro: Chave de API não configurada.", sender: 'model', metadata: { error: true, isLoading: false }
-            // });
-            // updateMessageInConversation(conversationId, errorMsgId, { metadata: { isLoading: false } }); // isLoading já é false
-            setIsProcessingEditedMessage(false);
-            setIsGeneratingResponse(false);
-            localAbortEditedMessageControllerRef.current = null;
-            return;
-        }
-
-        const conversationToUpdate = conversations.find(c => c.id === conversationId);
-        if (!conversationToUpdate) {
-            setIsProcessingEditedMessage(false);
-            setIsGeneratingResponse(false);
-            localAbortEditedMessageControllerRef.current = null;
-            return;
-        }
-
-        const messageIndex = conversationToUpdate.messages.findIndex(msg => msg.id === editedMessageId);
-        if (messageIndex === -1) {
-            setIsProcessingEditedMessage(false);
-            setIsGeneratingResponse(false);
-            localAbortEditedMessageControllerRef.current = null;
-            return;
-        }
-
-        // Remove mensagens da IA e de função após a mensagem editada
-        const updatedMessagesForHistory = conversationToUpdate.messages.slice(0, messageIndex + 1);
-        updatedMessagesForHistory[messageIndex] = {
-            ...updatedMessagesForHistory[messageIndex],
-            text: newText,
-            timestamp: new Date(),
-            metadata: {
-                ...updatedMessagesForHistory[messageIndex].metadata,
-                error: undefined,
-                abortedByUser: undefined,
-                userFacingError: undefined,
-                processingStatus: undefined, // Limpa status anterior da mensagem do usuário
-                // rawParts: undefined, // Limpa rawParts da mensagem do usuário, se houver
-            }
-        };
-
-        setConversations(prevConvos =>
-            prevConvos.map(c =>
-                c.id === conversationId
-                    ? { ...c, messages: updatedMessagesForHistory, updatedAt: new Date() }
-                    : c
-            ).sort(sortByUpdatedAtDesc)
-        );
-
-        const newAiMessageId = addMessageToConversation(conversationId, {
-            text: "", sender: 'model', metadata: { isLoading: true }
-        });
-        if (!newAiMessageId) {
-            setIsProcessingEditedMessage(false);
-            setIsGeneratingResponse(false);
-            localAbortEditedMessageControllerRef.current = null;
-            return;
-        }
-
-        currentAiMessageIdRef.current = newAiMessageId;
-        currentConversationIdRef.current = conversationId;
-
-        let memoryOperationsFromServer: StreamedGeminiResponseChunk['memoryOperations'] = [];
-        let streamError: string | null = null;
-        let finalAiResponseText = "";
-
-        // Inicia o loop de renderização imediatamente
-        renderIntervalRef.current = setTimeout(processChunkQueue, CHUNK_RENDER_INTERVAL_MS);
-
-        try {
-            const historyForAPI: { sender: 'user' | 'model' | 'function'; text?: string; parts?: Part[] }[] =
-                updatedMessagesForHistory.map(msg => {
-                    // Para o histórico da API, se a mensagem tiver rawParts, use-as. Senão, use o texto.
-                    // Mensagens de 'function' (resposta da função) devem usar suas 'parts' se existirem.
-                    if (msg.metadata?.rawParts && (msg.sender === 'model' || msg.sender === 'function')) {
-                        return { sender: msg.sender, parts: msg.metadata.rawParts as Part[] };
-                    }
-                    return { sender: msg.sender, text: msg.text };
-                });
-
-            const currentGlobalMemoriesWithObjects = globalMemoriesFromHook.map(mem => ({ id: mem.id, content: mem.content }));
-
-            const streamGenerator = streamMessageToGemini(
-                settings.apiKey,
-                historyForAPI.slice(0, -1), // Exclui a mensagem do usuário atual, que será passada como `newText`
-                newText, // Texto da mensagem do usuário atual (editada)
-                updatedMessagesForHistory[messageIndex].metadata?.attachedFilesInfo?.map(f => ({ file: f as any })) || [], // TODO: Precisa adaptar se for reenviar arquivos de fato
-                currentGlobalMemoriesWithObjects,
-                settings.geminiModelConfig,
-                systemMessage({
-                    conversationTitle: conversationToUpdate.title,
-                    messageCountInConversation: historyForAPI.length,
-                    customPersonalityPrompt: settings.customPersonalityPrompt
-                }),
-                settings.functionDeclarations || [],
-                signal,
-                settings.geminiModelConfig.model.startsWith("gemini-1.5-pro") // Exemplo de como habilitar web search
-            );
-
-            for await (const streamResponse of streamGenerator) {
-                if (signal.aborted) {
-                    streamError = "Resposta abortada pelo usuário.";
-                    break;
-                }
-                if (streamResponse.delta) {
-                    // Only add delta to chunkQueue if it's not a processing status message.
-                    // This ensures chunkQueueRef.current only contains actual AI text.
-                    if (!streamResponse.processingStatus || streamResponse.processingStatus.stage === 'completed') {
-                        chunkQueueRef.current.push(streamResponse.delta);
-                    }
-                }
-                if (streamResponse.processingStatus) {
-                    lastProcessingStatusRef.current = streamResponse.processingStatus;
-                    // Força uma atualização da UI para mostrar o status imediatamente
-                    if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
-                    processChunkQueue(); // Chama diretamente para refletir o status
-                }
-                if (streamResponse.rawPartsForNextTurn) {
-                    // Acumula as parts para a mensagem da IA atual.
-                    // Se for um functionCall, estas parts serão importantes.
-                    accumulatedRawPartsRef.current = [...streamResponse.rawPartsForNextTurn];
-                    if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
-                    processChunkQueue();
-                }
-                if (streamResponse.error) {
-                    streamError = streamResponse.error;
-                    // Não quebre o loop aqui, deixe o isFinished finalizar para pegar o texto acumulado
-                }
-                if (streamResponse.isFinished) {
-                    finalAiResponseText = streamResponse.finalText || accumulatedTextRef.current;
-                    memoryOperationsFromServer = streamResponse.memoryOperations || [];
-                    break;
-                }
-            }
-            streamHasFinishedRef.current = true; // Indica que o stream terminou
-            // Call processChunkQueue one last time ONLY IF NOT ABORTED BY USER,
-            // as abortEditedMessageResponse handles UI and ref cleanup in that case.
-            // The signal.aborted check is crucial here.
-            if (!signal.aborted) {
-                if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
-                renderIntervalRef.current = null;
-                processChunkQueue();
-            } else {
-                // If aborted by user, ensure render interval is cleared if abortEditedMessageResponse didn't already.
-                if (renderIntervalRef.current) {
-                    clearTimeout(renderIntervalRef.current);
-                    renderIntervalRef.current = null;
-                }
-            }
-
-        } catch (error) {
-            const isAbortError = (error as Error)?.name === 'AbortError';
-            if (isAbortError || signal.aborted) {
-                streamError = "Resposta abortada pelo usuário.";
-            } else {
-                console.error("Erro ao regenerar resposta:", error);
-                streamError = (error as Error).message || "Erro desconhecido na regeneração";
-            }
-        } finally {
-            streamHasFinishedRef.current = true; // Ensure this is set
-            if (renderIntervalRef.current) { // Clear any lingering interval
-                clearTimeout(renderIntervalRef.current);
-                renderIntervalRef.current = null;
-            }
-
-            const wasAbortedByUserViaSignal = signal.aborted; // Primary check for user abort
-            const finalMetadata: Partial<MessageMetadata> = {
-                isLoading: false,
-                // Ensure abortedByUser reflects the signal if streamError isn't "Resposta abortada..."
-                // This can happen if the abort is very quick.
-                abortedByUser: wasAbortedByUserViaSignal || (streamError === "Resposta abortada pelo usuário."),
-                processingStatus: lastProcessingStatusRef.current || undefined,
-                rawParts: accumulatedRawPartsRef.current.length > 0 ? [...accumulatedRawPartsRef.current] : undefined,
-            };
-
-
-            if (finalMetadata.abortedByUser) {
-                // If aborted by user, abortEditedMessageResponse has already set the text.
-                // We only update metadata here to ensure it's consistent.
-                updateMessageInConversation(conversationId, newAiMessageId, {
-                    // TEXT IS OMITTED HERE to preserve what abortEditedMessageResponse set
-                    metadata: finalMetadata
-                });
-            } else if (streamError) { // If it was a non-abort error
-                finalMetadata.error = streamError; // Pode ser string ou boolean
-                finalMetadata.userFacingError = streamError;
-                if (lastProcessingStatusRef.current && lastProcessingStatusRef.current.stage !== 'completed') {
-                    finalMetadata.processingStatus = { ...lastProcessingStatusRef.current, stage: 'failed', error: streamError };
-                }
-                updateMessageInConversation(conversationId, newAiMessageId, {
-                    text: (finalAiResponseText || accumulatedTextRef.current).replace(/▍$/, ''),
-                    metadata: finalMetadata
-                });
-            } else { // No error, stream finished successfully
-                if (!streamError || finalMetadata.abortedByUser) {
-                    const processedMemoryActions: Required<MessageMetadata>['memorizedMemoryActions'] = [];
-                    if (memoryOperationsFromServer && memoryOperationsFromServer.length > 0) {
-                        memoryOperationsFromServer.forEach(op => {
-                            if (op.action === 'create' && op.content) {
-                                const newMem = addMemory(op.content);
-                                if (newMem) processedMemoryActions.push({ ...newMem, action: 'created' });
-                            } else if (op.action === 'update' && op.targetMemoryContent && op.content) {
-                                const memToUpdate = globalMemoriesFromHook.find(m => m.content.toLowerCase() === op.targetMemoryContent?.toLowerCase());
-                                if (memToUpdate) {
-                                    updateMemory(memToUpdate.id, op.content);
-                                    processedMemoryActions.push({ id: memToUpdate.id, content: op.content, originalContent: memToUpdate.content, action: 'updated' });
-                                } else {
-                                    const newMem = addMemory(op.content);
-                                    if (newMem) processedMemoryActions.push({ ...newMem, action: 'created' });
-                                }
-                            } else if (op.action === 'delete_by_ai_suggestion' && op.targetMemoryContent) {
-                                const memToDelete = globalMemoriesFromHook.find(m => m.content.toLowerCase() === op.targetMemoryContent?.toLowerCase());
-                                if (memToDelete) {
-                                    deleteMemoryFromHook(memToDelete.id);
-                                    processedMemoryActions.push({ ...memToDelete, originalContent: memToDelete.content, action: 'deleted_by_ai' });
-                                }
-                            }
-                        });
-                        if (processedMemoryActions.length > 0) {
-                            finalMetadata.memorizedMemoryActions = processedMemoryActions;
-                        }
-                    }
-                }
-                updateMessageInConversation(conversationId, newAiMessageId, {
-                    text: (finalAiResponseText || accumulatedTextRef.current).replace(/▍$/, ''),
-                    metadata: finalMetadata
-                });
-            }
-
-            currentAiMessageIdRef.current = null;
-            currentConversationIdRef.current = null;
-            chunkQueueRef.current = [];
-            accumulatedTextRef.current = "";
-            lastProcessingStatusRef.current = null;
-            accumulatedRawPartsRef.current = [];
-            if (localAbortEditedMessageControllerRef.current && localAbortEditedMessageControllerRef.current.signal === signal) {
-                localAbortEditedMessageControllerRef.current = null;
-            }
-            setIsProcessingEditedMessage(false);
-            setIsGeneratingResponse(false);
-        }
-    }, [
-        settings.apiKey, settings.geminiModelConfig, settings.customPersonalityPrompt, settings.functionDeclarations,
-        globalMemoriesFromHook, addMemory, updateMemory, deleteMemoryFromHook,
-        conversations, setConversations, addMessageToConversation, updateMessageInConversation,
-        processChunkQueue, isProcessingEditedMessage,
-    ]);
+    // regenerateResponseForEditedMessage is removed as useMessageSubmission handles this.
 
 
     return (
@@ -565,8 +255,8 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             conversations,
             activeConversationId: activeId,
             activeConversation,
-            isProcessingEditedMessage,
-            isGeneratingResponse,
+            // isProcessingEditedMessage, // Removed
+            // isGeneratingResponse, // Removed
             setActiveConversationId,
             createNewConversation,
             deleteConversation,
@@ -575,8 +265,8 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             updateMessageInConversation,
             updateConversationTitle,
             removeMessageById,
-            regenerateResponseForEditedMessage,
-            abortEditedMessageResponse,
+            // regenerateResponseForEditedMessage, // Removed
+            // abortEditedMessageResponse, // Removed
         }}>
             {children}
         </ConversationContext.Provider>
