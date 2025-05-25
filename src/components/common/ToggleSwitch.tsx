@@ -17,7 +17,8 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
 }) => {
     return (
         <div className="flex items-center justify-between py-2 border-t border-[var(--color-settings-section-border)]">
-            <div>
+            {/* This div contains the label and description */}
+            <div className="flex-grow pr-4"> {/* Added flex-grow and pr-4 */}
                 <label htmlFor={id} className="block text-sm font-medium text-[var(--color-settings-section-title-text)]">
                     {label}
                 </label>
@@ -28,7 +29,7 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
             <button
                 id={id}
                 onClick={onChange}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)]
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)] flex-shrink-0 {/* Added flex-shrink-0 */}
                     ${checked ? 'bg-[var(--color-toggle-switch-bg-on)]' : 'bg-[var(--color-toggle-switch-bg-off)]'}`}
             >
                 <span
