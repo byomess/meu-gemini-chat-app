@@ -51,7 +51,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         // isProcessingEditedMessage, // Will be replaced by useMessageSubmission's isLoadingAI
         activeConversation,
         conversations, // Added: needed for useMessageSubmission
-        isGeneratingResponse, // This might also be covered by isLoadingAI from the hook
+        // isGeneratingResponse, // Removed from context, covered by message.metadata.isLoading or hook's isLoadingAI
     } = useConversations();
     const { settings } = useAppSettings();
 
@@ -346,7 +346,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
 
     // Replace isProcessingEditedMessage and isThisUserMessageBeingReprocessed with hook's isLoadingAI
     const canPerformActionsOnMessage = !isFunctionRole && !isLoading && !isActualErrorForStyling && !messageSubmission.isLoadingAI && !showActivityIndicator;
-    const syntaxHighlightEnabledGlobally = !isGeneratingResponse && settings.codeSynthaxHighlightEnabled; // isGeneratingResponse might also be replaced by hook's isLoadingAI if it covers all generation
+    // Use message.metadata.isLoading (aliased as `isLoading` in this component) for syntax highlighting decisions
+    const syntaxHighlightEnabledGlobally = !isLoading && settings.codeSynthaxHighlightEnabled; 
     
     const markdownComponents: Components = {
         code: ({ inline, className, children, ...props }: CustomCodeRendererProps) => {
