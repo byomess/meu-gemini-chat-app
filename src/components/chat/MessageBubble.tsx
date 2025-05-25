@@ -6,7 +6,7 @@ import {
     IoPersonCircleOutline, IoSparklesOutline, IoGitNetworkOutline, IoTrashOutline,
     IoPencilOutline, IoCheckmarkOutline, IoCloseOutline, IoSyncOutline,
     IoCreateOutline, IoInformationCircleOutline, IoRemoveCircleOutline,
-    IoDocumentTextOutline, IoImageOutline, IoMusicalNotesOutline, IoVideocamOutline, IoTerminalOutline,
+    IoDocumentTextOutline, IoImageOutline, IoMusicalNotesOutline, IoVideocamOutline,
     IoGitCommitOutline,
 } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
@@ -49,7 +49,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         updateMessageInConversation,
         // regenerateResponseForEditedMessage, // Will be replaced by useMessageSubmission
         // isProcessingEditedMessage, // Will be replaced by useMessageSubmission's isLoadingAI
-        activeConversation,
         conversations, // Added: needed for useMessageSubmission
         // isGeneratingResponse, // Removed from context, covered by message.metadata.isLoading or hook's isLoadingAI
     } = useConversations();
