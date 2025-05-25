@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/components/chat/MessageBubble.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import type { Message, MessageMetadata, MemoryActionType, AttachedFileInfo, Part, ProcessingStatus } from '../../types'; // Adicionado ProcessingStatus explicitamente
+import type { Message, MessageMetadata, MemoryActionType, AttachedFileInfo, Part, ProcessingStatus } from '../../types';
 import {
     IoPersonCircleOutline, IoSparklesOutline, IoGitNetworkOutline, IoTrashOutline,
     IoPencilOutline, IoCheckmarkOutline, IoCloseOutline, IoSyncOutline,
@@ -10,7 +10,7 @@ import {
     IoGitCommitOutline,
 } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
-import { useAppSettings } from '../../contexts/AppSettingsContext'; // Importar useAppSettings
+import { useAppSettings } from '../../contexts/AppSettingsContext'; // Import useAppSettings
 import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -51,32 +51,28 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         activeConversation,
         isGeneratingResponse,
     } = useConversations();
-    const { settings } = useAppSettings(); // Obter configurações globais
+    const { settings } = useAppSettings(); // Get global settings
 
     const isMobile = useIsMobile();
 
     const isUser = message.sender === 'user';
     const isFunctionRole = message.sender === 'function';
     const isLoading = message.metadata?.isLoading;
-    const incomingProcessingStatus = message.metadata?.processingStatus; // Status vindo das props
+    const incomingProcessingStatus = message.metadata?.processingStatus;
 
-    // Estado para o status que está efetivamente sendo usado para renderizar o indicador
     const [activeDisplayStatus, setActiveDisplayStatus] = useState<ProcessingStatus | undefined>(incomingProcessingStatus);
     const indicatorTypeChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastIndicatorTypeSetTimeRef = useRef<number>(0);
-    // Ref para guardar o tipo do último indicador que começou a ser exibido
     const currentIndicatorTypeRef = useRef<ProcessingStatus['type'] | undefined>(undefined);
 
-    const [aiAvatarLoadError, setAiAvatarLoadError] = useState(false); // Estado para erro de carregamento do avatar da IA
+    const [aiAvatarLoadError, setAiAvatarLoadError] = useState(false);
 
     useEffect(() => {
-        // Resetar erro de avatar quando a URL do avatar ou a mensagem mudar
         setAiAvatarLoadError(false);
     }, [settings.aiAvatarUrl, message.id]);
 
 
     useEffect(() => {
-        // Inicializa activeDisplayStatus e o tempo quando o componente monta ou incomingProcessingStatus aparece pela primeira vez
         if (incomingProcessingStatus && !activeDisplayStatus) {
             setActiveDisplayStatus(incomingProcessingStatus);
             lastIndicatorTypeSetTimeRef.current = Date.now();
@@ -86,32 +82,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
 
 
     useEffect(() => {
-        // Se não há status vindo das props, e tínhamos um status ativo, limpamos.
         if (!incomingProcessingStatus && activeDisplayStatus) {
             if (indicatorTypeChangeTimeoutRef.current) {
                 clearTimeout(indicatorTypeChangeTimeoutRef.current);
             }
-            // Poderia haver um delay para limpar também, se desejado, mas por ora limpa direto
             setActiveDisplayStatus(undefined);
             currentIndicatorTypeRef.current = undefined;
             lastIndicatorTypeSetTimeRef.current = 0;
             return;
         }
 
-        // Se não há status vindo, não faz nada.
         if (!incomingProcessingStatus) {
             return;
         }
 
-        // Se o incomingProcessingStatus é "igual" (mesmo tipo e stage relevante) ao activeDisplayStatus,
-        // apenas atualiza o activeDisplayStatus para garantir que 'details' etc. estejam atualizados.
-        // Os filhos cuidarão do seu próprio timing interno para stages.
         if (activeDisplayStatus &&
             incomingProcessingStatus.type === activeDisplayStatus.type &&
-            incomingProcessingStatus.stage === activeDisplayStatus.stage /* Adicione mais campos se necessário para esta comparação */
+            incomingProcessingStatus.stage === activeDisplayStatus.stage
         ) {
-            // Se o tipo é o mesmo, apenas atualiza para que os filhos recebam os detalhes mais recentes.
-            // Não resetamos o timer de tipo aqui, pois o tipo não mudou.
             if (JSON.stringify(incomingProcessingStatus) !== JSON.stringify(activeDisplayStatus)) {
                 setActiveDisplayStatus(incomingProcessingStatus);
             }
@@ -119,7 +107,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         }
 
 
-        // Lógica para troca de TIPO de indicador
         const incomingType = incomingProcessingStatus.type;
         const activeType = activeDisplayStatus?.type;
 
@@ -128,7 +115,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         }
 
         if (activeType && incomingType !== activeType && lastIndicatorTypeSetTimeRef.current !== 0) {
-            // Houve uma mudança no TIPO de indicador (ex: de function_call para file_processing)
             const now = Date.now();
             const timeSinceLastTypeSet = now - lastIndicatorTypeSetTimeRef.current;
 
@@ -140,20 +126,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                     currentIndicatorTypeRef.current = incomingProcessingStatus.type;
                 }, delay);
             } else {
-                // Tempo mínimo do tipo anterior já passou, atualiza imediatamente
                 setActiveDisplayStatus(incomingProcessingStatus);
                 lastIndicatorTypeSetTimeRef.current = now;
                 currentIndicatorTypeRef.current = incomingProcessingStatus.type;
             }
         } else {
-            // Caso inicial (activeDisplayStatus ainda não definido), ou tipo é o mesmo (já tratado),
-            // ou é uma mudança para um tipo quando antes não havia nenhum.
-            // Atualiza diretamente se o activeDisplayStatus for diferente do incoming.
             if (JSON.stringify(incomingProcessingStatus) !== JSON.stringify(activeDisplayStatus)) {
                 setActiveDisplayStatus(incomingProcessingStatus);
             }
-            // Se o lastIndicatorTypeSetTimeRef.current é 0, significa que é a primeira vez que um indicador deste tipo está sendo setado
-            // ou o tipo anterior foi completamente removido.
             if (lastIndicatorTypeSetTimeRef.current === 0 || activeType !== incomingType) {
                 lastIndicatorTypeSetTimeRef.current = Date.now();
                 currentIndicatorTypeRef.current = incomingProcessingStatus.type;
@@ -165,8 +145,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                 clearTimeout(indicatorTypeChangeTimeoutRef.current);
             }
         };
-        // Adicionamos activeDisplayStatus à lista de dependências para garantir que o effect rode
-        // quando ele for alterado internamente por um timeout.
     }, [incomingProcessingStatus, activeDisplayStatus]);
 
 
@@ -252,9 +230,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
             const newMetadata: Partial<MessageMetadata> = {
                 ...message.metadata,
                 abortedByUser: false,
-                error: false, // Limpa erro ao editar manualmente
+                error: false,
                 userFacingError: undefined,
-                processingStatus: undefined // Limpa status de processamento ao editar manualmente
+                processingStatus: undefined
             };
             if (isLoading) newMetadata.isLoading = false;
             updateMessageInConversation(conversationId, message.id, { text: newText, metadata: newMetadata });
@@ -273,7 +251,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
 
     const isThisUserMessageBeingReprocessed = isUser && isProcessingEditedMessage && (activeConversation?.messages.some((m) => m.id === message.id) ?? false) && Boolean(activeConversation?.messages[activeConversation.messages.length - 1]?.metadata?.isLoading) && ((activeConversation?.messages.findIndex((m) => m.id === message.id) ?? 0) < ((activeConversation?.messages.length ?? 1) - 1));
 
-    const showActivityIndicator = !isUser && !isFunctionRole && isLoading && activeDisplayStatus &&
+    // Modify this line to include the new setting
+    const showActivityIndicator = settings.showProcessingIndicators && !isUser && !isFunctionRole && isLoading && activeDisplayStatus &&
         (activeDisplayStatus.stage === 'pending' || activeDisplayStatus.stage === 'in_progress' || activeDisplayStatus.stage === 'awaiting_ai');
 
     const currentMessageText = message.text.replace(/▍$/, '').trim();

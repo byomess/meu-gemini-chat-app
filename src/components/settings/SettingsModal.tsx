@@ -104,6 +104,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         useState<boolean>(settings.enableAttachments);
     const [currentHideNavigation, setCurrentHideNavigation] =
         useState<boolean>(settings.hideNavigation);
+    const [currentShowProcessingIndicatorsState, setCurrentShowProcessingIndicatorsState] = // Add this line
+        useState<boolean>(settings.showProcessingIndicators); // Initialize from settings
 
     const [activeTab, setActiveTab] = useState<TabId>("general");
     const modalContentRef = useRef<HTMLDivElement>(null);
@@ -139,6 +141,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             setCurrentEnableWebSearchEnabled(settings.enableWebSearch);
             setCurrentAttachmentsEnabled(settings.enableAttachments);
             setCurrentHideNavigation(settings.hideNavigation);
+            setCurrentShowProcessingIndicatorsState(settings.showProcessingIndicators); // Sync new setting
             setCurrentCustomPersonalityPrompt(settings.customPersonalityPrompt || "");
 
             const currentSettingsSafety = settings.geminiModelConfig?.safetySettings;
@@ -226,6 +229,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         setCurrentHideNavigation((prev) => !prev);
     };
 
+    const handleToggleShowProcessingIndicatorsForTab = () => { // Add new handler
+        setCurrentShowProcessingIndicatorsState((prev) => !prev);
+    };
+
     const handleSaveAllSettings = () => {
         // Validações
         if (localModelConfig.temperature < 0 || localModelConfig.temperature > 2) {
@@ -286,6 +293,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             enableWebSearch: currentEnableWebSearchEnabled,
             enableAttachments: currentAttachmentsEnabled,
             hideNavigation: currentHideNavigation,
+            showProcessingIndicators: currentShowProcessingIndicatorsState, // Save new setting
         }));
         showDialog({ title: "Sucesso", message: "Configurações salvas com sucesso!", type: "alert" });
         // onClose(); // Opcional: fechar o modal de configurações após salvar
@@ -440,7 +448,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                     leaveToClass +=
                                                         slideDirection > 0
                                                             ? " -translate-x-12 sm:-translate-x-16 md:-translate-x-20"
-                                                            : " translate-x-12 sm:translate-x-16 md:translate-x-20";
+                                                            : " translate-x-12 sm:translate-x-16 md:-translate-x-20";
                                                 }
 
                                                 return (
@@ -454,7 +462,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                         // Para evitar que o conteúdo antigo fique visível durante a transição de saída
                                                         // e para permitir scroll no conteúdo que entra,
                                                         // o 'leave' não deve usar 'absolute inset-0' se o conteúdo tiver alturas diferentes.
-                                                        // Se as abas tiverem alturas fixas ou semelhantes, 'absolute' pode ser ok.
                                                         // Caso contrário, é melhor deixar a transição de saída apenas desvanecer.
                                                         leave="transition-all ease-in duration-200 transform"
                                                         leaveFrom="opacity-100 translate-x-0"
@@ -503,6 +510,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                                             onToggleAttachmentsEnabled={handleToggleAttachmentsEnabledForTab}
                                                                             currentHideNavigation={currentHideNavigation}
                                                                             onToggleHideNavigation={handleToggleHideNavigationForTab}
+                                                                            currentShowProcessingIndicators={currentShowProcessingIndicatorsState} // Pass new prop
+                                                                            onToggleShowProcessingIndicators={handleToggleShowProcessingIndicatorsForTab} // Pass new handler
                                                                         />
                                                                     )}
                                                                     {tab.id === "memories" && (

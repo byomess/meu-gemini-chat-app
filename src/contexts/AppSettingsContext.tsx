@@ -24,7 +24,7 @@ const defaultAppSettings: AppSettings = {
         maxOutputTokens: 32768,
         safetySettings: defaultSafetySettings,
         model: 'gemini-2.5-flash-preview-05-20',
-        thinkingBudget: 1024, // Add this line with a default value
+        thinkingBudget: 1024,
     },
     functionDeclarations: [],
     codeSynthaxHighlightEnabled: false,
@@ -33,6 +33,7 @@ const defaultAppSettings: AppSettings = {
     enableAttachments: true,
     hideNavigation: false,
     theme: 'aulapp',
+    showProcessingIndicators: true, // Add this line
 };
 
 interface AppSettingsContextType {
@@ -47,6 +48,7 @@ interface AppSettingsContextType {
     updateAttachmentsEnabled: (enabled: boolean) => void;
     updateHideNavigation: (hidden: boolean) => void;
     updateTheme: (theme: 'loox' | 'aulapp') => void;
+    updateShowProcessingIndicators: (enabled: boolean) => void; // Add this line
 }
 
 export const AppSettingsContext = createContext<AppSettingsContextType | undefined>(undefined);
@@ -161,6 +163,14 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
         }));
     }, [setSettings]);
 
+    // Add this new callback
+    const updateShowProcessingIndicators = useCallback((enabled: boolean) => {
+        setSettings((prevSettings) => ({
+            ...prevSettings,
+            showProcessingIndicators: enabled,
+        }));
+    }, [setSettings]);
+
     return (
         <AppSettingsContext.Provider value={{
             settings,
@@ -174,6 +184,7 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
             updateAttachmentsEnabled,
             updateHideNavigation,
             updateTheme,
+            updateShowProcessingIndicators, // Add this to the context value
         }}>
             {children}
         </AppSettingsContext.Provider>

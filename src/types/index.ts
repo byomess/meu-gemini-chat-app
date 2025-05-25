@@ -46,6 +46,7 @@ export interface AppSettings {
     enableAttachments: boolean;
     hideNavigation: boolean;
     theme: 'loox' | 'aulapp';
+    showProcessingIndicators: boolean; // Add this line
 }
 
 export interface Memory {
