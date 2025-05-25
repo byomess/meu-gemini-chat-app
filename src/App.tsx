@@ -1,25 +1,30 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react'; // Added useRef
 import Sidebar from './components/layout/Sidebar';
 import ChatArea from './components/layout/ChatArea';
 import SettingsModal from './components/settings/SettingsModal';
 import useIsMobile from './hooks/useIsMobile';
 import React from 'react';
 import { useUrlConfigInitializer } from './hooks/useUrlConfigInitializer';
-import { ConversationProvider, useConversations } from './contexts/ConversationContext'; // Import ConversationProvider
-import { useAppSettings } from './contexts/AppSettingsContext';
+import { ConversationProvider, useConversations } from './contexts/ConversationContext';
+import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext'; // Import AppSettingsProvider
 import { DialogProvider } from './contexts/DialogContext';
-import { useGoogleDriveSync } from './hooks/useGoogleDriveSync'; // Import the new hook
+import { MemoryProvider, useMemories } from './contexts/MemoryContext'; // Import MemoryProvider and useMemories
+import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
 
 const AppContent = () => {
     const { settings } = useAppSettings();
     const { conversations, createNewConversation, activeConversationId } = useConversations();
-    const { syncMemories } = useGoogleDriveSync(); // Use the Google Drive sync hook
+    const { memories } = useMemories(); // Get memories from context
+    const { syncMemories } = useGoogleDriveSync();
 
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const isMobile = useIsMobile();
 
     const showNavigation = !settings.hideNavigation;
+
+    // Ref to track if a sync is already in progress to prevent multiple simultaneous calls
+    const isSyncingRef = useRef(false);
 
     const handleOpenSettingsModal = useCallback(() => {
         setIsSettingsModalOpen(true);
@@ -64,11 +69,29 @@ const AppContent = () => {
 
     // Trigger Google Drive sync on app startup if connected
     useEffect(() => {
-        if (settings.googleDriveAccessToken) {
+        if (settings.googleDriveAccessToken && !isSyncingRef.current) {
             console.log("Google Drive access token found. Initiating sync on app startup.");
-            syncMemories();
+            isSyncingRef.current = true; // Set flag to true
+            syncMemories().finally(() => {
+                isSyncingRef.current = false; // Reset flag after sync completes
+            });
         }
     }, [settings.googleDriveAccessToken, syncMemories]);
+
+    // Trigger Google Drive sync when local memories change
+    useEffect(() => {
+        // This effect will run whenever 'memories' array reference changes.
+        // We need to ensure it doesn't trigger on initial load or when syncMemories itself updates memories.
+        // A simple debounce or a more sophisticated state management might be needed for production.
+        // For MVP, we'll rely on the `isSyncingRef` to prevent immediate re-syncs.
+        if (settings.googleDriveAccessToken && !isSyncingRef.current) {
+            console.log("Local memories changed. Initiating Google Drive sync.");
+            isSyncingRef.current = true; // Set flag to true
+            syncMemories().finally(() => {
+                isSyncingRef.current = false; // Reset flag after sync completes
+            });
+        }
+    }, [memories, settings.googleDriveAccessToken, syncMemories]);
 
 
     return (
@@ -121,13 +144,16 @@ function App() {
     useUrlConfigInitializer();
 
     return (
-        // DialogProvider agora envolve AppContent e gerencia a renderização do CustomDialog
-        // ConversationProvider também precisa envolver AppContent
-        <DialogProvider>
-            <ConversationProvider> {/* Added ConversationProvider */}
-                <AppContent />
-            </ConversationProvider>
-        </DialogProvider>
+        // Correct nesting of providers
+        <AppSettingsProvider>
+            <MemoryProvider>
+                <DialogProvider>
+                    <ConversationProvider>
+                        <AppContent />
+                    </ConversationProvider>
+                </DialogProvider>
+            </MemoryProvider>
+        </AppSettingsProvider>
     );
 }
 
