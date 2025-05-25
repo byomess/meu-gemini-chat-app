@@ -1,7 +1,7 @@
 import React, { createContext, useContext, type ReactNode, useCallback, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { HarmCategory, HarmBlockThreshold, type SafetySetting } from '../types';
-import type { AppSettings, GeminiModelConfig, FunctionDeclaration } from '../types';
+import type { AppSettings, GeminiModelConfig, FunctionDeclaration, GoogleDriveSyncStatus, GoogleDriveUser } from '../types';
 
 const APP_SETTINGS_KEY = 'geminiChat_appSettings';
 
@@ -34,6 +34,11 @@ const defaultAppSettings: AppSettings = {
     hideNavigation: false,
     theme: 'aulapp',
     showProcessingIndicators: true, // Add this line
+    googleDriveAccessToken: undefined,
+    googleDriveUser: null,
+    googleDriveSyncStatus: 'Disconnected',
+    googleDriveLastSync: undefined,
+    googleDriveError: undefined,
 };
 
 interface AppSettingsContextType {
@@ -49,6 +54,11 @@ interface AppSettingsContextType {
     updateHideNavigation: (hidden: boolean) => void;
     updateTheme: (theme: 'loox' | 'aulapp') => void;
     updateShowProcessingIndicators: (enabled: boolean) => void; // Add this line
+    connectGoogleDrive: (accessToken: string, user: GoogleDriveUser) => void;
+    disconnectGoogleDrive: () => void;
+    setGoogleDriveSyncStatus: (status: GoogleDriveSyncStatus) => void;
+    updateGoogleDriveLastSync: (timestamp: string) => void;
+    setGoogleDriveError: (error?: string) => void;
 }
 
 export const AppSettingsContext = createContext<AppSettingsContextType | undefined>(undefined);
@@ -171,6 +181,41 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
         }));
     }, [setSettings]);
 
+    const connectGoogleDrive = useCallback((accessToken: string, user: GoogleDriveUser) => {
+        setSettings(prev => ({
+            ...prev,
+            googleDriveAccessToken: accessToken,
+            googleDriveUser: user,
+            googleDriveSyncStatus: 'Synced', // Or 'Connected', assuming initial sync might follow
+            googleDriveLastSync: new Date().toISOString(),
+            googleDriveError: undefined,
+        }));
+    }, [setSettings]);
+
+    const disconnectGoogleDrive = useCallback(() => {
+        setSettings(prev => ({
+            ...prev,
+            googleDriveAccessToken: undefined,
+            googleDriveUser: null,
+            googleDriveSyncStatus: 'Disconnected',
+            googleDriveError: undefined,
+            // googleDriveLastSync: undefined, // Optionally clear last sync time
+        }));
+    }, [setSettings]);
+
+    const setGoogleDriveSyncStatus = useCallback((status: GoogleDriveSyncStatus) => {
+        setSettings(prev => ({ ...prev, googleDriveSyncStatus: status }));
+    }, [setSettings]);
+
+    const updateGoogleDriveLastSync = useCallback((timestamp: string) => {
+        setSettings(prev => ({ ...prev, googleDriveLastSync: timestamp }));
+    }, [setSettings]);
+
+    const setGoogleDriveError = useCallback((error?: string) => {
+        setSettings(prev => ({ ...prev, googleDriveError: error, googleDriveSyncStatus: error ? 'Error' : prev.googleDriveSyncStatus }));
+    }, [setSettings]);
+
+
     return (
         <AppSettingsContext.Provider value={{
             settings,
@@ -185,6 +230,11 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
             updateHideNavigation,
             updateTheme,
             updateShowProcessingIndicators, // Add this to the context value
+            connectGoogleDrive,
+            disconnectGoogleDrive,
+            setGoogleDriveSyncStatus,
+            updateGoogleDriveLastSync,
+            setGoogleDriveError,
         }}>
             {children}
         </AppSettingsContext.Provider>

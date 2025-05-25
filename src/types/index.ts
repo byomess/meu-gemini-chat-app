@@ -28,6 +28,15 @@ export interface GeminiModelConfig {
     thinkingBudget?: number; // Add this line
 }
 
+export type GoogleDriveSyncStatus = 'Disconnected' | 'Connecting' | 'Syncing' | 'Synced' | 'Error';
+
+export interface GoogleDriveUser {
+    email: string;
+    name?: string;
+    picture?: string;
+}
+
+
 export interface FunctionDeclaration {
     id: string;
     name: string;
@@ -49,6 +58,11 @@ export interface AppSettings {
     hideNavigation: boolean;
     theme: 'loox' | 'aulapp';
     showProcessingIndicators: boolean; // Add this line
+    googleDriveAccessToken?: string;
+    googleDriveUser?: GoogleDriveUser | null;
+    googleDriveSyncStatus: GoogleDriveSyncStatus;
+    googleDriveLastSync?: string; // ISO string for timestamp
+    googleDriveError?: string;
 }
 
 export interface Memory {

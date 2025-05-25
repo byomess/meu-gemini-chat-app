@@ -1,18 +1,31 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Button from '../../common/Button';
-import { IoCloudUploadOutline, IoCloudDownloadOutline, IoTrashOutline, IoCloseOutline } from 'react-icons/io5';
+import { IoCloudUploadOutline, IoCloudDownloadOutline, IoTrashOutline, IoCloseOutline, IoLogoGoogle, IoUnlinkOutline } from 'react-icons/io5';
 import type { AppSettings, Conversation, Memory, UrlConfigFile, RawImportedConversation, RawImportedMessage } from '../../../types';
 import { useDialog } from '../../../contexts/DialogContext';
 import { useMemories } from '../../../contexts/MemoryContext';
 import { useConversations } from '../../../contexts/ConversationContext';
 import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
+import { useAppSettings } from '../../../contexts/AppSettingsContext';
+import {
+    initGoogleTokenClient,
+    requestAccessToken,
+    fetchUserProfile,
+    revokeAccessToken
+} from '../../../services/googleAuthService';
 
 export type DataSettingsTabProps = object;
+
+const GOOGLE_DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file'; // Or drive.appdata
 
 const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
     const { showDialog } = useDialog();
     const { clearAllMemories, replaceAllMemories } = useMemories();
     const { deleteAllConversations } = useConversations();
+    const { settings, connectGoogleDrive, disconnectGoogleDrive, setGoogleDriveSyncStatus, setGoogleDriveError } = useAppSettings();
+
+    const [isGoogleClientInitialized, setIsGoogleClientInitialized] = useState(false);
+    const [authActionLoading, setAuthActionLoading] = useState(false);
 
     const [isDragging, setIsDragging] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -249,6 +262,76 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
         fileInputRef.current?.click();
     }, []);
 
+    // Initialize Google Token Client
+    useEffect(() => {
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+        if (!clientId) {
+            console.error("Google Client ID (VITE_GOOGLE_CLIENT_ID) is not configured.");
+            setGoogleDriveError("Google integration is not configured by the administrator.");
+            setIsGoogleClientInitialized(false);
+            return;
+        }
+
+        initGoogleTokenClient(
+            clientId,
+            GOOGLE_DRIVE_SCOPES,
+            async (tokenResponse) => {
+                setAuthActionLoading(true);
+                setGoogleDriveSyncStatus('Connecting');
+                try {
+                    const userProfile = await fetchUserProfile(tokenResponse.access_token);
+                    connectGoogleDrive(tokenResponse.access_token, userProfile);
+                    // setGoogleDriveSyncStatus('Synced'); // connectGoogleDrive sets this
+                    showDialog({ title: "Google Drive Conectado", message: `Conectado como ${userProfile.email}.`, type: 'alert' });
+                } catch (error: any) {
+                    console.error("Error fetching user profile or connecting:", error);
+                    setGoogleDriveError(error.message || "Falha ao obter perfil do usuário.");
+                    // disconnectGoogleDrive(); // Ensure clean state if profile fetch fails
+                } finally {
+                    setAuthActionLoading(false);
+                }
+            },
+            (error) => {
+                console.error("Google Auth Error:", error);
+                let errorMessage = "Falha na autenticação com Google Drive.";
+                if (error && error.type === 'popup_closed') {
+                    errorMessage = "Autenticação cancelada: Janela fechada pelo usuário.";
+                } else if (error && error.error === 'access_denied') {
+                    errorMessage = "Acesso negado. Permissão não concedida.";
+                } else if (error && typeof error.message === 'string') {
+                    errorMessage = error.message;
+                }
+                setGoogleDriveError(errorMessage);
+                setGoogleDriveSyncStatus('Disconnected');
+                setAuthActionLoading(false);
+                setIsGoogleClientInitialized(true); // Still initialized, but auth failed/cancelled
+            }
+        );
+        setIsGoogleClientInitialized(true); // Assume init call is made, error callback will handle GIS not loaded
+    }, [connectGoogleDrive, setGoogleDriveError, setGoogleDriveSyncStatus, showDialog]);
+
+    const handleConnectGoogleDrive = useCallback(() => {
+        if (!isGoogleClientInitialized) {
+            showDialog({ title: "Erro", message: "Cliente Google não inicializado. Verifique a configuração ou tente recarregar.", type: 'alert' });
+            return;
+        }
+        setAuthActionLoading(true);
+        setGoogleDriveSyncStatus('Connecting');
+        setGoogleDriveError(undefined);
+        requestAccessToken();
+    }, [isGoogleClientInitialized, showDialog, setGoogleDriveSyncStatus, setGoogleDriveError]);
+
+    const handleDisconnectGoogleDrive = useCallback(() => {
+        if (settings.googleDriveAccessToken) {
+            setAuthActionLoading(true);
+            revokeAccessToken(settings.googleDriveAccessToken, () => {
+                disconnectGoogleDrive();
+                setAuthActionLoading(false);
+                showDialog({ title: "Google Drive Desconectado", message: "Sua conta foi desconectada.", type: 'alert' });
+            });
+        }
+    }, [settings.googleDriveAccessToken, disconnectGoogleDrive, showDialog]);
+
     return (
         <div className="space-y-6">
             <SettingsPanel
@@ -326,6 +409,47 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                             </Button>
                         </div>
                     </div>
+                </section>
+            </SettingsPanel>
+
+            <SettingsPanel
+                title="Sincronização com Google Drive"
+                description="Mantenha suas memórias sincronizadas com seu Google Drive pessoal."
+            >
+                <section className="bg-[var(--color-data-import-export-bg)] p-4 rounded-lg border border-[var(--color-data-import-export-border)] shadow-sm space-y-3">
+                    {settings.googleDriveUser ? (
+                        <>
+                            <p className="text-sm text-[var(--color-data-import-export-text)]">
+                                Conectado como: <span className="font-medium">{settings.googleDriveUser.email}</span>
+                            </p>
+                            <p className="text-sm text-[var(--color-data-import-export-text)]">
+                                Status: <span className="font-medium">{settings.googleDriveSyncStatus}</span>
+                                {settings.googleDriveLastSync && ` (Última sincronização: ${new Date(settings.googleDriveLastSync).toLocaleString()})`}
+                            </p>
+                            <Button variant="danger" onClick={handleDisconnectGoogleDrive} disabled={authActionLoading} className="w-full sm:w-auto">
+                                <IoUnlinkOutline className="mr-2" size={20} /> Desconectar Google Drive
+                            </Button>
+                            {/* MVP: Manual sync button will be added later with FR07.3 */}
+                        </>
+                    ) : (
+                        <>
+                            <p className="text-sm text-[var(--color-data-import-export-text)]">
+                                Conecte sua conta Google para sincronizar suas memórias.
+                                Seus dados serão armazenados em um arquivo JSON na pasta do aplicativo em seu Google Drive.
+                            </p>
+                            <Button
+                                variant="primary"
+                                onClick={handleConnectGoogleDrive}
+                                disabled={!isGoogleClientInitialized || authActionLoading || !import.meta.env.VITE_GOOGLE_CLIENT_ID}
+                                className="w-full sm:w-auto"
+                            >
+                                <IoLogoGoogle className="mr-2" size={20} /> Conectar com Google Drive
+                            </Button>
+                        </>
+                    )}
+                    {settings.googleDriveError && (
+                        <p className="text-sm text-red-500 mt-2">Erro: {settings.googleDriveError}</p>
+                    )}
                 </section>
             </SettingsPanel>
         </div>
