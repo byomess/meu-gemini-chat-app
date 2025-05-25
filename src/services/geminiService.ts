@@ -20,6 +20,7 @@ import type {
     SafetySetting,
     ProcessingStatus,
     ProcessingType,
+    AttachedFileInfo, // Import AttachedFileInfo
     // ProcessingStage // Not directly used here, but part of ProcessingStatus
 } from '../types';
 
@@ -42,6 +43,7 @@ export interface StreamedGeminiResponseChunk {
     isFinished: boolean;
     processingStatus?: ProcessingStatus;
     rawPartsForNextTurn?: Part[];
+    functionAttachedFilesInfo?: AttachedFileInfo[]; // Already added in Step 1
 }
 
 export interface RawFileAttachment {
@@ -212,104 +214,151 @@ function _buildApiTools(
 
 async function* _processUserAttachments(
     genAI: GoogleGenAI,
-    attachedRawFiles: RawFileAttachment[],
+    attachedRawFile: RawFileAttachment, // Changed to single file for simpler iteration
     abortSignal?: AbortSignal,
-): AsyncGenerator<StreamedGeminiResponseChunk, Part[], undefined> {
-    const processedFileParts: Part[] = [];
-    if (!attachedRawFiles || attachedRawFiles.length === 0) {
-        return processedFileParts;
+): AsyncGenerator<StreamedGeminiResponseChunk, Part, undefined> { // Changed return type to single Part
+    const file = attachedRawFile.file; // Access the single file
+    const originalFileName = file.name || `unnamed-file-${Date.now()}`;
+
+    if (!file || !(typeof File !== "undefined" && file instanceof File || typeof Blob !== "undefined" && file instanceof Blob)) {
+        yield { error: `Anexo inválido detectado: ${originalFileName}.`, isFinished: false, processingStatus: { type: 'user_attachment_upload', stage: 'failed', name: originalFileName, error: 'Tipo de arquivo inválido' } };
+        throw new Error(`Anexo inválido detectado: ${originalFileName}.`); // Throw to stop processing this file
     }
 
+    const fileBaseName = originalFileName.substring(0, originalFileName.lastIndexOf('.')) || originalFileName;
+    const googleResourceName = sanitizeGoogleResourceName(fileBaseName);
+
     yield {
-        delta: "Processando anexos do usuário... ",
         isFinished: false,
-        processingStatus: { type: 'user_attachment_upload', stage: 'pending', details: 'Iniciando processamento de anexos...' }
+        processingStatus: { type: 'user_attachment_upload', stage: 'in_progress', name: originalFileName, details: 'Enviando para API...' }
     };
 
-    let allFilesProcessedSuccessfully = true;
+    try {
+        const initialUploadResponse = await genAI.files.upload({
+            file: file, config: { mimeType: file.type, displayName: originalFileName, name: googleResourceName }
+        });
+        const initialUploadMetadata = initialUploadResponse as GeminiFileMetadata;
 
-    for (const rawFileAttachment of attachedRawFiles) {
-        if (abortSignal?.aborted) {
-            yield { error: "Processamento de anexos abortado.", isFinished: true, processingStatus: { type: 'user_attachment_upload', stage: 'failed', error: 'Abortado pelo usuário' } };
-            throw new DOMException("Processamento de anexos abortado.", "AbortError");
+        if (!initialUploadMetadata || !initialUploadMetadata.name) {
+            throw new Error(`Falha no upload de '${originalFileName}': ID ausente.`);
         }
-
-        const file = rawFileAttachment.file;
-        const originalFileName = file.name || `unnamed-file-${Date.now()}`;
-
-        if (!file || !(typeof File !== "undefined" && file instanceof File || typeof Blob !== "undefined" && file instanceof Blob)) {
-            yield { error: `Anexo inválido detectado: ${originalFileName}.`, isFinished: false, processingStatus: { type: 'user_attachment_upload', stage: 'failed', name: originalFileName, error: 'Tipo de arquivo inválido' } };
-            allFilesProcessedSuccessfully = false;
-            continue;
-        }
-
-        const fileBaseName = originalFileName.substring(0, originalFileName.lastIndexOf('.')) || originalFileName;
-        const googleResourceName = sanitizeGoogleResourceName(fileBaseName);
 
         yield {
             isFinished: false,
-            processingStatus: { type: 'user_attachment_upload', stage: 'in_progress', name: originalFileName, details: 'Enviando para API...' }
+            processingStatus: { type: 'user_attachment_upload', stage: 'in_progress', name: originalFileName, details: 'Aguardando ativação do arquivo na API...' }
         };
 
-        try {
-            const initialUploadResponse = await genAI.files.upload({
-                file: file, config: { mimeType: file.type, displayName: originalFileName, name: googleResourceName }
-            });
-            const initialUploadMetadata = initialUploadResponse as GeminiFileMetadata;
+        const activeFileMetadata = await _waitForFileActive(genAI, initialUploadMetadata.name, abortSignal);
+        // No need to check abortSignal here, _waitForFileActive throws if aborted
 
-            if (!initialUploadMetadata || !initialUploadMetadata.name) {
-                yield { error: `Falha no upload de '${originalFileName}': ID ausente.`, isFinished: false, processingStatus: { type: 'user_attachment_upload', stage: 'failed', name: originalFileName, error: 'ID ausente da API após upload.' } };
-                allFilesProcessedSuccessfully = false;
-                continue;
+        const filePart: Part = {
+            fileData: { mimeType: activeFileMetadata.mimeType, fileUri: activeFileMetadata.uri },
+        };
+        yield {
+            isFinished: false,
+            processingStatus: { type: 'user_attachment_upload', stage: 'completed', name: originalFileName, details: 'Arquivo pronto para IA.' }
+        };
+        return filePart; // Return the single Part
+    } catch (uploadError: unknown) {
+        if (uploadError instanceof DOMException && uploadError.name === "AbortError") {
+            yield { error: "Processamento de anexos abortado.", isFinished: true, processingStatus: { type: 'user_attachment_upload', stage: 'failed', name: originalFileName, error: 'Abortado pelo usuário durante upload/verificação.' } };
+            throw uploadError;
+        }
+        const errorMessage = uploadError instanceof Error ? uploadError.message : "Erro upload/verificação";
+        yield { error: `Falha com arquivo '${originalFileName}': ${errorMessage}`, isFinished: false, processingStatus: { type: 'user_attachment_upload', stage: 'failed', name: originalFileName, error: errorMessage } };
+        throw new Error(`Falha com arquivo '${originalFileName}': ${errorMessage}`); // Re-throw to stop processing
+    }
+}
+
+// NEW HELPER FUNCTION: Process media from JSON function responses
+async function _processMediaFromFunctionResponseJson(
+    genAI: GoogleGenAI,
+    jsonResponse: any,
+    funcName: string,
+    abortSignal?: AbortSignal,
+): Promise<AttachedFileInfo[]> {
+    const attachedFiles: AttachedFileInfo[] = [];
+
+    if (!jsonResponse || typeof jsonResponse !== 'object') {
+        return attachedFiles;
+    }
+
+    // Helper to create AttachedFileInfo from Blob
+    const createAttachedFileInfo = async (blob: Blob, fileName: string, mimeType: string): Promise<AttachedFileInfo> => {
+        const dataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+        });
+        return {
+            id: crypto.randomUUID(),
+            name: fileName,
+            type: mimeType,
+            size: blob.size,
+            previewUrl: dataUrl,
+        };
+    };
+
+    // 1. Check for base64 encoded media
+    const base64MediaTypes = [
+        { key: 'image_base64', mimePrefix: 'image/', defaultName: 'image' },
+        { key: 'audio_base64', mimePrefix: 'audio/', defaultName: 'audio' },
+        { key: 'video_base64', mimePrefix: 'video/', defaultName: 'video' },
+    ];
+
+    for (const mediaType of base64MediaTypes) {
+        if (jsonResponse[mediaType.key] && typeof jsonResponse[mediaType.key] === 'string') {
+            try {
+                const base64Data = jsonResponse[mediaType.key];
+                const mimeType = jsonResponse[`${mediaType.key}_mime_type`] || `${mediaType.mimePrefix}jpeg`; // Default to jpeg if not specified
+                const fileName = jsonResponse[`${mediaType.key}_name`] || `${mediaType.defaultName}_${funcName}_${Date.now()}.${mimeType.split('/')[1] || 'bin'}`;
+                
+                const byteCharacters = atob(base64Data);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: mimeType });
+
+                attachedFiles.push(await createAttachedFileInfo(blob, fileName, mimeType));
+            } catch (e) {
+                console.error(`Failed to process base64 media from function '${funcName}':`, e);
             }
-
-            yield {
-                isFinished: false,
-                processingStatus: { type: 'user_attachment_upload', stage: 'in_progress', name: originalFileName, details: 'Aguardando ativação do arquivo na API...' }
-            };
-
-            const activeFileMetadata = await _waitForFileActive(genAI, initialUploadMetadata.name, abortSignal);
-            // No need to check abortSignal here, _waitForFileActive throws if aborted
-
-            processedFileParts.push({
-                fileData: { mimeType: activeFileMetadata.mimeType, fileUri: activeFileMetadata.uri },
-            });
-            yield {
-                isFinished: false,
-                processingStatus: { type: 'user_attachment_upload', stage: 'completed', name: originalFileName, details: 'Arquivo pronto para IA.' }
-            };
-
-        } catch (uploadError: unknown) {
-            if (uploadError instanceof DOMException && uploadError.name === "AbortError") {
-                yield { error: "Processamento de anexos abortado.", isFinished: true, processingStatus: { type: 'user_attachment_upload', stage: 'failed', name: originalFileName, error: 'Abortado pelo usuário durante upload/verificação.' } };
-                throw uploadError;
-            }
-            const errorMessage = uploadError instanceof Error ? uploadError.message : "Erro upload/verificação";
-            yield { error: `Falha com arquivo '${originalFileName}': ${errorMessage}`, isFinished: false, processingStatus: { type: 'user_attachment_upload', stage: 'failed', name: originalFileName, error: errorMessage } };
-            allFilesProcessedSuccessfully = false;
         }
     }
 
-    const successfullyUploadedCount = processedFileParts.length;
-    if (allFilesProcessedSuccessfully) {
-        yield { delta: "Anexos do usuário processados. ", isFinished: false, processingStatus: { type: 'user_attachment_upload', stage: 'completed', details: 'Todos os anexos prontos para a IA.' } };
-    } else if (successfullyUploadedCount > 0) {
-        yield { delta: "Alguns anexos do usuário processados. ", isFinished: false, processingStatus: { type: 'user_attachment_upload', stage: 'completed', details: 'Alguns anexos prontos, outros falharam.' } };
-    } else {
-        yield { delta: "Falha ao processar anexos do usuário. ", isFinished: false, processingStatus: { type: 'user_attachment_upload', stage: 'failed', details: 'Nenhum anexo pôde ser processado.' } };
+    // 2. Check for file URLs
+    if (jsonResponse.file_url && typeof jsonResponse.file_url === 'string' && jsonResponse.mime_type && typeof jsonResponse.mime_type === 'string') {
+        try {
+            const fileUrl = jsonResponse.file_url;
+            const mimeType = jsonResponse.mime_type;
+            const fileName = jsonResponse.file_name || `file_${funcName}_${Date.now()}.${mimeType.split('/')[1] || 'bin'}`;
+
+            const response = await fetch(fileUrl, { signal: abortSignal });
+            if (!response.ok) throw new Error(`Failed to fetch file from URL: ${response.statusText}`);
+            const blob = await response.blob();
+
+            attachedFiles.push(await createAttachedFileInfo(blob, fileName, mimeType));
+        } catch (e) {
+            console.error(`Failed to process file URL from function '${funcName}':`, e);
+        }
     }
-    return processedFileParts;
+
+    return attachedFiles;
 }
+
 
 async function* _executeDeclaredFunctionAndProcessResult(
     genAI: GoogleGenAI,
     declaredFunction: AppFunctionDeclaration,
     funcArgs: Record<string, unknown>, // FunctionCall.args is { [key: string]: any; }
     abortSignal?: AbortSignal,
-): AsyncGenerator<StreamedGeminiResponseChunk, { functionResponseContent: unknown; fileDataPartForUserContext?: Part }, undefined> {
+): AsyncGenerator<StreamedGeminiResponseChunk, { functionResponseContent: unknown; fileDataPartForUserContext?: Part; attachedFilesFromFunction?: AttachedFileInfo[] }, undefined> {
     const funcName = declaredFunction.name;
     let functionResponseContent: unknown;
     let fileDataPartForUserContext = undefined;
+    let attachedFilesFromFunction: AttachedFileInfo[] = []; // New array for files to attach to AI message
 
     yield {
         delta: `\n\n[Loox: Chamando '${funcName}'...]\n`,
@@ -406,14 +455,43 @@ async function* _executeDeclaredFunctionAndProcessResult(
             };
             fileDataPartForUserContext = { fileData: { mimeType: activeFileMetadata.mimeType, fileUri: activeFileMetadata.uri } };
 
+            // Also add to attachedFilesFromFunction for display in AI message bubble
+            const dataUrl = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(fileBlob);
+            });
+            attachedFilesFromFunction.push({
+                id: crypto.randomUUID(),
+                name: downloadedFileName,
+                type: actualMimeType,
+                size: fileBlob.size,
+                previewUrl: dataUrl,
+            });
+
+
             yield {
                 delta: `[Loox: Arquivo '${downloadedFileName}' adicionado ao contexto. Aguardando IA processar...]\n`,
                 isFinished: false,
                 processingStatus: { type: processingTypeFileFromFunc, stage: 'awaiting_ai', name: downloadedFileName, details: 'Arquivo pronto e aguardando análise da IA.' }
             };
         } else if (contentTypeHeader.includes("application/json")) {
-            functionResponseContent = await apiResponse.json();
-            yield { delta: `[Loox: API JSON '${funcName}' respondeu.]\n`, isFinished: false };
+            const jsonResponse = await apiResponse.json();
+            functionResponseContent = jsonResponse;
+            
+            // Process JSON for embedded media
+            const mediaFromJsonResponse = await _processMediaFromFunctionResponseJson(genAI, jsonResponse, funcName, abortSignal);
+            if (mediaFromJsonResponse.length > 0) {
+                attachedFilesFromFunction.push(...mediaFromJsonResponse);
+                yield {
+                    delta: `[Loox: Mídia detectada na resposta JSON da função '${funcName}'.]\n`,
+                    isFinished: false,
+                    functionAttachedFilesInfo: mediaFromJsonResponse, // Yield the attached files
+                    processingStatus: { type: 'file_from_function_processing', stage: 'completed', details: 'Mídia da função processada.' }
+                };
+            } else {
+                yield { delta: `[Loox: API JSON '${funcName}' respondeu.]\n`, isFinished: false };
+            }
         } else {
             functionResponseContent = await apiResponse.text();
             yield { delta: `[Loox: API Texto '${funcName}' respondeu.]\n`, isFinished: false };
@@ -428,7 +506,7 @@ async function* _executeDeclaredFunctionAndProcessResult(
             processingStatus: { type: 'function_call_execution', stage: 'failed', name: funcName, error: errorMsg }
         };
     }
-    return { functionResponseContent, fileDataPartForUserContext };
+    return { functionResponseContent, fileDataPartForUserContext, attachedFilesFromFunction };
 }
 
 function _handleGeminiApiError(error: unknown, modelName: string): string {
@@ -497,8 +575,23 @@ export async function* streamMessageToGemini(
     try {
         // 1. Process User Attachments
         if (attachedRawFiles && attachedRawFiles.length > 0) {
-            const userFileParts = yield* _processUserAttachments(genAI, attachedRawFiles, abortSignal);
-            initialUserParts.push(...userFileParts);
+            const successfullyUploadedCount = 0; // Track successful uploads
+            for (const rawFileAttachment of attachedRawFiles) {
+                try {
+                    const filePart = yield* _processUserAttachments(genAI, rawFileAttachment, abortSignal);
+                    initialUserParts.push(filePart);
+                    // successfullyUploadedCount++; // Not needed if we throw on failure
+                } catch (error) {
+                    // Error already yielded by _processUserAttachments, just continue to next file
+                    console.warn(`Skipping file due to error: ${error}`);
+                }
+            }
+            // Yield a final status for user attachments if needed, or rely on individual file statuses
+            if (initialUserParts.length > 0) {
+                yield { delta: "Anexos do usuário processados. ", isFinished: false, processingStatus: { type: 'user_attachment_upload', stage: 'completed', details: 'Todos os anexos prontos para a IA.' } };
+            } else if (attachedRawFiles.length > 0) {
+                yield { delta: "Falha ao processar anexos do usuário. ", isFinished: false, processingStatus: { type: 'user_attachment_upload', stage: 'failed', details: 'Nenhum anexo pôde ser processado.' } };
+            }
         }
 
         // 2. Add current user text message
@@ -541,7 +634,7 @@ export async function* streamMessageToGemini(
         // eslint-disable-next-line no-constant-condition
         while (true) {
             // The AbortSignal is now passed directly to generateContentStream,
-            // which will throw an AbortError if the signal is aborted.
+            // which will throw an "AbortError" if the signal is aborted.
             // No need for manual check here.
 
             const requestConfig: Omit<GenerateContentConfig, 'model' | 'contents'> = {
@@ -570,6 +663,7 @@ export async function* streamMessageToGemini(
             let hasFunctionCallInThisTurn = false;
             let currentTurnTextDelta = "";
             let functionCallRequestStatusEmitted = false;
+            let attachedFilesFromFunctionThisTurn: AttachedFileInfo[] = []; // Collect files from function response
 
             for await (const chunk of streamResult) {
                 if (abortSignal?.aborted) {
@@ -605,10 +699,12 @@ export async function* streamMessageToGemini(
                     yield {
                         delta: currentTurnTextDelta || undefined,
                         isFinished: false,
-                        processingStatus: chunkProcessingStatus
+                        processingStatus: chunkProcessingStatus,
+                        functionAttachedFilesInfo: attachedFilesFromFunctionThisTurn.length > 0 ? attachedFilesFromFunctionThisTurn : undefined, // Include files
                     };
                     if (currentTurnTextDelta) accumulatedTextForFinalResponse += currentTurnTextDelta;
                     currentTurnTextDelta = "";
+                    attachedFilesFromFunctionThisTurn = []; // Clear after yielding
                 }
             } // End of streamResult loop
 
@@ -625,9 +721,13 @@ export async function* streamMessageToGemini(
                     const declaredFunction = functionDeclarations.find(df => df.name === funcName);
 
                     if (declaredFunction) {
-                        const { functionResponseContent, fileDataPartForUserContext } = yield* _executeDeclaredFunctionAndProcessResult(
+                        const { functionResponseContent, fileDataPartForUserContext, attachedFilesFromFunction: newAttachedFiles } = yield* _executeDeclaredFunctionAndProcessResult(
                             genAI, declaredFunction, funcArgs as Record<string, unknown>, abortSignal
                         );
+
+                        if (newAttachedFiles && newAttachedFiles.length > 0) {
+                            attachedFilesFromFunctionThisTurn.push(...newAttachedFiles); // Collect for next yield
+                        }
 
                         currentChatHistory.push({
                             role: FUNCTION_ROLE, parts: [
@@ -648,8 +748,10 @@ export async function* streamMessageToGemini(
 
                         yield {
                             isFinished: false,
-                            processingStatus: { type: 'function_call_response', stage: 'awaiting_ai', name: funcName, details: 'Resposta da função enviada à IA para processamento.' }
+                            processingStatus: { type: 'function_call_response', stage: 'awaiting_ai', name: funcName, details: 'Resposta da função enviada à IA para processamento.' },
+                            functionAttachedFilesInfo: attachedFilesFromFunctionThisTurn.length > 0 ? attachedFilesFromFunctionThisTurn : undefined, // Yield collected files
                         };
+                        attachedFilesFromFunctionThisTurn = []; // Clear after yielding
 
                     } else { // Function not declared
                         currentChatHistory.push({
@@ -675,7 +777,12 @@ export async function* streamMessageToGemini(
 
             // If no function call, or function call processing did not 'continue' (e.g. malformed), finish.
             const { cleanedResponse, operations } = parseMemoryOperations(accumulatedTextForFinalResponse);
-            yield { finalText: cleanedResponse, memoryOperations: operations, isFinished: true };
+            yield { 
+                finalText: cleanedResponse, 
+                memoryOperations: operations, 
+                isFinished: true,
+                functionAttachedFilesInfo: attachedFilesFromFunctionThisTurn.length > 0 ? attachedFilesFromFunctionThisTurn : undefined, // Final yield for any remaining files
+            };
             return;
 
         } // End of while(true) loop

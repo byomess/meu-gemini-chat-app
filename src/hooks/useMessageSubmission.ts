@@ -46,6 +46,7 @@ export function useMessageSubmission({
     const abortStreamControllerRef = useRef<AbortController | null>(null);
     const lastProcessingStatusForInputRef = useRef<ProcessingStatus | null>(null);
     const accumulatedRawPartsForInputRef = useRef<Part[]>([]);
+    const accumulatedAttachedFilesInfoRef = useRef<AttachedFileInfo[]>([]); // New ref for attached files from functions
 
     const handleSubmit = async () => {
         setErrorFromAI(null);
@@ -78,6 +79,7 @@ export function useMessageSubmission({
 
         lastProcessingStatusForInputRef.current = null;
         accumulatedRawPartsForInputRef.current = [];
+        accumulatedAttachedFilesInfoRef.current = []; // Reset for new submission
         let accumulatedAiText = ""; // This will now only accumulate actual AI response text
 
         const currentTextForAI = trimmedText;
@@ -162,6 +164,12 @@ export function useMessageSubmission({
                 if (streamResponse.rawPartsForNextTurn) {
                     accumulatedRawPartsForInputRef.current = [...streamResponse.rawPartsForNextTurn];
                 }
+                if (streamResponse.functionAttachedFilesInfo) { // Handle new attached files from function calls
+                    accumulatedAttachedFilesInfoRef.current = [
+                        ...accumulatedAttachedFilesInfoRef.current,
+                        ...streamResponse.functionAttachedFilesInfo
+                    ];
+                }
 
                 const showTypingCursor = !streamResponse.isFinished &&
                     !(lastProcessingStatusForInputRef.current &&
@@ -175,6 +183,7 @@ export function useMessageSubmission({
                         isLoading: !streamResponse.isFinished,
                         processingStatus: lastProcessingStatusForInputRef.current || undefined,
                         rawParts: accumulatedRawPartsForInputRef.current.length > 0 ? [...accumulatedRawPartsForInputRef.current] : undefined,
+                        attachedFilesInfo: accumulatedAttachedFilesInfoRef.current.length > 0 ? [...accumulatedAttachedFilesInfoRef.current] : undefined, // Include accumulated files
                     }
                 });
 
@@ -195,6 +204,7 @@ export function useMessageSubmission({
                 abortedByUser: signal.aborted ? true : undefined,
                 processingStatus: lastProcessingStatusForInputRef.current || undefined,
                 rawParts: accumulatedRawPartsForInputRef.current.length > 0 ? [...accumulatedRawPartsForInputRef.current] : undefined,
+                attachedFilesInfo: accumulatedAttachedFilesInfoRef.current.length > 0 ? [...accumulatedAttachedFilesInfoRef.current] : undefined, // Final accumulated files
             };
 
             if (streamError && !finalMetadata.abortedByUser) { // Only set error if it's not a user abort
@@ -250,6 +260,7 @@ export function useMessageSubmission({
                 isLoading: false,
                 processingStatus: lastProcessingStatusForInputRef.current || undefined,
                 rawParts: accumulatedRawPartsForInputRef.current.length > 0 ? [...accumulatedRawPartsForInputRef.current] : undefined,
+                attachedFilesInfo: accumulatedAttachedFilesInfoRef.current.length > 0 ? [...accumulatedAttachedFilesInfoRef.current] : undefined, // Final accumulated files on error
             };
 
             const isAbortError = (error as Error)?.name === 'AbortError';
@@ -278,6 +289,7 @@ export function useMessageSubmission({
             }
             lastProcessingStatusForInputRef.current = null;
             accumulatedRawPartsForInputRef.current = [];
+            accumulatedAttachedFilesInfoRef.current = []; // Clear ref after submission ends
 
             // Determine if an error occurred that was NOT an abort by user
             const errorOccurred = errorFromAI !== null; // errorFromAI is only set for non-abort errors

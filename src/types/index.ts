@@ -157,3 +157,19 @@ export interface RawImportedConversation {
 
 export type DataSettingsTabProps = object;
 export type MemoriesSettingsTabProps = object;
+
+export interface StreamedGeminiResponseChunk {
+    delta?: string;
+    finalText?: string;
+    memoryOperations?: {
+        action: 'create' | 'update' | 'delete_by_ai_suggestion';
+        content?: string;
+        targetMemoryContent?: string;
+        idToUpdate?: string;
+    }[];
+    error?: string;
+    isFinished: boolean;
+    processingStatus?: ProcessingStatus;
+    rawPartsForNextTurn?: Part[];
+    functionAttachedFilesInfo?: AttachedFileInfo[]; // Add this line
+}
