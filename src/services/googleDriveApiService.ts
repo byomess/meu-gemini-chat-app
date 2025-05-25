@@ -42,13 +42,13 @@ export const loadAndInitGapiClient = async (accessToken: string, scope: string):
                         resolve();
                     } catch (error) {
                         console.error("Error initializing gapi client:", error);
-                        reject(error);
+                        reject(new Error(`Falha ao inicializar cliente GAPI: ${error instanceof Error ? error.message : String(error)}`));
                     }
                 });
             };
             script.onerror = (error) => {
                 console.error("Failed to load Google API script:", error);
-                reject(new Error("Failed to load Google API script."));
+                reject(new Error("Falha ao carregar script da API Google. Verifique sua conexão."));
             };
             document.body.appendChild(script);
         } else {
@@ -64,7 +64,7 @@ export const loadAndInitGapiClient = async (accessToken: string, scope: string):
                     resolve();
                 } catch (error) {
                     console.error("Error initializing gapi client (already loaded):", error);
-                    reject(error);
+                    reject(new Error(`Falha ao inicializar cliente GAPI (já carregado): ${error instanceof Error ? error.message : String(error)}`));
                 }
             });
         }
@@ -74,13 +74,16 @@ export const loadAndInitGapiClient = async (accessToken: string, scope: string):
 // Helper to ensure gapi client is ready before making requests
 const ensureGapiClientReady = async (): Promise<void> => {
     if (!gapiClientInitialized) {
-        // This should ideally not happen if loadAndInitGapiClient is called correctly
-        // before any Drive API calls.
-        throw new Error("Google API client not initialized. Call loadAndInitGapiClient first.");
+        throw new Error("Cliente da API Google não inicializado. Conecte-se ao Google Drive primeiro.");
     }
-    // gapi.client.drive should be available after init
+    // Ensure the drive API is loaded
     if (!gapi.client.drive) {
-        await gapi.client.load('drive', 'v3');
+        try {
+            await gapi.client.load('drive', 'v3');
+        } catch (error) {
+            console.error("Error loading Google Drive API:", error);
+            throw new Error(`Falha ao carregar a API do Google Drive: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
 };
 
@@ -90,29 +93,29 @@ const ensureGapiClientReady = async (): Promise<void> => {
  */
 export const findOrCreateAppFolder = async (): Promise<string> => {
     await ensureGapiClientReady();
+    const parentFolderId = 'root'; // Using 'root' for visible folder in My Drive
 
-    // Use 'root' for visible folder in My Drive.
-    // If 'drive.appdata' scope was used, this would be 'appDataFolder'.
-    const parentFolderId = 'root';
-
-    // Search for the folder
-    const response = await gapi.client.drive.files.list({
-        q: `name='${APP_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and '${parentFolderId}' in parents and trashed=false`,
-        spaces: 'drive',
-        fields: 'files(id, name)',
-    });
-
-    if (response.result.files && response.result.files.length > 0) {
-        return response.result.files[0].id;
-    } else {
-        // Create the folder if it doesn't exist
-        const createResponse = await gapi.client.drive.files.create({
-            name: APP_FOLDER_NAME,
-            mimeType: 'application/vnd.google-apps.folder',
-            parents: [parentFolderId],
-            fields: 'id',
+    try {
+        const response = await gapi.client.drive.files.list({
+            q: `name='${APP_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and '${parentFolderId}' in parents and trashed=false`,
+            spaces: 'drive',
+            fields: 'files(id, name)',
         });
-        return createResponse.result.id!;
+
+        if (response.result.files && response.result.files.length > 0) {
+            return response.result.files[0].id;
+        } else {
+            const createResponse = await gapi.client.drive.files.create({
+                name: APP_FOLDER_NAME,
+                mimeType: 'application/vnd.google-apps.folder',
+                parents: [parentFolderId],
+                fields: 'id',
+            });
+            return createResponse.result.id!;
+        }
+    } catch (error) {
+        console.error("Error finding or creating app folder:", error);
+        throw new Error(`Falha ao encontrar ou criar pasta do aplicativo no Drive: ${error instanceof Error ? error.message : String(error)}`);
     }
 };
 
@@ -123,17 +126,21 @@ export const findOrCreateAppFolder = async (): Promise<string> => {
  */
 export const getMemoriesFileId = async (parentFolderId: string): Promise<string | null> => {
     await ensureGapiClientReady();
+    try {
+        const response = await gapi.client.drive.files.list({
+            q: `name='${MEMORIES_FILE_NAME}' and mimeType='application/json' and '${parentFolderId}' in parents and trashed=false`,
+            spaces: 'drive',
+            fields: 'files(id, name, modifiedTime)',
+        });
 
-    const response = await gapi.client.drive.files.list({
-        q: `name='${MEMORIES_FILE_NAME}' and mimeType='application/json' and '${parentFolderId}' in parents and trashed=false`,
-        spaces: 'drive',
-        fields: 'files(id, name, modifiedTime)',
-    });
-
-    if (response.result.files && response.result.files.length > 0) {
-        return response.result.files[0].id;
+        if (response.result.files && response.result.files.length > 0) {
+            return response.result.files[0].id;
+        }
+        return null;
+    } catch (error) {
+        console.error("Error getting memories file ID:", error);
+        throw new Error(`Falha ao buscar ID do arquivo de memórias no Drive: ${error instanceof Error ? error.message : String(error)}`);
     }
-    return null;
 };
 
 /**
@@ -143,12 +150,16 @@ export const getMemoriesFileId = async (parentFolderId: string): Promise<string 
  */
 export const readFileContent = async (fileId: string): Promise<string> => {
     await ensureGapiClientReady();
-
-    const response = await gapi.client.drive.files.get({
-        fileId: fileId,
-        alt: 'media', // This is crucial to get the file content
-    });
-    return response.body as string;
+    try {
+        const response = await gapi.client.drive.files.get({
+            fileId: fileId,
+            alt: 'media', // This is crucial to get the file content
+        });
+        return response.body as string;
+    } catch (error) {
+        console.error("Error reading file content:", error);
+        throw new Error(`Falha ao ler conteúdo do arquivo no Drive: ${error instanceof Error ? error.message : String(error)}`);
+    }
 };
 
 /**
@@ -160,7 +171,6 @@ export const readFileContent = async (fileId: string): Promise<string> => {
  */
 export const uploadFileContent = async (content: string, parentFolderId: string, existingFileId: string | null): Promise<string> => {
     await ensureGapiClientReady();
-
     const fileMetadata = {
         name: MEMORIES_FILE_NAME,
         mimeType: 'application/json',
@@ -172,23 +182,26 @@ export const uploadFileContent = async (content: string, parentFolderId: string,
         body: content,
     };
 
-    if (existingFileId) {
-        // Update existing file
-        const response = await gapi.client.drive.files.update({
-            fileId: existingFileId,
-            resource: fileMetadata, // Pass metadata as resource
-            media: media,
-            uploadType: 'media', // Required for media uploads
-        });
-        return response.result.id!;
-    } else {
-        // Create new file
-        const response = await gapi.client.drive.files.create({
-            resource: fileMetadata,
-            media: media,
-            fields: 'id',
-        });
-        return response.result.id!;
+    try {
+        if (existingFileId) {
+            const response = await gapi.client.drive.files.update({
+                fileId: existingFileId,
+                resource: fileMetadata,
+                media: media,
+                uploadType: 'media',
+            });
+            return response.result.id!;
+        } else {
+            const response = await gapi.client.drive.files.create({
+                resource: fileMetadata,
+                media: media,
+                fields: 'id',
+            });
+            return response.result.id!;
+        }
+    } catch (error) {
+        console.error("Error uploading file content:", error);
+        throw new Error(`Falha ao enviar/atualizar arquivo no Drive: ${error instanceof Error ? error.message : String(error)}`);
     }
 };
 
@@ -199,10 +212,14 @@ export const uploadFileContent = async (content: string, parentFolderId: string,
  */
 export const getFileModifiedTime = async (fileId: string): Promise<string> => {
     await ensureGapiClientReady();
-
-    const response = await gapi.client.drive.files.get({
-        fileId: fileId,
-        fields: 'modifiedTime',
-    });
-    return response.result.modifiedTime!;
+    try {
+        const response = await gapi.client.drive.files.get({
+            fileId: fileId,
+            fields: 'modifiedTime',
+        });
+        return response.result.modifiedTime!;
+    } catch (error) {
+        console.error("Error getting file modified time:", error);
+        throw new Error(`Falha ao obter data de modificação do arquivo no Drive: ${error instanceof Error ? error.message : String(error)}`);
+    }
 };

@@ -8,7 +8,7 @@ import {
     getMemoriesFileId,
     readFileContent,
     uploadFileContent,
-    getFileModifiedTime
+    // getFileModifiedTime // Not directly used in syncMemories, as we rely on lastModifiedAt in JSON
 } from '../services/googleDriveApiService';
 import type { Memory, DriveMemory } from '../types';
 
@@ -20,8 +20,9 @@ export const useGoogleDriveSync = () => {
 
     const syncMemories = useCallback(async () => {
         if (!settings.googleDriveAccessToken) {
-            console.warn("Google Drive sync attempted without access token.");
+            console.warn("Google Drive sync attempted without access token. Aborting.");
             setGoogleDriveError("Não conectado ao Google Drive.");
+            setGoogleDriveSyncStatus('Disconnected'); // Ensure status is correct
             return;
         }
 
@@ -30,21 +31,25 @@ export const useGoogleDriveSync = () => {
 
         try {
             // 1. Initialize GAPI client with current token
+            // This also ensures the gapi.client.drive library is loaded
             await loadAndInitGapiClient(settings.googleDriveAccessToken, GOOGLE_DRIVE_SCOPES);
 
             // 2. Find or create the Loox app folder
             const appFolderId = await findOrCreateAppFolder();
 
-            // 3. Get remote memories file ID
+            // 3. Get remote memories file ID and content
             let remoteFileId = await getMemoriesFileId(appFolderId);
             let remoteMemories: DriveMemory[] = [];
 
             if (remoteFileId) {
                 try {
                     const content = await readFileContent(remoteFileId);
-                    remoteMemories = JSON.parse(content);
-                    if (!Array.isArray(remoteMemories)) {
-                        console.warn("Remote memories file content is not an array. Treating as empty.");
+                    const parsedContent = JSON.parse(content);
+                    if (Array.isArray(parsedContent)) {
+                        remoteMemories = parsedContent;
+                    } else {
+                        console.warn("Remote memories file content is not a valid JSON array. Treating as empty.");
+                        setGoogleDriveError("Conteúdo do arquivo de memórias no Drive inválido. Será sobrescrito.");
                         remoteMemories = [];
                     }
                 } catch (parseError) {
@@ -113,7 +118,7 @@ export const useGoogleDriveSync = () => {
 
         } catch (error: any) {
             console.error("Google Drive sync failed:", error);
-            setGoogleDriveError(error.message || "Falha na sincronização com Google Drive.");
+            setGoogleDriveError(error.message || "Falha desconhecida na sincronização com Google Drive.");
             setGoogleDriveSyncStatus('Error');
         }
     }, [settings.googleDriveAccessToken, memories, replaceAllMemories, setGoogleDriveSyncStatus, updateGoogleDriveLastSync, setGoogleDriveError]);
