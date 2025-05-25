@@ -3,6 +3,8 @@ import React, { createContext, useContext, type ReactNode, useCallback } from 'r
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import type { Memory } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { useAppSettings } from './AppSettingsContext'; // Import useAppSettings
+import { useGoogleDriveSync } from '../hooks/useGoogleDriveSync'; // Import useGoogleDriveSync
 
 const MEMORIES_KEY = 'geminiChat_memories';
 
@@ -22,6 +24,8 @@ export const MemoryContext = createContext<MemoryContextType | undefined>(undefi
 
 export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [memories, setMemories] = useLocalStorage<Memory[]>(MEMORIES_KEY, []);
+    const { settings } = useAppSettings(); // Get app settings
+    const { syncMemories } = useGoogleDriveSync(); // Get sync function
 
     const addMemory = useCallback((content: string, sourceMessageId?: string): Memory | undefined => {
         const trimmedContent = content.trim();
@@ -38,24 +42,38 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
         console.log("Nova memória criada:", newMemory);
 
-        setMemories(prev =>
-            // Coloca a nova memória no início e filtra duplicatas do restante do array
-            [newMemory, ...prev.filter(m => m.content.toLowerCase() !== trimmedContent.toLowerCase())]
-                .sort(sortByTimestampDesc) // Ordena o array final
-        );
+        setMemories(prev => {
+            const updatedMemories = [newMemory, ...prev.filter(m => m.content.toLowerCase() !== trimmedContent.toLowerCase())]
+                .sort(sortByTimestampDesc);
+            return updatedMemories;
+        });
+
+        // Trigger sync after local memory update if Google Drive is connected
+        if (settings.googleDriveAccessToken) {
+            syncMemories();
+        }
+
         return newMemory; // RETORNA O OBJETO DA MEMÓRIA CRIADA
-    }, [setMemories]);
+    }, [setMemories, settings.googleDriveAccessToken, syncMemories]);
 
     const deleteMemory = useCallback((id: string) => {
         console.log("Tentativa de deletar memória:", id);
-        setMemories(prev => prev.filter(m => {
-            const shouldDelete = m.id === id;
-            if (shouldDelete) {
-                console.log("Memória deletada:", m);
-            }
-            return !shouldDelete;
-        }));
-    }, [setMemories]);
+        setMemories(prev => {
+            const updatedMemories = prev.filter(m => {
+                const shouldDelete = m.id === id;
+                if (shouldDelete) {
+                    console.log("Memória deletada:", m);
+                }
+                return !shouldDelete;
+            });
+            return updatedMemories;
+        });
+
+        // Trigger sync after local memory update if Google Drive is connected
+        if (settings.googleDriveAccessToken) {
+            syncMemories();
+        }
+    }, [setMemories, settings.googleDriveAccessToken, syncMemories]);
 
     const updateMemory = useCallback((id: string, newContent: string) => {
         const trimmedNewContent = newContent.trim();
@@ -64,23 +82,37 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             // Se o novo conteúdo for vazio, pergunta ao usuário se deseja excluir a memória
             if (window.confirm("O conteúdo da memória está vazio. Deseja excluir esta memória?")) {
                 setMemories(prev => prev.filter(m => m.id !== id));
+                // Trigger sync after local memory update if Google Drive is connected
+                if (settings.googleDriveAccessToken) {
+                    syncMemories();
+                }
             }
             return; // Retorna para não atualizar com conteúdo vazio se o usuário não confirmar a exclusão
         }
 
         console.log("Atualizando memória:", id, trimmedNewContent);
-        setMemories(prev =>
-            prev.map(mem =>
+        setMemories(prev => {
+            const updatedMemories = prev.map(mem =>
                 mem.id === id ? { ...mem, content: trimmedNewContent, timestamp: new Date() } : mem
-            ).sort(sortByTimestampDesc) // Reordena após a atualização para manter a mais recente no topo
-        );
-    }, [setMemories]);
+            ).sort(sortByTimestampDesc); // Reordena após a atualização para manter a mais recente no topo
+            return updatedMemories;
+        });
+
+        // Trigger sync after local memory update if Google Drive is connected
+        if (settings.googleDriveAccessToken) {
+            syncMemories();
+        }
+    }, [setMemories, settings.googleDriveAccessToken, syncMemories]);
 
     const clearAllMemories = useCallback(() => {
         if (window.confirm('Tem certeza de que deseja apagar TODAS as memórias? Esta ação não pode ser desfeita.')) {
             setMemories([]);
+            // Trigger sync after local memory update if Google Drive is connected
+            if (settings.googleDriveAccessToken) {
+                syncMemories();
+            }
         }
-    }, [setMemories]);
+    }, [setMemories, settings.googleDriveAccessToken, syncMemories]);
 
     const replaceAllMemories = useCallback((newMemories: Memory[]) => {
         const isValidFormat = newMemories.every(
@@ -97,7 +129,9 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         })).sort(sortByTimestampDesc);
 
         setMemories(processedMemories);
-        // alert(`${processedMemories.length} memórias importadas com sucesso!`);
+        // Note: replaceAllMemories is often called by syncMemories itself,
+        // so we don't want to trigger another sync here to avoid loops.
+        // The sync will have already happened or is in progress.
     }, [setMemories]);
 
 

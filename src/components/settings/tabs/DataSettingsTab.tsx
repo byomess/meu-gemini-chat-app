@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Button from '../../common/Button';
-import { IoCloudUploadOutline, IoCloudDownloadOutline, IoTrashOutline, IoCloseOutline, IoLogoGoogle, IoUnlinkOutline } from 'react-icons/io5';
+import { IoCloudUploadOutline, IoCloudDownloadOutline, IoTrashOutline, IoCloseOutline, IoLogoGoogle, IoUnlinkOutline, IoRefreshOutline } from 'react-icons/io5';
 import type { AppSettings, Conversation, Memory, UrlConfigFile, RawImportedConversation, RawImportedMessage } from '../../../types';
 import { useDialog } from '../../../contexts/DialogContext';
 import { useMemories } from '../../../contexts/MemoryContext';
@@ -13,6 +13,7 @@ import {
     fetchUserProfile,
     revokeAccessToken
 } from '../../../services/googleAuthService';
+import { useGoogleDriveSync } from '../../../hooks/useGoogleDriveSync'; // Import the sync hook
 
 export type DataSettingsTabProps = object;
 
@@ -23,6 +24,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
     const { clearAllMemories, replaceAllMemories } = useMemories();
     const { deleteAllConversations } = useConversations();
     const { settings, connectGoogleDrive, disconnectGoogleDrive, setGoogleDriveSyncStatus, setGoogleDriveError } = useAppSettings();
+    const { syncMemories } = useGoogleDriveSync(); // Get the sync function
 
     const [isGoogleClientInitialized, setIsGoogleClientInitialized] = useState(false);
     const [authActionLoading, setAuthActionLoading] = useState(false);
@@ -332,6 +334,18 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
         }
     }, [settings.googleDriveAccessToken, disconnectGoogleDrive, showDialog]);
 
+    const handleManualSync = useCallback(() => {
+        if (settings.googleDriveAccessToken) {
+            syncMemories();
+        } else {
+            showDialog({
+                title: "Não Conectado",
+                message: "Por favor, conecte-se ao Google Drive para iniciar a sincronização.",
+                type: "alert",
+            });
+        }
+    }, [settings.googleDriveAccessToken, syncMemories, showDialog]);
+
     return (
         <div className="space-y-6">
             <SettingsPanel
@@ -426,10 +440,14 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                                 Status: <span className="font-medium">{settings.googleDriveSyncStatus}</span>
                                 {settings.googleDriveLastSync && ` (Última sincronização: ${new Date(settings.googleDriveLastSync).toLocaleString()})`}
                             </p>
-                            <Button variant="danger" onClick={handleDisconnectGoogleDrive} disabled={authActionLoading} className="w-full sm:w-auto">
-                                <IoUnlinkOutline className="mr-2" size={20} /> Desconectar Google Drive
-                            </Button>
-                            {/* MVP: Manual sync button will be added later with FR07.3 */}
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <Button variant="secondary" onClick={handleManualSync} disabled={settings.googleDriveSyncStatus === 'Syncing'} className="w-full sm:w-auto">
+                                    <IoRefreshOutline className="mr-2" size={20} /> Sincronizar Agora
+                                </Button>
+                                <Button variant="danger" onClick={handleDisconnectGoogleDrive} disabled={authActionLoading} className="w-full sm:w-auto">
+                                    <IoUnlinkOutline className="mr-2" size={20} /> Desconectar Google Drive
+                                </Button>
+                            </div>
                         </>
                     ) : (
                         <>

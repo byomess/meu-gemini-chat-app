@@ -1,4 +1,3 @@
-// src/App.tsx
 import { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import ChatArea from './components/layout/ChatArea';
@@ -9,10 +8,12 @@ import { useUrlConfigInitializer } from './hooks/useUrlConfigInitializer';
 import { ConversationProvider, useConversations } from './contexts/ConversationContext'; // Import ConversationProvider
 import { useAppSettings } from './contexts/AppSettingsContext';
 import { DialogProvider } from './contexts/DialogContext';
+import { useGoogleDriveSync } from './hooks/useGoogleDriveSync'; // Import the new hook
 
 const AppContent = () => {
     const { settings } = useAppSettings();
     const { conversations, createNewConversation, activeConversationId } = useConversations();
+    const { syncMemories } = useGoogleDriveSync(); // Use the Google Drive sync hook
 
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -60,6 +61,14 @@ const AppContent = () => {
             createNewConversation();
         }
     }, [conversations, createNewConversation, activeConversationId]);
+
+    // Trigger Google Drive sync on app startup if connected
+    useEffect(() => {
+        if (settings.googleDriveAccessToken) {
+            console.log("Google Drive access token found. Initiating sync on app startup.");
+            syncMemories();
+        }
+    }, [settings.googleDriveAccessToken, syncMemories]);
 
 
     return (
