@@ -260,11 +260,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   )}
                   <span className="truncate flex-1 text-sm">
                     {convo.title}
-                    {convo.isIncognito && (
-                      <Tooltip content="Conversa Incógnita">
-                        <GhostIcon size={14} className="inline-block ml-2 text-[var(--color-convo-item-incognito-icon)]" />
-                      </Tooltip>
-                    )}
+                    {/* Removed the GhostIcon that was here */}
                   </span>
                   {convo.id === activeConversationId && !isMobile && (
                     <IoChevronForward size={16} className={`${convo.isIncognito ? 'text-[var(--color-convo-item-incognito-active-icon)]' : 'text-[var(--color-convo-item-active-icon)]'} opacity-80 ml-auto`} />
