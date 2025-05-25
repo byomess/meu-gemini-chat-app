@@ -358,7 +358,7 @@ async function* _executeDeclaredFunctionAndProcessResult(
     const funcName = declaredFunction.name;
     let functionResponseContent: unknown;
     let fileDataPartForUserContext = undefined;
-    let attachedFilesFromFunction: AttachedFileInfo[] = []; // New array for files to attach to AI message
+    const attachedFilesFromFunction: AttachedFileInfo[] = []; // New array for files to attach to AI message
 
     yield {
         delta: `\n\n[Loox: Chamando '${funcName}'...]\n`,
@@ -575,7 +575,6 @@ export async function* streamMessageToGemini(
     try {
         // 1. Process User Attachments
         if (attachedRawFiles && attachedRawFiles.length > 0) {
-            const successfullyUploadedCount = 0; // Track successful uploads
             for (const rawFileAttachment of attachedRawFiles) {
                 try {
                     const filePart = yield* _processUserAttachments(genAI, rawFileAttachment, abortSignal);
@@ -631,7 +630,6 @@ export async function* streamMessageToGemini(
         let toolsForApiNextTurn = _buildApiTools(webSearchEnabled, functionDeclarations);
 
         // 5. Main interaction loop (handles potential function calls)
-        // eslint-disable-next-line no-constant-condition
         while (true) {
             // The AbortSignal is now passed directly to generateContentStream,
             // which will throw an "AbortError" if the signal is aborted.
