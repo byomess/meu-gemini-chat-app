@@ -3,6 +3,7 @@ import React from 'react';
 import TextInput from '../../common/TextInput';
 import { IoSparklesOutline } from 'react-icons/io5';
 import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
+import ToggleSwitch from '../../common/ToggleSwitch'; // Import the new ToggleSwitch component
 
 export interface InterfaceSettingsTabProps {
     currentCodeHighlightEnabled: boolean;
@@ -15,8 +16,8 @@ export interface InterfaceSettingsTabProps {
     onToggleAttachmentsEnabled: () => void;
     currentHideNavigation: boolean;
     onToggleHideNavigation: () => void;
-    currentShowProcessingIndicators: boolean; // Add this line
-    onToggleShowProcessingIndicators: () => void; // Add this line
+    currentShowProcessingIndicators: boolean;
+    onToggleShowProcessingIndicators: () => void;
 }
 
 const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
@@ -30,8 +31,8 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
     onToggleAttachmentsEnabled,
     currentHideNavigation,
     onToggleHideNavigation,
-    currentShowProcessingIndicators, // Destructure new prop
-    onToggleShowProcessingIndicators, // Destructure new prop
+    currentShowProcessingIndicators,
+    onToggleShowProcessingIndicators,
 }) => {
     return (
         <div className="space-y-6">
@@ -73,121 +74,49 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
                     </div>
 
                     {/* Code Syntax Highlight Toggle */}
-                    <div className="flex items-center justify-between py-2 border-t border-[var(--color-settings-section-border)]">
-                        <div>
-                            <label htmlFor="code-highlight-toggle" className="block text-sm font-medium text-[var(--color-settings-section-title-text)]">
-                                Realce de Sintaxe de Código
-                            </label>
-                            <p className="text-xs text-[var(--color-settings-section-description-text)] mt-1">
-                                Ativa ou desativa o realce de sintaxe para blocos de código nas respostas da IA.
-                            </p>
-                        </div>
-                        <button
-                            id="code-highlight-toggle"
-                            onClick={onToggleCodeHighlight}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)]
-                                ${currentCodeHighlightEnabled ? 'bg-[var(--color-toggle-switch-bg-on)]' : 'bg-[var(--color-toggle-switch-bg-off)]'}`}
-                        >
-                            <span
-                                className={`inline-block h-4 w-4 transform rounded-full bg-[var(--color-toggle-switch-handle-bg)] shadow-lg shadow-[var(--color-toggle-switch-handle-shadow)] ring-0 transition-transform
-                                    ${currentCodeHighlightEnabled ? 'translate-x-6' : 'translate-x-1'}`}
-                            />
-                        </button>
-                    </div>
+                    <ToggleSwitch
+                        id="code-highlight-toggle"
+                        label="Realce de Sintaxe de Código"
+                        description="Ativa ou desativa o realce de sintaxe para blocos de código nas respostas da IA."
+                        checked={currentCodeHighlightEnabled}
+                        onChange={onToggleCodeHighlight}
+                    />
 
                     {/* Web Search Toggle */}
-                    <div className="flex items-center justify-between py-2 border-t border-[var(--color-settings-section-border)]">
-                        <div>
-                            <label htmlFor="web-search-toggle" className="block text-sm font-medium text-[var(--color-settings-section-title-text)]">
-                                Habilitar Pesquisa Web
-                            </label>
-                            <p className="text-xs text-[var(--color-settings-section-description-text)] mt-1">
-                                Permite que a IA acesse a internet para obter informações atualizadas.
-                            </p>
-                        </div>
-                        <button
-                            id="web-search-toggle"
-                            onClick={onToggleEnableWebSearch}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)]
-                                ${currentEnableWebSearchEnabled ? 'bg-[var(--color-toggle-switch-bg-on)]' : 'bg-[var(--color-toggle-switch-bg-off)]'}`}
-                        >
-                            <span
-                                className={`inline-block h-4 w-4 transform rounded-full bg-[var(--color-toggle-switch-handle-bg)] shadow-lg shadow-[var(--color-toggle-switch-handle-shadow)] ring-0 transition-transform
-                                    ${currentEnableWebSearchEnabled ? 'translate-x-6' : 'translate-x-1'}`}
-                            />
-                        </button>
-                    </div>
+                    <ToggleSwitch
+                        id="web-search-toggle"
+                        label="Habilitar Pesquisa Web"
+                        description="Permite que a IA acesse a internet para obter informações atualizadas."
+                        checked={currentEnableWebSearchEnabled}
+                        onChange={onToggleEnableWebSearch}
+                    />
 
                     {/* Attachments Toggle */}
-                    <div className="flex items-center justify-between py-2 border-t border-[var(--color-settings-section-border)]">
-                        <div>
-                            <label htmlFor="attachments-toggle" className="block text-sm font-medium text-[var(--color-settings-section-title-text)]">
-                                Habilitar Anexos
-                            </label>
-                            <p className="text-xs text-[var(--color-settings-section-description-text)] mt-1">
-                                Permite enviar imagens e áudios para a IA.
-                            </p>
-                        </div>
-                        <button
-                            id="attachments-toggle"
-                            onClick={onToggleAttachmentsEnabled}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)]
-                                ${currentAttachmentsEnabled ? 'bg-[var(--color-toggle-switch-bg-on)]' : 'bg-[var(--color-toggle-switch-bg-off)]'}`}
-                        >
-                            <span
-                                className={`inline-block h-4 w-4 transform rounded-full bg-[var(--color-toggle-switch-handle-bg)] shadow-lg shadow-[var(--color-toggle-switch-handle-shadow)] ring-0 transition-transform
-                                    ${currentAttachmentsEnabled ? 'translate-x-6' : 'translate-x-1'}`}
-                            />
-                        </button>
-                    </div>
+                    <ToggleSwitch
+                        id="attachments-toggle"
+                        label="Habilitar Anexos"
+                        description="Permite enviar imagens e áudios para a IA."
+                        checked={currentAttachmentsEnabled}
+                        onChange={onToggleAttachmentsEnabled}
+                    />
 
                     {/* Hide Navigation Toggle */}
-                    <div className="flex items-center justify-between py-2 border-t border-[var(--color-settings-section-border)]">
-                        <div>
-                            <label htmlFor="hide-navigation-toggle" className="block text-sm font-medium text-[var(--color-settings-section-title-text)]">
-                                Esconder Navegação
-                            </label>
-                            <p className="text-xs text-[var(--color-settings-section-description-text)] mt-1">
-                                Oculta a barra lateral de navegação por padrão.
-                            </p>
-                        </div>
-                        <button
-                            id="hide-navigation-toggle"
-                            onClick={onToggleHideNavigation}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)]
-                                ${currentHideNavigation ? 'bg-[var(--color-toggle-switch-bg-on)]' : 'bg-[var(--color-toggle-switch-bg-off)]'}`}
-                        >
-                            <span
-                                aria-hidden="true"
-                                className={`inline-block h-4 w-4 transform rounded-full bg-[var(--color-toggle-switch-handle-bg)] shadow-lg shadow-[var(--color-toggle-switch-handle-shadow)] ring-0 transition-transform
-                                    ${currentHideNavigation ? 'translate-x-6' : 'translate-x-1'}`}
-                            />
-                        </button>
-                    </div>
+                    <ToggleSwitch
+                        id="hide-navigation-toggle"
+                        label="Esconder Navegação"
+                        description="Oculta a barra lateral de navegação por padrão."
+                        checked={currentHideNavigation}
+                        onChange={onToggleHideNavigation}
+                    />
 
-                    {/* New: Show Processing Indicators Toggle */}
-                    <div className="flex items-center justify-between py-2 border-t border-[var(--color-settings-section-border)]">
-                        <div>
-                            <label htmlFor="show-indicators-toggle" className="block text-sm font-medium text-[var(--color-settings-section-title-text)]">
-                                Exibir Indicadores de Status
-                            </label>
-                            <p className="text-xs text-[var(--color-settings-section-description-text)] mt-1">
-                                Controla a visibilidade dos indicadores de processamento de arquivos e chamadas de função nas mensagens da IA.
-                            </p>
-                        </div>
-                        <button
-                            id="show-indicators-toggle"
-                            onClick={onToggleShowProcessingIndicators}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-focus-ring-offset)]
-                                ${currentShowProcessingIndicators ? 'bg-[var(--color-toggle-switch-bg-on)]' : 'bg-[var(--color-toggle-switch-bg-off)]'}`}
-                        >
-                            <span
-                                aria-hidden="true"
-                                className={`inline-block h-4 w-4 transform rounded-full bg-[var(--color-toggle-switch-handle-bg)] shadow-lg shadow-[var(--color-toggle-switch-handle-shadow)] ring-0 transition-transform
-                                    ${currentShowProcessingIndicators ? 'translate-x-6' : 'translate-x-1'}`}
-                            />
-                        </button>
-                    </div>
+                    {/* Show Processing Indicators Toggle */}
+                    <ToggleSwitch
+                        id="show-indicators-toggle"
+                        label="Exibir Indicadores de Status"
+                        description="Controla a visibilidade dos indicadores de processamento de arquivos e chamadas de função nas mensagens da IA."
+                        checked={currentShowProcessingIndicators}
+                        onChange={onToggleShowProcessingIndicators}
+                    />
                 </section>
             </SettingsPanel>
         </div>
