@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/contexts/ConversationContext.tsx
-import React, { createContext, useContext, type ReactNode, useCallback, useRef, useEffect } from 'react';
+import React, { createContext, useContext, type ReactNode, useCallback, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import type { Conversation, Message, MessageMetadata, ProcessingStatus, Part } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 const CONVERSATIONS_KEY = 'geminiChat_conversations';
 const ACTIVE_CONVERSATION_ID_KEY = 'geminiChat_activeConversationId';
-const CHUNK_RENDER_INTERVAL_MS = 200;
+const CHUNK_RENDER_INTERVAL_MS = 200; // This constant is no longer used but kept for now as it's not directly harmful.
 
 interface ConversationContextType {
     conversations: Conversation[];
@@ -38,15 +38,6 @@ const sortByUpdatedAtDesc = (a: Conversation, b: Conversation) => new Date(b.upd
 export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [conversations, setConversations] = useLocalStorage<Conversation[]>(CONVERSATIONS_KEY, []);
     const [activeId, setActiveId] = useLocalStorage<string | null>(ACTIVE_CONVERSATION_ID_KEY, null);
-
-    const chunkQueueRef = useRef<string[]>([]);
-    const accumulatedTextRef = useRef<string>("");
-    const currentAiMessageIdRef = useRef<string | null>(null);
-    const currentConversationIdRef = useRef<string | null>(null);
-    const renderIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    const streamHasFinishedRef = useRef<boolean>(false);
-    const lastProcessingStatusRef = useRef<ProcessingStatus | null>(null);
-    const accumulatedRawPartsRef = useRef<Part[]>([]);
 
     const activeConversation = conversations.find(c => c.id === activeId) || null;
 
@@ -177,64 +168,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         );
     }, [setConversations]);
 
-
-    const processChunkQueue = useCallback(() => {
-        if (renderIntervalRef.current) {
-            clearTimeout(renderIntervalRef.current);
-            renderIntervalRef.current = null;
-        }
-
-        if (currentAiMessageIdRef.current && currentConversationIdRef.current) {
-            let textToUpdate = accumulatedTextRef.current;
-            const newMetadata: Partial<MessageMetadata> = {
-                isLoading: !streamHasFinishedRef.current,
-            };
-
-            if (chunkQueueRef.current.length > 0) {
-                const chunkToRender = chunkQueueRef.current.join("");
-                chunkQueueRef.current = [];
-                textToUpdate += chunkToRender;
-                accumulatedTextRef.current = textToUpdate;
-            }
-
-            const isStatusMessage = lastProcessingStatusRef.current &&
-                (lastProcessingStatusRef.current.stage === 'in_progress' || lastProcessingStatusRef.current.stage === 'pending');
-
-            if (!isStatusMessage && !streamHasFinishedRef.current) {
-                textToUpdate += "▍";
-            }
-
-            newMetadata.processingStatus = lastProcessingStatusRef.current || undefined;
-            if (accumulatedRawPartsRef.current.length > 0) {
-                newMetadata.rawParts = [...accumulatedRawPartsRef.current];
-            }
-
-            updateMessageInConversation(currentConversationIdRef.current, currentAiMessageIdRef.current, {
-                text: textToUpdate,
-                metadata: newMetadata
-            });
-
-            if (!streamHasFinishedRef.current || chunkQueueRef.current.length > 0) {
-                renderIntervalRef.current = setTimeout(processChunkQueue, CHUNK_RENDER_INTERVAL_MS);
-            } else {
-                updateMessageInConversation(currentConversationIdRef.current, currentAiMessageIdRef.current, {
-                    text: accumulatedTextRef.current,
-                    metadata: {
-                        isLoading: false,
-                        processingStatus: lastProcessingStatusRef.current || undefined,
-                        rawParts: accumulatedRawPartsRef.current.length > 0 ? [...accumulatedRawPartsRef.current] : undefined,
-                    }
-                });
-            }
-        }
-    }, [updateMessageInConversation]);
-
-
-    useEffect(() => {
-        return () => {
-            if (renderIntervalRef.current) clearTimeout(renderIntervalRef.current);
-        };
-    }, []);
+    // The useEffect hook for clearing renderIntervalRef is removed as it's no longer needed.
 
     return (
         <ConversationContext.Provider value={{
