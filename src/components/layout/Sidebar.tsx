@@ -261,9 +261,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     {convo.title}
                     {/* Removed the GhostIcon that was here */}
                   </span>
-                  {convo.id === activeConversationId && !isMobile && (
-                    <IoChevronForward size={16} className={`${convo.isIncognito ? 'text-[var(--color-convo-item-incognito-active-icon)]' : 'text-[var(--color-convo-item-active-icon)]'} opacity-80 ml-auto`} />
-                  )}
+                  {/* Removed IoChevronForward component */}
                 </>
               )}
 
