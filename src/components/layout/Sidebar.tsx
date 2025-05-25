@@ -268,10 +268,9 @@ const Sidebar: React.FC<SidebarProps> = ({
               )}
 
               {editingConversationId !== convo.id && (
-                <div className={`flex-shrink-0 flex items-center opacity-0 group-hover/convoItem:opacity-100 
+                <div className={`flex-shrink-0 flex items-center opacity-0 group-hover/convoItem:opacity-100 w-14 justify-end
                                 group-focus-within/convoItem:opacity-100
                                 transition-opacity duration-200 ease-in-out
-                                absolute right-2 top-1/2 -translate-y-1/2 
                                 bg-[var(--color-convo-item-actions-bg)] group-hover/convoItem:bg-[var(--color-convo-item-actions-hover-bg)] backdrop-blur-sm rounded-md p-0.5 space-x-0.5
                                 [&>button]:p-1.5 [&>button]:rounded-md 
                                 ${convo.id === activeConversationId
