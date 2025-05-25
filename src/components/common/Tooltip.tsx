@@ -182,3 +182,4 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, position = 'top' }
 };
 
 export default Tooltip;
+export { Tooltip };

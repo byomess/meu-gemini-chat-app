@@ -11,7 +11,6 @@ import {
 } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
 import type { Conversation } from '../../types';
-import { Tooltip } from '../common/Tooltip'; // Assuming Tooltip is available
 
 // Import GhostIcon from lucide-react or similar if available, otherwise use a placeholder or another icon
 import { GhostIcon } from 'lucide-react'; // Example: if you have lucide-react installed

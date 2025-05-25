@@ -145,7 +145,7 @@ export function useMessageSubmission({
             const messagesUpToEdited = currentConversation.messages.slice(0, messageIndex + 1);
             historyForAPI = messagesUpToEdited.map(msg => {
                 if (msg.id === messageToEditId) {
-                    return { sender: 'user' as 'user', text: trimmedText };
+                    return { sender: 'user' as const, text: trimmedText };
                 }
                 if (msg.metadata?.rawParts && (msg.sender === 'model' || msg.sender === 'function')) {
                     return { sender: msg.sender, parts: msg.metadata.rawParts as Part[] };
