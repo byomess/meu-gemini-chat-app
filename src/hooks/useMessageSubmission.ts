@@ -18,9 +18,9 @@ interface UseMessageSubmissionProps {
     text: string;
     attachedFiles: LocalAttachedFile[];
     isWebSearchEnabledForNextMessage: boolean;
-    onSubmissionStart?: () => void; // Callback for clearing text, attachments, etc.
-    onSubmissionEnd?: (options: { focusTextarea?: boolean, errorOccurred?: boolean }) => void; // Callback for focusing textarea, etc.
-    messageToEditId?: string; // New: ID of the user message being edited
+    onSubmissionStart?: () => void;
+    onSubmissionEnd?: (options: { focusTextarea?: boolean, errorOccurred?: boolean }) => void;
+    messageToEditId?: string;
 }
 
 export function useMessageSubmission({
@@ -36,9 +36,7 @@ export function useMessageSubmission({
     const {
         addMessageToConversation,
         updateMessageInConversation,
-        removeMessagesAfterId, // Now using this from context
-        // abortEditedMessageResponse will be handled by this hook's abort logic
-        // isProcessingEditedMessage will be replaced by this hook's isLoadingAI
+        removeMessagesAfterId,
     } = useConversations();
     const { settings } = useAppSettings();
     const { memories: globalMemoriesFromHook, addMemory, updateMemory, deleteMemory: deleteMemoryFromHook } = useMemories();
@@ -49,7 +47,7 @@ export function useMessageSubmission({
     const abortStreamControllerRef = useRef<AbortController | null>(null);
     const lastProcessingStatusForInputRef = useRef<ProcessingStatus | null>(null);
     const accumulatedRawPartsForInputRef = useRef<Part[]>([]);
-    const accumulatedAttachedFilesInfoRef = useRef<AttachedFileInfo[]>([]); // New ref for attached files from functions
+    const accumulatedAttachedFilesInfoRef = useRef<AttachedFileInfo[]>([]);
 
     const handleSubmit = async () => {
         setErrorFromAI(null);
@@ -57,12 +55,9 @@ export function useMessageSubmission({
         const hasFilesToSend = (settings.enableAttachments || attachedFiles.some(f => f.file.type.startsWith('audio/'))) && attachedFiles.length > 0;
         const hasContentToSend = trimmedText || hasFilesToSend;
 
-        // If editing, text can be empty if attachments exist (or if deleting all content and attachments)
-        // If not editing, content must be present.
         if (!activeConversationId || isLoadingAI || (!messageToEditId && !hasContentToSend)) {
             return;
         }
-
 
         if (!settings.apiKey) {
             addMessageToConversation(activeConversationId, {
@@ -97,23 +92,21 @@ export function useMessageSubmission({
 
         const webSearchActiveForThisSubmission = settings.enableWebSearch && isWebSearchEnabledForNextMessage;
 
-        // filesInfoForUIMessage should include ALL files (placeholders from edit and new ones)
+        // filesInfoForUIMessage includes all files (placeholders from edit and new ones)
         // to correctly update the user message metadata in the UI.
-        // The `attachedFiles` prop to this hook will be `editedAttachedFiles` from MessageBubble during an edit.
         const filesInfoForUIMessage: AttachedFileInfo[] = attachedFiles
-            .filter(localFile => settings.enableAttachments || localFile.file.type.startsWith('audio/')) // Basic filter
+            .filter(localFile => settings.enableAttachments || localFile.file.type.startsWith('audio/'))
             .map(localFile => ({
-                id: localFile.id, // Preserve original ID for placeholders
+                id: localFile.id,
                 name: localFile.name,
                 type: localFile.type,
                 size: localFile.size,
-                dataUrl: localFile.previewUrl, // This will be present for placeholders too
+                dataUrl: localFile.previewUrl,
             }));
 
-        // filesToSendToAI for the API call should ONLY include NEW files (not placeholders).
-        // These are files that actually have a File object and are not marked as placeholders.
+        // filesToSendToAI includes only new files (not placeholders) for the API call.
         const filesToSendToAI: LocalAttachedFile[] = attachedFiles.filter(localFile =>
-            (settings.enableAttachments || localFile.file.type.startsWith('audio/')) && 
+            (settings.enableAttachments || localFile.file.type.startsWith('audio/')) &&
             !localFile.isPlaceholder && localFile.file && localFile.file.size > 0
         );
 
@@ -134,7 +127,6 @@ export function useMessageSubmission({
             }
             userMessageIdForHistory = messageToEditId;
 
-            // Update the user's message in place
             updateMessageInConversation(activeConversationId, messageToEditId, {
                 text: trimmedText,
                 metadata: {
@@ -143,39 +135,24 @@ export function useMessageSubmission({
                     abortedByUser: undefined,
                     userFacingError: undefined,
                     processingStatus: undefined,
-                    // Ensure rawParts are cleared if the text/attachments change significantly,
-                    // or handle them appropriately if they should persist/be modified.
-                    // For now, let's assume they are implicitly handled by the new AI response.
                 }
             });
 
-            // History for API is up to and including the edited message
-            // Subsequent AI/function messages related to the *original* user message are effectively orphaned.
-            // removeMessagesAfterId will prune them.
-            removeMessagesAfterId(activeConversationId, messageToEditId); // Called for its side-effect
+            removeMessagesAfterId(activeConversationId, messageToEditId);
 
-            // Construct historyForAPI using currentConversation's messages up to the point of the edit.
-            // The message being edited will use `trimmedText`.
             const messagesUpToEdited = currentConversation.messages.slice(0, messageIndex + 1);
             historyForAPI = messagesUpToEdited.map(msg => {
                 if (msg.id === messageToEditId) {
-                    // This is the user's message that was edited.
-                    // For the API history, its text content should be the new `trimmedText`.
                     return { sender: 'user' as 'user', text: trimmedText };
                 }
-                // For previous model/function messages, use rawParts if available.
                 if (msg.metadata?.rawParts && (msg.sender === 'model' || msg.sender === 'function')) {
                     return { sender: msg.sender, parts: msg.metadata.rawParts as Part[] };
                 }
-                // For other messages (older user messages, or model/function without rawParts).
                 return { sender: msg.sender, text: msg.text };
             });
-            
-            textForAI = trimmedText; // The AI will respond to this new text.
 
-            // Add a new placeholder for the AI's response to the edited message.
-            // This new AI message will follow the edited user message in the conversation state.
-            // This new AI message will follow the edited user message.
+            textForAI = trimmedText;
+
             aiMessageIdToStreamTo = addMessageToConversation(activeConversationId, {
                 text: "", sender: 'model', metadata: { isLoading: true, respondingToUserMessageId: messageToEditId }
             });
@@ -193,10 +170,9 @@ export function useMessageSubmission({
                 text: "", sender: 'model', metadata: { isLoading: true, respondingToUserMessageId: userMessageIdForHistory }
             });
 
-            // History includes the newly added user message
             const updatedConversationForNewMsg = conversations.find(c => c.id === activeConversationId);
             historyForAPI = (updatedConversationForNewMsg?.messages || [])
-                .filter(msg => msg.id !== aiMessageIdToStreamTo) // Exclude the current AI placeholder
+                .filter(msg => msg.id !== aiMessageIdToStreamTo)
                 .map(msg => {
                     if (msg.metadata?.rawParts) {
                         return { sender: msg.sender, parts: msg.metadata.rawParts as Part[] };
@@ -220,39 +196,22 @@ export function useMessageSubmission({
 
         try {
             const currentGlobalMemoriesWithObjects = globalMemoriesFromHook.map(mem => ({ id: mem.id, content: mem.content }));
-            // rawFilesForAPI should be built from filesToSendToAI (which are new, non-placeholder files)
             const rawFilesForAPI: RawFileAttachment[] = filesToSendToAI
                 .map(localFile => ({ file: localFile.file }));
 
-
-            // Construct history for Gemini:
-            // For an edited message, historyForAPI already includes the updated user message (with its text and full AttachedFileInfo).
-            // The textForAI is the new prompt.
-            // The geminiService will handle embedding file metadata from the user's message if `rawFilesForAPI` is empty but the message has attachments.
-            // However, to be explicit, we can prepare parts for the user's turn if there are attachments.
-            
-            let userTurnParts: Part[] = [{ text: textForAI }]; // Default user turn part
-
-            // This section was an attempt to build userTurnParts with fileData, but it's complex without fileUri.
-            // Let's stick to the simpler model for now: textForAI and rawFilesForAPI (new files).
-            // The history (historyToSendToGemini) will contain previous turns.
-
-            const historyToSendToGemini = messageToEditId
-                ? historyForAPI.slice(0, -1) // All messages *before* the edited user message
-                : historyForAPI.filter(msg => msg.sender !== 'user' || (userMessageIdForHistory && msg.text !== textForAI)); // Original logic for new messages
-
+            // historyToSendToGemini contains all messages *before* the current user's turn.
+            const historyToSendToGemini = historyForAPI.slice(0, -1);
 
             const systemInstructionText = systemMessage({
                 conversationTitle: currentConversation?.title,
-                // messageCountInConversation should reflect the state *before* this new AI response.
                 messageCountInConversation: historyForAPI.length,
                 customPersonalityPrompt: settings.customPersonalityPrompt
             });
 
             const streamGenerator = streamMessageToGemini(
                 settings.apiKey,
-                historyToSendToGemini, // History before the current user's turn
-                textForAI, // The current user's message text
+                historyToSendToGemini,
+                textForAI,
                 rawFilesForAPI,
                 currentGlobalMemoriesWithObjects, settings.geminiModelConfig, systemInstructionText,
                 settings.functionDeclarations || [], signal,
@@ -260,15 +219,7 @@ export function useMessageSubmission({
             );
 
             for await (const streamResponse of streamGenerator) {
-                // The streamGenerator itself will throw an AbortError if the signal is aborted.
-                // No need for manual signal.aborted check here.
-
                 if (streamResponse.delta) {
-                    // Only accumulate delta if it's not a processing status message.
-                    // Processing status messages are handled by the processingStatus metadata.
-                    // If processingStatus is present AND its stage is not 'completed',
-                    // then this delta is likely a temporary processing message.
-                    // Otherwise, it's actual AI text.
                     if (!streamResponse.processingStatus || streamResponse.processingStatus.stage === 'completed') {
                         accumulatedAiText += streamResponse.delta;
                     }
@@ -279,7 +230,7 @@ export function useMessageSubmission({
                 if (streamResponse.rawPartsForNextTurn) {
                     accumulatedRawPartsForInputRef.current = [...streamResponse.rawPartsForNextTurn];
                 }
-                if (streamResponse.functionAttachedFilesInfo) { // Handle new attached files from function calls
+                if (streamResponse.functionAttachedFilesInfo) {
                     accumulatedAttachedFilesInfoRef.current = [
                         ...accumulatedAttachedFilesInfoRef.current,
                         ...streamResponse.functionAttachedFilesInfo
@@ -298,13 +249,12 @@ export function useMessageSubmission({
                         isLoading: !streamResponse.isFinished,
                         processingStatus: lastProcessingStatusForInputRef.current || undefined,
                         rawParts: accumulatedRawPartsForInputRef.current.length > 0 ? [...accumulatedRawPartsForInputRef.current] : undefined,
-                        attachedFilesInfo: accumulatedAttachedFilesInfoRef.current.length > 0 ? [...accumulatedAttachedFilesInfoRef.current] : undefined, // Include accumulated files
-                        // respondingToUserMessageId is set when AI message is created
+                        attachedFilesInfo: accumulatedAttachedFilesInfoRef.current.length > 0 ? [...accumulatedAttachedFilesInfoRef.current] : undefined,
                     }
                 });
 
                 if (streamResponse.error) {
-                    streamError = streamResponse.error; // Capture error reported by the service
+                    streamError = streamResponse.error;
                 }
                 if (streamResponse.isFinished) {
                     accumulatedAiText = streamResponse.finalText || accumulatedAiText.replace(/▍$/, '');
@@ -315,15 +265,13 @@ export function useMessageSubmission({
 
             const finalMetadata: Partial<MessageMetadata> = {
                 isLoading: false,
-                // If streamError is set, it means an API-reported error occurred.
-                // If signal.aborted is true, it means user aborted.
                 abortedByUser: signal.aborted ? true : undefined,
                 processingStatus: lastProcessingStatusForInputRef.current || undefined,
                 rawParts: accumulatedRawPartsForInputRef.current.length > 0 ? [...accumulatedRawPartsForInputRef.current] : undefined,
-                attachedFilesInfo: accumulatedAttachedFilesInfoRef.current.length > 0 ? [...accumulatedAttachedFilesInfoRef.current] : undefined, // Final accumulated files
+                attachedFilesInfo: accumulatedAttachedFilesInfoRef.current.length > 0 ? [...accumulatedAttachedFilesInfoRef.current] : undefined,
             };
 
-            if (streamError && !finalMetadata.abortedByUser) { // Only set error if it's not a user abort
+            if (streamError && !finalMetadata.abortedByUser) {
                 finalMetadata.error = streamError;
                 finalMetadata.userFacingError = streamError;
                 if (lastProcessingStatusForInputRef.current && lastProcessingStatusForInputRef.current.stage !== 'completed' && lastProcessingStatusForInputRef.current.stage !== 'failed') {
@@ -331,7 +279,7 @@ export function useMessageSubmission({
                 }
             }
 
-            if (!streamError || finalMetadata.abortedByUser) { // Process memories only if no stream error or if it was aborted by user
+            if (!streamError || finalMetadata.abortedByUser) {
                 const processedMemoryActions: Required<MessageMetadata>['memorizedMemoryActions'] = [];
                 if (memoryOperationsFromServer && memoryOperationsFromServer.length > 0) {
                     memoryOperationsFromServer.forEach(op => {
@@ -346,7 +294,7 @@ export function useMessageSubmission({
                                 updateMemory(memoryToUpdate.id, op.content);
                                 processedMemoryActions.push({ id: memoryToUpdate.id, content: op.content, originalContent: memoryToUpdate.content, action: 'updated' });
                             } else {
-                                const newMemoryObject = addMemory(op.content); // If target not found, create new
+                                const newMemoryObject = addMemory(op.content);
                                 if (newMemoryObject) {
                                     processedMemoryActions.push({ id: newMemoryObject.id, content: newMemoryObject.content, action: 'created' });
                                 }
@@ -385,7 +333,7 @@ export function useMessageSubmission({
                 finalMetadataUpdate.abortedByUser = true;
                 finalMetadataUpdate.error = false;
                 updateMessageInConversation(activeConversationId, finalAiMessageId, {
-                    text: accumulatedAiText.replace(/▍$/, ''), // Preserve any text if abort happened mid-stream
+                    text: accumulatedAiText.replace(/▍$/, ''),
                     metadata: finalMetadataUpdate
                 });
             } else {
@@ -409,7 +357,7 @@ export function useMessageSubmission({
             const errorOccurredForCallback = errorFromAI !== null || (streamError !== null && streamError !== undefined && !signal.aborted);
 
             onSubmissionEnd?.({
-                focusTextarea: !messageToEditId, // Only focus textarea for new messages, not edits
+                focusTextarea: !messageToEditId,
                 errorOccurred: errorOccurredForCallback
             });
         }
@@ -418,14 +366,9 @@ export function useMessageSubmission({
     const handleAbortAIResponse = () => {
         if (isLoadingAI && abortStreamControllerRef.current && !abortStreamControllerRef.current.signal.aborted) {
             abortStreamControllerRef.current.abort("User aborted stream");
-            // setIsLoadingAI(false); // Let the finally block handle this
-            // The onSubmissionEnd will be called by the finally block of handleSubmit
-            // once the promise chain resolves/rejects due to the abort.
         }
-        // No need to call abortEditedMessageResponse from context, as this hook now handles all aborts.
     };
 
-    // Cleanup abort controller on unmount
     useEffect(() => {
         return () => {
             if (abortStreamControllerRef.current && !abortStreamControllerRef.current.signal.aborted) {
@@ -440,6 +383,5 @@ export function useMessageSubmission({
         setErrorFromAI,
         handleSubmit,
         handleAbortAIResponse,
-        // isProcessingEditedMessage is no longer needed from context, this hook's isLoadingAI serves the purpose.
     };
 }
