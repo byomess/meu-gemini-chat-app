@@ -1,13 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/contexts/ConversationContext.tsx
-import React, { createContext, useContext, type ReactNode, useState, useCallback, useRef, useEffect } from 'react';
+import React, { createContext, useContext, type ReactNode, useCallback, useRef, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import type { Conversation, Message, MessageMetadata, ProcessingStatus, Part } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import { useAppSettings } from './AppSettingsContext';
-import { useMemories } from './MemoryContext';
-import { streamMessageToGemini, type StreamedGeminiResponseChunk } from '../services/geminiService';
-import { systemMessage } from '../prompts';
 
 const CONVERSATIONS_KEY = 'geminiChat_conversations';
 const ACTIVE_CONVERSATION_ID_KEY = 'geminiChat_activeConversationId';
