@@ -36,6 +36,11 @@ export default defineConfig({
                         sizes: '512x512',
                         type: 'image/png',
                         purpose: 'any maskable',
+                    },
+                    {
+                        src: 'apple-touch-icon.png', // Added for iOS PWA compatibility
+                        sizes: '180x180',
+                        type: 'image/png',
                     }
                 ],
             },
