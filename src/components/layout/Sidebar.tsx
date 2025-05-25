@@ -7,7 +7,6 @@ import {
   IoTrashBinOutline,
   IoPencilOutline,
   IoCloseOutline,
-  IoChevronForward, 
 } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
 import type { Conversation } from '../../types';
