@@ -528,7 +528,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                             </>
                                         )}
 
-                                        {functionCallPart && !showActivityIndicator && (
+                                        {/* This block needs to be conditional on settings.showProcessingIndicators */}
+                                        {functionCallPart && settings.showProcessingIndicators && (
                                             <div
                                                 className="function-call-request-display flex flex-col gap-1 p-2.5 my-1.5 rounded-lg border text-xs shadow-sm bg-[var(--color-function-call-request-bg)] border-[var(--color-function-call-request-border)] text-[var(--color-function-call-request-text)]"
                                                 title={`Chamada para a função: ${functionCallPart.functionCall.name}`}
