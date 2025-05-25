@@ -36,6 +36,12 @@ export interface GoogleDriveUser {
     picture?: string;
 }
 
+export interface DriveMemory {
+    id: string;
+    content: string;
+    lastModifiedAt: string; // ISO 8601 timestamp
+}
+
 
 export interface FunctionDeclaration {
     id: string;
