@@ -152,28 +152,26 @@ export function useMessageSubmission({
             // History for API is up to and including the edited message
             // Subsequent AI/function messages related to the *original* user message are effectively orphaned.
             // removeMessagesAfterId will prune them.
-            const conversationAfterPruning = removeMessagesAfterId(activeConversationId, messageToEditId);
+            removeMessagesAfterId(activeConversationId, messageToEditId); // Called for its side-effect
 
-            if (!conversationAfterPruning) {
-                console.error("Conversation not found after pruning for edit, or messageToEditId not found within it.");
-                setIsLoadingAI(false);
-                onSubmissionEnd?.({ focusTextarea: true, errorOccurred: true });
-                return;
-            }
-
-            // History for API is now directly from conversationAfterPruning.messages.
-            // The user message (last in this list) already has its text and metadata updated
-            // by the preceding updateMessageInConversation call.
-            historyForAPI = conversationAfterPruning.messages
-                .map(msg => {
-                    if (msg.metadata?.rawParts && (msg.sender === 'model' || msg.sender === 'function')) {
-                        return { sender: msg.sender, parts: msg.metadata.rawParts as Part[] };
-                    }
-                    // For user messages (including the edited one), or others without rawParts, use text.
-                    return { sender: msg.sender, text: msg.text };
-                });
+            // Construct historyForAPI using currentConversation's messages up to the point of the edit.
+            // The message being edited will use `trimmedText`.
+            const messagesUpToEdited = currentConversation.messages.slice(0, messageIndex + 1);
+            historyForAPI = messagesUpToEdited.map(msg => {
+                if (msg.id === messageToEditId) {
+                    // This is the user's message that was edited.
+                    // For the API history, its text content should be the new `trimmedText`.
+                    return { sender: 'user' as 'user', text: trimmedText };
+                }
+                // For previous model/function messages, use rawParts if available.
+                if (msg.metadata?.rawParts && (msg.sender === 'model' || msg.sender === 'function')) {
+                    return { sender: msg.sender, parts: msg.metadata.rawParts as Part[] };
+                }
+                // For other messages (older user messages, or model/function without rawParts).
+                return { sender: msg.sender, text: msg.text };
+            });
             
-            textForAI = trimmedText; // The AI will respond to this new text (which is the text of the last message in historyForAPI)
+            textForAI = trimmedText; // The AI will respond to this new text.
 
             // Add a new placeholder for the AI's response to the edited message.
             // This new AI message will follow the edited user message in the conversation state.
