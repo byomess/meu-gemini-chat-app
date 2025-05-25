@@ -1,5 +1,5 @@
-import { GoogleGenAI, Part } from "@google/genai";
-import { AttachedFileInfo, ProcessingStatus } from '../../types';
+import { GoogleGenAI, type Part } from "@google/genai";
+import type { ProcessingStatus } from '../../types';
 
 // Constants for file states
 const FILE_STATE_ACTIVE = "ACTIVE";

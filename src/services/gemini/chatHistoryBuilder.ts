@@ -1,4 +1,4 @@
-import { Content, Part } from "@google/genai";
+import type { Content, Part } from "@google/genai";
 
 const USER_ROLE = "user";
 const MODEL_ROLE = "model";

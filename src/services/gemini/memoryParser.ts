@@ -1,4 +1,4 @@
-import { StreamedGeminiResponseChunk } from '../geminiService'; // Import the type from the main service file
+import type { StreamedGeminiResponseChunk } from '../geminiService'; // Import the type from the main service file
 
 const createMemoryRegex = /\[MEMORIZE:\s*"([^"]+)"\]/g;
 const updateMemoryRegex = /\[UPDATE_MEMORY original:\s*"([^"]+)"\s*new:\s*"([^"]+)"\]/g;
