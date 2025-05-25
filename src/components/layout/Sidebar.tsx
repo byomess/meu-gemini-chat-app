@@ -239,14 +239,25 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               ) : (
                 <>
-                  <IoChatbubbleEllipsesOutline
-                    size={19}
-                    className={`flex-shrink-0 transition-colors duration-200
-                                ${convo.id === activeConversationId
-                                    ? `${convo.isIncognito ? 'text-[var(--color-convo-item-incognito-active-icon)]' : 'text-[var(--color-convo-item-active-icon)]'}`
-                                    : `${convo.isIncognito ? 'text-[var(--color-convo-item-incognito-icon)] group-hover/convoItem:text-[var(--color-convo-item-incognito-hover-icon)]' : 'text-[var(--color-convo-item-icon)] group-hover/convoItem:text-[var(--color-convo-item-hover-icon)]'}`
-                                }`}
-                  />
+                  {convo.isIncognito ? (
+                    <GhostIcon
+                      size={19}
+                      className={`flex-shrink-0 transition-colors duration-200
+                                  ${convo.id === activeConversationId
+                                      ? 'text-[var(--color-convo-item-incognito-active-icon)]'
+                                      : 'text-[var(--color-convo-item-incognito-icon)] group-hover/convoItem:text-[var(--color-convo-item-incognito-hover-icon)]'
+                                  }`}
+                    />
+                  ) : (
+                    <IoChatbubbleEllipsesOutline
+                      size={19}
+                      className={`flex-shrink-0 transition-colors duration-200
+                                  ${convo.id === activeConversationId
+                                      ? 'text-[var(--color-convo-item-active-icon)]'
+                                      : 'text-[var(--color-convo-item-icon)] group-hover/convoItem:text-[var(--color-convo-item-hover-icon)]'
+                                  }`}
+                    />
+                  )}
                   <span className="truncate flex-1 text-sm">
                     {convo.title}
                     {convo.isIncognito && (
