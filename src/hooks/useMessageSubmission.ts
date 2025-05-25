@@ -112,7 +112,7 @@ export function useMessageSubmission({
             !localFile.isPlaceholder && localFile.file && localFile.file.size > 0
         );
 
-        let historyForAPI: { sender: 'user' | 'model' | 'function'; text?: string; parts?: Part[] }[];
+        let historyToSendToGemini: { sender: 'user' | 'model' | 'function'; text?: string; parts?: Part[] }[];
         let textForAI: string = trimmedText;
         let aiMessageIdToStreamTo: string | null = null;
         let userMessageIdForHistory: string | null = null;
@@ -142,18 +142,16 @@ export function useMessageSubmission({
 
             removeMessagesAfterId(activeConversationId, messageToEditId);
 
-            const messagesUpToEdited = currentConversation.messages.slice(0, messageIndex + 1);
-            historyForAPI = messagesUpToEdited.map(msg => {
-                if (msg.id === messageToEditId) {
-                    return { sender: 'user' as const, text: trimmedText };
-                }
-                if (msg.metadata?.rawParts && (msg.sender === 'model' || msg.sender === 'function')) {
+            // Build history for Gemini: all messages *before* the edited user message.
+            // This `currentConversation` should contain the previous AI message.
+            historyToSendToGemini = currentConversation.messages.slice(0, messageIndex).map(msg => {
+                if (msg.metadata?.rawParts) {
                     return { sender: msg.sender, parts: msg.metadata.rawParts as Part[] };
                 }
                 return { sender: msg.sender, text: msg.text };
             });
 
-            textForAI = trimmedText;
+            textForAI = trimmedText; // The edited user message is the current turn.
 
             aiMessageIdToStreamTo = addMessageToConversation(activeConversationId, {
                 text: "", sender: 'model', metadata: { isLoading: true, respondingToUserMessageId: messageToEditId }
@@ -161,6 +159,16 @@ export function useMessageSubmission({
 
         } else {
             // --- Submitting a new message ---
+
+            // Build history for Gemini: all messages *before* the current user message.
+            // This `currentConversation` should contain the *previous* AI response.
+            historyToSendToGemini = (currentConversation.messages || []).map(msg => {
+                if (msg.metadata?.rawParts) {
+                    return { sender: msg.sender, parts: msg.metadata.rawParts as Part[] };
+                }
+                return { sender: msg.sender, text: msg.text };
+            });
+
             userMessageIdForHistory = addMessageToConversation(activeConversationId, {
                 text: trimmedText,
                 sender: 'user',
@@ -172,15 +180,6 @@ export function useMessageSubmission({
                 text: "", sender: 'model', metadata: { isLoading: true, respondingToUserMessageId: userMessageIdForHistory }
             });
 
-            const updatedConversationForNewMsg = conversations.find(c => c.id === activeConversationId);
-            historyForAPI = (updatedConversationForNewMsg?.messages || [])
-                .filter(msg => msg.id !== aiMessageIdToStreamTo)
-                .map(msg => {
-                    if (msg.metadata?.rawParts) {
-                        return { sender: msg.sender, parts: msg.metadata.rawParts as Part[] };
-                    }
-                    return { sender: msg.sender, text: msg.text };
-                });
             textForAI = trimmedText;
         }
 
@@ -202,20 +201,20 @@ export function useMessageSubmission({
             const rawFilesForAPI: RawFileAttachment[] = filesToSendToAI
                 .map(localFile => ({ file: localFile.file }));
 
-            // historyToSendToGemini contains all messages *before* the current user's turn.
-            const historyToSendToGemini = historyForAPI.slice(0, -1);
+            // historyToSendToGemini is now correctly built to contain all messages *before* the current user's turn.
+            // textForAI is the current user's message.
 
             const systemInstructionText = systemMessage({
                 conversationTitle: currentConversation?.title,
-                messageCountInConversation: historyForAPI.length,
+                messageCountInConversation: historyToSendToGemini.length + 1, // +1 for the current user message
                 customPersonalityPrompt: settings.customPersonalityPrompt,
                 isIncognito: isIncognitoConversation, // Pass incognito status to system message
             });
 
             const streamGenerator = streamMessageToGemini(
                 settings.apiKey,
-                historyToSendToGemini,
-                textForAI,
+                historyToSendToGemini, // This is the history
+                textForAI,              // This is the current user message
                 rawFilesForAPI,
                 currentGlobalMemoriesWithObjects,
                 settings.geminiModelConfig,
