@@ -69,8 +69,7 @@ export function buildApiTools(
  * Converts media to Blob and creates AttachedFileInfo objects.
  */
 async function processMediaFromFunctionResponseJson(
-    genAI: GoogleGenAI,
-    jsonResponse: Record<string, unknown>, // Changed from 'any' to 'Record<string, unknown>'
+    jsonResponse: Record<string, unknown>, // Removed genAI parameter as it's not used here
     funcName: string,
     abortSignal?: AbortSignal,
 ): Promise<AttachedFileInfo[]> {
@@ -274,7 +273,7 @@ export async function* executeDeclaredFunctionAndProcessResult(
             const jsonResponse = await apiResponse.json();
             functionResponseContent = jsonResponse;
 
-            const mediaFromJsonResponse = await processMediaFromFunctionResponseJson(genAI, jsonResponse, funcName, abortSignal);
+            const mediaFromJsonResponse = await processMediaFromFunctionResponseJson(jsonResponse, funcName, abortSignal); // Removed genAI
             if (mediaFromJsonResponse.length > 0) {
                 attachedFilesFromFunction.push(...mediaFromJsonResponse);
                 yield {

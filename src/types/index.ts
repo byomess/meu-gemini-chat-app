@@ -105,6 +105,7 @@ export interface MessageMetadata {
     }[];
     rawParts?: Part[];
     processingStatus?: ProcessingStatus;
+    respondingToUserMessageId?: string; // Added this line
 }
 
 export interface Message {

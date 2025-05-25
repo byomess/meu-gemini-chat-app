@@ -6,8 +6,8 @@ import { useMemories } from '../contexts/MemoryContext';
 import {
     streamMessageToGemini,
     type StreamedGeminiResponseChunk,
-    type RawFileAttachment
 } from '../services/geminiService';
+import { type RawFileAttachment } from '../services/gemini/fileUploader'; // Corrected import path for RawFileAttachment
 import type { MessageMetadata, AttachedFileInfo, ProcessingStatus, Part, Conversation } from '../types';
 import { systemMessage } from '../prompts';
 import type { LocalAttachedFile } from './useFileAttachments';
@@ -46,8 +46,8 @@ export function useMessageSubmission({
 
     const abortStreamControllerRef = useRef<AbortController | null>(null);
     const lastProcessingStatusForInputRef = useRef<ProcessingStatus | null>(null);
-    accumulatedRawPartsForInputRef.current = [];
-    accumulatedAttachedFilesInfoRef.current = [];
+    const accumulatedRawPartsForInputRef = useRef<Part[]>([]); // Corrected declaration
+    const accumulatedAttachedFilesInfoRef = useRef<AttachedFileInfo[]>([]); // Corrected declaration
 
     const handleSubmit = async () => {
         setErrorFromAI(null);
@@ -78,8 +78,9 @@ export function useMessageSubmission({
         setIsLoadingAI(true);
 
         lastProcessingStatusForInputRef.current = null;
-        accumulatedRawPartsForInputRef.current = [];
-        accumulatedAttachedFilesInfoRef.current = [];
+        accumulatedRawPartsForInputRef.current = []; // Resetting ref content
+        accumulatedAttachedFilesInfoRef.current = []; // Resetting ref content
+
         let accumulatedAiText = "";
 
         const currentConversation = conversations.find(c => c.id === activeConversationId);

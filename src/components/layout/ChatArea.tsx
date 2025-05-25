@@ -160,7 +160,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                 <h2 className="truncate text-base sm:text-lg font-semibold text-[var(--color-chat-header-title)]">
                     {conversationTitle}
                     {isIncognito && (
-                        <GhostIcon size={18} className="inline-block ml-2 text-[var(--color-text-secondary)]" title="Conversa Incógnita" />
+                        <GhostIcon size={18} className="inline-block ml-2 text-[var(--color-text-secondary)]" aria-label="Conversa Incógnita" />
                     )}
                 </h2>
             </div>

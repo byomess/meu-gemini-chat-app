@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/contexts/ConversationContext.tsx
-import React, { createContext, useContext, type ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, type ReactNode, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import type { Conversation, Message, MessageMetadata, ProcessingStatus, Part } from '../types';
+import type { Conversation, Message, MessageMetadata } from '../types'; // Removed useEffect, ProcessingStatus, Part
 import { v4 as uuidv4 } from 'uuid';
 
 const CONVERSATIONS_KEY = 'geminiChat_conversations';
 const ACTIVE_CONVERSATION_ID_KEY = 'geminiChat_activeConversationId';
-const CHUNK_RENDER_INTERVAL_MS = 200; // This constant is no longer used but kept for now as it's not directly harmful.
+// const CHUNK_RENDER_INTERVAL_MS = 200; // This constant is no longer used but kept for now as it's not directly harmful. // Removed unused constant
 
 interface ConversationContextType {
     conversations: Conversation[];
