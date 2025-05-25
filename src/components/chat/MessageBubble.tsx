@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/components/chat/MessageBubble.tsx
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef, useEffect } from 'react';
 import type { Message, MessageMetadata, MemoryActionType, AttachedFileInfo, Part, ProcessingStatus } from '../../types';
 import {
@@ -10,7 +10,7 @@ import {
     IoGitCommitOutline,
 } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
-import { useAppSettings } from '../../contexts/AppSettingsContext'; // Import useAppSettings
+import { useAppSettings } from '../../contexts/AppSettingsContext';
 import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -33,7 +33,6 @@ interface MessageBubbleProps {
     conversationId: string;
 }
 
-// Interface CustomCodeRendererProps (sem alteração)
 interface CustomCodeRendererProps extends React.HTMLAttributes<HTMLElement>, ExtraProps {
     inline?: boolean;
     children?: React.ReactNode;
@@ -51,7 +50,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         activeConversation,
         isGeneratingResponse,
     } = useConversations();
-    const { settings } = useAppSettings(); // Get global settings
+    const { settings } = useAppSettings();
 
     const isMobile = useIsMobile();
 
@@ -128,7 +127,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
             } else {
                 setActiveDisplayStatus(incomingProcessingStatus);
                 lastIndicatorTypeSetTimeRef.current = now;
-                currentIndicatorTypeRef.current = incomingProcessingStatus.type;
             }
         } else {
             if (JSON.stringify(incomingProcessingStatus) !== JSON.stringify(activeDisplayStatus)) {
@@ -251,10 +249,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
 
     const isThisUserMessageBeingReprocessed = isUser && isProcessingEditedMessage && (activeConversation?.messages.some((m) => m.id === message.id) ?? false) && Boolean(activeConversation?.messages[activeConversation.messages.length - 1]?.metadata?.isLoading) && ((activeConversation?.messages.findIndex((m) => m.id === message.id) ?? 0) < ((activeConversation?.messages.length ?? 1) - 1));
 
-    // Modify this line to include the new setting
-    const showActivityIndicator = settings.showProcessingIndicators && !isUser && !isFunctionRole && isLoading && activeDisplayStatus &&
-        (activeDisplayStatus.stage === 'pending' || activeDisplayStatus.stage === 'in_progress' || activeDisplayStatus.stage === 'awaiting_ai');
-
     const currentMessageText = message.text.replace(/▍$/, '').trim();
     const isLogMessage = currentMessageText.startsWith("[Loox:");
 
@@ -266,6 +260,23 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const sanitizedMessageText = textForDisplay;
 
     let renderUserTextPortion = sanitizedMessageText.length > 0;
+
+    const functionCallPart = rawParts?.find((p): p is Part & { functionCall: FunctionCall } => (p as Part).functionCall !== undefined);
+    const functionResponsePart = rawParts?.find((p): p is Part & { functionResponse: FunctionResponse } => (p as Part).functionResponse !== undefined);
+
+    // Determine the processing status to display, prioritizing incoming status
+    // If there's an incoming processing status, use it.
+    // Otherwise, if there's a functionCallPart and indicators are enabled, create a 'completed' function_call_request status.
+    const statusToDisplay: ProcessingStatus | undefined = incomingProcessingStatus ||
+        (functionCallPart && settings.showProcessingIndicators
+            ? { type: 'function_call_request', stage: 'completed', name: functionCallPart.functionCall.name }
+            : undefined);
+
+    // The main flag to show any activity indicator (including the new consolidated function call request)
+    const showActivityIndicator = settings.showProcessingIndicators && !isUser && !isFunctionRole && isLoading && statusToDisplay &&
+        (statusToDisplay.stage === 'pending' || statusToDisplay.stage === 'in_progress' || statusToDisplay.stage === 'awaiting_ai' || statusToDisplay.stage === 'completed');
+
+
     if (showActivityIndicator) {
         if (isLogMessage && sanitizedMessageText.length === 0) {
             renderUserTextPortion = false;
@@ -275,9 +286,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     const shouldRenderTextContent = renderUserTextPortion ||
         (!isUser && !isFunctionRole && (userFacingErrorMessage || (abortedByUser && !isEditing))) ||
         (isFunctionRole && !(rawParts?.find((p): p is Part & { functionResponse: FunctionResponse } => (p as Part).functionResponse !== undefined)));
-
-    const functionCallPart = rawParts?.find((p): p is Part & { functionCall: FunctionCall } => (p as Part).functionCall !== undefined);
-    const functionResponsePart = rawParts?.find((p): p is Part & { functionResponse: FunctionResponse } => (p as Part).functionResponse !== undefined);
 
     const showAITypingIndicator = !isUser && !isFunctionRole && isLoading && !showActivityIndicator &&
         !functionCallPart && !functionResponsePart && !shouldRenderTextContent;
@@ -294,7 +302,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                 isLikelyInline = (!className || !className.startsWith('language-')) && !codeString.includes('\n');
             }
 
-            if (!isUser && isLoading && !syntaxHighlightEnabledGlobally) { // AI loading, syntax highlight off
+            if (!isUser && isLoading && !syntaxHighlightEnabledGlobally) {
                 if (isLikelyInline) {
                     return (
                         <code {...props} className={`font-mono text-inherit px-1 bg-[var(--color-inline-code-loading-bg)] rounded-sm ${className || ''}`}>
@@ -310,7 +318,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                         </pre>
                     );
                 }
-            } else { // User message OR AI done OR syntax highlight on
+            } else {
                 if (isLikelyInline) {
                     return (
                         <code
@@ -385,7 +393,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     
     const userBubbleClasses = "bg-[var(--color-message-bubble-user-bg)] text-[var(--color-message-bubble-user-text)] shadow-md";
     const aiBubbleBaseClasses = "bg-[var(--color-message-bubble-ai-bg)] text-[var(--color-message-bubble-ai-text)] shadow-md border border-[var(--color-message-bubble-ai-border)]";
-    const functionRoleBubbleClasses = "bg-[var(--color-message-bubble-function-bg)] text-[var(--color-message-bubble-function-text)] shadow-md border border-[var(--color-message-bubble-function-border)]"; // Lighter indigo
+    const functionRoleBubbleClasses = "bg-[var(--color-message-bubble-function-bg)] text-[var(--color-message-bubble-function-text)] shadow-md border border-[var(--color-message-bubble-function-border)]";
     const errorBubbleClasses = "!bg-[var(--color-message-bubble-error-bg)] !border-[var(--color-message-bubble-error-border)] text-[var(--color-message-bubble-error-text)]";
     const abortedBubbleClasses = "border-2 border-dashed border-[var(--color-message-bubble-aborted-border)] !bg-[var(--color-message-bubble-aborted-bg)] text-[var(--color-message-bubble-aborted-text)] shadow-[var(--color-message-bubble-aborted-shadow)]";
     const baseLoadingPulse = isLoading && !isUser && !showActivityIndicator && !userFacingErrorMessage && !abortedByUser && !isEditing && !functionCallPart && !functionResponsePart;
@@ -514,34 +522,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                                     <div className={messageContainerClasses}>
                                         {isThisUserMessageBeingReprocessed && (<div className="absolute -top-1.5 -right-1.5 p-0.5 bg-[var(--color-message-bubble-reprocess-icon-bg)] rounded-full shadow z-10"> <IoSyncOutline size={12} className="text-[var(--color-message-bubble-reprocess-icon-text)] animate-spin" /> </div>)}
 
-                                        {showActivityIndicator && activeDisplayStatus && (
+                                        {showActivityIndicator && statusToDisplay && (
                                             <>
-                                                {(activeDisplayStatus.type === 'function_call_request' ||
-                                                    activeDisplayStatus.type === 'function_call_execution' ||
-                                                    activeDisplayStatus.type === 'function_call_response') &&
-                                                    <FunctionCallActivityIndicator status={activeDisplayStatus} />
+                                                {(statusToDisplay.type === 'function_call_request' ||
+                                                    statusToDisplay.type === 'function_call_execution' ||
+                                                    statusToDisplay.type === 'function_call_response') &&
+                                                    <FunctionCallActivityIndicator status={statusToDisplay} />
                                                 }
-                                                {(activeDisplayStatus.type === 'user_attachment_upload' ||
-                                                    activeDisplayStatus.type === 'file_from_function_processing') &&
-                                                    <FileProcessingActivityIndicator status={activeDisplayStatus} />
+                                                {(statusToDisplay.type === 'user_attachment_upload' ||
+                                                    statusToDisplay.type === 'file_from_function_processing') &&
+                                                    <FileProcessingActivityIndicator status={statusToDisplay} />
                                                 }
                                             </>
-                                        )}
-
-                                        {/* This block needs to be conditional on settings.showProcessingIndicators */}
-                                        {functionCallPart && settings.showProcessingIndicators && (
-                                            <div
-                                                className="function-call-request-display flex flex-col gap-1 p-2.5 my-1.5 rounded-lg border text-xs shadow-sm bg-[var(--color-function-call-request-bg)] border-[var(--color-function-call-request-border)] text-[var(--color-function-call-request-text)]"
-                                                title={`Chamada para a função: ${functionCallPart.functionCall.name}`}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <IoTerminalOutline size={18} className="flex-shrink-0 text-[var(--color-function-call-request-icon)]" />
-                                                    <span className="font-semibold text-[var(--color-function-call-request-text)]">Chamada de Função Solicitada:</span>
-                                                </div>
-                                                <div className="pl-[calc(1.125rem+0.5rem)]">
-                                                    <p className="text-sm font-medium text-[var(--color-function-call-request-name)]">{functionCallPart.functionCall.name}</p>
-                                                </div>
-                                            </div>
                                         )}
 
                                         {functionResponsePart && (

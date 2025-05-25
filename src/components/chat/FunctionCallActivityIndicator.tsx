@@ -44,7 +44,7 @@ const FunctionCallActivityIndicator: React.FC<FunctionCallActivityIndicatorProps
         } else {
             setDisplayedStage(status.stage);
         }
-
+        
         return () => {
             if (stageChangeTimeoutRef.current) {
                 clearTimeout(stageChangeTimeoutRef.current);
@@ -116,7 +116,8 @@ const FunctionCallActivityIndicator: React.FC<FunctionCallActivityIndicatorProps
                 textColorClass = 'text-[var(--color-emerald-600)]';
                 bgColorClass = 'bg-[color:color-mix(in_srgb,var(--color-green-500)_5%,transparent)]';
                 borderColorClass = 'border-[color:color-mix(in_srgb,var(--color-green-500)_30%,transparent)]';
-                stageText = 'Execução Concluída';
+                // MODIFICATION HERE: Differentiate text based on status.type
+                stageText = status.type === 'function_call_request' ? 'Chamada de Função Solicitada' : 'Execução Concluída';
                 titleIconColorClass = 'text-[var(--color-green-500)]';
                 break;
             case 'failed':
