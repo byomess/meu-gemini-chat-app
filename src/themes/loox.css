@@ -86,7 +86,7 @@
   /* Incognito Chat Item Styles */
   --color-convo-item-incognito-bg: var(--color-gray-100); /* Slightly different background */
   --color-convo-item-incognito-text: var(--color-gray-400); /* Slightly muted text */
-  --color-convo-item-incognito-icon: var(--color-gray-300); /* Muted icon */
+  --color-convo-item-incognito-icon: var(--color-gray-500); /* Muted icon - changed from gray-300 for better contrast */
   --color-convo-item-incognito-hover-bg: var(--color-gray-200); /* Hover state */
   --color-convo-item-incognito-hover-text: var(--color-gray-500);
   --color-convo-item-incognito-active-bg: var(--color-indigo-50); /* Active incognito */

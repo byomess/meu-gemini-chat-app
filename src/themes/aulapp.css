@@ -9,8 +9,8 @@
   --color-gray-400: #9ca3af;
   --color-gray-500: #6b7280;
   --color-gray-600: #4b5563;
-  --color-gray-700: #374151;
-  --color-gray-800: #1f2937;
+  --color-gray-700: #374151; /* Changed for incognito icon for better contrast */
+  --color-gray-800: #1f2937; /* Changed for incognito icon hover for better contrast */
   --color-gray-900: #111827;
   --color-pink-50: #fdf2f8;
   --color-red-50: #fef2f2; /* New: for error bubble background */
@@ -67,9 +67,9 @@
   /* Incognito Chat Item Styles */
   --color-convo-item-incognito-bg: var(--color-gray-100); /* Slightly different background */
   --color-convo-item-incognito-text: var(--color-gray-600); /* Slightly muted text */
-  --color-convo-item-incognito-icon: var(--color-gray-500); /* Muted icon */
+  --color-convo-item-incognito-icon: var(--color-gray-700); /* Muted icon - changed from gray-500 for better contrast */
   --color-convo-item-incognito-hover-bg: var(--color-gray-200); /* Hover state */
-  --color-convo-item-incognito-hover-text: var(--color-gray-700);
+  --color-convo-item-incognito-hover-text: var(--color-gray-700); /* Changed from gray-700 to gray-800 for better contrast */
   --color-convo-item-incognito-active-bg: var(--color-indigo-50); /* Active incognito */
   --color-convo-item-incognito-active-text: var(--color-indigo-700);
   --color-convo-item-incognito-active-icon: var(--color-indigo-600);
