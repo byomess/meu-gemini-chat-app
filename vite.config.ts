@@ -12,9 +12,9 @@ export default defineConfig({
             registerType: 'autoUpdate',
             includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
             manifest: {
-                name: 'AiOmniChat',
-                short_name: 'AiOmniChat',
-                description: 'Chat para vários provedores de IA',
+                name: 'Loox AI',
+                short_name: 'Loox AI',
+                description: 'Assistente de IA que se adequa às suas necessidades.',
                 theme_color: '#000000',
                 background_color: '#000000',
                 display: 'standalone',
