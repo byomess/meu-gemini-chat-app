@@ -295,7 +295,7 @@ async function _processMediaFromFunctionResponseJson(
             name: fileName,
             type: mimeType,
             size: blob.size,
-            previewUrl: dataUrl,
+            dataUrl: dataUrl, // FIX: Changed from previewUrl to dataUrl
         };
     };
 
@@ -341,7 +341,7 @@ async function _processMediaFromFunctionResponseJson(
 
             attachedFiles.push(await createAttachedFileInfo(blob, fileName, mimeType));
         } catch (e) {
-            console.error(`Failed to process file URL from function '${funcName}':`, e);
+                console.error(`Failed to process file URL from function '${funcName}':`, e);
         }
     }
 
@@ -466,7 +466,7 @@ async function* _executeDeclaredFunctionAndProcessResult(
                 name: downloadedFileName,
                 type: actualMimeType,
                 size: fileBlob.size,
-                previewUrl: dataUrl,
+                dataUrl: dataUrl, // FIX: Changed from previewUrl to dataUrl
             });
 
 
