@@ -7,7 +7,7 @@ import {
     type Part,
     type GenerateContentResponse,
     type FunctionCall,
-    type GenerateContentRequest, // Added this import
+    type GenerateContentParameters, // Added this import
 } from "@google/genai";
 
 import type {
@@ -18,7 +18,7 @@ import type {
     AttachedFileInfo,
 } from '../types';
 
-import { RawFileAttachment, processUserAttachment } from './gemini/fileUploader';
+import { type RawFileAttachment, processUserAttachment } from './gemini/fileUploader';
 import { buildApiTools, executeDeclaredFunctionAndProcessResult } from './gemini/toolExecutor';
 import { buildChatHistory } from './gemini/chatHistoryBuilder';
 import { parseMemoryOperations } from './gemini/memoryParser';
@@ -140,7 +140,7 @@ export async function* streamMessageToGemini(
                     }
                 })
             };
-            const requestPayloadForAPI: GenerateContentRequest = { // Changed type here
+            const requestPayloadForAPI: GenerateContentParameters = { // Changed type here
                 model: modelConfig.model,
                 contents: currentChatHistory,
                 config: requestConfig
@@ -148,7 +148,7 @@ export async function* streamMessageToGemini(
 
             const streamResult: AsyncIterable<GenerateContentResponse> = await genAI.models.generateContentStream(requestPayloadForAPI);
 
-            let modelResponsePartsAggregatedThisTurn: Part[] = [];
+            const modelResponsePartsAggregatedThisTurn: Part[] = [];
             let hasFunctionCallInThisTurn = false;
             let currentTurnTextDelta = "";
             let functionCallRequestStatusEmitted = false;

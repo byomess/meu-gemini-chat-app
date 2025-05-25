@@ -4,7 +4,6 @@ import {
     type Schema as GeminiSchema,
     Type as GeminiType,
     type Part,
-    type FunctionCall,
 } from "@google/genai";
 
 import type {
