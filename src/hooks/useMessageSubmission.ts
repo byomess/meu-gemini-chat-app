@@ -95,10 +95,26 @@ export function useMessageSubmission({
         }
 
         const webSearchActiveForThisSubmission = settings.enableWebSearch && isWebSearchEnabledForNextMessage;
-        const filesToSendToAI = attachedFiles.filter(localFile => settings.enableAttachments || localFile.file.type.startsWith('audio/'));
-        const filesInfoForUIMessage: AttachedFileInfo[] = filesToSendToAI.map(localFile => ({
-            id: localFile.id, name: localFile.name, type: localFile.type, size: localFile.size, dataUrl: localFile.previewUrl,
-        }));
+
+        // filesInfoForUIMessage should include ALL files (placeholders from edit and new ones)
+        // to correctly update the user message metadata in the UI.
+        // The `attachedFiles` prop to this hook will be `editedAttachedFiles` from MessageBubble during an edit.
+        const filesInfoForUIMessage: AttachedFileInfo[] = attachedFiles
+            .filter(localFile => settings.enableAttachments || localFile.file.type.startsWith('audio/')) // Basic filter
+            .map(localFile => ({
+                id: localFile.id, // Preserve original ID for placeholders
+                name: localFile.name,
+                type: localFile.type,
+                size: localFile.size,
+                dataUrl: localFile.previewUrl, // This will be present for placeholders too
+            }));
+
+        // filesToSendToAI for the API call should ONLY include NEW files (not placeholders).
+        // These are files that actually have a File object and are not marked as placeholders.
+        const filesToSendToAI: LocalAttachedFile[] = attachedFiles.filter(localFile =>
+            (settings.enableAttachments || localFile.file.type.startsWith('audio/')) && 
+            !localFile.isPlaceholder && localFile.file && localFile.file.size > 0
+        );
 
         let historyForAPI: { sender: 'user' | 'model' | 'function'; text?: string; parts?: Part[] }[];
         let textForAI: string = trimmedText;
@@ -212,11 +228,26 @@ export function useMessageSubmission({
 
         try {
             const currentGlobalMemoriesWithObjects = globalMemoriesFromHook.map(mem => ({ id: mem.id, content: mem.content }));
-            const rawFilesForAPI: RawFileAttachment[] = filesToSendToAI.map(localFile => ({ file: localFile.file }));
+            // rawFilesForAPI should be built from filesToSendToAI (which are new, non-placeholder files)
+            const rawFilesForAPI: RawFileAttachment[] = filesToSendToAI
+                .map(localFile => ({ file: localFile.file }));
 
-            // Construct history for Gemini: take all messages from historyForAPI *before* the current user message,
-            // then the current user message text (textForAI) is the new prompt.
-            const historyToSendToGemini = historyForAPI.filter(msg => msg.sender !== 'user' || (userMessageIdForHistory && msg.text !== textForAI));
+
+            // Construct history for Gemini:
+            // For an edited message, historyForAPI already includes the updated user message (with its text and full AttachedFileInfo).
+            // The textForAI is the new prompt.
+            // The geminiService will handle embedding file metadata from the user's message if `rawFilesForAPI` is empty but the message has attachments.
+            // However, to be explicit, we can prepare parts for the user's turn if there are attachments.
+            
+            let userTurnParts: Part[] = [{ text: textForAI }]; // Default user turn part
+
+            // This section was an attempt to build userTurnParts with fileData, but it's complex without fileUri.
+            // Let's stick to the simpler model for now: textForAI and rawFilesForAPI (new files).
+            // The history (historyToSendToGemini) will contain previous turns.
+
+            const historyToSendToGemini = messageToEditId
+                ? historyForAPI.slice(0, -1) // All messages *before* the edited user message
+                : historyForAPI.filter(msg => msg.sender !== 'user' || (userMessageIdForHistory && msg.text !== textForAI)); // Original logic for new messages
 
 
             const systemInstructionText = systemMessage({

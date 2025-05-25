@@ -231,50 +231,48 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
         } else {
             setEditedText(message.text.replace(/▍$/, ''));
         }
+
+        // Populate editedAttachedFiles with existing attachments as placeholders
+        if (message.metadata?.attachedFilesInfo && message.metadata.attachedFilesInfo.length > 0) {
+            const placeholderFiles: LocalAttachedFile[] = message.metadata.attachedFilesInfo.map(afi => ({
+                id: afi.id,
+                file: new File([], afi.name, { type: afi.type }), // Dummy file object for LocalAttachedFile structure
+                name: afi.name,
+                type: afi.type,
+                size: afi.size,
+                previewUrl: afi.dataUrl, // Use dataUrl as previewUrl for placeholders
+                isPlaceholder: true,
+            }));
+            setEditedAttachedFiles(placeholderFiles);
+        } else {
+            setEditedAttachedFiles([]); // Ensure it's empty if no original attachments
+        }
+
         setIsEditing(true);
     };
 
     const handleSaveEdit = async (): Promise<void> => {
         const newText = editedText.trim();
         setIsEditing(false);
-        if (newText === '' && !hasAttachedFiles && editedAttachedFiles.length === 0) { // Check editedAttachedFiles as well
-            if (message.text.replace(/▍$/, '').trim() !== '' && window.confirm('O texto está vazio e não há anexos. Deseja excluir a mensagem?')) {
+        // `hasAttachedFiles` refers to the original message's attachments before edit started.
+        // `editedAttachedFiles` is the current state for the edit UI (placeholders + any new files if UI supported adding them).
+        if (newText === '' && editedAttachedFiles.length === 0) {
+            // If both new text and current attachments for edit are empty
+            if ((message.text.replace(/▍$/, '').trim() !== '' || (message.metadata?.attachedFilesInfo && message.metadata.attachedFilesInfo.length > 0)) && 
+                window.confirm('O texto está vazio e não há anexos. Deseja excluir a mensagem?')) {
                 removeMessageById(conversationId, message.id);
             }
+            // If the message was already empty and had no attachments, and still is, do nothing.
             return;
         }
 
         if (isUser) {
-            // Map original attachments to LocalAttachedFile[] if they should be re-sent.
-            // For now, sending empty, assuming the hook handles history correctly.
-            // If edits could change attachments, `editedAttachedFiles` would be populated by the UI.
-            const originalAttachmentsAsLocal: LocalAttachedFile[] = (message.metadata?.attachedFilesInfo || []).map(afi => ({
-                id: afi.id,
-                // We don't have the File object here, which is a limitation.
-                // The hook expects File objects for *new* uploads.
-                // For edits, the history mechanism should preserve original files.
-                // So, we pass an empty array for `attachedFiles` to the hook,
-                // signifying no *new* files are being added with this edit action.
-                file: new File([], afi.name, { type: afi.type }), // Placeholder, not ideal
-                name: afi.name,
-                type: afi.type,
-                size: afi.size,
-                previewUrl: afi.dataUrl,
-            }));
-            // setEditedAttachedFiles(originalAttachmentsAsLocal); // If we were to manage them
-
-            // Call handleSubmit from the hook for user messages
-            // Ensure `editedText` is up-to-date in the hook's closure if it relies on prop `text`
-            // Or, pass it directly if the hook's handleSubmit accepts it.
-            // The hook is set up to use `text` from its props, which is `editedText` from this component's state.
-            
-            // For edited messages, we are not re-submitting files via the `attachedFiles` prop of the hook.
-            // The original files (if any) are part of the message history that the hook prepares.
-            // So, `editedAttachedFiles` passed to the hook constructor should be `[]` unless the edit UI allows changing files.
-            // For simplicity, let's ensure `editedAttachedFiles` is empty when calling submit for an edit,
-            // unless a more complex file editing UI is implemented in MessageBubble.
-            // The hook's `messageToEditId` signals it's an edit.
+            // The `messageSubmission` hook is already configured with `editedText` (from state)
+            // and `editedAttachedFiles` (from state, now containing placeholders for original files)
+            // via its props. Calling handleSubmit will use this current state.
             await messageSubmission.handleSubmit();
+            // No need to call setEditedAttachedFiles([]) here, as onSubmissionStart in the hook should clear MessageInput's files,
+            // and for MessageBubble, the edit mode is exited.
 
         } else { // Editing AI message (local update only)
             const newMetadata: Partial<MessageMetadata> = {
@@ -291,6 +289,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
 
     const handleCancelEdit = (): void => {
         setEditedText(message.text.replace(/▍$/, ''));
+        setEditedAttachedFiles([]); // Clear any staged attachments for edit
         setIsEditing(false);
     };
 
