@@ -11,6 +11,7 @@ export interface LocalAttachedFile {
     size: number;
     previewUrl?: string;
     isRecording?: boolean; // To distinguish recorded audio if needed
+    isPlaceholder?: boolean; // True if this represents an existing attachment during an edit
 }
 
 const blobToDataURL = (blob: Blob): Promise<string> => {
@@ -69,7 +70,8 @@ export function useFileAttachments({ enableAttachments, isRecordingAudio, textar
                     type: file.type,
                     size: file.size,
                     previewUrl: previewUrl,
-                    isRecording: isRecordedAudio ? false : undefined,
+                    isRecording: isRecordedAudio ? false : undefined, // New files are not placeholders
+                    isPlaceholder: false, 
                 };
             })();
             newFilesPromises.push(newAttachedFilePromise);
