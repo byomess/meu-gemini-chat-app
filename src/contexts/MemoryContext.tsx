@@ -1,8 +1,10 @@
 // src/contexts/MemoryContext.tsx
-import React, { createContext, useContext, type ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, type ReactNode, useCallback, useRef, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import type { Memory } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { useAppSettings } from './AppSettingsContext'; // ADDED
+import { useGoogleDriveSync } from '../hooks/useGoogleDriveSync'; // ADDED
 
 const MEMORIES_KEY = 'geminiChat_memories';
 
@@ -26,14 +28,26 @@ interface MemoryContextType {
     deleteMemory: (id: string) => void;
     updateMemory: (id: string, newContent: string) => void;
     clearAllMemories: () => void;
-    replaceAllMemories: (newMemories: Memory[]) => Memory[]; // Modified to return Memory[]
+    replaceAllMemories: (newMemories: Memory[], source?: string) => Memory[]; // MODIFIED: Added source parameter
 }
 
 export const MemoryContext = createContext<MemoryContextType | undefined>(undefined);
 
 export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    // Pass the memoryReviver to useLocalStorage
     const [memories, setMemories] = useLocalStorage<Memory[]>(MEMORIES_KEY, [], memoryReviver);
+    const { settings } = useAppSettings(); // ADDED
+    const { syncMemories: actualSyncFunctionFromHook } = useGoogleDriveSync(); // ADDED
+
+    const syncMemoriesRef = useRef(actualSyncFunctionFromHook); // ADDED
+    useEffect(() => { // ADDED
+        syncMemoriesRef.current = actualSyncFunctionFromHook;
+    }, [actualSyncFunctionFromHook]);
+
+    const triggerSync = useCallback(() => { // ADDED helper
+        if (settings.googleDriveAccessToken) {
+            syncMemoriesRef.current().catch(error => console.error("Memory sync failed:", error));
+        }
+    }, [settings.googleDriveAccessToken]); // syncMemoriesRef is stable
 
     const addMemory = useCallback((content: string, sourceMessageId?: string): Memory | undefined => {
         const trimmedContent = content.trim();
@@ -55,9 +69,10 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 .sort(sortByTimestampDesc);
             return updatedMemories;
         });
-
-        return newMemory; // RETORNA O OBJETO DA MEMÓRIA CRIADA
-    }, [setMemories]);
+        
+        triggerSync(); // MODIFIED: Call sync
+        return newMemory;
+    }, [setMemories, triggerSync]); // MODIFIED: Added triggerSync
 
     const deleteMemory = useCallback((id: string) => {
         console.log("Tentativa de deletar memória:", id);
@@ -88,36 +103,38 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setMemories(prev =>
             prev.map(mem =>
                 mem.id === id ? { ...mem, content: trimmedNewContent, timestamp: new Date() } : mem
-            ).sort(sortByTimestampDesc) // Reordena após a atualização para manter a mais recente no topo
+            ).sort(sortByTimestampDesc)
         );
-    }, [setMemories]);
+        triggerSync(); // MODIFIED: Call sync
+    }, [setMemories, triggerSync]); // MODIFIED: Added triggerSync
 
     const clearAllMemories = useCallback(() => {
         if (window.confirm('Tem certeza de que deseja apagar TODAS as memórias? Esta ação não pode ser desfeita.')) {
             setMemories([]);
+            triggerSync(); // MODIFIED: Call sync
         }
-    }, [setMemories]);
+    }, [setMemories, triggerSync]); // MODIFIED: Added triggerSync
 
-    const replaceAllMemories = useCallback((newMemories: Memory[]): Memory[] => {
+    const replaceAllMemories = useCallback((newMemories: Memory[], source?: string): Memory[] => { // MODIFIED: Added source parameter
         const isValidFormat = newMemories.every(
             mem => typeof mem.id === 'string' && typeof mem.content === 'string' && mem.timestamp
         );
         if (!isValidFormat) {
             alert("Formato de arquivo de memórias inválido. A importação foi cancelada.");
-            return []; // Return empty array or handle error as appropriate
+            return memories; // Return current memories on invalid format
         }
-        // Garante que timestamps sejam objetos Date e ordena
         const processedMemories = newMemories.map(mem => ({
             ...mem,
             timestamp: new Date(mem.timestamp)
         })).sort(sortByTimestampDesc);
 
         setMemories(processedMemories);
-        // Note: replaceAllMemories is often called by syncMemories itself,
-        // so we don't want to trigger another sync here to avoid loops.
-        // The sync will have already happened or is in progress.
-        return processedMemories; // Return the processed memories
-    }, [setMemories]);
+        
+        if (source !== 'sync') { // MODIFIED: Conditional sync
+            triggerSync();
+        }
+        return processedMemories;
+    }, [setMemories, triggerSync, memories]); // MODIFIED: Added triggerSync and memories (for return on error)
 
 
     return (
