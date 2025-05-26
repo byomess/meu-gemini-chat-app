@@ -17,7 +17,8 @@ import { useGoogleDriveSync } from '../../../hooks/useGoogleDriveSync'; // Impor
 
 export type DataSettingsTabProps = object;
 
-const GOOGLE_DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file'; // Or drive.appdata
+// Add 'profile' and 'email' scopes to allow fetching user profile information
+const GOOGLE_DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file profile email';
 
 const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
     const { showDialog } = useDialog();
