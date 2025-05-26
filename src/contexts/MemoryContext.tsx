@@ -86,7 +86,8 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             });
             return updatedMemories;
         });
-    }, [setMemories]);
+        triggerSync(); // MODIFIED: Call sync
+    }, [setMemories, triggerSync]); // MODIFIED: Added triggerSync
 
     const updateMemory = useCallback((id: string, newContent: string) => {
         const trimmedNewContent = newContent.trim();
@@ -95,6 +96,7 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             // Se o novo conteúdo for vazio, pergunta ao usuário se deseja excluir a memória
             if (window.confirm("O conteúdo da memória está vazio. Deseja excluir esta memória?")) {
                 setMemories(prev => prev.filter(m => m.id !== id));
+                triggerSync(); // MODIFIED: Call sync if deleted
             }
             return; // Retorna para não atualizar com conteúdo vazio se o usuário não confirmar a exclusão
         }
