@@ -103,14 +103,16 @@ export const findOrCreateAppFolder = async (): Promise<string> => {
         });
 
         if (response.result.files && response.result.files.length > 0) {
+            console.log(`[findOrCreateAppFolder] Found existing folder: ${response.result.files[0].name} (ID: ${response.result.files[0].id})`);
             return response.result.files[0].id;
         } else {
             const createResponse = await gapi.client.drive.files.create({
                 name: APP_FOLDER_NAME,
                 mimeType: 'application/vnd.google-apps.folder',
                 parents: [parentFolderId],
-                fields: 'id',
+                fields: 'id, name', // Request name in response for debugging
             });
+            console.log(`[findOrCreateAppFolder] Created new folder: ${createResponse.result.name} (ID: ${createResponse.result.id})`);
             return createResponse.result.id!;
         }
     } catch (error) {
@@ -130,14 +132,21 @@ export const getMemoriesFileId = async (parentFolderId: string): Promise<string 
         const response = await gapi.client.drive.files.list({
             q: `name='${MEMORIES_FILE_NAME}' and mimeType='application/json' and '${parentFolderId}' in parents and trashed=false`,
             spaces: 'drive',
-            fields: 'files(id, name, modifiedTime)',
+            fields: 'files(id, name, modifiedTime)', // Request name and modifiedTime for debugging
         });
 
+        console.log(`[getMemoriesFileId] Search for '${MEMORIES_FILE_NAME}' in folder '${parentFolderId}' result:`, response.result.files);
+
         if (response.result.files && response.result.files.length > 0) {
+            if (response.result.files.length > 1) {
+                console.warn(`[getMemoriesFileId] Found multiple files named '${MEMORIES_FILE_NAME}'. Returning the first one.`, response.result.files);
+                // Consider adding logic here to delete duplicates or pick the latest modified one
+            }
             return response.result.files[0].id;
         }
         return null;
-    } catch (error) {
+    }
+    catch (error) {
         console.error("Error getting memories file ID:", error);
         throw new Error(`Falha ao buscar ID do arquivo de memórias no Drive: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -171,34 +180,56 @@ export const readFileContent = async (fileId: string): Promise<string> => {
  */
 export const uploadFileContent = async (content: string, parentFolderId: string, existingFileId: string | null): Promise<string> => {
     await ensureGapiClientReady();
-    const fileMetadata = {
+
+    const boundary = '-------314159265358979323846';
+    const delimiter = "\r\n--" + boundary + "\r\n";
+    const close_delimiter = "\r\n--" + boundary + "--";
+
+    const metadata = {
         name: MEMORIES_FILE_NAME,
         mimeType: 'application/json',
         parents: [parentFolderId],
     };
 
-    const media = {
-        mimeType: 'application/json',
-        body: content,
-    };
+    const multipartRequestBody =
+        delimiter +
+        'Content-Type: application/json\r\n\r\n' +
+        JSON.stringify(metadata) +
+        delimiter +
+        'Content-Type: application/json\r\n\r\n' +
+        content +
+        close_delimiter;
+
+    console.log(`[uploadFileContent] Attempting to upload/update. existingFileId: ${existingFileId}, parentFolderId: ${parentFolderId}`);
 
     try {
+        let response;
         if (existingFileId) {
-            const response = await gapi.client.drive.files.update({
-                fileId: existingFileId,
-                resource: fileMetadata,
-                media: media,
-                uploadType: 'media',
+            // Update existing file using multipart PATCH
+            response = await gapi.client.request({
+                path: `/upload/drive/v3/files/${existingFileId}`,
+                method: 'PATCH',
+                params: { uploadType: 'multipart' },
+                headers: {
+                    'Content-Type': 'multipart/related; boundary=' + boundary
+                },
+                body: multipartRequestBody
             });
-            return response.result.id!;
+            console.log(`[uploadFileContent] File updated. Response:`, response.result);
         } else {
-            const response = await gapi.client.drive.files.create({
-                resource: fileMetadata,
-                media: media,
-                fields: 'id',
+            // Create new file using multipart POST
+            response = await gapi.client.request({
+                path: '/upload/drive/v3/files',
+                method: 'POST',
+                params: { uploadType: 'multipart' },
+                headers: {
+                    'Content-Type': 'multipart/related; boundary=' + boundary
+                },
+                body: multipartRequestBody
             });
-            return response.result.id!;
+            console.log(`[uploadFileContent] File created. Response:`, response.result);
         }
+        return response.result.id!;
     } catch (error) {
         console.error("Error uploading file content:", error);
         throw new Error(`Falha ao enviar/atualizar arquivo no Drive: ${error instanceof Error ? error.message : String(error)}`);
