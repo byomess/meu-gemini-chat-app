@@ -267,19 +267,20 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
     // - Ensures a valid conversation is active if conversations do exist.
     useEffect(() => {
         // uiVisibleConversations is already filtered for non-deleted and sorted by updatedAt descending.
-        if (uiVisibleConversations.length === 0) {
-            // No visible (non-deleted) conversations exist. Create a new one.
-            // createNewConversation will also set it as active.
-            createNewConversation();
-        } else {
+        if (uiVisibleConversations.length > 0) {
             // Visible conversations exist. Ensure one is active if current activeId is null or invalid.
             const currentActiveIsValid = activeId !== null && uiVisibleConversations.some(c => c.id === activeId);
             if (!currentActiveIsValid) {
                 // Set the most recent visible conversation (first in the sorted list) as active.
                 setActiveConversationId(uiVisibleConversations[0].id);
             }
+        } else {
+            // No visible conversations exist. Ensure activeId is null.
+            if (activeId !== null) {
+                setActiveConversationId(null);
+            }
         }
-    }, [uiVisibleConversations, activeId, createNewConversation, setActiveConversationId]);
+    }, [uiVisibleConversations, activeId, setActiveConversationId]);
 
     return (
         <ConversationContext.Provider value={{
