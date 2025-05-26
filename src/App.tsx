@@ -14,9 +14,6 @@ import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
 const AppContent = () => {
     const { settings } = useAppSettings();
     const {
-        conversations,
-        createNewConversation,
-        activeConversationId,
         allConversations,
         replaceAllConversations,
         lastConversationChangeSourceRef,
