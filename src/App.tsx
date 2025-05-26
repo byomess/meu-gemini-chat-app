@@ -139,7 +139,10 @@ const AppContent = () => {
                 <SettingsModal
                     isOpen={isSettingsModalOpen}
                     onClose={handleCloseSettingsModal}
-                    syncDriveData={triggerDebouncedSync} // MODIFIED: Pass debounced sync for manual trigger
+                    syncDriveData={() => {
+                        triggerDebouncedSync();
+                        return Promise.resolve();
+                    }} // MODIFIED: Pass debounced sync for manual trigger, wrapped to return Promise
                 />
             </div>
         </>
