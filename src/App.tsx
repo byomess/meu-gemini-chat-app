@@ -8,8 +8,8 @@ import { useUrlConfigInitializer } from './hooks/useUrlConfigInitializer';
 import { ConversationProvider, useConversations } from './contexts/ConversationContext';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
 import { DialogProvider } from './contexts/DialogContext';
-import { MemoryProvider, useMemories } from './contexts/MemoryContext'; // ADDED useMemories
-import { useGoogleDriveSync } from './hooks/useGoogleDriveSync'; // ADDED useGoogleDriveSync
+import { MemoryProvider, useMemories } from './contexts/MemoryContext';
+import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
 
 const AppContent = () => {
     const { settings } = useAppSettings();
@@ -17,16 +17,16 @@ const AppContent = () => {
         conversations,
         createNewConversation,
         activeConversationId,
-        allConversations, // ADDED for useGoogleDriveSync
-        replaceAllConversations, // ADDED for useGoogleDriveSync
-        lastConversationChangeSourceRef, // ADDED for useGoogleDriveSync
-        resetLastConversationChangeSource // ADDED for useGoogleDriveSync
+        allConversations,
+        replaceAllConversations,
+        lastConversationChangeSourceRef,
+        resetLastConversationChangeSource
     } = useConversations();
     const {
-        allMemories, // ADDED for useGoogleDriveSync
-        replaceAllMemories, // ADDED for useGoogleDriveSync
-        lastMemoryChangeSourceRef, // ADDED for useGoogleDriveSync
-        resetLastMemoryChangeSource // ADDED for useGoogleDriveSync
+        allMemories,
+        replaceAllMemories,
+        lastMemoryChangeSourceRef,
+        resetLastMemoryChangeSource
     } = useMemories();
 
     // Instantiate useGoogleDriveSync here, so it's always active
@@ -88,6 +88,11 @@ const AppContent = () => {
         }
     }, [conversations, createNewConversation, activeConversationId]);
 
+    // NEW: Trigger initial sync on component mount
+    useEffect(() => {
+        syncDriveData();
+    }, [syncDriveData]);
+
     return (
         <>
             <div className="flex h-screen bg-slate-950 text-white selection:bg-blue-600 selection:text-white overflow-hidden">
@@ -128,7 +133,7 @@ const AppContent = () => {
                 <SettingsModal
                     isOpen={isSettingsModalOpen}
                     onClose={handleCloseSettingsModal}
-                    syncDriveData={syncDriveData} // PASSED syncDriveData
+                    syncDriveData={syncDriveData}
                 />
             </div>
         </>

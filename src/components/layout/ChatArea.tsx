@@ -3,19 +3,20 @@ import {
     IoArrowDownCircleOutline,
     IoLockClosedOutline,
     IoMenuOutline,
+    IoSyncOutline, // NEW: Import IoSyncOutline for the spinner
 } from 'react-icons/io5'
 import MessageInput from '../chat/MessageInput'
 import MessageBubble from '../chat/MessageBubble'
 import { useConversations } from '../../contexts/ConversationContext'
 import { useAppSettings } from '../../contexts/AppSettingsContext'
 import useIsMobile from '../../hooks/useIsMobile'
-import { useCallback, useEffect, useRef, useState } from 'react' // Added useState
+import { useCallback, useEffect, useRef, useState } from 'react'
 import React from 'react'
-import { GhostIcon } from 'lucide-react' // Import GhostIcon
+import { GhostIcon } from 'lucide-react'
 
 interface ChatAreaProps {
     onOpenMobileSidebar: () => void;
-    showMobileMenuButton: boolean; // New prop
+    showMobileMenuButton: boolean;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenuButton }) => {
@@ -23,17 +24,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
         activeConversation,
         activeConversationId,
     } = useConversations()
-    const { settings } = useAppSettings()
+    const { settings } = useAppSettings() // NEW: Destructure settings to access googleDriveSyncStatus
     const isMobile = useIsMobile()
 
     const chatContainerRef = useRef<HTMLDivElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
-    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null); // For debouncing scroll
-    const [isAtBottom, setIsAtBottom] = useState(true); // New state to track if user is at bottom
+    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [isAtBottom, setIsAtBottom] = useState(true);
 
     const messages = activeConversation?.messages || []
     const conversationTitle = activeConversation?.title || 'Chat'
-    const isIncognito = activeConversation?.isIncognito || false; // Get incognito status
+    const isIncognito = activeConversation?.isIncognito || false;
 
     const scrollToBottom = useCallback(() => {
         const container = chatContainerRef.current
@@ -43,7 +44,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
             const scrollTop = container.scrollTop
             const targetScrollTop = scrollHeight - clientHeight
             const distanceToBottom = targetScrollTop - scrollTop
-            const duration = 300 // Duration in ms
+            const duration = 300
             const startTime = performance.now()
             const animateScroll = (currentTime: number) => {
                 const elapsedTime = currentTime - startTime
@@ -89,11 +90,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                 if (chatContainerRef.current) {
                     chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
                 }
-            }, 0); // 0ms delay defers execution until after the current browser repaint.
+            }, 0);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeConversationId, messages.length]); // messages.length ensures effect runs when messages for the new conversation are loaded.
-                                                // scrollToBottom is removed from dependencies as it's no longer used here.
+    }, [activeConversationId, messages.length]);
 
     // Effect to handle scroll detection and update isAtBottom state
     useEffect(() => {
@@ -124,7 +124,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                 clearTimeout(scrollTimeoutRef.current);
             }
         };
-    }, [activeConversationId]); // Add activeConversationId to dependencies
+    }, [activeConversationId]);
 
 
     const handleFloatingButtonClick = () => {
@@ -161,10 +161,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                 ) : (
                     <IoChatbubblesOutline size={22} className="flex-shrink-0 text-[var(--color-chat-header-icon)]" />
                 )}
-                <h2 className="truncate text-base sm:text-lg font-semibold text-[var(--color-chat-header-title)]">
+                <h2 className="truncate text-base sm:text-lg font-semibold text-[var(--color-chat-header-title)] flex-grow"> {/* Added flex-grow */}
                     {conversationTitle}
-                    {/* Removed GhostIcon from here as it's now the main icon */}
                 </h2>
+                {/* NEW: Syncing indicator */}
+                {settings.googleDriveSyncStatus === 'Syncing' && (
+                    <IoSyncOutline className="animate-spin text-[var(--color-chat-header-icon)] ml-2" size={20} />
+                )}
             </div>
 
             {showFloatingButton && (
@@ -188,7 +191,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
 
             <div
                 ref={chatContainerRef}
-                className="flex-1 overflow-y-auto px-3 md:px-4 py-4 md:py-6" // Scrollbar styling will be from global CSS or browser default
+                className="flex-1 overflow-y-auto px-3 md:px-4 py-4 md:py-6"
             >
                 {showWelcome ? (
                     <div className="h-full flex flex-col items-center justify-center text-[var(--color-welcome-text-secondary)] p-6 text-center">
@@ -230,7 +233,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                 )}
             </div>
 
-            <MessageInput /> {/* Props will be updated in MessageInput file */}
+            <MessageInput />
         </main>
     )
 }
