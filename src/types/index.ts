@@ -145,6 +145,7 @@ export interface Conversation {
     createdAt: Date;
     updatedAt: Date;
     isIncognito?: boolean; // Added for incognito mode
+    isDeleted?: boolean; // ADDED for soft delete
 }
 
 export interface UrlConfigFile {
@@ -179,6 +180,7 @@ export interface RawImportedConversation {
     messages?: RawImportedMessage[];
     createdAt?: string;
     updatedAt?: string;
+    isDeleted?: boolean; // ADDED for soft delete
 }
 
 export type DataSettingsTabProps = object;
