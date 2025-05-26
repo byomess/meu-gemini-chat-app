@@ -168,7 +168,11 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                                 };
 
                                 // If this is a model message and its loading state changes to false or an error appears
-                                if (updatedMsg.sender === 'model' && msg.metadata?.isLoading === true && (updates.metadata?.isLoading === false || updates.metadata?.error !== undefined)) {
+                                // AND it was NOT aborted by the user
+                                if (updatedMsg.sender === 'model' && msg.metadata?.isLoading === true &&
+                                    (updates.metadata?.isLoading === false || updates.metadata?.error !== undefined) &&
+                                    !updates.metadata?.abortedByUser // ADDED: Don't trigger if aborted
+                                ) {
                                     lastConversationChangeSourceRef.current = 'ai_finished';
                                 }
                                 // If this is a user message and its text is being updated (user editing their message)
