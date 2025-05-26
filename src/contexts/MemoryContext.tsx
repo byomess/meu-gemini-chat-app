@@ -12,7 +12,7 @@ const MEMORIES_KEY = 'geminiChat_memories';
 const sortByTimestampDesc = (a: Memory, b: Memory) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
 
 // Reviver function specifically for Memory objects to ensure timestamp is a Date
-const memoryReviver = (key: string, value: any): any => {
+const memoryReviver = (key: string, value: unknown): unknown => {
     if (key === 'timestamp' && typeof value === 'string') {
         const dateMatch = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.exec(value);
         if (dateMatch) {
