@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/contexts/ConversationContext.tsx
-import React, { createContext, useContext, type ReactNode, useCallback, useRef } from 'react'; // Added useRef
+import React, { createContext, useContext, type ReactNode, useCallback, useRef, useEffect } from 'react'; // Added useRef, useEffect
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import type { Conversation, Message, MessageMetadata } from '../types'; // Removed useEffect, ProcessingStatus, Part; Removed RawImportedConversation
 import { v4 as uuidv4 } from 'uuid';
@@ -60,7 +60,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
     const lastConversationChangeSourceRef = useRef<'user' | 'sync' | 'ai_finished' | null>(null); // MODIFIED: Added 'ai_finished'
 
-    // Filtered conversations for UI consumption
+    // Filtered conversations for UI consumption (non-deleted and sorted)
     const uiVisibleConversations = allConversations.filter(c => !c.isDeleted).sort(sortByUpdatedAtDesc);
 
     const activeConversation = uiVisibleConversations.find(c => c.id === activeId) || null;
@@ -262,6 +262,25 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
     // The useEffect hook for clearing renderIntervalRef is removed as it's no longer needed.
 
+    // Effect to initialize conversation state:
+    // - Creates a new conversation if none exist.
+    // - Ensures a valid conversation is active if conversations do exist.
+    useEffect(() => {
+        // uiVisibleConversations is already filtered for non-deleted and sorted by updatedAt descending.
+        if (uiVisibleConversations.length === 0) {
+            // No visible (non-deleted) conversations exist. Create a new one.
+            // createNewConversation will also set it as active.
+            createNewConversation();
+        } else {
+            // Visible conversations exist. Ensure one is active if current activeId is null or invalid.
+            const currentActiveIsValid = activeId !== null && uiVisibleConversations.some(c => c.id === activeId);
+            if (!currentActiveIsValid) {
+                // Set the most recent visible conversation (first in the sorted list) as active.
+                setActiveConversationId(uiVisibleConversations[0].id);
+            }
+        }
+    }, [uiVisibleConversations, activeId, createNewConversation, setActiveConversationId]);
+
     return (
         <ConversationContext.Provider value={{
             conversations: uiVisibleConversations,
@@ -270,7 +289,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             allConversations, // ADDED
             lastConversationChangeSourceRef, // ADDED
             resetLastConversationChangeSource, // ADDED
-            setActiveConversationId,
+            setActiveConversationId, // This is the wrapped setter
             createNewConversation,
             deleteConversation,
             deleteAllConversations,
