@@ -307,7 +307,8 @@ export const useGoogleDriveSync = ({
     // Effect to trigger sync when memories or conversations change due to user/AI action
     useEffect(() => {
         let didTriggerSync = false;
-        if (settings.googleDriveAccessToken && settings.googleDriveSyncStatus !== 'Syncing') {
+        // Only trigger if there's an access token AND no sync operation is currently running
+        if (settings.googleDriveAccessToken && !isSyncOperationActuallyRunning) { // MODIFIED
             if (lastMemoryChangeSource === 'user') {
                 console.log("Memories changed by user/AI, triggering Google Drive sync via hook.");
                 didTriggerSync = true;
@@ -320,7 +321,7 @@ export const useGoogleDriveSync = ({
 
             // Only check conversations if memories didn't trigger to avoid double sync from one action
             // Trigger if user-initiated conversation change OR AI message finished
-            if (!didTriggerSync && (lastConversationChangeSource === 'user' || lastConversationChangeSource === 'ai_finished')) { // MODIFIED
+            if (!didTriggerSync && (lastConversationChangeSource === 'user' || lastConversationChangeSource === 'ai_finished')) {
                 console.log("Conversations changed by user/AI, triggering Google Drive sync via hook.");
                 // didTriggerSync = true; // Not strictly needed for the last check
                 syncDriveData().catch(error => {
@@ -343,14 +344,14 @@ export const useGoogleDriveSync = ({
             // Reset conversation source only if it was 'user' or 'ai_finished' and no sync was triggered by this effect.
             // This ensures that if a sync *was* triggered, the source is reset by the finally block of syncDriveData.
             // If no sync was triggered (e.g., no token, or already syncing), but the source was set, it should be cleared.
-            if (lastConversationChangeSource === 'user' || lastConversationChangeSource === 'ai_finished') { // MODIFIED
+            if (lastConversationChangeSource === 'user' || lastConversationChangeSource === 'ai_finished') {
                  resetLastConversationChangeSource();
             }
         }
 
     }, [
         settings.googleDriveAccessToken,
-        settings.googleDriveSyncStatus,
+        isSyncOperationActuallyRunning, // MODIFIED: Now directly depends on this state
         syncDriveData, // The memoized sync function
         lastMemoryChangeSource,
         resetLastMemoryChangeSource,
