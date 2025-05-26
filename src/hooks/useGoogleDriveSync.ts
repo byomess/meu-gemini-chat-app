@@ -1,5 +1,5 @@
 // src/hooks/useGoogleDriveSync.ts
-import { useCallback, useEffect } from 'react'; // ADDED useEffect
+import { useCallback, useEffect, useState } from 'react'; // ADDED useState
 import { useAppSettings } from '../contexts/AppSettingsContext';
 // import { useMemories } from '../contexts/MemoryContext'; // Removed
 import {
@@ -39,12 +39,15 @@ export const useGoogleDriveSync = ({
     resetLastConversationChangeSource, // ADDED
 }: UseGoogleDriveSyncProps) => {
     const { settings, setGoogleDriveSyncStatus, updateGoogleDriveLastSync, setGoogleDriveError } = useAppSettings();
+    const [isSyncOperationActuallyRunning, setIsSyncOperationActuallyRunning] = useState(false); // ADDED
 
     const syncDriveData = useCallback(async () => { // RENAMED
+        setIsSyncOperationActuallyRunning(true); // ADDED
         if (!settings.googleDriveAccessToken) {
             console.warn("Google Drive sync attempted without access token. Aborting.");
             setGoogleDriveError("Não conectado ao Google Drive.");
             setGoogleDriveSyncStatus('Disconnected'); // Ensure status is correct
+            setIsSyncOperationActuallyRunning(false); // ADDED: Reset flag if aborted early
             return;
         }
 
@@ -285,6 +288,8 @@ export const useGoogleDriveSync = ({
                 setGoogleDriveError("Falha desconhecida na sincronização com Google Drive.");
             }
             setGoogleDriveSyncStatus('Error');
+        } finally { // ADDED
+            setIsSyncOperationActuallyRunning(false); // ADDED
         }
     }, [
         settings.googleDriveAccessToken,
@@ -350,6 +355,19 @@ export const useGoogleDriveSync = ({
         // Do not add `memories` or `conversations` here, as `syncDriveData` already depends on them.
         // This effect is about *when* to call `syncDriveData` based on change *source flags*.
     ]);
+
+    // ADDED: New useEffect to handle stale 'Syncing' status
+    useEffect(() => {
+        if (settings.googleDriveSyncStatus === 'Syncing' && !isSyncOperationActuallyRunning) {
+            console.warn("Detected stale Google Drive 'Syncing' status. Resetting.");
+            if (settings.googleDriveAccessToken) {
+                setGoogleDriveSyncStatus('Synced');
+            } else {
+                setGoogleDriveSyncStatus('Disconnected');
+            }
+        }
+    }, [settings.googleDriveSyncStatus, isSyncOperationActuallyRunning, settings.googleDriveAccessToken, setGoogleDriveSyncStatus]);
+
 
     return { syncDriveData };
 };
