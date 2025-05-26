@@ -36,14 +36,40 @@ export const MemoryContext = createContext<MemoryContextType | undefined>(undefi
 export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [memories, setMemories] = useLocalStorage<Memory[]>(MEMORIES_KEY, [], memoryReviver);
     const { settings } = useAppSettings();
-    const { syncMemories: actualSyncFunctionFromHook } = useGoogleDriveSync();
+
+    const lastMemoryChangeSourceRef = useRef<'user' | 'sync' | null>(null);
+
+    // Define replaceAllMemories first, as it's needed by useGoogleDriveSync
+    const replaceAllMemories = useCallback((newMemories: Memory[], source?: string): Memory[] => {
+        const isValidFormat = newMemories.every(
+            mem => typeof mem.id === 'string' && typeof mem.content === 'string' && mem.timestamp
+        );
+        if (!isValidFormat) {
+            alert("Formato de arquivo de memórias inválido. A importação foi cancelada.");
+            return memories; // Return current memories on invalid format
+        }
+        const processedMemories = newMemories.map(mem => ({
+            ...mem,
+            timestamp: new Date(mem.timestamp)
+        })).sort(sortByTimestampDesc);
+
+        setMemories(processedMemories);
+        
+        if (source === 'sync') {
+            lastMemoryChangeSourceRef.current = 'sync';
+        } else {
+            lastMemoryChangeSourceRef.current = 'user';
+        }
+        return processedMemories;
+    }, [setMemories, memories]); // `memories` is needed for the return on error case.
+
+    // Now call useGoogleDriveSync, passing the current memories and the replaceAllMemories function
+    const { syncMemories: actualSyncFunctionFromHook } = useGoogleDriveSync({ memories, replaceAllMemories });
 
     const syncMemoriesRef = useRef(actualSyncFunctionFromHook);
     useEffect(() => {
         syncMemoriesRef.current = actualSyncFunctionFromHook;
-    }, [actualSyncFunctionFromHook]);
-
-    const lastMemoryChangeSourceRef = useRef<'user' | 'sync' | null>(null);
+    }, [actualSyncFunctionFromHook]); // This dependency is correct. actualSyncFunctionFromHook changes if its own dependencies change.
 
     // Effect to trigger sync when memories change, if initiated by user/AI
     useEffect(() => {
@@ -53,8 +79,12 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 console.error("Google Drive sync failed after memory change:", error);
             });
         }
-        lastMemoryChangeSourceRef.current = null; // Reset flag after processing
-    }, [memories, settings.googleDriveAccessToken]); // actualSyncFunctionFromHook is implicitly handled
+        // Only reset if it was 'user'. If 'sync', it means replaceAllMemories was called by sync,
+        // and we don't want to trigger another sync.
+        if (lastMemoryChangeSourceRef.current === 'user') {
+            lastMemoryChangeSourceRef.current = null; // Reset flag after processing
+        }
+    }, [memories, settings.googleDriveAccessToken, syncMemoriesRef]); // syncMemoriesRef added as it's used
 
     const addMemory = useCallback((content: string, sourceMessageId?: string): Memory | undefined => {
         const trimmedContent = content.trim();
@@ -123,29 +153,9 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         }
     }, [setMemories]);
 
-    const replaceAllMemories = useCallback((newMemories: Memory[], source?: string): Memory[] => {
-        const isValidFormat = newMemories.every(
-            mem => typeof mem.id === 'string' && typeof mem.content === 'string' && mem.timestamp
-        );
-        if (!isValidFormat) {
-            alert("Formato de arquivo de memórias inválido. A importação foi cancelada.");
-            return memories; // Return current memories on invalid format
-        }
-        const processedMemories = newMemories.map(mem => ({
-            ...mem,
-            timestamp: new Date(mem.timestamp)
-        })).sort(sortByTimestampDesc);
-
-        setMemories(processedMemories);
-        
-        if (source === 'sync') {
-            lastMemoryChangeSourceRef.current = 'sync';
-        } else {
-            lastMemoryChangeSourceRef.current = 'user';
-        }
-        return processedMemories;
-    }, [setMemories, memories]); // `memories` is needed for the return on error case.
-
+    // replaceAllMemories is now defined before useGoogleDriveSync call.
+    // The SEARCH block for its definition was moved up.
+    // This SEARCH block is now for the return statement.
 
     return (
         <MemoryContext.Provider value={{
