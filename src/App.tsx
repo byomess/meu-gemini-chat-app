@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import ChatArea from './components/layout/ChatArea';
 import SettingsModal from './components/settings/SettingsModal';
@@ -88,10 +88,16 @@ const AppContent = () => {
         }
     }, [conversations, createNewConversation, activeConversationId]);
 
-    // NEW: Trigger initial sync on component mount
+    const initialSyncPerformedRef = useRef(false); // ADDED: Ref to track if initial sync has been done
+
+    // NEW: Trigger initial sync on component mount, only once when token is available
     useEffect(() => {
-        syncDriveData();
-    }, [syncDriveData]);
+        if (settings.googleDriveAccessToken && !initialSyncPerformedRef.current) {
+            console.log("Attempting initial Google Drive sync as token is available.");
+            syncDriveData();
+            initialSyncPerformedRef.current = true;
+        }
+    }, [settings.googleDriveAccessToken, syncDriveData]); // DEPENDENCIES: Re-run if token or syncDriveData changes
 
     return (
         <>

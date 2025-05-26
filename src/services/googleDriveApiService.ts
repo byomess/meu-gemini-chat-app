@@ -309,9 +309,19 @@ export const deleteFile = async (fileId: string): Promise<void> => {
         console.log(`[deleteFile] File with ID ${fileId} deleted successfully.`);
     } catch (error: any) {
         console.error(`Error deleting file with ID ${fileId}:`, error);
-        if (error && error.status === 401) {
-            throw new Error(`Falha de autenticação ao excluir arquivo no Drive (401).`);
+        let detailMessage = String(error);
+        // Attempt to get a more specific message from GAPI error structure
+        if (error && error.result && error.result.error && error.result.error.message) {
+            detailMessage = error.result.error.message;
+        } else if (error instanceof Error) {
+            detailMessage = error.message;
         }
-        throw new Error(`Falha ao excluir arquivo no Drive: ${error instanceof Error ? error.message : String(error)}`);
+
+        if (error && error.status === 401) {
+            // For 401, prioritize the authentication failure message
+            throw new Error(`Falha de autenticação ao excluir arquivo no Drive (401). Detalhes: ${detailMessage}`);
+        }
+        // For other errors, use the extracted detailMessage
+        throw new Error(`Falha ao excluir arquivo no Drive (ID: ${fileId}). Detalhes: ${detailMessage}`);
     }
 };
