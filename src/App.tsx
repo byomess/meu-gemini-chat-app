@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import ChatArea from './components/layout/ChatArea';
 import SettingsModal from './components/settings/SettingsModal';
@@ -8,14 +8,13 @@ import { useUrlConfigInitializer } from './hooks/useUrlConfigInitializer';
 import { ConversationProvider, useConversations } from './contexts/ConversationContext';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
 import { DialogProvider } from './contexts/DialogContext';
-import { MemoryProvider, useMemories } from './contexts/MemoryContext';
-import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
+import { MemoryProvider } from './contexts/MemoryContext';
 
 const AppContent = () => {
     const { settings } = useAppSettings();
     const { conversations, createNewConversation, activeConversationId } = useConversations();
     // const { memories } = useMemories(); // memories is not directly used in AppContent after removing auto-sync useEffect
-    const { syncMemories: _syncMemories_unused } = useGoogleDriveSync(); // syncMemories is not called from App.tsx anymore
+    // syncMemories is not called from App.tsx anymore
 
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);

@@ -289,22 +289,25 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                             const userProfile = await fetchUserProfile(tokenResponse.access_token);
                             connectGoogleDrive(tokenResponse.access_token, userProfile);
                             showDialog({ title: "Google Drive Conectado", message: `Conectado como ${userProfile.email}.`, type: 'alert' });
-                        } catch (error: any) {
+                        } catch (error) {
                             console.error("Error fetching user profile or connecting:", error);
-                            setGoogleDriveError(error.message || "Falha ao obter perfil do usuário.");
+                            const errorMessage = error instanceof Error ? error.message : "Falha ao obter perfil do usuário.";
+                            setGoogleDriveError(errorMessage);
                         } finally {
                             setAuthActionLoading(false);
                         }
                     },
-                    (error) => {
+                    (error: unknown) => {
                         console.error("Google Auth Error:", error);
                         let errorMessage = "Falha na autenticação com Google Drive.";
-                        if (error && error.type === 'popup_closed') {
-                            errorMessage = "Autenticação cancelada: Janela fechada pelo usuário.";
-                        } else if (error && error.error === 'access_denied') {
-                            errorMessage = "Acesso negado. Permissão não concedida.";
-                        } else if (error && typeof error.message === 'string') {
-                            errorMessage = error.message;
+                        if (typeof error === 'object' && error !== null) {
+                            if ('type' in error && error.type === 'popup_closed') {
+                                errorMessage = "Autenticação cancelada: Janela fechada pelo usuário.";
+                            } else if ('error' in error && error.error === 'access_denied') {
+                                errorMessage = "Acesso negado. Permissão não concedida.";
+                            } else if ('message' in error && typeof error.message === 'string') {
+                                errorMessage = error.message;
+                            }
                         }
                         setGoogleDriveError(errorMessage);
                         setGoogleDriveSyncStatus('Disconnected');

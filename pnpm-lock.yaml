@@ -54,6 +54,9 @@ importers:
       '@eslint/js':
         specifier: ^9.25.0
         version: 9.26.0
+      '@types/google.accounts':
+        specifier: ^0.0.16
+        version: 0.0.16
       '@types/lodash.throttle':
         specifier: ^4.1.9
         version: 4.1.9
@@ -1209,6 +1212,9 @@ packages:
 
   '@types/estree@1.0.7':
     resolution: {integrity: sha512-w28IoSUCJpidD/TGviZwwMJckNESJZXFu7NBZ5YJ4mEUnNraUn9Pm8HSZm/jDF1pDWYKspWE7oVphigUPRakIQ==}
+
+  '@types/google.accounts@0.0.16':
+    resolution: {integrity: sha512-llwLXm6qVFMrY31VNyGe87pyRU36J5/Z+NF1+hMraPjxYPdjjw953JozeG+/+tbjzlFkmd/gIzXAK7hyJ8ukqA==}
 
   '@types/hast@2.3.10':
     resolution: {integrity: sha512-McWspRw8xx8J9HurkVBfYj0xKoE25tOFlHGdx4MJ5xORQrMGZNqJhVQWaIbm6Oyla5kYOXtDiopzKRJzEOkwJw==}
@@ -4486,6 +4492,8 @@ snapshots:
   '@types/estree@0.0.39': {}
 
   '@types/estree@1.0.7': {}
+
+  '@types/google.accounts@0.0.16': {}
 
   '@types/hast@2.3.10':
     dependencies:

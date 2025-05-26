@@ -1,9 +1,3 @@
-// src/services/googleAuthService.ts
-
-// Declare gapi to avoid TypeScript errors if it's not globally defined
-declare const gapi: any; // gapi is for Google API Client Library, not GIS directly, but often used together.
-declare const google: any; // Declare google for GIS
-
 let tokenClient: google.accounts.oauth2.TokenClient | null = null;
 
 /**
@@ -35,7 +29,7 @@ export const initGoogleTokenClient = async (
     clientId: string,
     scope: string,
     onTokenResponse: (tokenResponse: google.accounts.oauth2.TokenResponse) => void,
-    onError: (error: any) => void
+    onError: (error: unknown) => void
 ): Promise<void> => {
     try {
         await waitForGoogleAccountsOauth2(); // Ensure GIS is loaded
@@ -57,7 +51,7 @@ export const initGoogleTokenClient = async (
                 }
                 onTokenResponse(tokenResponse);
             },
-            error_callback: (error: any) => { // Handles errors from the token client itself
+            error_callback: (error: unknown) => { // Handles errors from the token client itself
                 onError(error);
             }
         });

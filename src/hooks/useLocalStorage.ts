@@ -10,17 +10,6 @@ interface DBEntry {
     value: string;
 }
 
-// Generic reviver function to convert ISO date strings back to Date objects
-const dateReviver = (key: string, value: any): any => {
-    if (typeof value === 'string') {
-        const dateMatch = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.exec(value);
-        if (dateMatch) {
-            return new Date(value);
-        }
-    }
-    return value;
-};
-
 function openDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
         if (typeof window === 'undefined' || !window.indexedDB) {
@@ -42,7 +31,7 @@ function openDB(): Promise<IDBDatabase> {
     });
 }
 
-async function getValueFromDB<TValue>(db: IDBDatabase, key: string, reviver?: (key: string, value: any) => any): Promise<TValue | undefined> {
+async function getValueFromDB<TValue>(db: IDBDatabase, key: string, reviver?: (key: string, value: unknown) => unknown): Promise<TValue | undefined> {
     return new Promise((resolve, reject) => {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
             console.warn(`Object store "${STORE_NAME}" not found during get. Returning undefined.`);
@@ -101,7 +90,7 @@ async function setValueInDB(db: IDBDatabase, key: string, value: unknown): Promi
 export function useLocalStorage<T>(
     key: string,
     initialValueProp: T | (() => T),
-    reviver?: (key: string, value: any) => any // New optional parameter
+    reviver?: (key: string, value: unknown) => unknown // New optional parameter
 ): [T, React.Dispatch<React.SetStateAction<T>>] {
     const [dbInstance, setDbInstance] = useState<IDBDatabase | null>(null);
     const [isLoadedFromDB, setIsLoadedFromDB] = useState<boolean>(false);
