@@ -18,7 +18,7 @@ export const useGoogleDriveSync = () => {
     const { settings, setGoogleDriveSyncStatus, updateGoogleDriveLastSync, setGoogleDriveError } = useAppSettings();
     const { memories, replaceAllMemories } = useMemories();
 
-    const syncMemories = useCallback(async (onMemoriesUpdatedBySync?: (memories: Memory[]) => void) => {
+    const syncMemories = useCallback(async () => { // Removed onMemoriesUpdatedBySync parameter
         if (!settings.googleDriveAccessToken) {
             console.warn("Google Drive sync attempted without access token. Aborting.");
             setGoogleDriveError("Não conectado ao Google Drive.");
@@ -111,12 +111,9 @@ export const useGoogleDriveSync = () => {
                 timestamp: new Date(dm.lastModifiedAt),
             }));
             // Capture the result of replaceAllMemories
-            const finalLocalMemories = replaceAllMemories(updatedLocalMemories);
+            replaceAllMemories(updatedLocalMemories); // Update local state
 
-            // Call the callback with the final local memories (the exact array reference from context)
-            if (onMemoriesUpdatedBySync) {
-                onMemoriesUpdatedBySync(finalLocalMemories);
-            }
+            // onMemoriesUpdatedBySync callback removed
             updateGoogleDriveLastSync(new Date().toISOString());
             setGoogleDriveSyncStatus('Synced');
             console.log("Google Drive sync successful!");
