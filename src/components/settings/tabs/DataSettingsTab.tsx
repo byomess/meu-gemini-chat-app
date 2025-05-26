@@ -267,49 +267,57 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
     // Initialize Google Token Client
     useEffect(() => {
         const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
         if (!clientId) {
             console.error("Google Client ID (VITE_GOOGLE_CLIENT_ID) is not configured.");
-            setGoogleDriveError("Google integration is not configured by the administrator.");
-            setIsGoogleClientInitialized(false);
+            setGoogleDriveError("Google integration is not configured pelo administrador.");
+            setIsGoogleClientInitialized(false); // Ensure it's false if client ID is missing
             return;
         }
 
-        initGoogleTokenClient(
-            clientId,
-            GOOGLE_DRIVE_SCOPES,
-            async (tokenResponse) => {
-                setAuthActionLoading(true);
-                setGoogleDriveSyncStatus('Connecting');
-                try {
-                    const userProfile = await fetchUserProfile(tokenResponse.access_token);
-                    connectGoogleDrive(tokenResponse.access_token, userProfile);
-                    // setGoogleDriveSyncStatus('Synced'); // connectGoogleDrive sets this
-                    showDialog({ title: "Google Drive Conectado", message: `Conectado como ${userProfile.email}.`, type: 'alert' });
-                } catch (error: any) {
-                    console.error("Error fetching user profile or connecting:", error);
-                    setGoogleDriveError(error.message || "Falha ao obter perfil do usuário.");
-                    // disconnectGoogleDrive(); // Ensure clean state if profile fetch fails
-                } finally {
-                    setAuthActionLoading(false);
-                }
-            },
-            (error) => {
-                console.error("Google Auth Error:", error);
-                let errorMessage = "Falha na autenticação com Google Drive.";
-                if (error && error.type === 'popup_closed') {
-                    errorMessage = "Autenticação cancelada: Janela fechada pelo usuário.";
-                } else if (error && error.error === 'access_denied') {
-                    errorMessage = "Acesso negado. Permissão não concedida.";
-                } else if (error && typeof error.message === 'string') {
-                    errorMessage = error.message;
-                }
-                setGoogleDriveError(errorMessage);
-                setGoogleDriveSyncStatus('Disconnected');
-                setAuthActionLoading(false);
-                setIsGoogleClientInitialized(true); // Still initialized, but auth failed/cancelled
+        // Function to attempt initialization
+        const attemptInit = () => {
+            if (typeof window.google !== 'undefined' && window.google.accounts && window.google.accounts.oauth2) {
+                initGoogleTokenClient(
+                    clientId,
+                    GOOGLE_DRIVE_SCOPES,
+                    async (tokenResponse) => {
+                        setAuthActionLoading(true);
+                        setGoogleDriveSyncStatus('Connecting');
+                        try {
+                            const userProfile = await fetchUserProfile(tokenResponse.access_token);
+                            connectGoogleDrive(tokenResponse.access_token, userProfile);
+                            showDialog({ title: "Google Drive Conectado", message: `Conectado como ${userProfile.email}.`, type: 'alert' });
+                        } catch (error: any) {
+                            console.error("Error fetching user profile or connecting:", error);
+                            setGoogleDriveError(error.message || "Falha ao obter perfil do usuário.");
+                        } finally {
+                            setAuthActionLoading(false);
+                        }
+                    },
+                    (error) => {
+                        console.error("Google Auth Error:", error);
+                        let errorMessage = "Falha na autenticação com Google Drive.";
+                        if (error && error.type === 'popup_closed') {
+                            errorMessage = "Autenticação cancelada: Janela fechada pelo usuário.";
+                        } else if (error && error.error === 'access_denied') {
+                            errorMessage = "Acesso negado. Permissão não concedida.";
+                        } else if (error && typeof error.message === 'string') {
+                            errorMessage = error.message;
+                        }
+                        setGoogleDriveError(errorMessage);
+                        setGoogleDriveSyncStatus('Disconnected');
+                        setAuthActionLoading(false);
+                    }
+                );
+                setIsGoogleClientInitialized(true); // Set true only after initGoogleTokenClient is successfully called
+            } else {
+                // If google object is not yet available, try again after a short delay
+                setTimeout(attemptInit, 100);
             }
-        );
-        setIsGoogleClientInitialized(true); // Assume init call is made, error callback will handle GIS not loaded
+        };
+
+        attemptInit(); // Start the initialization attempt
     }, [connectGoogleDrive, setGoogleDriveError, setGoogleDriveSyncStatus, showDialog]);
 
     const handleConnectGoogleDrive = useCallback(() => {
