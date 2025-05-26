@@ -185,16 +185,21 @@ export const uploadFileContent = async (content: string, parentFolderId: string,
     const delimiter = "\r\n--" + boundary + "\r\n";
     const close_delimiter = "\r\n--" + boundary + "--";
 
-    const metadata = {
+    // Base metadata for the file
+    const baseMetadata: { name: string; mimeType: string; parents?: string[] } = {
         name: MEMORIES_FILE_NAME,
         mimeType: 'application/json',
-        parents: [parentFolderId],
     };
+
+    // Add parents only if creating a new file
+    if (!existingFileId) {
+        baseMetadata.parents = [parentFolderId];
+    }
 
     const multipartRequestBody =
         delimiter +
         'Content-Type: application/json\r\n\r\n' +
-        JSON.stringify(metadata) +
+        JSON.stringify(baseMetadata) + // Use the conditionally constructed metadata
         delimiter +
         'Content-Type: application/json\r\n\r\n' +
         content +
