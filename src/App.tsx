@@ -81,13 +81,6 @@ const AppContent = () => {
         }
     }, [isMobileSidebarOpen, isMobile, showNavigation]);
 
-    useEffect(() => {
-        if (conversations && conversations.length === 0 && !activeConversationId) {
-            console.log("No conversations found and no active conversation, creating a new one automatically.");
-            createNewConversation();
-        }
-    }, [conversations, createNewConversation, activeConversationId]);
-
     const initialSyncPerformedRef = useRef(false); // ADDED: Ref to track if initial sync has been done
 
     // NEW: Trigger initial sync on component mount, only once when token is available
