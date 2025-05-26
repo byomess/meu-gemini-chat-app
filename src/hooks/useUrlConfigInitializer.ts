@@ -35,6 +35,7 @@ interface UrlConfigFile {
     enableWebSearch?: boolean;
     enableAttachments?: boolean;
     hideNavigation?: boolean; // Added new setting
+    showProcessingIndicators?: boolean;
 }
 
 // Helper for basic deep comparison of JSON-like objects
@@ -209,6 +210,10 @@ export function useUrlConfigInitializer() {
                         }
                         if (configToApply.hideNavigation !== undefined && newAppSettings.hideNavigation !== configToApply.hideNavigation) {
                             newAppSettings.hideNavigation = configToApply.hideNavigation;
+                            changed = true;
+                        }
+                        if (configToApply.showProcessingIndicators !== undefined && newAppSettings.showProcessingIndicators !== configToApply.showProcessingIndicators) {
+                            newAppSettings.showProcessingIndicators = configToApply.showProcessingIndicators;
                             changed = true;
                         }
 
