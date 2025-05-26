@@ -27,6 +27,8 @@ const AppContent = () => {
     const isSyncingRef = useRef(false);
     // Ref to hold the debounce timer
     const syncDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+    // Ref to store the memories array as it was after the last successful sync
+    const lastSyncedMemoriesRef = useRef<typeof memories>([]); // Initialize with an empty array
 
     const handleOpenSettingsModal = useCallback(() => {
         setIsSettingsModalOpen(true);
@@ -69,19 +71,30 @@ const AppContent = () => {
         }
     }, [conversations, createNewConversation, activeConversationId]);
 
+    // Callback to update lastSyncedMemoriesRef
+    const onSyncCompleteUpdateRef = useCallback((syncedMemories: typeof memories) => {
+        lastSyncedMemoriesRef.current = syncedMemories;
+    }, []);
+
     // Trigger Google Drive sync on app startup if connected
     useEffect(() => {
         if (settings.googleDriveAccessToken && !isSyncingRef.current) {
             console.log("Google Drive access token found. Initiating sync on app startup.");
             isSyncingRef.current = true; // Set flag to true
-            syncMemories().finally(() => {
+            syncMemories(onSyncCompleteUpdateRef).finally(() => { // Pass the callback
                 isSyncingRef.current = false; // Reset flag after sync completes
             });
         }
-    }, [settings.googleDriveAccessToken, syncMemories]);
+    }, [settings.googleDriveAccessToken, syncMemories, onSyncCompleteUpdateRef]);
 
     // Trigger Google Drive sync when local memories change with debounce
     useEffect(() => {
+        // If the current memories array is the same reference as the last synced one,
+        // it means this change was caused by the sync itself, so don't re-trigger.
+        if (memories === lastSyncedMemoriesRef.current) {
+            console.log("Memories change detected, but it was from a sync. Skipping re-trigger.");
+            return;
+        }
         // Clear any existing debounce timer
         if (syncDebounceTimerRef.current) {
             clearTimeout(syncDebounceTimerRef.current);
@@ -92,9 +105,9 @@ const AppContent = () => {
             // Set a new debounce timer
             syncDebounceTimerRef.current = setTimeout(() => {
                 if (!isSyncingRef.current) {
-                    console.log("Local memories changed. Initiating Google Drive sync after debounce.");
+                    console.log("Local memories changed. Initiating Google Drive sync after debounce (user-initiated).");
                     isSyncingRef.current = true; // Set flag to true
-                    syncMemories().finally(() => {
+                    syncMemories(onSyncCompleteUpdateRef).finally(() => { // Pass the callback
                         isSyncingRef.current = false; // Reset flag after sync completes
                     });
                 }
@@ -107,7 +120,7 @@ const AppContent = () => {
                 clearTimeout(syncDebounceTimerRef.current);
             }
         };
-    }, [memories, settings.googleDriveAccessToken, syncMemories]);
+    }, [memories, settings.googleDriveAccessToken, syncMemories, onSyncCompleteUpdateRef]);
 
 
     return (

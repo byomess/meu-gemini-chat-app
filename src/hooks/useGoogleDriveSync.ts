@@ -12,13 +12,13 @@ import {
 } from '../services/googleDriveApiService';
 import type { Memory, DriveMemory } from '../types';
 
-const GOOGLE_DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file'; // Must match scope used in googleAuthService
+const GOOGLE_DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file profile email'; // Must match scope used in googleAuthService
 
 export const useGoogleDriveSync = () => {
     const { settings, setGoogleDriveSyncStatus, updateGoogleDriveLastSync, setGoogleDriveError } = useAppSettings();
     const { memories, replaceAllMemories } = useMemories();
 
-    const syncMemories = useCallback(async () => {
+    const syncMemories = useCallback(async (onMemoriesUpdatedBySync?: (memories: Memory[]) => void) => {
         if (!settings.googleDriveAccessToken) {
             console.warn("Google Drive sync attempted without access token. Aborting.");
             setGoogleDriveError("Não conectado ao Google Drive.");
@@ -112,6 +112,10 @@ export const useGoogleDriveSync = () => {
             }));
             replaceAllMemories(updatedLocalMemories);
 
+            // Call the callback with the updated memories
+            if (onMemoriesUpdatedBySync) {
+                onMemoriesUpdatedBySync(updatedLocalMemories);
+            }
             updateGoogleDriveLastSync(new Date().toISOString());
             setGoogleDriveSyncStatus('Synced');
             console.log("Google Drive sync successful!");
