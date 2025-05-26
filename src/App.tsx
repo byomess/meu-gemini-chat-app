@@ -8,13 +8,38 @@ import { useUrlConfigInitializer } from './hooks/useUrlConfigInitializer';
 import { ConversationProvider, useConversations } from './contexts/ConversationContext';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
 import { DialogProvider } from './contexts/DialogContext';
-import { MemoryProvider } from './contexts/MemoryContext';
+import { MemoryProvider, useMemories } from './contexts/MemoryContext'; // ADDED useMemories
+import { useGoogleDriveSync } from './hooks/useGoogleDriveSync'; // ADDED useGoogleDriveSync
 
 const AppContent = () => {
     const { settings } = useAppSettings();
-    const { conversations, createNewConversation, activeConversationId } = useConversations();
-    // const { memories } = useMemories(); // memories is not directly used in AppContent after removing auto-sync useEffect
-    // syncMemories is not called from App.tsx anymore
+    const {
+        conversations,
+        createNewConversation,
+        activeConversationId,
+        allConversations, // ADDED for useGoogleDriveSync
+        replaceAllConversations, // ADDED for useGoogleDriveSync
+        lastConversationChangeSourceRef, // ADDED for useGoogleDriveSync
+        resetLastConversationChangeSource // ADDED for useGoogleDriveSync
+    } = useConversations();
+    const {
+        allMemories, // ADDED for useGoogleDriveSync
+        replaceAllMemories, // ADDED for useGoogleDriveSync
+        lastMemoryChangeSourceRef, // ADDED for useGoogleDriveSync
+        resetLastMemoryChangeSource // ADDED for useGoogleDriveSync
+    } = useMemories();
+
+    // Instantiate useGoogleDriveSync here, so it's always active
+    const { syncDriveData } = useGoogleDriveSync({
+        memories: allMemories,
+        replaceAllMemories,
+        lastMemoryChangeSource: lastMemoryChangeSourceRef.current,
+        resetLastMemoryChangeSource,
+        conversations: allConversations,
+        replaceAllConversations,
+        lastConversationChangeSource: lastConversationChangeSourceRef.current,
+        resetLastConversationChangeSource,
+    });
 
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -63,9 +88,6 @@ const AppContent = () => {
         }
     }, [conversations, createNewConversation, activeConversationId]);
 
-    // All automatic sync logic has been removed.
-    // Sync will only be triggered manually via the "Sync Now" button in DataSettingsTab.
-
     return (
         <>
             <div className="flex h-screen bg-slate-950 text-white selection:bg-blue-600 selection:text-white overflow-hidden">
@@ -106,6 +128,7 @@ const AppContent = () => {
                 <SettingsModal
                     isOpen={isSettingsModalOpen}
                     onClose={handleCloseSettingsModal}
+                    syncDriveData={syncDriveData} // PASSED syncDriveData
                 />
             </div>
         </>

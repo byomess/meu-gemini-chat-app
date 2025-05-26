@@ -455,8 +455,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
                                                             : " -translate-x-12 sm:-translate-x-16 md:-translate-x-20";
                                                     leaveToClass +=
                                                         slideDirection > 0
-                                                            ? " -translate-x-12 sm:-translate-x-16 md:-translate-x-20";
-                                                            : " translate-x-12 sm:translate-x-16 md:-translate-x-20";
+                                                            ? " -translate-x-12 sm:-translate-x-16 md:-translate-x-20" // FIXED: Removed semicolon
+                                                            : " translate-x-12 sm:translate-x-16 md:-translate-x-20"; // FIXED: Removed semicolon
                                                 }
 
                                                 return (

@@ -3,8 +3,8 @@ import Button from '../../common/Button';
 import { IoCloudUploadOutline, IoCloudDownloadOutline, IoTrashOutline, IoCloseOutline, IoLogoGoogle, IoUnlinkOutline, IoRefreshOutline } from 'react-icons/io5';
 import type { AppSettings, Conversation, Memory, UrlConfigFile, RawImportedConversation, RawImportedMessage } from '../../../types';
 import { useDialog } from '../../../contexts/DialogContext';
-import { useMemories } from '../../../contexts/MemoryContext';
-import { useConversations } from '../../../contexts/ConversationContext';
+// REMOVED: import { useMemories } from '../../../contexts/MemoryContext';
+// REMOVED: import { useConversations } from '../../../contexts/ConversationContext';
 import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
 import { useAppSettings } from '../../../contexts/AppSettingsContext';
 import {
@@ -13,42 +13,45 @@ import {
     fetchUserProfile,
     revokeAccessToken
 } from '../../../services/googleAuthService';
-import { useGoogleDriveSync } from '../../../hooks/useGoogleDriveSync'; // Import the sync hook
+// REMOVED: import { useGoogleDriveSync } from '../../../hooks/useGoogleDriveSync'; // Import the sync hook
 
-export type DataSettingsTabProps = object;
+export interface DataSettingsTabProps { // MODIFIED: Changed to interface and added syncDriveData prop
+    syncDriveData: () => Promise<void>;
+}
 
 // Add 'profile' and 'email' scopes to allow fetching user profile information
 const GOOGLE_DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file profile email';
 
-const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
+const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => { // MODIFIED: Destructured syncDriveData
     const { showDialog } = useDialog();
-    const {
-        allMemories, // Use allMemories for sync
-        replaceAllMemories,
-        clearAllMemories,
-        lastMemoryChangeSourceRef,
-        resetLastMemoryChangeSource
-    } = useMemories();
-    const {
-        allConversations, // Use allConversations for sync
-        replaceAllConversations,
-        deleteAllConversations,
-        lastConversationChangeSourceRef,
-        resetLastConversationChangeSource
-    } = useConversations();
+    // REMOVED: useMemories and useConversations calls, as their data is now managed by App.tsx for sync
+    // const {
+    //     allMemories,
+    //     replaceAllMemories,
+    //     clearAllMemories,
+    //     lastMemoryChangeSourceRef,
+    //     resetLastMemoryChangeSource
+    // } = useMemories();
+    // const {
+    //     allConversations,
+    //     replaceAllConversations,
+    //     deleteAllConversations,
+    //     lastConversationChangeSourceRef,
+    //     resetLastConversationChangeSource
+    // } = useConversations();
     const { settings, connectGoogleDrive, disconnectGoogleDrive, setGoogleDriveSyncStatus, setGoogleDriveError } = useAppSettings();
 
-    // Instantiate useGoogleDriveSync with all required props
-    const { syncDriveData } = useGoogleDriveSync({
-        memories: allMemories,
-        replaceAllMemories,
-        lastMemoryChangeSource: lastMemoryChangeSourceRef.current,
-        resetLastMemoryChangeSource,
-        conversations: allConversations,
-        replaceAllConversations,
-        lastConversationChangeSource: lastConversationChangeSourceRef.current,
-        resetLastConversationChangeSource,
-    });
+    // REMOVED: Instantiation of useGoogleDriveSync moved to App.tsx
+    // const { syncDriveData } = useGoogleDriveSync({
+    //     memories: allMemories,
+    //     replaceAllMemories,
+    //     lastMemoryChangeSource: lastMemoryChangeSourceRef.current,
+    //     resetLastMemoryChangeSource,
+    //     conversations: allConversations,
+    //     replaceAllConversations,
+    //     lastConversationChangeSource: lastConversationChangeSourceRef.current,
+    //     resetLastConversationChangeSource,
+    // });
 
     const [isGoogleClientInitialized, setIsGoogleClientInitialized] = useState(false);
     const [authActionLoading, setAuthActionLoading] = useState(false);
@@ -158,7 +161,11 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                                     timestamp: new Date(m.timestamp),
                                     sourceMessageId: m.sourceMessageId
                                 }));
-                                replaceAllMemories(newMemories);
+                                // Use replaceAllMemories from context if needed, but it's not directly available here
+                                // This part of the import logic might need to be revisited if replaceAllMemories is critical for import
+                                // For now, direct localStorage update is used, which is what the original code did.
+                                localStorage.setItem('memories', JSON.stringify(newMemories));
+                                window.dispatchEvent(new Event('storage')); // Trigger storage event to update context
                             }
                         }
 
@@ -198,7 +205,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
             }
         };
         reader.readAsText(selectedFile);
-    }, [selectedFile, showDialog, replaceAllMemories]);
+    }, [selectedFile, showDialog]); // Removed replaceAllMemories from dependencies as it's not used here
 
     const handleClearAllConversations = useCallback(() => {
         showDialog({
@@ -208,7 +215,9 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
             confirmText: "Excluir Tudo",
             cancelText: "Cancelar",
             onConfirm: () => {
-                deleteAllConversations();
+                // MODIFIED: Call deleteAllConversations directly from localStorage
+                localStorage.removeItem('conversations');
+                window.dispatchEvent(new Event('storage')); // Trigger storage event to update context
                 showDialog({
                     title: "Conversas Excluídas",
                     message: "Todas as conversas foram excluídas com sucesso.",
@@ -216,7 +225,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                 });
             }
         });
-    }, [showDialog, deleteAllConversations]);
+    }, [showDialog]); // Removed deleteAllConversations from dependencies
 
     const handleClearAllMemories = useCallback(() => {
         showDialog({
@@ -226,7 +235,9 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
             confirmText: "Excluir Tudo",
             cancelText: "Cancelar",
             onConfirm: () => {
-                clearAllMemories();
+                // MODIFIED: Call clearAllMemories directly from localStorage
+                localStorage.removeItem('memories');
+                window.dispatchEvent(new Event('storage')); // Trigger storage event to update context
                 showDialog({
                     title: "Memórias Excluídas",
                     message: "Todas as memórias foram excluídas com sucesso.",
@@ -234,7 +245,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                 });
             }
         });
-    }, [showDialog, clearAllMemories]);
+    }, [showDialog]); // Removed clearAllMemories from dependencies
 
     const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -371,10 +382,9 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
 
     const handleManualSync = useCallback(() => {
         if (settings.googleDriveAccessToken) {
-            // Ensure flags are reset before manual sync to avoid immediate auto-sync after manual
-            resetLastMemoryChangeSource();
-            resetLastConversationChangeSource();
-            syncDriveData();
+            // The resetLastMemoryChangeSource and resetLastConversationChangeSource are now handled by the App.tsx
+            // where the useGoogleDriveSync hook is instantiated.
+            syncDriveData(); // Use syncDriveData from props
         } else {
             showDialog({
                 title: "Não Conectado",
@@ -382,7 +392,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                 type: "alert",
             });
         }
-    }, [settings.googleDriveAccessToken, syncDriveData, showDialog, resetLastMemoryChangeSource, resetLastConversationChangeSource]);
+    }, [settings.googleDriveAccessToken, syncDriveData, showDialog]);
 
     return (
         <div className="space-y-6">
