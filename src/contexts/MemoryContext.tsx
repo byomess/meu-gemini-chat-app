@@ -26,7 +26,7 @@ interface MemoryContextType {
     deleteMemory: (id: string) => void;
     updateMemory: (id: string, newContent: string) => void;
     clearAllMemories: () => void;
-    replaceAllMemories: (newMemories: Memory[]) => void;
+    replaceAllMemories: (newMemories: Memory[]) => Memory[]; // Modified to return Memory[]
 }
 
 export const MemoryContext = createContext<MemoryContextType | undefined>(undefined);
@@ -98,13 +98,13 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         }
     }, [setMemories]);
 
-    const replaceAllMemories = useCallback((newMemories: Memory[]) => {
+    const replaceAllMemories = useCallback((newMemories: Memory[]): Memory[] => {
         const isValidFormat = newMemories.every(
             mem => typeof mem.id === 'string' && typeof mem.content === 'string' && mem.timestamp
         );
         if (!isValidFormat) {
             alert("Formato de arquivo de memórias inválido. A importação foi cancelada.");
-            return;
+            return []; // Return empty array or handle error as appropriate
         }
         // Garante que timestamps sejam objetos Date e ordena
         const processedMemories = newMemories.map(mem => ({
@@ -116,6 +116,7 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         // Note: replaceAllMemories is often called by syncMemories itself,
         // so we don't want to trigger another sync here to avoid loops.
         // The sync will have already happened or is in progress.
+        return processedMemories; // Return the processed memories
     }, [setMemories]);
 
 

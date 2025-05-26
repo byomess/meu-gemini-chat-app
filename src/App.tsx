@@ -111,7 +111,7 @@ const AppContent = () => {
                         isSyncingRef.current = false; // Reset flag after sync completes
                     });
                 }
-            }, 2000); // 2-second debounce delay
+            }, 300000); // 5-minute debounce delay (5 * 60 * 1000 ms)
         }
 
         // Cleanup function to clear the timer if the component unmounts or dependencies change

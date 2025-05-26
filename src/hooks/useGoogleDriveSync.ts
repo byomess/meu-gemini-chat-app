@@ -110,11 +110,12 @@ export const useGoogleDriveSync = () => {
                 content: dm.content,
                 timestamp: new Date(dm.lastModifiedAt),
             }));
-            replaceAllMemories(updatedLocalMemories);
+            // Capture the result of replaceAllMemories
+            const finalLocalMemories = replaceAllMemories(updatedLocalMemories);
 
-            // Call the callback with the updated memories
+            // Call the callback with the final local memories (the exact array reference from context)
             if (onMemoriesUpdatedBySync) {
-                onMemoriesUpdatedBySync(updatedLocalMemories);
+                onMemoriesUpdatedBySync(finalLocalMemories);
             }
             updateGoogleDriveLastSync(new Date().toISOString());
             setGoogleDriveSyncStatus('Synced');
