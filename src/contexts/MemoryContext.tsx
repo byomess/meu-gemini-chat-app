@@ -35,25 +35,32 @@ export const MemoryContext = createContext<MemoryContextType | undefined>(undefi
 
 export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [memories, setMemories] = useLocalStorage<Memory[]>(MEMORIES_KEY, [], memoryReviver);
-    const { settings } = useAppSettings(); // ADDED
-    const { syncMemories: actualSyncFunctionFromHook } = useGoogleDriveSync(); // ADDED
+    const { settings } = useAppSettings();
+    const { syncMemories: actualSyncFunctionFromHook } = useGoogleDriveSync();
 
-    const syncMemoriesRef = useRef(actualSyncFunctionFromHook); // ADDED
-    useEffect(() => { // ADDED
+    const syncMemoriesRef = useRef(actualSyncFunctionFromHook);
+    useEffect(() => {
         syncMemoriesRef.current = actualSyncFunctionFromHook;
     }, [actualSyncFunctionFromHook]);
 
-    const triggerSync = useCallback(() => { // ADDED helper
-        if (settings.googleDriveAccessToken) {
-            syncMemoriesRef.current().catch(error => console.error("Memory sync failed:", error));
+    const lastMemoryChangeSourceRef = useRef<'user' | 'sync' | null>(null);
+
+    // Effect to trigger sync when memories change, if initiated by user/AI
+    useEffect(() => {
+        if (lastMemoryChangeSourceRef.current === 'user' && settings.googleDriveAccessToken) {
+            console.log("Memories changed by user/AI, triggering Google Drive sync.");
+            syncMemoriesRef.current().catch(error => {
+                console.error("Google Drive sync failed after memory change:", error);
+            });
         }
-    }, [settings.googleDriveAccessToken]); // syncMemoriesRef is stable
+        lastMemoryChangeSourceRef.current = null; // Reset flag after processing
+    }, [memories, settings.googleDriveAccessToken]); // actualSyncFunctionFromHook is implicitly handled
 
     const addMemory = useCallback((content: string, sourceMessageId?: string): Memory | undefined => {
         const trimmedContent = content.trim();
         
         console.log("Tentativa de adicionar memória:", trimmedContent, sourceMessageId);
-        if (!trimmedContent) return undefined; // Se o conteúdo estiver vazio, não adiciona e retorna undefined
+        if (!trimmedContent) return undefined;
 
         const newMemory: Memory = {
             id: uuidv4(),
@@ -69,10 +76,9 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 .sort(sortByTimestampDesc);
             return updatedMemories;
         });
-        
-        triggerSync(); // MODIFIED: Call sync
+        lastMemoryChangeSourceRef.current = 'user';
         return newMemory;
-    }, [setMemories, triggerSync]); // MODIFIED: Added triggerSync
+    }, [setMemories]);
 
     const deleteMemory = useCallback((id: string) => {
         console.log("Tentativa de deletar memória:", id);
@@ -86,8 +92,8 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             });
             return updatedMemories;
         });
-        triggerSync(); // MODIFIED: Call sync
-    }, [setMemories, triggerSync]); // MODIFIED: Added triggerSync
+        lastMemoryChangeSourceRef.current = 'user';
+    }, [setMemories]);
 
     const updateMemory = useCallback((id: string, newContent: string) => {
         const trimmedNewContent = newContent.trim();
@@ -96,7 +102,7 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             // Se o novo conteúdo for vazio, pergunta ao usuário se deseja excluir a memória
             if (window.confirm("O conteúdo da memória está vazio. Deseja excluir esta memória?")) {
                 setMemories(prev => prev.filter(m => m.id !== id));
-                triggerSync(); // MODIFIED: Call sync if deleted
+                lastMemoryChangeSourceRef.current = 'user';
             }
             return; // Retorna para não atualizar com conteúdo vazio se o usuário não confirmar a exclusão
         }
@@ -107,17 +113,17 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 mem.id === id ? { ...mem, content: trimmedNewContent, timestamp: new Date() } : mem
             ).sort(sortByTimestampDesc)
         );
-        triggerSync(); // MODIFIED: Call sync
-    }, [setMemories, triggerSync]); // MODIFIED: Added triggerSync
+        lastMemoryChangeSourceRef.current = 'user';
+    }, [setMemories]);
 
     const clearAllMemories = useCallback(() => {
         if (window.confirm('Tem certeza de que deseja apagar TODAS as memórias? Esta ação não pode ser desfeita.')) {
             setMemories([]);
-            triggerSync(); // MODIFIED: Call sync
+            lastMemoryChangeSourceRef.current = 'user';
         }
-    }, [setMemories, triggerSync]); // MODIFIED: Added triggerSync
+    }, [setMemories]);
 
-    const replaceAllMemories = useCallback((newMemories: Memory[], source?: string): Memory[] => { // MODIFIED: Added source parameter
+    const replaceAllMemories = useCallback((newMemories: Memory[], source?: string): Memory[] => {
         const isValidFormat = newMemories.every(
             mem => typeof mem.id === 'string' && typeof mem.content === 'string' && mem.timestamp
         );
@@ -132,11 +138,13 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
         setMemories(processedMemories);
         
-        if (source !== 'sync') { // MODIFIED: Conditional sync
-            triggerSync();
+        if (source === 'sync') {
+            lastMemoryChangeSourceRef.current = 'sync';
+        } else {
+            lastMemoryChangeSourceRef.current = 'user';
         }
         return processedMemories;
-    }, [setMemories, triggerSync, memories]); // MODIFIED: Added triggerSync and memories (for return on error)
+    }, [setMemories, memories]); // `memories` is needed for the return on error case.
 
 
     return (
