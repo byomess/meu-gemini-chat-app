@@ -263,7 +263,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
     // The useEffect hook for clearing renderIntervalRef is removed as it's no longer needed.
 
     // Effect to initialize conversation state:
-    // - Creates a new conversation if none exist.
+    // - If no visible conversations exist, creates a new one.
     // - Ensures a valid conversation is active if conversations do exist.
     useEffect(() => {
         // uiVisibleConversations is already filtered for non-deleted and sorted by updatedAt descending.
@@ -275,12 +275,11 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 setActiveConversationId(uiVisibleConversations[0].id);
             }
         } else {
-            // No visible conversations exist. Ensure activeId is null.
-            if (activeId !== null) {
-                setActiveConversationId(null);
-            }
+            // No visible conversations exist, create a new one.
+            // createNewConversation also sets the new conversation as active.
+            createNewConversation();
         }
-    }, [uiVisibleConversations, activeId, setActiveConversationId]);
+    }, [uiVisibleConversations, activeId, setActiveConversationId, createNewConversation]);
 
     return (
         <ConversationContext.Provider value={{
