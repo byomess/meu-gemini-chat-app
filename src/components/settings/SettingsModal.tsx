@@ -84,9 +84,10 @@ type TabConfig = GeneralTabConfig | ModelTabConfig | MemoriesTabConfig | Functio
 interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
+    syncDriveData: () => Promise<void>; // ADDED: syncDriveData prop
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriveData }) => { // MODIFIED: Destructured syncDriveData
     const { settings, setSettings } = useAppSettings();
     const { showDialog, isDialogActive } = useDialog();
 
@@ -454,7 +455,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                             : " -translate-x-12 sm:-translate-x-16 md:-translate-x-20";
                                                     leaveToClass +=
                                                         slideDirection > 0
-                                                            ? " -translate-x-12 sm:-translate-x-16 md:-translate-x-20"
+                                                            ? " -translate-x-12 sm:-translate-x-16 md:-translate-x-20";
                                                             : " translate-x-12 sm:translate-x-16 md:-translate-x-20";
                                                 }
 
@@ -518,7 +519,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                                         <MemoriesSettingsTab />
                                                                     )}
                                                                     {tab.id === "data" && (
-                                                                        <DataSettingsTab />
+                                                                        <DataSettingsTab
+                                                                            syncDriveData={syncDriveData} // PASSED syncDriveData
+                                                                        />
                                                                     )}
                                                                 </>
                                                             )}
