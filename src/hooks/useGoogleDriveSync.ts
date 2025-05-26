@@ -1,7 +1,7 @@
 // src/hooks/useGoogleDriveSync.ts
 import { useCallback } from 'react';
 import { useAppSettings } from '../contexts/AppSettingsContext';
-import { useMemories } from '../contexts/MemoryContext';
+// import { useMemories } from '../contexts/MemoryContext'; // Removed
 import {
     loadAndInitGapiClient,
     findOrCreateAppFolder,
@@ -14,11 +14,16 @@ import type { Memory, DriveMemory } from '../types';
 
 const GOOGLE_DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file profile email'; // Must match scope used in googleAuthService
 
-export const useGoogleDriveSync = () => {
-    const { settings, setGoogleDriveSyncStatus, updateGoogleDriveLastSync, setGoogleDriveError } = useAppSettings();
-    const { memories, replaceAllMemories } = useMemories();
+interface UseGoogleDriveSyncProps {
+    memories: Memory[];
+    replaceAllMemories: (newMemories: Memory[], source?: string) => Memory[];
+}
 
-    const syncMemories = useCallback(async () => { // Removed onMemoriesUpdatedBySync parameter
+export const useGoogleDriveSync = ({ memories, replaceAllMemories }: UseGoogleDriveSyncProps) => {
+    const { settings, setGoogleDriveSyncStatus, updateGoogleDriveLastSync, setGoogleDriveError } = useAppSettings();
+    // const { memories, replaceAllMemories } = useMemories(); // Removed
+
+    const syncMemories = useCallback(async () => { 
         if (!settings.googleDriveAccessToken) {
             console.warn("Google Drive sync attempted without access token. Aborting.");
             setGoogleDriveError("Não conectado ao Google Drive.");
