@@ -27,7 +27,10 @@ const conversationReviver = (key: string, value: unknown): unknown => {
 interface ConversationContextType {
     conversations: Conversation[]; // This will be the filtered list (non-deleted)
     activeConversationId: string | null;
-    activeConversation: Conversation | null;
+    activeConversation: Conversation | null; // This will be the filtered one
+    allConversations: Conversation[]; // ADDED: The full list including soft-deleted
+    lastConversationChangeSourceRef: React.RefObject<'user' | 'sync' | null>; // ADDED
+    resetLastConversationChangeSource: () => void; // ADDED
     setActiveConversationId: (id: string | null) => void;
     createNewConversation: (options?: { isIncognito?: boolean }) => Conversation; // Modified signature
     deleteConversation: (id: string) => void;
@@ -61,6 +64,10 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
     const uiVisibleConversations = allConversations.filter(c => !c.isDeleted).sort(sortByUpdatedAtDesc);
 
     const activeConversation = uiVisibleConversations.find(c => c.id === activeId) || null;
+
+    const resetLastConversationChangeSource = useCallback(() => { // ADDED
+        lastConversationChangeSourceRef.current = null;
+    }, []);
 
     const setActiveConversationId = useCallback((id: string | null) => {
         // Ensure the ID being set as active corresponds to a non-deleted conversation
@@ -123,7 +130,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             timestamp: new Date(),
             metadata: messageContent.metadata || {},
         };
-        setConversations(prevConvos =>
+        setAllConversations(prevConvos => // MODIFIED: setAllConversations
             prevConvos.map(c =>
                 c.id === conversationId
                     ? {
@@ -146,7 +153,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         messageId: string,
         updates: { text?: string; metadata?: Partial<MessageMetadata> }
     ) => {
-        setConversations(prevConvos =>
+        setAllConversations(prevConvos => // MODIFIED: setAllConversations
             prevConvos.map(c =>
                 c.id === conversationId
                     ? {
@@ -243,9 +250,12 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
     return (
         <ConversationContext.Provider value={{
-            conversations: uiVisibleConversations, // MODIFIED
+            conversations: uiVisibleConversations,
             activeConversationId: activeId,
-            activeConversation, // This is already derived from uiVisibleConversations
+            activeConversation,
+            allConversations, // ADDED
+            lastConversationChangeSourceRef, // ADDED
+            resetLastConversationChangeSource, // ADDED
             setActiveConversationId,
             createNewConversation,
             deleteConversation,

@@ -1,5 +1,5 @@
 // src/hooks/useGoogleDriveSync.ts
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react'; // ADDED useEffect
 import { useAppSettings } from '../contexts/AppSettingsContext';
 // import { useMemories } from '../contexts/MemoryContext'; // Removed
 import {
@@ -16,20 +16,28 @@ import { MEMORIES_FILE_NAME, CONVERSATIONS_FILE_NAME } from '../services/googleD
 const GOOGLE_DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file profile email'; // Must match scope used in googleAuthService
 
 interface UseGoogleDriveSyncProps {
-    memories: Memory[];
+    memories: Memory[]; // Should be allMemories
     replaceAllMemories: (newMemories: Memory[], source?: string) => Memory[];
-    conversations: Conversation[]; // ADDED
-    replaceAllConversations: (newConversations: Conversation[], source?: string) => void; // ADDED
+    lastMemoryChangeSource: 'user' | 'sync' | null; // ADDED
+    resetLastMemoryChangeSource: () => void; // ADDED
+
+    conversations: Conversation[]; // Should be allConversations
+    replaceAllConversations: (newConversations: Conversation[], source?: string) => void;
+    lastConversationChangeSource: 'user' | 'sync' | null; // ADDED
+    resetLastConversationChangeSource: () => void; // ADDED
 }
 
 export const useGoogleDriveSync = ({
     memories,
     replaceAllMemories,
-    conversations, // ADDED
-    replaceAllConversations, // ADDED
+    lastMemoryChangeSource, // ADDED
+    resetLastMemoryChangeSource, // ADDED
+    conversations,
+    replaceAllConversations,
+    lastConversationChangeSource, // ADDED
+    resetLastConversationChangeSource, // ADDED
 }: UseGoogleDriveSyncProps) => {
     const { settings, setGoogleDriveSyncStatus, updateGoogleDriveLastSync, setGoogleDriveError } = useAppSettings();
-    // const { memories, replaceAllMemories } = useMemories(); // Removed
 
     const syncDriveData = useCallback(async () => { // RENAMED
         if (!settings.googleDriveAccessToken) {
@@ -273,7 +281,61 @@ export const useGoogleDriveSync = ({
         setGoogleDriveSyncStatus,
         updateGoogleDriveLastSync,
         setGoogleDriveError
+        // lastMemoryChangeSource and lastConversationChangeSource are not direct dependencies of syncDriveData itself,
+        // but of the useEffect that calls it. The memories/conversations arrays are the data dependencies.
     ]);
 
-    return { syncDriveData }; // RENAMED
+    // Effect to trigger sync when memories or conversations change due to user/AI action
+    useEffect(() => {
+        let didTriggerSync = false;
+        if (settings.googleDriveAccessToken && settings.googleDriveSyncStatus !== 'Syncing') {
+            if (lastMemoryChangeSource === 'user') {
+                console.log("Memories changed by user/AI, triggering Google Drive sync via hook.");
+                didTriggerSync = true;
+                syncDriveData().catch(error => {
+                    console.error("Google Drive sync failed after memory change (hook):", error);
+                }).finally(() => {
+                    resetLastMemoryChangeSource();
+                });
+            }
+
+            // Only check conversations if memories didn't trigger to avoid double sync from one action
+            if (!didTriggerSync && lastConversationChangeSource === 'user') {
+                console.log("Conversations changed by user/AI, triggering Google Drive sync via hook.");
+                // didTriggerSync = true; // Not strictly needed for the last check
+                syncDriveData().catch(error => {
+                    console.error("Google Drive sync failed after conversation change (hook):", error);
+                }).finally(() => {
+                    resetLastConversationChangeSource();
+                });
+            }
+        }
+
+        // If not connected or sync already in progress, but flags are set, reset them to prevent stale triggers.
+        // This handles cases where a change happens offline and then user connects.
+        // The sync on connect (if implemented, e.g. manual or on app load) should handle the actual data.
+        // Or, if flags are not reset, the next time token is available, this effect will run.
+        // For now, let's reset if they were 'user' and no sync was triggered by this effect instance.
+        if (!didTriggerSync) {
+            if (lastMemoryChangeSource === 'user') {
+                 resetLastMemoryChangeSource();
+            }
+            if (lastConversationChangeSource === 'user') {
+                 resetLastConversationChangeSource();
+            }
+        }
+
+    }, [
+        settings.googleDriveAccessToken,
+        settings.googleDriveSyncStatus,
+        syncDriveData, // The memoized sync function
+        lastMemoryChangeSource,
+        resetLastMemoryChangeSource,
+        lastConversationChangeSource,
+        resetLastConversationChangeSource,
+        // Do not add `memories` or `conversations` here, as `syncDriveData` already depends on them.
+        // This effect is about *when* to call `syncDriveData` based on change *source flags*.
+    ]);
+
+    return { syncDriveData };
 };

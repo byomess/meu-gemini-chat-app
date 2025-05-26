@@ -1,10 +1,10 @@
 // src/contexts/MemoryContext.tsx
-import React, { createContext, useContext, type ReactNode, useCallback, useRef, useEffect } from 'react';
+import React, { createContext, useContext, type ReactNode, useCallback, useRef } from 'react'; // Removed useEffect
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import type { Memory } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import { useAppSettings } from './AppSettingsContext'; // ADDED
-import { useGoogleDriveSync } from '../hooks/useGoogleDriveSync'; // ADDED
+// Removed: import { useAppSettings } from './AppSettingsContext';
+// Removed: import { useGoogleDriveSync } from '../hooks/useGoogleDriveSync';
 
 const MEMORIES_KEY = 'geminiChat_memories';
 
@@ -23,23 +23,26 @@ const memoryReviver = (key: string, value: unknown): unknown => {
 };
 
 interface MemoryContextType {
-    memories: Memory[];
+    memories: Memory[]; // This will be uiVisibleMemories
+    allMemories: Memory[]; // The full list including soft-deleted
+    lastMemoryChangeSourceRef: React.RefObject<'user' | 'sync' | null>;
+    resetLastMemoryChangeSource: () => void;
     addMemory: (content: string, sourceMessageId?: string) => Memory | undefined;
     deleteMemory: (id: string) => void;
     updateMemory: (id: string, newContent: string) => void;
     clearAllMemories: () => void;
-    replaceAllMemories: (newMemories: Memory[], source?: string) => Memory[]; // MODIFIED: Added source parameter
+    replaceAllMemories: (newMemories: Memory[], source?: string) => Memory[];
 }
 
 export const MemoryContext = createContext<MemoryContextType | undefined>(undefined);
 
 export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [allMemories, setAllMemories] = useLocalStorage<Memory[]>(MEMORIES_KEY, [], memoryReviver); // Renamed to allMemories
-    const { settings } = useAppSettings();
-
+    const [allMemories, setAllMemories] = useLocalStorage<Memory[]>(MEMORIES_KEY, [], memoryReviver);
     const lastMemoryChangeSourceRef = useRef<'user' | 'sync' | null>(null);
 
-    // Define replaceAllMemories first, as it's needed by useGoogleDriveSync
+    const resetLastMemoryChangeSource = useCallback(() => {
+        lastMemoryChangeSourceRef.current = null;
+    }, []);
     const replaceAllMemories = useCallback((newMemories: Memory[], source?: string): Memory[] => {
         const isValidFormat = newMemories.every(
             mem => typeof mem.id === 'string' && typeof mem.content === 'string' && mem.timestamp
@@ -64,29 +67,29 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         return processedMemories;
     }, [setAllMemories, allMemories]); // `allMemories` is needed for the return on error case.
 
-    // Now call useGoogleDriveSync, passing the current allMemories and the replaceAllMemories function
-    // Note: useGoogleDriveSync expects all memories, including soft-deleted ones for proper merging.
-    const { syncMemories: actualSyncFunctionFromHook } = useGoogleDriveSync({ memories: allMemories, replaceAllMemories });
-
-    const syncMemoriesRef = useRef(actualSyncFunctionFromHook);
-    useEffect(() => {
-        syncMemoriesRef.current = actualSyncFunctionFromHook;
-    }, [actualSyncFunctionFromHook]); // This dependency is correct. actualSyncFunctionFromHook changes if its own dependencies change.
-
-    // Effect to trigger sync when memories change, if initiated by user/AI
-    useEffect(() => {
-        if (lastMemoryChangeSourceRef.current === 'user' && settings.googleDriveAccessToken) {
-            console.log("Memories changed by user/AI, triggering Google Drive sync.");
-            syncMemoriesRef.current().catch(error => {
-                console.error("Google Drive sync failed after memory change:", error);
-            });
+    const replaceAllMemories = useCallback((newMemories: Memory[], source?: string): Memory[] => {
+        const isValidFormat = newMemories.every(
+            mem => typeof mem.id === 'string' && typeof mem.content === 'string' && mem.timestamp
+        );
+        if (!isValidFormat) {
+            alert("Formato de arquivo de memórias inválido. A importação foi cancelada.");
+            return allMemories; // Return current memories on invalid format
         }
-        // Only reset if it was 'user'. If 'sync', it means replaceAllMemories was called by sync,
-        // and we don't want to trigger another sync.
-        if (lastMemoryChangeSourceRef.current === 'user') {
-            lastMemoryChangeSourceRef.current = null; // Reset flag after processing
+        const processedMemories = newMemories.map(mem => ({
+            ...mem,
+            timestamp: new Date(mem.timestamp),
+            isDeleted: mem.isDeleted || false, // Ensure isDeleted is present
+        })).sort(sortByTimestampDesc);
+
+        setAllMemories(processedMemories);
+        
+        if (source === 'sync') {
+            lastMemoryChangeSourceRef.current = 'sync';
+        } else {
+            lastMemoryChangeSourceRef.current = 'user';
         }
-    }, [allMemories, settings.googleDriveAccessToken, syncMemoriesRef]); // syncMemoriesRef added as it's used, allMemories
+        return processedMemories;
+    }, [setAllMemories, allMemories]);
 
     const addMemory = useCallback((content: string, sourceMessageId?: string): Memory | undefined => {
         const trimmedContent = content.trim();
@@ -196,7 +199,10 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     return (
         <MemoryContext.Provider value={{
-            memories: uiVisibleMemories, // Provide filtered memories to UI
+            memories: uiVisibleMemories,
+            allMemories, // Expose allMemories
+            lastMemoryChangeSourceRef, // Expose the ref
+            resetLastMemoryChangeSource, // Expose reset function
             addMemory,
             deleteMemory,
             updateMemory,

@@ -22,11 +22,33 @@ const GOOGLE_DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file profile 
 
 const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
     const { showDialog } = useDialog();
-    const { clearAllMemories, replaceAllMemories } = useMemories();
-    const { deleteAllConversations } = useConversations();
+    const {
+        allMemories, // Use allMemories for sync
+        replaceAllMemories,
+        clearAllMemories,
+        lastMemoryChangeSourceRef,
+        resetLastMemoryChangeSource
+    } = useMemories();
+    const {
+        allConversations, // Use allConversations for sync
+        replaceAllConversations,
+        deleteAllConversations,
+        lastConversationChangeSourceRef,
+        resetLastConversationChangeSource
+    } = useConversations();
     const { settings, connectGoogleDrive, disconnectGoogleDrive, setGoogleDriveSyncStatus, setGoogleDriveError } = useAppSettings();
-    const { memories } = useMemories(); // Get memories from context
-    const { syncMemories } = useGoogleDriveSync({ memories, replaceAllMemories }); // Pass required arguments
+
+    // Instantiate useGoogleDriveSync with all required props
+    const { syncDriveData } = useGoogleDriveSync({
+        memories: allMemories,
+        replaceAllMemories,
+        lastMemoryChangeSource: lastMemoryChangeSourceRef.current,
+        resetLastMemoryChangeSource,
+        conversations: allConversations,
+        replaceAllConversations,
+        lastConversationChangeSource: lastConversationChangeSourceRef.current,
+        resetLastConversationChangeSource,
+    });
 
     const [isGoogleClientInitialized, setIsGoogleClientInitialized] = useState(false);
     const [authActionLoading, setAuthActionLoading] = useState(false);
@@ -349,7 +371,10 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
 
     const handleManualSync = useCallback(() => {
         if (settings.googleDriveAccessToken) {
-            syncMemories();
+            // Ensure flags are reset before manual sync to avoid immediate auto-sync after manual
+            resetLastMemoryChangeSource();
+            resetLastConversationChangeSource();
+            syncDriveData();
         } else {
             showDialog({
                 title: "Não Conectado",
@@ -357,7 +382,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
                 type: "alert",
             });
         }
-    }, [settings.googleDriveAccessToken, syncMemories, showDialog]);
+    }, [settings.googleDriveAccessToken, syncDriveData, showDialog, resetLastMemoryChangeSource, resetLastConversationChangeSource]);
 
     return (
         <div className="space-y-6">
