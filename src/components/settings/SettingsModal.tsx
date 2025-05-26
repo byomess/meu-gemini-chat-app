@@ -88,8 +88,14 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const { settings, setSettings } = useAppSettings();
-    const { showDialog, isDialogActive } = useDialog(); // CORRIGIDO: usa isDialogActive
+    const { showDialog, isDialogActive } = useDialog();
 
+    // Initialize activeTab to "general"
+    const [activeTab, setActiveTab] = useState<TabId>("general");
+    const modalContentRef = useRef<HTMLDivElement>(null);
+    const [previousTab, setPreviousTab] = useState<TabId | null>(null);
+
+    // State for local settings (these are synced from global settings when modal opens)
     const [currentApiKey, setCurrentApiKey] = useState<string>("");
     const [currentCustomPersonalityPrompt, setCurrentCustomPersonalityPrompt] =
         useState<string>("");
@@ -104,34 +110,39 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         useState<boolean>(settings.enableAttachments);
     const [currentHideNavigation, setCurrentHideNavigation] =
         useState<boolean>(settings.hideNavigation);
-    const [currentShowProcessingIndicatorsState, setCurrentShowProcessingIndicatorsState] = // Add this line
-        useState<boolean>(settings.showProcessingIndicators); // Initialize from settings
-
-    const [activeTab, setActiveTab] = useState<TabId>("general");
-    const modalContentRef = useRef<HTMLDivElement>(null);
-    const [previousTab, setPreviousTab] = useState<TabId | null>(null);
+    const [currentShowProcessingIndicatorsState, setCurrentShowProcessingIndicatorsState] =
+        useState<boolean>(settings.showProcessingIndicators);
 
     const defaultModelConfigValues: GeminiModelConfig = useMemo(() => {
         const defaultFirstModel =
-            AVAILABLE_GEMINI_MODELS[0] || "gemini-1.5-flash-latest"; // Ajustado para pegar 'id' se AVAILABLE_GEMINI_MODELS for array de objetos
+            AVAILABLE_GEMINI_MODELS[0] || "gemini-1.5-flash-latest";
         return {
             model: defaultFirstModel,
             temperature: 0.9,
             topP: 0.95,
-            topK: 0, // 0 geralmente significa que não é usado, ou um valor padrão será aplicado pela API
+            topK: 0,
             maxOutputTokens: defaultFirstModel.includes("flash")
                 ? 8192
                 : defaultFirstModel.includes("pro")
-                    ? 8192 // Simplificado, ajuste conforme necessário
+                    ? 8192
                     : 8192,
             safetySettings: appDefaultSafetySettings,
         };
-    }, []); // Removido AVAILABLE_GEMINI_MODELS da dependência se for constante
+    }, []);
 
     const [localModelConfig, setLocalModelConfig] = useState<GeminiModelConfig>(
         settings.geminiModelConfig || defaultModelConfigValues
     );
 
+    // Effect to reset tab to "general" when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setActiveTab("general");
+            setPreviousTab(null); // Also reset previous tab
+        }
+    }, [isOpen]); // Only depends on isOpen
+
+    // Effect to sync local states with global settings when modal opens or global settings change
     useEffect(() => {
         if (isOpen) {
             // Sincroniza estados locais com as configurações globais ao abrir
@@ -141,7 +152,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             setCurrentEnableWebSearchEnabled(settings.enableWebSearch);
             setCurrentAttachmentsEnabled(settings.enableAttachments);
             setCurrentHideNavigation(settings.hideNavigation);
-            setCurrentShowProcessingIndicatorsState(settings.showProcessingIndicators); // Sync new setting
+            setCurrentShowProcessingIndicatorsState(settings.showProcessingIndicators);
             setCurrentCustomPersonalityPrompt(settings.customPersonalityPrompt || "");
 
             const currentSettingsSafety = settings.geminiModelConfig?.safetySettings;
@@ -152,7 +163,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 Array.isArray(currentSettingsSafety) &&
                 currentSettingsSafety.length === HARM_CATEGORIES_CONFIG.length &&
                 HARM_CATEGORIES_CONFIG.every((hc) =>
-                    currentSettingsSafety.find((s) => s.category === hc.id && typeof s.threshold === 'string') // Verifica se threshold é string
+                    currentSettingsSafety.find((s) => s.category === hc.id && typeof s.threshold === 'string')
                 )
             ) {
                 effectiveSafetySettings = currentSettingsSafety;
@@ -187,12 +198,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 })
             );
             setCurrentFunctionDeclarations(loadedFuncDeclarations);
-
-            // Reseta para a aba geral ao abrir
-            setPreviousTab(null);
-            setActiveTab("general");
         }
-    }, [isOpen, settings, defaultModelConfigValues]); // HARM_CATEGORIES_CONFIG é constante
+    }, [isOpen, settings, defaultModelConfigValues]); // This effect should only sync data, not control active tab
 
     const handleTabChange = (newTabId: TabId) => {
         setPreviousTab(activeTab);
@@ -414,16 +421,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                 onClick={() => handleTabChange(tab.id)}
                                                 className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ease-in-out group whitespace-nowrap flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 focus:ring-offset-[var(--color-settings-tab-nav-bg)] ${activeTab === tab.id
                                                     ? "bg-[var(--color-settings-tab-item-active-bg)] text-[var(--color-settings-tab-item-active-text)] shadow-md"
-                                                    : "text-[var(--color-settings-tab-item-text)] hover:bg-[var(--color-settings-tab-item-hover-bg)] hover:text-[var(--color-primary)] active:scale-[0.98]" // Supondo que --color-primary seja o hover text
+                                                    : "text-[var(--color-settings-tab-item-text)] hover:bg-[var(--color-settings-tab-item-hover-bg)] hover:text-[var(--color-primary)] active:scale-[0.98]"
                                                     }`}
-                                                style={{ flex: "0 0 auto" }} // Garante que os botões não encolham no flex container
+                                                style={{ flex: "0 0 auto" }}
                                             >
                                                 {React.cloneElement(
                                                     tab.icon as React.ReactElement<{ className?: string }>,
                                                     {
                                                         className: `transition-colors duration-150 ${activeTab === tab.id
-                                                            ? "text-[var(--color-settings-tab-item-active-text)]" // Ou uma cor específica para ícone ativo
-                                                            : "text-[var(--color-settings-tab-item-icon)] group-hover:text-[var(--color-primary)]" // Supondo que --color-primary seja o hover icon
+                                                            ? "text-[var(--color-settings-tab-item-active-text)]"
+                                                            : "text-[var(--color-settings-tab-item-icon)] group-hover:text-[var(--color-primary)]"
                                                             }`,
                                                     }
                                                 )}
@@ -443,7 +450,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                 if (slideDirection !== 0) {
                                                     enterFromClass +=
                                                         slideDirection > 0
-                                                            ? " translate-x-12 sm:translate-x-16 md:translate-x-20" // Ajustado para diferentes tamanhos
+                                                            ? " translate-x-12 sm:translate-x-16 md:translate-x-20"
                                                             : " -translate-x-12 sm:-translate-x-16 md:-translate-x-20";
                                                     leaveToClass +=
                                                         slideDirection > 0
@@ -459,23 +466,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                         enter="transition-all ease-out duration-300 transform"
                                                         enterFrom={enterFromClass}
                                                         enterTo="opacity-100 translate-x-0"
-                                                        // Para evitar que o conteúdo antigo fique visível durante a transição de saída
-                                                        // e para permitir scroll no conteúdo que entra,
-                                                        // o 'leave' não deve usar 'absolute inset-0' se o conteúdo tiver alturas diferentes.
-                                                        // Caso contrário, é melhor deixar a transição de saída apenas desvanecer.
                                                         leave="transition-all ease-in duration-200 transform"
                                                         leaveFrom="opacity-100 translate-x-0"
                                                         leaveTo={leaveToClass}
-                                                    // unmount={false} // Considerar se o estado das abas deve ser preservado
                                                     >
                                                         <div
                                                             className={`w-full h-full`}
-                                                            // Adiciona role e aria para melhor acessibilidade das abas
                                                             role="tabpanel"
-                                                            aria-labelledby={`tab-${tab.id}`} // Supondo que os botões de aba tenham id="tab-${tab.id}"
+                                                            aria-labelledby={`tab-${tab.id}`}
                                                             hidden={!isTabActive}
                                                         >
-                                                            {/* Renderiza o componente da aba dinamicamente */}
                                                             {isTabActive && (
                                                                 <>
                                                                     {tab.id === "general" && (
@@ -510,8 +510,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                                                                             onToggleAttachmentsEnabled={handleToggleAttachmentsEnabledForTab}
                                                                             currentHideNavigation={currentHideNavigation}
                                                                             onToggleHideNavigation={handleToggleHideNavigationForTab}
-                                                                            currentShowProcessingIndicators={currentShowProcessingIndicatorsState} // Pass new prop
-                                                                            onToggleShowProcessingIndicators={handleToggleShowProcessingIndicatorsForTab} // Pass new handler
+                                                                            currentShowProcessingIndicators={currentShowProcessingIndicatorsState}
+                                                                            onToggleShowProcessingIndicators={handleToggleShowProcessingIndicatorsForTab}
                                                                         />
                                                                     )}
                                                                     {tab.id === "memories" && (
