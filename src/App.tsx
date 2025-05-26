@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'; // Added useRef
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import ChatArea from './components/layout/ChatArea';
 import SettingsModal from './components/settings/SettingsModal';
@@ -6,15 +6,15 @@ import useIsMobile from './hooks/useIsMobile';
 import React from 'react';
 import { useUrlConfigInitializer } from './hooks/useUrlConfigInitializer';
 import { ConversationProvider, useConversations } from './contexts/ConversationContext';
-import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext'; // Import AppSettingsProvider
+import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
 import { DialogProvider } from './contexts/DialogContext';
-import { MemoryProvider, useMemories } from './contexts/MemoryContext'; // Import MemoryProvider and useMemories
+import { MemoryProvider, useMemories } from './contexts/MemoryContext';
 import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
 
 const AppContent = () => {
     const { settings } = useAppSettings();
     const { conversations, createNewConversation, activeConversationId } = useConversations();
-    const { memories } = useMemories(); // Get memories from context
+    const { memories } = useMemories();
     const { syncMemories } = useGoogleDriveSync();
 
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -25,6 +25,8 @@ const AppContent = () => {
 
     // Ref to track if a sync is already in progress to prevent multiple simultaneous calls
     const isSyncingRef = useRef(false);
+    // Ref to hold the debounce timer
+    const syncDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     const handleOpenSettingsModal = useCallback(() => {
         setIsSettingsModalOpen(true);
@@ -78,19 +80,33 @@ const AppContent = () => {
         }
     }, [settings.googleDriveAccessToken, syncMemories]);
 
-    // Trigger Google Drive sync when local memories change
+    // Trigger Google Drive sync when local memories change with debounce
     useEffect(() => {
-        // This effect will run whenever 'memories' array reference changes.
-        // We need to ensure it doesn't trigger on initial load or when syncMemories itself updates memories.
-        // A simple debounce or a more sophisticated state management might be needed for production.
-        // For MVP, we'll rely on the `isSyncingRef` to prevent immediate re-syncs.
-        if (settings.googleDriveAccessToken && !isSyncingRef.current) {
-            console.log("Local memories changed. Initiating Google Drive sync.");
-            isSyncingRef.current = true; // Set flag to true
-            syncMemories().finally(() => {
-                isSyncingRef.current = false; // Reset flag after sync completes
-            });
+        // Clear any existing debounce timer
+        if (syncDebounceTimerRef.current) {
+            clearTimeout(syncDebounceTimerRef.current);
         }
+
+        // Only trigger sync if connected and not already syncing
+        if (settings.googleDriveAccessToken) {
+            // Set a new debounce timer
+            syncDebounceTimerRef.current = setTimeout(() => {
+                if (!isSyncingRef.current) {
+                    console.log("Local memories changed. Initiating Google Drive sync after debounce.");
+                    isSyncingRef.current = true; // Set flag to true
+                    syncMemories().finally(() => {
+                        isSyncingRef.current = false; // Reset flag after sync completes
+                    });
+                }
+            }, 2000); // 2-second debounce delay
+        }
+
+        // Cleanup function to clear the timer if the component unmounts or dependencies change
+        return () => {
+            if (syncDebounceTimerRef.current) {
+                clearTimeout(syncDebounceTimerRef.current);
+            }
+        };
     }, [memories, settings.googleDriveAccessToken, syncMemories]);
 
 
