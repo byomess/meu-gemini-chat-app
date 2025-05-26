@@ -66,32 +66,54 @@ export const useGoogleDriveSync = ({ memories, replaceAllMemories }: UseGoogleDr
             }
 
             // 4. Prepare local memories for merge
+            // `memories` here are `allMemories` from MemoryContext, including soft-deleted ones
             const localMemoriesAsDrive: DriveMemory[] = memories.map(m => ({
                 id: m.id,
                 content: m.content,
                 lastModifiedAt: m.timestamp.toISOString(),
+                isDeleted: m.isDeleted || false,
             }));
 
-            // 5. Merge Logic (Last Write Wins per item)
+            // 5. Merge Logic with Soft Delete
             const mergedMemoriesMap = new Map<string, DriveMemory>();
 
-            // Add all remote memories to the map first
-            remoteMemories.forEach(m => {
-                mergedMemoriesMap.set(m.id, m);
-            });
+            // Process all unique IDs from both local and remote
+            const allIds = new Set([...localMemoriesAsDrive.map(m => m.id), ...remoteMemories.map(m => m.id)]);
 
-            // Iterate local memories, merging with remote
-            localMemoriesAsDrive.forEach(localMem => {
-                const remoteMem = mergedMemoriesMap.get(localMem.id);
-                if (remoteMem) {
-                    // Conflict: keep the one with the newer timestamp
-                    if (new Date(localMem.lastModifiedAt) > new Date(remoteMem.lastModifiedAt)) {
-                        mergedMemoriesMap.set(localMem.id, localMem);
+            allIds.forEach(id => {
+                const localMem = localMemoriesAsDrive.find(m => m.id === id);
+                const remoteMem = remoteMemories.find(m => m.id === id);
+
+                if (localMem && remoteMem) {
+                    // Memory exists in both local and remote
+                    const localTimestamp = new Date(localMem.lastModifiedAt).getTime();
+                    const remoteTimestamp = new Date(remoteMem.lastModifiedAt).getTime();
+                    const localIsDeleted = localMem.isDeleted || false;
+                    const remoteIsDeleted = remoteMem.isDeleted || false;
+
+                    if (localIsDeleted && remoteIsDeleted) {
+                        // Both are deleted, keep the one with the newer timestamp (most recent deletion)
+                        mergedMemoriesMap.set(id, localTimestamp > remoteTimestamp ? localMem : remoteMem);
+                    } else if (localIsDeleted && !remoteIsDeleted) {
+                        // Local is deleted, remote is not
+                        // If local deletion is newer, it takes precedence
+                        // Otherwise, remote (undeleted or updated) takes precedence
+                        mergedMemoriesMap.set(id, localTimestamp > remoteTimestamp ? localMem : remoteMem);
+                    } else if (!localIsDeleted && remoteIsDeleted) {
+                        // Local is not deleted, remote is
+                        // If remote deletion is newer, it takes precedence
+                        // Otherwise, local (undeleted or updated) takes precedence
+                        mergedMemoriesMap.set(id, remoteTimestamp > localTimestamp ? remoteMem : localMem);
+                    } else {
+                        // Neither is deleted, keep the one with the newer timestamp
+                        mergedMemoriesMap.set(id, localTimestamp > remoteTimestamp ? localMem : remoteMem);
                     }
-                    // else: remote is newer or same, keep remote (already in map)
-                } else {
-                    // Local memory not in remote, add it
-                    mergedMemoriesMap.set(localMem.id, localMem);
+                } else if (localMem) {
+                    // Memory only exists locally
+                    mergedMemoriesMap.set(id, localMem);
+                } else if (remoteMem) {
+                    // Memory only exists remotely
+                    mergedMemoriesMap.set(id, remoteMem);
                 }
             });
 
@@ -114,9 +136,10 @@ export const useGoogleDriveSync = ({ memories, replaceAllMemories }: UseGoogleDr
                 id: dm.id,
                 content: dm.content,
                 timestamp: new Date(dm.lastModifiedAt),
+                isDeleted: dm.isDeleted || false, // Ensure isDeleted is mapped back
             }));
             // Capture the result of replaceAllMemories
-            replaceAllMemories(updatedLocalMemories, 'sync'); // MODIFIED: Pass 'sync' source
+            replaceAllMemories(updatedLocalMemories, 'sync');
 
             // onMemoriesUpdatedBySync callback removed
             updateGoogleDriveLastSync(new Date().toISOString());

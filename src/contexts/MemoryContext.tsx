@@ -34,7 +34,7 @@ interface MemoryContextType {
 export const MemoryContext = createContext<MemoryContextType | undefined>(undefined);
 
 export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [memories, setMemories] = useLocalStorage<Memory[]>(MEMORIES_KEY, [], memoryReviver);
+    const [allMemories, setAllMemories] = useLocalStorage<Memory[]>(MEMORIES_KEY, [], memoryReviver); // Renamed to allMemories
     const { settings } = useAppSettings();
 
     const lastMemoryChangeSourceRef = useRef<'user' | 'sync' | null>(null);
@@ -46,14 +46,15 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         );
         if (!isValidFormat) {
             alert("Formato de arquivo de memórias inválido. A importação foi cancelada.");
-            return memories; // Return current memories on invalid format
+            return allMemories; // Return current memories on invalid format
         }
         const processedMemories = newMemories.map(mem => ({
             ...mem,
-            timestamp: new Date(mem.timestamp)
+            timestamp: new Date(mem.timestamp),
+            isDeleted: mem.isDeleted || false, // Ensure isDeleted is present
         })).sort(sortByTimestampDesc);
 
-        setMemories(processedMemories);
+        setAllMemories(processedMemories);
         
         if (source === 'sync') {
             lastMemoryChangeSourceRef.current = 'sync';
@@ -61,10 +62,11 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             lastMemoryChangeSourceRef.current = 'user';
         }
         return processedMemories;
-    }, [setMemories, memories]); // `memories` is needed for the return on error case.
+    }, [setAllMemories, allMemories]); // `allMemories` is needed for the return on error case.
 
-    // Now call useGoogleDriveSync, passing the current memories and the replaceAllMemories function
-    const { syncMemories: actualSyncFunctionFromHook } = useGoogleDriveSync({ memories, replaceAllMemories });
+    // Now call useGoogleDriveSync, passing the current allMemories and the replaceAllMemories function
+    // Note: useGoogleDriveSync expects all memories, including soft-deleted ones for proper merging.
+    const { syncMemories: actualSyncFunctionFromHook } = useGoogleDriveSync({ memories: allMemories, replaceAllMemories });
 
     const syncMemoriesRef = useRef(actualSyncFunctionFromHook);
     useEffect(() => {
@@ -84,82 +86,117 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         if (lastMemoryChangeSourceRef.current === 'user') {
             lastMemoryChangeSourceRef.current = null; // Reset flag after processing
         }
-    }, [memories, settings.googleDriveAccessToken, syncMemoriesRef]); // syncMemoriesRef added as it's used
+    }, [allMemories, settings.googleDriveAccessToken, syncMemoriesRef]); // syncMemoriesRef added as it's used, allMemories
 
     const addMemory = useCallback((content: string, sourceMessageId?: string): Memory | undefined => {
         const trimmedContent = content.trim();
-        
-        console.log("Tentativa de adicionar memória:", trimmedContent, sourceMessageId);
         if (!trimmedContent) return undefined;
 
-        const newMemory: Memory = {
-            id: uuidv4(),
-            content: trimmedContent,
-            timestamp: new Date(),
-            sourceMessageId,
-        };
+        let memoryAddedOrUpdated: Memory | undefined;
 
-        console.log("Nova memória criada:", newMemory);
+        setAllMemories(prev => {
+            const existingMemoryIndex = prev.findIndex(m => m.content.toLowerCase() === trimmedContent.toLowerCase());
 
-        setMemories(prev => {
-            const updatedMemories = [newMemory, ...prev.filter(m => m.content.toLowerCase() !== trimmedContent.toLowerCase())]
-                .sort(sortByTimestampDesc);
-            return updatedMemories;
+            if (existingMemoryIndex !== -1) {
+                // Memory with same content exists
+                const existingMemory = prev[existingMemoryIndex];
+                if (existingMemory.isDeleted) {
+                    // It was soft-deleted, so undelete it and update timestamp
+                    memoryAddedOrUpdated = {
+                        ...existingMemory,
+                        isDeleted: false,
+                        timestamp: new Date(),
+                        sourceMessageId: sourceMessageId || existingMemory.sourceMessageId, // Preserve original if new one not provided
+                    };
+                    const updatedMemories = [...prev];
+                    updatedMemories[existingMemoryIndex] = memoryAddedOrUpdated;
+                    console.log("Memória 'des-deletada' e atualizada:", memoryAddedOrUpdated);
+                    return updatedMemories.sort(sortByTimestampDesc);
+                } else {
+                    // It exists and is not deleted. Optionally, update its timestamp or do nothing.
+                    // For now, let's update timestamp to bring it to top, effectively "re-adding" it.
+                     memoryAddedOrUpdated = {
+                        ...existingMemory,
+                        timestamp: new Date(),
+                        sourceMessageId: sourceMessageId || existingMemory.sourceMessageId,
+                    };
+                    const updatedMemories = [...prev];
+                    updatedMemories[existingMemoryIndex] = memoryAddedOrUpdated;
+                    console.log("Memória existente atualizada (timestamp):", memoryAddedOrUpdated);
+                    return updatedMemories.sort(sortByTimestampDesc);
+                }
+            } else {
+                // New memory
+                memoryAddedOrUpdated = {
+                    id: uuidv4(),
+                    content: trimmedContent,
+                    timestamp: new Date(),
+                    sourceMessageId,
+                    isDeleted: false,
+                };
+                console.log("Nova memória criada:", memoryAddedOrUpdated);
+                return [memoryAddedOrUpdated, ...prev].sort(sortByTimestampDesc);
+            }
         });
         lastMemoryChangeSourceRef.current = 'user';
-        return newMemory;
-    }, [setMemories]);
+        return memoryAddedOrUpdated;
+    }, [setAllMemories]);
 
     const deleteMemory = useCallback((id: string) => {
-        console.log("Tentativa de deletar memória:", id);
-        setMemories(prev => {
-            const updatedMemories = prev.filter(m => {
-                const shouldDelete = m.id === id;
-                if (shouldDelete) {
-                    console.log("Memória deletada:", m);
-                }
-                return !shouldDelete;
-            });
-            return updatedMemories;
-        });
+        console.log("Tentativa de soft-deletar memória:", id);
+        setAllMemories(prev =>
+            prev.map(mem =>
+                mem.id === id ? { ...mem, isDeleted: true, timestamp: new Date() } : mem
+            ).sort(sortByTimestampDesc) // Keep sort order consistent
+        );
         lastMemoryChangeSourceRef.current = 'user';
-    }, [setMemories]);
+    }, [setAllMemories]);
 
     const updateMemory = useCallback((id: string, newContent: string) => {
         const trimmedNewContent = newContent.trim();
         console.log("Tentativa de atualizar memória:", id, trimmedNewContent);
+
         if (!trimmedNewContent) {
-            // Se o novo conteúdo for vazio, pergunta ao usuário se deseja excluir a memória
             if (window.confirm("O conteúdo da memória está vazio. Deseja excluir esta memória?")) {
-                setMemories(prev => prev.filter(m => m.id !== id));
+                setAllMemories(prev =>
+                    prev.map(mem =>
+                        mem.id === id ? { ...mem, isDeleted: true, timestamp: new Date() } : mem
+                    ).sort(sortByTimestampDesc)
+                );
                 lastMemoryChangeSourceRef.current = 'user';
             }
-            return; // Retorna para não atualizar com conteúdo vazio se o usuário não confirmar a exclusão
+            return;
         }
 
-        console.log("Atualizando memória:", id, trimmedNewContent);
-        setMemories(prev =>
+        setAllMemories(prev =>
             prev.map(mem =>
-                mem.id === id ? { ...mem, content: trimmedNewContent, timestamp: new Date() } : mem
+                mem.id === id ? { ...mem, content: trimmedNewContent, timestamp: new Date(), isDeleted: false } : mem
             ).sort(sortByTimestampDesc)
         );
         lastMemoryChangeSourceRef.current = 'user';
-    }, [setMemories]);
+    }, [setAllMemories]);
 
     const clearAllMemories = useCallback(() => {
-        if (window.confirm('Tem certeza de que deseja apagar TODAS as memórias? Esta ação não pode ser desfeita.')) {
-            setMemories([]);
+        if (window.confirm('Tem certeza de que deseja apagar TODAS as memórias? Esta ação não pode ser desfeita (as memórias serão marcadas como deletadas).')) {
+            setAllMemories(prev =>
+                prev.map(mem => 
+                    mem.isDeleted ? mem : { ...mem, isDeleted: true, timestamp: new Date() }
+                ).sort(sortByTimestampDesc)
+            );
             lastMemoryChangeSourceRef.current = 'user';
         }
-    }, [setMemories]);
+    }, [setAllMemories]);
 
     // replaceAllMemories is now defined before useGoogleDriveSync call.
     // The SEARCH block for its definition was moved up.
     // This SEARCH block is now for the return statement.
 
+    // Filtered memories for UI consumption
+    const uiVisibleMemories = allMemories.filter(mem => !mem.isDeleted).sort(sortByTimestampDesc);
+
     return (
         <MemoryContext.Provider value={{
-            memories,
+            memories: uiVisibleMemories, // Provide filtered memories to UI
             addMemory,
             deleteMemory,
             updateMemory,
