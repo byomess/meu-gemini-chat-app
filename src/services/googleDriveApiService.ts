@@ -115,8 +115,11 @@ export const findOrCreateAppFolder = async (): Promise<string> => {
             console.log(`[findOrCreateAppFolder] Created new folder: ${createResponse.result.name} (ID: ${createResponse.result.id})`);
             return createResponse.result.id!;
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error finding or creating app folder:", error);
+        if (error && error.status === 401) {
+            throw new Error(`Falha de autenticação ao encontrar/criar pasta no Drive (401). Por favor, reconecte sua conta.`);
+        }
         throw new Error(`Falha ao encontrar ou criar pasta do aplicativo no Drive: ${error instanceof Error ? error.message : String(error)}`);
     }
 };
@@ -146,8 +149,11 @@ export const getMemoriesFileId = async (parentFolderId: string): Promise<string 
         }
         return null;
     }
-    catch (error) {
+    catch (error: any) {
         console.error("Error getting memories file ID:", error);
+        if (error && error.status === 401) {
+            throw new Error(`Falha de autenticação ao buscar ID do arquivo de memórias no Drive (401).`);
+        }
         throw new Error(`Falha ao buscar ID do arquivo de memórias no Drive: ${error instanceof Error ? error.message : String(error)}`);
     }
 };
@@ -165,8 +171,11 @@ export const readFileContent = async (fileId: string): Promise<string> => {
             alt: 'media', // This is crucial to get the file content
         });
         return response.body as string;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error reading file content:", error);
+        if (error && error.status === 401) {
+            throw new Error(`Falha de autenticação ao ler conteúdo do arquivo no Drive (401).`);
+        }
         throw new Error(`Falha ao ler conteúdo do arquivo no Drive: ${error instanceof Error ? error.message : String(error)}`);
     }
 };
@@ -235,8 +244,11 @@ export const uploadFileContent = async (content: string, parentFolderId: string,
             console.log(`[uploadFileContent] File created. Response:`, response.result);
         }
         return response.result.id!;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error uploading file content:", error);
+        if (error && error.status === 401) {
+            throw new Error(`Falha de autenticação ao enviar/atualizar arquivo no Drive (401).`);
+        }
         throw new Error(`Falha ao enviar/atualizar arquivo no Drive: ${error instanceof Error ? error.message : String(error)}`);
     }
 };
@@ -254,8 +266,11 @@ export const getFileModifiedTime = async (fileId: string): Promise<string> => {
             fields: 'modifiedTime',
         });
         return response.result.modifiedTime!;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error getting file modified time:", error);
+        if (error && error.status === 401) {
+            throw new Error(`Falha de autenticação ao obter data de modificação do arquivo no Drive (401).`);
+        }
         throw new Error(`Falha ao obter data de modificação do arquivo no Drive: ${error instanceof Error ? error.message : String(error)}`);
     }
 };
