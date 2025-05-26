@@ -5,25 +5,33 @@ import { useAppSettings } from '../contexts/AppSettingsContext';
 import {
     loadAndInitGapiClient,
     findOrCreateAppFolder,
-    getMemoriesFileId,
+    findFileIdByName, // MODIFIED
     readFileContent,
     uploadFileContent,
     // getFileModifiedTime // Not directly used in syncMemories, as we rely on lastModifiedAt in JSON
 } from '../services/googleDriveApiService';
-import type { Memory, DriveMemory } from '../types';
+import type { Memory, DriveMemory, Conversation } from '../types'; // ADDED Conversation
+import { MEMORIES_FILE_NAME } from '../services/googleDriveApiService'; // ADDED
 
 const GOOGLE_DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file profile email'; // Must match scope used in googleAuthService
 
 interface UseGoogleDriveSyncProps {
     memories: Memory[];
     replaceAllMemories: (newMemories: Memory[], source?: string) => Memory[];
+    conversations: Conversation[]; // ADDED
+    replaceAllConversations: (newConversations: Conversation[], source?: string) => void; // ADDED
 }
 
-export const useGoogleDriveSync = ({ memories, replaceAllMemories }: UseGoogleDriveSyncProps) => {
+export const useGoogleDriveSync = ({
+    memories,
+    replaceAllMemories,
+    conversations, // ADDED
+    replaceAllConversations, // ADDED
+}: UseGoogleDriveSyncProps) => {
     const { settings, setGoogleDriveSyncStatus, updateGoogleDriveLastSync, setGoogleDriveError } = useAppSettings();
     // const { memories, replaceAllMemories } = useMemories(); // Removed
 
-    const syncMemories = useCallback(async () => { 
+    const syncDriveData = useCallback(async () => { // RENAMED
         if (!settings.googleDriveAccessToken) {
             console.warn("Google Drive sync attempted without access token. Aborting.");
             setGoogleDriveError("Não conectado ao Google Drive.");
@@ -42,11 +50,29 @@ export const useGoogleDriveSync = ({ memories, replaceAllMemories }: UseGoogleDr
             // 2. Find or create the Loox app folder
             const appFolderId = await findOrCreateAppFolder();
 
+            // --- Memories Sync Logic (existing) ---
             // 3. Get remote memories file ID and content
-            let remoteFileId = await getMemoriesFileId(appFolderId);
+            let remoteMemoriesFileId = await findFileIdByName(appFolderId, MEMORIES_FILE_NAME); // MODIFIED
             let remoteMemories: DriveMemory[] = [];
 
-            if (remoteFileId) {
+            if (remoteMemoriesFileId) { // MODIFIED
+                try {
+                    const content = await readFileContent(remoteMemoriesFileId); // MODIFIED
+                    const parsedContent = JSON.parse(content);
+                    if (Array.isArray(parsedContent)) {
+                        remoteMemories = parsedContent;
+                    } else {
+                        console.warn("Remote memories file content is not a valid JSON array. Treating as empty.");
+                        setGoogleDriveError("Conteúdo do arquivo de memórias no Drive inválido. Será sobrescrito.");
+                        remoteMemories = [];
+                    }
+                } catch (parseError) {
+                    console.error("Error parsing remote memories JSON:", parseError);
+                    // If parsing fails, treat remote as empty to avoid blocking sync
+                    remoteMemories = [];
+                    setGoogleDriveError("Erro ao ler arquivo de memórias do Drive. Tentando sobrescrever.");
+                }
+            }
                 try {
                     const content = await readFileContent(remoteFileId);
                     const parsedContent = JSON.parse(content);
@@ -123,12 +149,12 @@ export const useGoogleDriveSync = ({ memories, replaceAllMemories }: UseGoogleDr
             finalMergedMemories.sort((a, b) => new Date(b.lastModifiedAt).getTime() - new Date(a.lastModifiedAt).getTime());
 
             // 6. Upload merged memories to Google Drive
-            const mergedContent = JSON.stringify(finalMergedMemories, null, 2);
-            const newFileId = await uploadFileContent(mergedContent, appFolderId, remoteFileId);
+            const mergedMemoriesContent = JSON.stringify(finalMergedMemories, null, 2); // RENAMED
+            const newMemoriesFileId = await uploadFileContent(mergedMemoriesContent, appFolderId, remoteMemoriesFileId, MEMORIES_FILE_NAME); // MODIFIED
 
-            // If a new file was created, update remoteFileId for future operations
-            if (!remoteFileId) {
-                remoteFileId = newFileId;
+            // If a new file was created, update remoteMemoriesFileId for future operations
+            if (!remoteMemoriesFileId) {
+                remoteMemoriesFileId = newMemoriesFileId;
             }
 
             // 7. Update local state with the final merged memories
@@ -155,7 +181,16 @@ export const useGoogleDriveSync = ({ memories, replaceAllMemories }: UseGoogleDr
             }
             setGoogleDriveSyncStatus('Error');
         }
-    }, [settings.googleDriveAccessToken, memories, replaceAllMemories, setGoogleDriveSyncStatus, updateGoogleDriveLastSync, setGoogleDriveError]);
+    }, [
+        settings.googleDriveAccessToken,
+        memories,
+        replaceAllMemories,
+        conversations, // ADDED
+        replaceAllConversations, // ADDED
+        setGoogleDriveSyncStatus,
+        updateGoogleDriveLastSync,
+        setGoogleDriveError
+    ]);
 
-    return { syncMemories };
+    return { syncDriveData }; // RENAMED
 };

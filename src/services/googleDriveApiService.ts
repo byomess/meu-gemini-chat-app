@@ -5,6 +5,7 @@ declare const gapi: any;
 
 const APP_FOLDER_NAME = "Loox";
 const MEMORIES_FILE_NAME = "loox_memories.json";
+const CONVERSATIONS_FILE_NAME = "loox_conversations.json"; // ADDED
 
 let gapiClientInitialized = false;
 
@@ -125,24 +126,25 @@ export const findOrCreateAppFolder = async (): Promise<string> => {
 };
 
 /**
- * Finds the ID of the memories JSON file within the specified folder.
+ * Finds the ID of a file by its name within the specified folder.
  * @param parentFolderId The ID of the parent folder (e.g., the 'Loox' app folder).
- * @returns The ID of the memories file, or null if not found.
+ * @param fileName The name of the file to find.
+ * @returns The ID of the file, or null if not found.
  */
-export const getMemoriesFileId = async (parentFolderId: string): Promise<string | null> => {
+export const findFileIdByName = async (parentFolderId: string, fileName: string): Promise<string | null> => {
     await ensureGapiClientReady();
     try {
         const response = await gapi.client.drive.files.list({
-            q: `name='${MEMORIES_FILE_NAME}' and mimeType='application/json' and '${parentFolderId}' in parents and trashed=false`,
+            q: `name='${fileName}' and mimeType='application/json' and '${parentFolderId}' in parents and trashed=false`,
             spaces: 'drive',
             fields: 'files(id, name, modifiedTime)', // Request name and modifiedTime for debugging
         });
 
-        console.log(`[getMemoriesFileId] Search for '${MEMORIES_FILE_NAME}' in folder '${parentFolderId}' result:`, response.result.files);
+        console.log(`[findFileIdByName] Search for '${fileName}' in folder '${parentFolderId}' result:`, response.result.files);
 
         if (response.result.files && response.result.files.length > 0) {
             if (response.result.files.length > 1) {
-                console.warn(`[getMemoriesFileId] Found multiple files named '${MEMORIES_FILE_NAME}'. Returning the first one.`, response.result.files);
+                console.warn(`[findFileIdByName] Found multiple files named '${fileName}'. Returning the first one.`, response.result.files);
                 // Consider adding logic here to delete duplicates or pick the latest modified one
             }
             return response.result.files[0].id;
@@ -150,11 +152,11 @@ export const getMemoriesFileId = async (parentFolderId: string): Promise<string 
         return null;
     }
     catch (error: any) {
-        console.error("Error getting memories file ID:", error);
+        console.error(`Error getting file ID for "${fileName}":`, error);
         if (error && error.status === 401) {
-            throw new Error(`Falha de autenticação ao buscar ID do arquivo de memórias no Drive (401).`);
+            throw new Error(`Falha de autenticação ao buscar ID do arquivo "${fileName}" no Drive (401).`);
         }
-        throw new Error(`Falha ao buscar ID do arquivo de memórias no Drive: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Falha ao buscar ID do arquivo "${fileName}" no Drive: ${error instanceof Error ? error.message : String(error)}`);
     }
 };
 
@@ -181,13 +183,14 @@ export const readFileContent = async (fileId: string): Promise<string> => {
 };
 
 /**
- * Uploads or updates the memories JSON file.
+ * Uploads or updates a JSON file.
  * @param content The JSON content to upload as a string.
  * @param parentFolderId The ID of the parent folder.
  * @param existingFileId The ID of the existing file to update, or null to create a new one.
+ * @param fileName The name of the file to upload/update.
  * @returns The ID of the uploaded/updated file.
  */
-export const uploadFileContent = async (content: string, parentFolderId: string, existingFileId: string | null): Promise<string> => {
+export const uploadFileContent = async (content: string, parentFolderId: string, existingFileId: string | null, fileName: string): Promise<string> => {
     await ensureGapiClientReady();
 
     const boundary = '-------314159265358979323846';
@@ -196,7 +199,7 @@ export const uploadFileContent = async (content: string, parentFolderId: string,
 
     // Base metadata for the file
     const baseMetadata: { name: string; mimeType: string; parents?: string[] } = {
-        name: MEMORIES_FILE_NAME,
+        name: fileName, // MODIFIED
         mimeType: 'application/json',
     };
 
