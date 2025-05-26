@@ -67,29 +67,7 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         return processedMemories;
     }, [setAllMemories, allMemories]); // `allMemories` is needed for the return on error case.
 
-    const replaceAllMemories = useCallback((newMemories: Memory[], source?: string): Memory[] => {
-        const isValidFormat = newMemories.every(
-            mem => typeof mem.id === 'string' && typeof mem.content === 'string' && mem.timestamp
-        );
-        if (!isValidFormat) {
-            alert("Formato de arquivo de memórias inválido. A importação foi cancelada.");
-            return allMemories; // Return current memories on invalid format
-        }
-        const processedMemories = newMemories.map(mem => ({
-            ...mem,
-            timestamp: new Date(mem.timestamp),
-            isDeleted: mem.isDeleted || false, // Ensure isDeleted is present
-        })).sort(sortByTimestampDesc);
-
-        setAllMemories(processedMemories);
-        
-        if (source === 'sync') {
-            lastMemoryChangeSourceRef.current = 'sync';
-        } else {
-            lastMemoryChangeSourceRef.current = 'user';
-        }
-        return processedMemories;
-    }, [setAllMemories, allMemories]);
+    // Removed duplicate replaceAllMemories definition
 
     const addMemory = useCallback((content: string, sourceMessageId?: string): Memory | undefined => {
         const trimmedContent = content.trim();

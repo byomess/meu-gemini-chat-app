@@ -181,6 +181,7 @@ export interface RawImportedConversation {
     createdAt?: string;
     updatedAt?: string;
     isDeleted?: boolean; // ADDED for soft delete
+    isIncognito?: boolean; // ADDED for sync compatibility
 }
 
 export type DataSettingsTabProps = object;

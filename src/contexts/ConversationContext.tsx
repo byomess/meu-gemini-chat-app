@@ -2,7 +2,7 @@
 // src/contexts/ConversationContext.tsx
 import React, { createContext, useContext, type ReactNode, useCallback, useRef } from 'react'; // Added useRef
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import type { Conversation, Message, MessageMetadata, RawImportedConversation } from '../types'; // Removed useEffect, ProcessingStatus, Part; Added RawImportedConversation
+import type { Conversation, Message, MessageMetadata } from '../types'; // Removed useEffect, ProcessingStatus, Part; Removed RawImportedConversation
 import { v4 as uuidv4 } from 'uuid';
 
 const CONVERSATIONS_KEY = 'geminiChat_conversations';

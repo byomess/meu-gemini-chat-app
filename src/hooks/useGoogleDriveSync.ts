@@ -10,8 +10,9 @@ import {
     uploadFileContent,
     // getFileModifiedTime // Not directly used in syncMemories, as we rely on lastModifiedAt in JSON
 } from '../services/googleDriveApiService';
-import type { Memory, DriveMemory, Conversation, RawImportedConversation, RawImportedMessage } from '../types'; // ADDED Conversation, RawImportedConversation, RawImportedMessage
+import type { Memory, DriveMemory, Conversation, RawImportedConversation, RawImportedMessage, Message } from '../types'; // ADDED Message type
 import { MEMORIES_FILE_NAME, CONVERSATIONS_FILE_NAME } from '../services/googleDriveApiService'; // ADDED CONVERSATIONS_FILE_NAME
+import { v4 as uuidv4 } from 'uuid'; // ADDED for default IDs
 
 const GOOGLE_DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file profile email'; // Must match scope used in googleAuthService
 
@@ -240,21 +241,34 @@ export const useGoogleDriveSync = ({
             }
 
             // 5. Update local state with the final merged conversations
-            const updatedLocalConversations: Conversation[] = finalMergedConversationsRaw.map(rc => ({
-                id: rc.id!,
-                title: rc.title!,
-                createdAt: new Date(rc.createdAt!),
-                updatedAt: new Date(rc.updatedAt!),
-                isIncognito: rc.isIncognito,
-                isDeleted: rc.isDeleted || false,
-                messages: (rc.messages || []).map((rm: RawImportedMessage) => ({
-                    id: rm.id,
-                    text: rm.text,
-                    sender: rm.sender,
-                    timestamp: new Date(rm.timestamp),
-                    metadata: rm.metadata,
-                })),
-            }));
+            const updatedLocalConversations: Conversation[] = finalMergedConversationsRaw.map(rc => {
+                const conversationId = rc.id || uuidv4();
+                const conversationTitle = rc.title || 'Imported Conversation';
+                const conversationCreatedAt = rc.createdAt ? new Date(rc.createdAt) : new Date();
+                const conversationUpdatedAt = rc.updatedAt ? new Date(rc.updatedAt) : new Date();
+
+                return {
+                    id: conversationId,
+                    title: conversationTitle,
+                    createdAt: conversationCreatedAt,
+                    updatedAt: conversationUpdatedAt,
+                    isIncognito: rc.isIncognito ?? false, // Default if not present
+                    isDeleted: rc.isDeleted || false,
+                    messages: (rc.messages || []).map((rm: RawImportedMessage): Message => {
+                        const messageId = rm.id || uuidv4();
+                        const messageText = rm.text || '';
+                        const messageSender = rm.sender || 'user'; // Default sender
+                        const messageTimestamp = rm.timestamp ? new Date(rm.timestamp) : new Date();
+                        return {
+                            id: messageId,
+                            text: messageText,
+                            sender: messageSender,
+                            timestamp: messageTimestamp,
+                            metadata: rm.metadata, // metadata is optional on Message type
+                        };
+                    }),
+                };
+            });
             replaceAllConversations(updatedLocalConversations, 'sync');
 
             // --- End of Conversations Sync Logic ---
