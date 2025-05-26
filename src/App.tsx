@@ -30,7 +30,7 @@ const AppContent = () => {
     } = useMemories();
 
     // Instantiate useGoogleDriveSync here, so it's always active
-    const { syncDriveData } = useGoogleDriveSync({
+    const { syncDriveData, triggerDebouncedSync } = useGoogleDriveSync({ // MODIFIED: Destructure triggerDebouncedSync
         memories: allMemories,
         replaceAllMemories,
         lastMemoryChangeSource: lastMemoryChangeSourceRef.current,
@@ -94,10 +94,10 @@ const AppContent = () => {
     useEffect(() => {
         if (settings.googleDriveAccessToken && !initialSyncPerformedRef.current) {
             console.log("Attempting initial Google Drive sync as token is available.");
-            syncDriveData();
+            syncDriveData(); // Uses the direct, non-debounced syncDriveData for initial sync
             initialSyncPerformedRef.current = true;
         }
-    }, [settings.googleDriveAccessToken, syncDriveData]); // DEPENDENCIES: Re-run if token or syncDriveData changes
+    }, [settings.googleDriveAccessToken, syncDriveData]);
 
     return (
         <>
@@ -139,7 +139,7 @@ const AppContent = () => {
                 <SettingsModal
                     isOpen={isSettingsModalOpen}
                     onClose={handleCloseSettingsModal}
-                    syncDriveData={syncDriveData}
+                    syncDriveData={triggerDebouncedSync} // MODIFIED: Pass debounced sync for manual trigger
                 />
             </div>
         </>

@@ -1,5 +1,5 @@
 // src/hooks/useGoogleDriveSync.ts
-import { useCallback, useEffect, useState } from 'react'; // ADDED useState
+import { useCallback, useEffect, useState, useRef } from 'react'; // ADDED useState and useRef
 import { useAppSettings } from '../contexts/AppSettingsContext';
 // import { useMemories } from '../contexts/MemoryContext'; // Removed
 import {
@@ -39,10 +39,15 @@ export const useGoogleDriveSync = ({
     resetLastConversationChangeSource, // ADDED
 }: UseGoogleDriveSyncProps) => {
     const { settings, setGoogleDriveSyncStatus, updateGoogleDriveLastSync, setGoogleDriveError } = useAppSettings();
-    const [isSyncOperationActuallyRunning, setIsSyncOperationActuallyRunning] = useState(false); // ADDED
+    const [isSyncOperationActuallyRunning, setIsSyncOperationActuallyRunning] = useState(false);
+    const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null); // ADDED: For debounce
 
-    const syncDriveData = useCallback(async () => { // RENAMED
-        setIsSyncOperationActuallyRunning(true); // ADDED
+    const syncDriveData = useCallback(async () => {
+        if (isSyncOperationActuallyRunning) { // ADDED: Prevent concurrent execution
+            console.warn("Sync operation already in progress. New request ignored by syncDriveData.");
+            return;
+        }
+        setIsSyncOperationActuallyRunning(true);
         if (!settings.googleDriveAccessToken) {
             console.warn("Google Drive sync attempted without access token. Aborting.");
             setGoogleDriveError("Não conectado ao Google Drive.");
@@ -296,54 +301,58 @@ export const useGoogleDriveSync = ({
         memories,
         replaceAllMemories,
         conversations, // ADDED
-        replaceAllConversations, // ADDED
+        replaceAllConversations,
         setGoogleDriveSyncStatus,
         updateGoogleDriveLastSync,
-        setGoogleDriveError
+        setGoogleDriveError,
+        isSyncOperationActuallyRunning // ADDED: Dependency for the early return check
         // lastMemoryChangeSource and lastConversationChangeSource are not direct dependencies of syncDriveData itself,
         // but of the useEffect that calls it. The memories/conversations arrays are the data dependencies.
     ]);
 
+    const triggerDebouncedSync = useCallback(() => {
+        if (syncTimeoutRef.current) {
+            clearTimeout(syncTimeoutRef.current);
+        }
+        console.log("Debounced sync triggered. Waiting 10 seconds...");
+        syncTimeoutRef.current = setTimeout(() => {
+            console.log("Debounce timer elapsed. Calling actual syncDriveData.");
+            syncDriveData().catch(error => {
+                console.error("Google Drive sync failed after debounce:", error);
+            });
+        }, 10000); // 10-second debounce
+    }, [syncDriveData]);
+
     // Effect to trigger sync when memories or conversations change due to user/AI action
     useEffect(() => {
-        let didTriggerSync = false;
+        let didTriggerDebouncedSync = false;
         // Only trigger if there's an access token AND no sync operation is currently running
-        if (settings.googleDriveAccessToken && !isSyncOperationActuallyRunning) { // MODIFIED
+        if (settings.googleDriveAccessToken && !isSyncOperationActuallyRunning) {
             if (lastMemoryChangeSource === 'user') {
-                console.log("Memories changed by user/AI, triggering Google Drive sync via hook.");
-                didTriggerSync = true;
-                syncDriveData().catch(error => {
-                    console.error("Google Drive sync failed after memory change (hook):", error);
-                }).finally(() => {
-                    resetLastMemoryChangeSource();
-                });
+                console.log("Memories changed by user/AI, triggering debounced Google Drive sync via hook.");
+                didTriggerDebouncedSync = true;
+                triggerDebouncedSync();
+                resetLastMemoryChangeSource(); // Reset immediately after triggering debounce
             }
 
             // Only check conversations if memories didn't trigger to avoid double sync from one action
             // Trigger if user-initiated conversation change OR AI message finished
-            if (!didTriggerSync && (lastConversationChangeSource === 'user' || lastConversationChangeSource === 'ai_finished')) {
-                console.log("Conversations changed by user/AI, triggering Google Drive sync via hook.");
-                // didTriggerSync = true; // Not strictly needed for the last check
-                syncDriveData().catch(error => {
-                    console.error("Google Drive sync failed after conversation change (hook):", error);
-                }).finally(() => {
-                    resetLastConversationChangeSource();
-                });
+            if (!didTriggerDebouncedSync && (lastConversationChangeSource === 'user' || lastConversationChangeSource === 'ai_finished')) {
+                console.log("Conversations changed by user/AI, triggering debounced Google Drive sync via hook.");
+                // didTriggerDebouncedSync = true; // Not strictly needed for the last check
+                triggerDebouncedSync();
+                resetLastConversationChangeSource(); // Reset immediately after triggering debounce
             }
         }
 
-        // If not connected or sync already in progress, but flags are set, reset them to prevent stale triggers.
-        // This handles cases where a change happens offline and then user connects.
-        // The sync on connect (if implemented, e.g. manual or on app load) should handle the actual data.
-        // Or, if flags are not reset, the next time token is available, this effect will run.
-        // For now, let's reset if they were 'user' and no sync was triggered by this effect instance.
-        if (!didTriggerSync) {
+        // If not connected or sync already in progress, but flags are set, reset them.
+        // This was part of the original logic to prevent stale triggers if a sync couldn't happen.
+        // With the debounce trigger resetting the source immediately, this might be less critical,
+        // but keeping it for safety if the conditions for triggering debounce aren't met.
+        if (!didTriggerDebouncedSync) {
             if (lastMemoryChangeSource === 'user') {
                  resetLastMemoryChangeSource();
             }
-            // Reset conversation source only if it was 'user' or 'ai_finished' and no sync was triggered by this effect.
-            // This ensures that if a sync *was* triggered, the source is reset by the finally block of syncDriveData.
-            // If no sync was triggered (e.g., no token, or already syncing), but the source was set, it should be cleared.
             if (lastConversationChangeSource === 'user' || lastConversationChangeSource === 'ai_finished') {
                  resetLastConversationChangeSource();
             }
@@ -351,14 +360,13 @@ export const useGoogleDriveSync = ({
 
     }, [
         settings.googleDriveAccessToken,
-        isSyncOperationActuallyRunning, // MODIFIED: Now directly depends on this state
-        syncDriveData, // The memoized sync function
+        isSyncOperationActuallyRunning,
+        triggerDebouncedSync, // ADDED dependency
         lastMemoryChangeSource,
         resetLastMemoryChangeSource,
-        lastConversationChangeSource, // Now depends on 'ai_finished' too
+        lastConversationChangeSource,
         resetLastConversationChangeSource,
-        // Do not add `memories` or `conversations` here, as `syncDriveData` already depends on them.
-        // This effect is about *when* to call `syncDriveData` based on change *source flags*.
+        // syncDriveData is a dependency of triggerDebouncedSync, so not needed here directly.
     ]);
 
     // ADDED: New useEffect to handle stale 'Syncing' status
@@ -373,6 +381,14 @@ export const useGoogleDriveSync = ({
         }
     }, [settings.googleDriveSyncStatus, isSyncOperationActuallyRunning, settings.googleDriveAccessToken, setGoogleDriveSyncStatus]);
 
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (syncTimeoutRef.current) {
+                clearTimeout(syncTimeoutRef.current);
+            }
+        };
+    }, []);
 
-    return { syncDriveData };
+    return { syncDriveData, triggerDebouncedSync }; // MODIFIED: Return both functions
 };
