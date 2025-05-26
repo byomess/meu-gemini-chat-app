@@ -29,7 +29,7 @@ interface ConversationContextType {
     activeConversationId: string | null;
     activeConversation: Conversation | null; // This will be the filtered one
     allConversations: Conversation[]; // ADDED: The full list including soft-deleted
-    lastConversationChangeSourceRef: React.RefObject<'user' | 'sync' | null>; // ADDED
+    lastConversationChangeSourceRef: React.RefObject<'user' | 'sync' | 'ai_finished' | null>; // MODIFIED: Added 'ai_finished'
     resetLastConversationChangeSource: () => void; // ADDED
     setActiveConversationId: (id: string | null) => void;
     createNewConversation: (options?: { isIncognito?: boolean }) => Conversation; // Modified signature
@@ -58,7 +58,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
     const [allConversations, setAllConversations] = useLocalStorage<Conversation[]>(CONVERSATIONS_KEY, [], conversationReviver); // MODIFIED: Renamed and added reviver
     const [activeId, setActiveId] = useLocalStorage<string | null>(ACTIVE_CONVERSATION_ID_KEY, null);
 
-    const lastConversationChangeSourceRef = useRef<'user' | 'sync' | null>(null); // ADDED
+    const lastConversationChangeSourceRef = useRef<'user' | 'sync' | 'ai_finished' | null>(null); // MODIFIED: Added 'ai_finished'
 
     // Filtered conversations for UI consumption
     const uiVisibleConversations = allConversations.filter(c => !c.isDeleted).sort(sortByUpdatedAtDesc);
@@ -90,7 +90,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
         };
         setAllConversations(prev => [newConversation, ...prev].sort(sortByUpdatedAtDesc));
         setActiveId(newConversation.id);
-        lastConversationChangeSourceRef.current = 'user'; // ADDED
+        lastConversationChangeSourceRef.current = 'user'; // Keep: Creating a new conversation is a user action
         return newConversation;
     }, [setAllConversations, setActiveId]);
 
@@ -105,7 +105,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             const nextActiveConversations = allConversations.filter(c => c.id !== id && !c.isDeleted).sort(sortByUpdatedAtDesc);
             setActiveId(nextActiveConversations.length > 0 ? nextActiveConversations[0].id : null);
         }
-        lastConversationChangeSourceRef.current = 'user'; // ADDED
+        lastConversationChangeSourceRef.current = 'user'; // Keep: Deleting a conversation is a user action
     }, [activeId, setAllConversations, setActiveId, allConversations]); // allConversations needed for finding next active
 
     const deleteAllConversations = useCallback(() => {
@@ -115,7 +115,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             ).sort(sortByUpdatedAtDesc)
         );
         setActiveId(null);
-        lastConversationChangeSourceRef.current = 'user'; // ADDED
+        lastConversationChangeSourceRef.current = 'user'; // Keep: Deleting all conversations is a user action
     }, [setAllConversations, setActiveId]);
 
     const addMessageToConversation = useCallback((
@@ -144,7 +144,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                     : c
             ).sort(sortByUpdatedAtDesc)
         );
-        lastConversationChangeSourceRef.current = 'user'; // ADDED
+        // lastConversationChangeSourceRef.current = 'user'; // REMOVED: Adding a message (especially user's) should not trigger sync
         return newMessageId;
     }, [setAllConversations]);
 
@@ -158,22 +158,32 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 c.id === conversationId
                     ? {
                         ...c,
-                        messages: c.messages.map(msg =>
-                            msg.id === messageId
-                                ? {
+                        messages: c.messages.map(msg => {
+                            if (msg.id === messageId) {
+                                const updatedMsg = {
                                     ...msg,
                                     ...(updates.text !== undefined && { text: updates.text }),
                                     ...(updates.metadata && { metadata: { ...msg.metadata, ...updates.metadata } }),
                                     timestamp: new Date()
+                                };
+
+                                // If this is a model message and its loading state changes to false or an error appears
+                                if (updatedMsg.sender === 'model' && msg.metadata?.isLoading === true && (updates.metadata?.isLoading === false || updates.metadata?.error !== undefined)) {
+                                    lastConversationChangeSourceRef.current = 'ai_finished';
                                 }
-                                : msg
-                        ),
+                                // If this is a user message and its text is being updated (user editing their message)
+                                else if (updatedMsg.sender === 'user' && updates.text !== undefined && updates.text !== msg.text) {
+                                    lastConversationChangeSourceRef.current = 'user';
+                                }
+                                return updatedMsg;
+                            }
+                            return msg;
+                        }),
                         updatedAt: new Date(),
                     }
                     : c
             ).sort(sortByUpdatedAtDesc)
         );
-        lastConversationChangeSourceRef.current = 'user'; // ADDED
     }, [setAllConversations]);
 
     const removeMessagesAfterId = useCallback((conversationId: string, messageId: string): Conversation | null => {
@@ -194,7 +204,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             });
             return newConvos.sort(sortByUpdatedAtDesc);
         });
-        lastConversationChangeSourceRef.current = 'user'; // ADDED
+        lastConversationChangeSourceRef.current = 'user'; // Keep: User action
         return updatedConversation;
     }, [setAllConversations]);
 
@@ -206,7 +216,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                     : c
             ).sort(sortByUpdatedAtDesc)
         );
-        lastConversationChangeSourceRef.current = 'user'; // ADDED
+        lastConversationChangeSourceRef.current = 'user'; // Keep: User action
     }, [setAllConversations]);
 
     const updateConversationTitle = useCallback((id: string, newTitle: string) => {
@@ -215,7 +225,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 c.id === id ? { ...c, title: newTitle, updatedAt: new Date() } : c
             ).sort(sortByUpdatedAtDesc)
         );
-        lastConversationChangeSourceRef.current = 'user'; // ADDED
+        lastConversationChangeSourceRef.current = 'user'; // Keep: User action
     }, [setAllConversations]);
 
     const replaceAllConversations = useCallback((newConversations: Conversation[], source?: string) => {

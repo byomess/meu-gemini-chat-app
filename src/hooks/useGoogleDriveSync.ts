@@ -24,7 +24,7 @@ interface UseGoogleDriveSyncProps {
 
     conversations: Conversation[]; // Should be allConversations
     replaceAllConversations: (newConversations: Conversation[], source?: string) => void;
-    lastConversationChangeSource: 'user' | 'sync' | null; // ADDED
+    lastConversationChangeSource: 'user' | 'sync' | 'ai_finished' | null; // MODIFIED: Added 'ai_finished'
     resetLastConversationChangeSource: () => void; // ADDED
 }
 
@@ -319,7 +319,8 @@ export const useGoogleDriveSync = ({
             }
 
             // Only check conversations if memories didn't trigger to avoid double sync from one action
-            if (!didTriggerSync && lastConversationChangeSource === 'user') {
+            // Trigger if user-initiated conversation change OR AI message finished
+            if (!didTriggerSync && (lastConversationChangeSource === 'user' || lastConversationChangeSource === 'ai_finished')) { // MODIFIED
                 console.log("Conversations changed by user/AI, triggering Google Drive sync via hook.");
                 // didTriggerSync = true; // Not strictly needed for the last check
                 syncDriveData().catch(error => {
@@ -339,7 +340,10 @@ export const useGoogleDriveSync = ({
             if (lastMemoryChangeSource === 'user') {
                  resetLastMemoryChangeSource();
             }
-            if (lastConversationChangeSource === 'user') {
+            // Reset conversation source only if it was 'user' or 'ai_finished' and no sync was triggered by this effect.
+            // This ensures that if a sync *was* triggered, the source is reset by the finally block of syncDriveData.
+            // If no sync was triggered (e.g., no token, or already syncing), but the source was set, it should be cleared.
+            if (lastConversationChangeSource === 'user' || lastConversationChangeSource === 'ai_finished') { // MODIFIED
                  resetLastConversationChangeSource();
             }
         }
@@ -350,7 +354,7 @@ export const useGoogleDriveSync = ({
         syncDriveData, // The memoized sync function
         lastMemoryChangeSource,
         resetLastMemoryChangeSource,
-        lastConversationChangeSource,
+        lastConversationChangeSource, // Now depends on 'ai_finished' too
         resetLastConversationChangeSource,
         // Do not add `memories` or `conversations` here, as `syncDriveData` already depends on them.
         // This effect is about *when* to call `syncDriveData` based on change *source flags*.
