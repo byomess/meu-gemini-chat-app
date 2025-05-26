@@ -127,6 +127,8 @@ export const findOrCreateAppFolder = async (): Promise<string> => {
 
 /**
  * Finds the ID of a file by its name within the specified folder.
+ * If multiple files with the same name are found, it returns the ID of the most recently modified one
+ * and deletes the older duplicates.
  * @param parentFolderId The ID of the parent folder (e.g., the 'Loox' app folder).
  * @param fileName The name of the file to find.
  * @returns The ID of the file, or null if not found.
@@ -137,17 +139,33 @@ export const findFileIdByName = async (parentFolderId: string, fileName: string)
         const response = await gapi.client.drive.files.list({
             q: `name='${fileName}' and mimeType='application/json' and '${parentFolderId}' in parents and trashed=false`,
             spaces: 'drive',
-            fields: 'files(id, name, modifiedTime)', // Request name and modifiedTime for debugging
+            fields: 'files(id, name, modifiedTime)', // Request name and modifiedTime for sorting and debugging
         });
 
-        console.log(`[findFileIdByName] Search for '${fileName}' in folder '${parentFolderId}' result:`, response.result.files);
-
         if (response.result.files && response.result.files.length > 0) {
-            if (response.result.files.length > 1) {
-                console.warn(`[findFileIdByName] Found multiple files named '${fileName}'. Returning the first one.`, response.result.files);
-                // Consider adding logic here to delete duplicates or pick the latest modified one
+            // Sort files by modifiedTime in descending order (most recent first)
+            const sortedFiles = response.result.files.sort((a: any, b: any) => {
+                const dateA = new Date(a.modifiedTime).getTime();
+                const dateB = new Date(b.modifiedTime).getTime();
+                return dateB - dateA; // Descending order
+            });
+
+            const latestFile = sortedFiles[0];
+
+            if (sortedFiles.length > 1) {
+                console.warn(`[findFileIdByName] Found multiple files named '${fileName}'. Keeping the most recent one (ID: ${latestFile.id}) and deleting older duplicates.`);
+                // Delete older duplicates
+                for (let i = 1; i < sortedFiles.length; i++) {
+                    const duplicateFile = sortedFiles[i];
+                    try {
+                        await deleteFile(duplicateFile.id);
+                        console.log(`[findFileIdByName] Successfully deleted duplicate file: ${duplicateFile.name} (ID: ${duplicateFile.id})`);
+                    } catch (deleteError) {
+                        console.error(`[findFileIdByName] Failed to delete duplicate file: ${duplicateFile.name} (ID: ${duplicateFile.id})`, deleteError);
+                    }
+                }
             }
-            return response.result.files[0].id;
+            return latestFile.id;
         }
         return null;
     }
@@ -275,5 +293,25 @@ export const getFileModifiedTime = async (fileId: string): Promise<string> => {
             throw new Error(`Falha de autenticação ao obter data de modificação do arquivo no Drive (401).`);
         }
         throw new Error(`Falha ao obter data de modificação do arquivo no Drive: ${error instanceof Error ? error.message : String(error)}`);
+    }
+};
+
+/**
+ * Deletes a file by its ID.
+ * @param fileId The ID of the file to delete.
+ */
+export const deleteFile = async (fileId: string): Promise<void> => {
+    await ensureGapiClientReady();
+    try {
+        await gapi.client.drive.files.delete({
+            fileId: fileId,
+        });
+        console.log(`[deleteFile] File with ID ${fileId} deleted successfully.`);
+    } catch (error: any) {
+        console.error(`Error deleting file with ID ${fileId}:`, error);
+        if (error && error.status === 401) {
+            throw new Error(`Falha de autenticação ao excluir arquivo no Drive (401).`);
+        }
+        throw new Error(`Falha ao excluir arquivo no Drive: ${error instanceof Error ? error.message : String(error)}`);
     }
 };
