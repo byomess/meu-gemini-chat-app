@@ -10,8 +10,8 @@ import {
     uploadFileContent,
     // getFileModifiedTime // Not directly used in syncMemories, as we rely on lastModifiedAt in JSON
 } from '../services/googleDriveApiService';
-import type { Memory, DriveMemory, Conversation } from '../types'; // ADDED Conversation
-import { MEMORIES_FILE_NAME } from '../services/googleDriveApiService'; // ADDED
+import type { Memory, DriveMemory, Conversation, RawImportedConversation, RawImportedMessage } from '../types'; // ADDED Conversation, RawImportedConversation, RawImportedMessage
+import { MEMORIES_FILE_NAME, CONVERSATIONS_FILE_NAME } from '../services/googleDriveApiService'; // ADDED CONVERSATIONS_FILE_NAME
 
 const GOOGLE_DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file profile email'; // Must match scope used in googleAuthService
 
@@ -58,23 +58,6 @@ export const useGoogleDriveSync = ({
             if (remoteMemoriesFileId) { // MODIFIED
                 try {
                     const content = await readFileContent(remoteMemoriesFileId); // MODIFIED
-                    const parsedContent = JSON.parse(content);
-                    if (Array.isArray(parsedContent)) {
-                        remoteMemories = parsedContent;
-                    } else {
-                        console.warn("Remote memories file content is not a valid JSON array. Treating as empty.");
-                        setGoogleDriveError("Conteúdo do arquivo de memórias no Drive inválido. Será sobrescrito.");
-                        remoteMemories = [];
-                    }
-                } catch (parseError) {
-                    console.error("Error parsing remote memories JSON:", parseError);
-                    // If parsing fails, treat remote as empty to avoid blocking sync
-                    remoteMemories = [];
-                    setGoogleDriveError("Erro ao ler arquivo de memórias do Drive. Tentando sobrescrever.");
-                }
-            }
-                try {
-                    const content = await readFileContent(remoteFileId);
                     const parsedContent = JSON.parse(content);
                     if (Array.isArray(parsedContent)) {
                         remoteMemories = parsedContent;
@@ -167,7 +150,107 @@ export const useGoogleDriveSync = ({
             // Capture the result of replaceAllMemories
             replaceAllMemories(updatedLocalMemories, 'sync');
 
-            // onMemoriesUpdatedBySync callback removed
+            // --- Conversations Sync Logic ---
+            // 1. Get remote conversations file ID and content
+            let remoteConversationsFileId = await findFileIdByName(appFolderId, CONVERSATIONS_FILE_NAME);
+            let remoteConversations: RawImportedConversation[] = [];
+
+            if (remoteConversationsFileId) {
+                try {
+                    const content = await readFileContent(remoteConversationsFileId);
+                    const parsedContent = JSON.parse(content);
+                    if (Array.isArray(parsedContent)) {
+                        remoteConversations = parsedContent;
+                    } else {
+                        console.warn("Remote conversations file content is not a valid JSON array. Treating as empty.");
+                        setGoogleDriveError("Conteúdo do arquivo de conversas no Drive inválido. Será sobrescrito.");
+                        remoteConversations = [];
+                    }
+                } catch (parseError) {
+                    console.error("Error parsing remote conversations JSON:", parseError);
+                    remoteConversations = [];
+                    setGoogleDriveError("Erro ao ler arquivo de conversas do Drive. Tentando sobrescrever.");
+                }
+            }
+
+            // 2. Prepare local conversations for merge
+            const localConversationsAsRaw: RawImportedConversation[] = conversations.map(c => ({
+                id: c.id,
+                title: c.title,
+                createdAt: c.createdAt.toISOString(),
+                updatedAt: c.updatedAt.toISOString(),
+                isIncognito: c.isIncognito,
+                isDeleted: c.isDeleted || false,
+                messages: c.messages.map(m => ({
+                    id: m.id,
+                    text: m.text,
+                    sender: m.sender,
+                    timestamp: m.timestamp.toISOString(),
+                    metadata: m.metadata,
+                })),
+            }));
+
+            // 3. Merge Logic for Conversations (similar to memories)
+            const mergedConversationsMap = new Map<string, RawImportedConversation>();
+            const allConversationIds = new Set([...localConversationsAsRaw.map(c => c.id!), ...remoteConversations.map(c => c.id!)]);
+
+            allConversationIds.forEach(id => {
+                const localConv = localConversationsAsRaw.find(c => c.id === id);
+                const remoteConv = remoteConversations.find(c => c.id === id);
+
+                if (localConv && remoteConv) {
+                    const localTimestamp = new Date(localConv.updatedAt!).getTime();
+                    const remoteTimestamp = new Date(remoteConv.updatedAt!).getTime();
+                    const localIsDeleted = localConv.isDeleted || false;
+                    const remoteIsDeleted = remoteConv.isDeleted || false;
+
+                    if (localIsDeleted && remoteIsDeleted) {
+                        mergedConversationsMap.set(id, localTimestamp > remoteTimestamp ? localConv : remoteConv);
+                    } else if (localIsDeleted && !remoteIsDeleted) {
+                        mergedConversationsMap.set(id, localTimestamp > remoteTimestamp ? localConv : remoteConv);
+                    } else if (!localIsDeleted && remoteIsDeleted) {
+                        mergedConversationsMap.set(id, remoteTimestamp > localTimestamp ? remoteConv : localConv);
+                    } else {
+                        mergedConversationsMap.set(id, localTimestamp > remoteTimestamp ? localConv : remoteConv);
+                    }
+                } else if (localConv) {
+                    mergedConversationsMap.set(id, localConv);
+                } else if (remoteConv) {
+                    mergedConversationsMap.set(id, remoteConv);
+                }
+            });
+
+            const finalMergedConversationsRaw: RawImportedConversation[] = Array.from(mergedConversationsMap.values());
+            finalMergedConversationsRaw.sort((a, b) => new Date(b.updatedAt!).getTime() - new Date(a.updatedAt!).getTime());
+
+            // 4. Upload merged conversations to Google Drive
+            const mergedConversationsContent = JSON.stringify(finalMergedConversationsRaw, null, 2);
+            const newConversationsFileId = await uploadFileContent(mergedConversationsContent, appFolderId, remoteConversationsFileId, CONVERSATIONS_FILE_NAME);
+
+            if (!remoteConversationsFileId) {
+                remoteConversationsFileId = newConversationsFileId;
+            }
+
+            // 5. Update local state with the final merged conversations
+            const updatedLocalConversations: Conversation[] = finalMergedConversationsRaw.map(rc => ({
+                id: rc.id!,
+                title: rc.title!,
+                createdAt: new Date(rc.createdAt!),
+                updatedAt: new Date(rc.updatedAt!),
+                isIncognito: rc.isIncognito,
+                isDeleted: rc.isDeleted || false,
+                messages: (rc.messages || []).map((rm: RawImportedMessage) => ({
+                    id: rm.id,
+                    text: rm.text,
+                    sender: rm.sender,
+                    timestamp: new Date(rm.timestamp),
+                    metadata: rm.metadata,
+                })),
+            }));
+            replaceAllConversations(updatedLocalConversations, 'sync');
+
+            // --- End of Conversations Sync Logic ---
+
             updateGoogleDriveLastSync(new Date().toISOString());
             setGoogleDriveSyncStatus('Synced');
             console.log("Google Drive sync successful!");
