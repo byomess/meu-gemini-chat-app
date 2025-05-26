@@ -1,32 +1,52 @@
 // src/services/googleAuthService.ts
 
-// Ensure this interface is available globally after GIS script loads.
-// You might need to declare 'google' in a global.d.ts file or similar
-// if TypeScript complains, e.g., declare const google: any;
-// However, with the script in index.html, it should be available.
+// Declare gapi to avoid TypeScript errors if it's not globally defined
+declare const gapi: any; // gapi is for Google API Client Library, not GIS directly, but often used together.
+declare const google: any; // Declare google for GIS
 
 let tokenClient: google.accounts.oauth2.TokenClient | null = null;
 
 /**
+ * Waits for the Google Identity Services (GIS) library to be fully loaded.
+ * @returns A Promise that resolves when `window.google.accounts.oauth2` is available.
+ */
+const waitForGoogleAccountsOauth2 = (): Promise<void> => {
+    return new Promise((resolve) => {
+        const checkGoogle = () => {
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                resolve();
+            } else {
+                setTimeout(checkGoogle, 50); // Check again after 50ms
+            }
+        };
+        checkGoogle();
+    });
+};
+
+/**
  * Initializes the Google OAuth 2.0 Token Client.
- * Must be called after the GIS script has loaded.
+ * This function will wait for the GIS script to be loaded before proceeding.
  * @param clientId Your Google Cloud project's OAuth 2.0 Client ID.
  * @param scope The scopes to request (e.g., 'https://www.googleapis.com/auth/drive.file').
  * @param onTokenResponse Callback function for successful token response.
  * @param onError Callback function for errors during initialization or token response.
  */
-export const initGoogleTokenClient = (
+export const initGoogleTokenClient = async (
     clientId: string,
     scope: string,
     onTokenResponse: (tokenResponse: google.accounts.oauth2.TokenResponse) => void,
     onError: (error: any) => void
-): void => {
-    if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-        onError(new Error("Google Identity Services script not loaded yet."));
-        return;
-    }
-
+): Promise<void> => {
     try {
+        await waitForGoogleAccountsOauth2(); // Ensure GIS is loaded
+
+        if (tokenClient) {
+            // If already initialized, no need to re-initialize unless parameters change significantly.
+            // For simplicity, we'll just return if it's already set up.
+            // In a more complex app, you might want to re-configure or check if it needs re-init.
+            return;
+        }
+
         tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: clientId,
             scope: scope,
@@ -42,7 +62,7 @@ export const initGoogleTokenClient = (
             }
         });
     } catch (error) {
-        onError(error); // Catch any synchronous errors during init
+        onError(error); // Catch any errors during the waiting or init process
     }
 };
 
@@ -58,10 +78,9 @@ export const requestAccessToken = (): void => {
         // prompt: 'consent' forces the consent screen.
         tokenClient.requestAccessToken({ prompt: '' });
     } else {
-        // This case should ideally be prevented by UI logic (e.g., disabling
-        // the connect button until the client is initialized).
         console.error("Google Token Client not initialized. Cannot request access token.");
-        // Optionally, you could pass an error back via a callback or promise if this function were async.
+        // In a real application, you might want to surface this error to the user
+        // or trigger re-initialization.
     }
 };
 
