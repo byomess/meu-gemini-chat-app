@@ -4,8 +4,8 @@
 declare const gapi: any;
 
 const APP_FOLDER_NAME = "Loox";
-const MEMORIES_FILE_NAME = "loox_memories.json";
-const CONVERSATIONS_FILE_NAME = "loox_conversations.json"; // ADDED
+export const MEMORIES_FILE_NAME = "loox_memories.json"; // EXPORTED
+export const CONVERSATIONS_FILE_NAME = "loox_conversations.json"; // EXPORTED & ADDED
 
 let gapiClientInitialized = false;
 
