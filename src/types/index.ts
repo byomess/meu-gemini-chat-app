@@ -40,6 +40,7 @@ export interface DriveMemory {
     id: string;
     content: string;
     lastModifiedAt: string; // ISO 8601 timestamp
+    isDeleted?: boolean; // ADDED for soft delete
 }
 
 
@@ -76,6 +77,7 @@ export interface Memory {
     content: string;
     timestamp: Date;
     sourceMessageId?: string;
+    isDeleted?: boolean; // ADDED for soft delete
 }
 
 export type MemoryActionType = 'created' | 'updated' | 'deleted_by_ai';
