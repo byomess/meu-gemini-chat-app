@@ -123,9 +123,13 @@ export const useGoogleDriveSync = ({ memories, replaceAllMemories }: UseGoogleDr
             setGoogleDriveSyncStatus('Synced');
             console.log("Google Drive sync successful!");
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Google Drive sync failed:", error);
-            setGoogleDriveError(error.message || "Falha desconhecida na sincronização com Google Drive.");
+            if (error instanceof Error) {
+                setGoogleDriveError(error.message || "Falha desconhecida na sincronização com Google Drive.");
+            } else {
+                setGoogleDriveError("Falha desconhecida na sincronização com Google Drive.");
+            }
             setGoogleDriveSyncStatus('Error');
         }
     }, [settings.googleDriveAccessToken, memories, replaceAllMemories, setGoogleDriveSyncStatus, updateGoogleDriveLastSync, setGoogleDriveError]);

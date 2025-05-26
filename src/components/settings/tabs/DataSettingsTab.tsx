@@ -25,7 +25,8 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = () => {
     const { clearAllMemories, replaceAllMemories } = useMemories();
     const { deleteAllConversations } = useConversations();
     const { settings, connectGoogleDrive, disconnectGoogleDrive, setGoogleDriveSyncStatus, setGoogleDriveError } = useAppSettings();
-    const { syncMemories } = useGoogleDriveSync(); // Get the sync function
+    const { memories } = useMemories(); // Get memories from context
+    const { syncMemories } = useGoogleDriveSync({ memories, replaceAllMemories }); // Pass required arguments
 
     const [isGoogleClientInitialized, setIsGoogleClientInitialized] = useState(false);
     const [authActionLoading, setAuthActionLoading] = useState(false);
