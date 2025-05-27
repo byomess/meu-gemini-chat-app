@@ -36,6 +36,7 @@ interface UrlConfigFile {
     enableAttachments?: boolean;
     hideNavigation?: boolean; // Added new setting
     showProcessingIndicators?: boolean;
+    showAiFunctionCallAttachments?: boolean; // New setting
 }
 
 // Helper for basic deep comparison of JSON-like objects
@@ -214,6 +215,10 @@ export function useUrlConfigInitializer() {
                         }
                         if (configToApply.showProcessingIndicators !== undefined && newAppSettings.showProcessingIndicators !== configToApply.showProcessingIndicators) {
                             newAppSettings.showProcessingIndicators = configToApply.showProcessingIndicators;
+                            changed = true;
+                        }
+                        if (configToApply.showAiFunctionCallAttachments !== undefined && newAppSettings.showAiFunctionCallAttachments !== configToApply.showAiFunctionCallAttachments) {
+                            newAppSettings.showAiFunctionCallAttachments = configToApply.showAiFunctionCallAttachments;
                             changed = true;
                         }
 
