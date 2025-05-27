@@ -93,7 +93,7 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({
                         lineHeight: '1.6',
                         borderRadius: '0 0 0.5rem 0.5rem',
                         overflowX: 'auto',
-                        backgroundColor: 'var(--color-gray-800)', // Explicitly set to match wrapper background
+                        // Removed explicit backgroundColor override to allow vscDarkPlus to apply its dark background
                     }}
                     codeTagProps={{
                         style: { 
