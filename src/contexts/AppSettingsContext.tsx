@@ -178,6 +178,13 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
         }));
     }, [setSettings]);
 
+    const updateTheme = useCallback((theme: ThemeName) => { // MODIFIED: Use ThemeName
+        setSettings((prevSettings) => ({
+            ...prevSettings,
+            theme: theme,
+        }));
+    }, [setSettings]);
+
     // Add this new callback
     const updateShowProcessingIndicators = useCallback((enabled: boolean) => {
         setSettings((prevSettings) => ({
