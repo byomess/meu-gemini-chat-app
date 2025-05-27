@@ -5,7 +5,6 @@ import { IoSparklesOutline } from 'react-icons/io5';
 import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
 import ToggleSwitch from '../../common/ToggleSwitch'; // Import the new ToggleSwitch component
 import type { ThemeName } from '../../../types'; // ADDED: Import ThemeName
-import type { ThemeName } from '../../../types'; // ADDED: Import ThemeName
 
 export interface InterfaceSettingsTabProps {
     currentCodeHighlightEnabled: boolean;
@@ -22,8 +21,6 @@ export interface InterfaceSettingsTabProps {
     onToggleShowProcessingIndicators: () => void;
     currentShowAiFunctionCallAttachments: boolean; // New prop
     onToggleShowAiFunctionCallAttachments: () => void; // New prop
-    currentTheme: ThemeName; // ADDED: New prop for theme
-    onThemeChange: (theme: ThemeName) => void; // ADDED: New prop for theme change handler
     currentTheme: ThemeName; // ADDED: New prop for theme
     onThemeChange: (theme: ThemeName) => void; // ADDED: New prop for theme change handler
 }
