@@ -2,8 +2,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { PrismAsyncLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import RSHLightAsync from 'react-syntax-highlighter/dist/esm/light-async';
-import { vscDarkPlus, solarizedlight } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Corrected: Imported github from Prism styles
-import github from 'react-syntax-highlighter/dist/cjs/styles/hljs/github'; // Import github light theme
+import { vscDarkPlus, solarizedlight, github } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Corrected: Imported github from Prism styles
+// Removed: import github from 'react-syntax-highlighter/dist/cjs/styles/hljs/github'; // This was causing the conflict
 import { IoCopyOutline, IoCheckmarkDoneOutline } from 'react-icons/io5';
 
 import jsx from 'react-syntax-highlighter/dist/esm/languages/prism/jsx';
