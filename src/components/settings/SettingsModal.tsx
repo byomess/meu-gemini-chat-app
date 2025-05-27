@@ -113,6 +113,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
         useState<boolean>(settings.hideNavigation);
     const [currentShowProcessingIndicatorsState, setCurrentShowProcessingIndicatorsState] =
         useState<boolean>(settings.showProcessingIndicators);
+    const [currentShowAiFunctionCallAttachments, setCurrentShowAiFunctionCallAttachments] = // ADDED: New state for AI function call attachments
+        useState<boolean>(settings.showAiFunctionCallAttachments);
 
     const defaultModelConfigValues: GeminiModelConfig = useMemo(() => {
         const defaultFirstModel =
@@ -154,6 +156,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
             setCurrentAttachmentsEnabled(settings.enableAttachments);
             setCurrentHideNavigation(settings.hideNavigation);
             setCurrentShowProcessingIndicatorsState(settings.showProcessingIndicators);
+            setCurrentShowAiFunctionCallAttachments(settings.showAiFunctionCallAttachments); // ADDED: Sync new setting
             setCurrentCustomPersonalityPrompt(settings.customPersonalityPrompt || "");
 
             const currentSettingsSafety = settings.geminiModelConfig?.safetySettings;
@@ -241,6 +244,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
         setCurrentShowProcessingIndicatorsState((prev) => !prev);
     };
 
+    const handleToggleShowAiFunctionCallAttachmentsForTab = () => { // ADDED: New handler for AI function call attachments
+        setCurrentShowAiFunctionCallAttachments((prev) => !prev);
+    };
+
     const handleSaveAllSettings = () => {
         // Validações
         if (localModelConfig.temperature < 0 || localModelConfig.temperature > 2) {
@@ -302,6 +309,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
             enableAttachments: currentAttachmentsEnabled,
             hideNavigation: currentHideNavigation,
             showProcessingIndicators: currentShowProcessingIndicatorsState, // Save new setting
+            showAiFunctionCallAttachments: currentShowAiFunctionCallAttachments, // ADDED: Save new setting
         }));
         showDialog({ title: "Sucesso", message: "Configurações salvas com sucesso!", type: "alert" });
         // onClose(); // Opcional: fechar o modal de configurações após salvar
@@ -513,10 +521,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
                                                                             onToggleHideNavigation={handleToggleHideNavigationForTab}
                                                                             currentShowProcessingIndicators={currentShowProcessingIndicatorsState}
                                                                             onToggleShowProcessingIndicators={handleToggleShowProcessingIndicatorsForTab}
-                                                                            currentShowAiFunctionCallAttachments={false}
-                                                                            onToggleShowAiFunctionCallAttachments={function (): void {
-                                                                                throw new Error("Function not implemented.");
-                                                                            } }                                                                        />
+                                                                            currentShowAiFunctionCallAttachments={currentShowAiFunctionCallAttachments} // UPDATED: Pass new state
+                                                                            onToggleShowAiFunctionCallAttachments={handleToggleShowAiFunctionCallAttachmentsForTab} // UPDATED: Pass new handler
+                                                                        />
                                                                     )}
                                                                     {tab.id === "memories" && (
                                                                         <MemoriesSettingsTab />
