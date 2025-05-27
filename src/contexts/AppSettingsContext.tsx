@@ -79,18 +79,21 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
             let needsUpdate = false;
             let currentSafetySettings = settings.geminiModelConfig.safetySettings;
 
-            if (!currentSafetySettings || currentSafetySettings.length !== defaultSafetySettings.length) {
-                currentSafetySettings = defaultSafetySettings;
+            // Check if all categories defined in defaultSafetySettings are present in currentSafetySettings
+            const allCategoriesPresent = defaultSafetySettings.every(defaultSetting =>
+                currentSafetySettings && currentSafetySettings.find(s => s.category === defaultSetting.category)
+            );
+
+            if (!allCategoriesPresent) {
+                // If not all default categories are present, then reset to the context's defaultSafetySettings.
+                // This ensures a baseline of safety categories is always configured.
+                // console.log("AppSettingsContext: Resetting safety settings to default due to missing categories.");
+                currentSafetySettings = [...defaultSafetySettings.map(s => ({...s}))]; // Ensure new array and objects
                 needsUpdate = true;
-            } else {
-                for (const defaultSetting of defaultSafetySettings) {
-                    if (!currentSafetySettings.find(s => s.category === defaultSetting.category)) {
-                        currentSafetySettings = defaultSafetySettings;
-                        needsUpdate = true;
-                        break;
-                    }
-                }
             }
+            // If allCategoriesPresent is true, we assume the existing currentSafetySettings
+            // (potentially from configUrl) are intentional, even if thresholds differ from context's defaults.
+            // No 'else' block that forces needsUpdate = true based on threshold differences alone.
 
             if (needsUpdate) {
                 setSettings(prevSettings => ({
