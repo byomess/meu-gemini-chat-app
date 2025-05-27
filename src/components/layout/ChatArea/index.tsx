@@ -10,9 +10,9 @@ import { ScrollToBottomButton } from './ScrollToBottomButton'
 import { WelcomeDisplay } from './WelcomeDisplay'
 import { ApiKeyMissingDisplay } from './ApiKeyMissingDisplay'
 import { NoMessagesDisplay } from './NoMessagesDisplay'
-import { useDialog } from '../../../contexts/DialogContext' // NEW: Import useDialog
-import TextInput from '../../common/TextInput' // NEW: Import TextInput for search
-import { IoCloseOutline } from 'react-icons/io5' // NEW: Import icon for closing search
+import { useDialog } from '../../../contexts/DialogContext'
+import TextInput from '../../common/TextInput'
+import { IoCloseOutline } from 'react-icons/io5'
 
 interface ChatAreaProps {
     onOpenMobileSidebar: () => void;
@@ -23,18 +23,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
     const {
         activeConversation,
         activeConversationId,
-        clearMessagesInConversation, // NEW: Destructure clearMessagesInConversation
+        clearMessagesInConversation,
     } = useConversations()
     const { settings } = useAppSettings()
     const isMobile = useIsMobile()
-    const { showDialog } = useDialog(); // NEW: Use the dialog hook
+    const { showDialog } = useDialog();
 
     const chatContainerRef = useRef<HTMLDivElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [isAtBottom, setIsAtBottom] = useState(true);
-    const [isSearchActive, setIsSearchActive] = useState(false); // NEW: State for search active
-    const [searchTerm, setSearchTerm] = useState(''); // NEW: State for search term
+    const [isSearchActive, setIsSearchActive] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const messages = activeConversation?.messages || []
     const conversationTitle = activeConversation?.title || 'Chat'
@@ -138,7 +138,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
     const logoSrc = isAulappDomain ? '/logo-aulapp.svg' : '/logo-loox.png';
     const logoAlt = isAulappDomain ? 'Logo Aulapp' : 'Logo Loox';
 
-    // NEW: Handle Clear Chat
+    // Handle Clear Chat
     const handleClearChat = useCallback(() => {
         if (!activeConversationId) return;
 
@@ -154,7 +154,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
         });
     }, [activeConversationId, clearMessagesInConversation, showDialog]);
 
-    // NEW: Handle Search Messages
+    // Handle Search Messages
     const handleSearchMessages = useCallback(() => {
         setIsSearchActive(prev => !prev);
         if (isSearchActive) { // If closing search, clear term
@@ -162,7 +162,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
         }
     }, [isSearchActive]);
 
-    // NEW: Filter messages based on search term
+    // Filter messages based on search term
     const filteredMessages = messages.filter(msg =>
         searchTerm === '' || (msg.text && msg.text.toLowerCase().includes(searchTerm.toLowerCase()))
     );
@@ -176,8 +176,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                 isIncognito={isIncognito}
                 conversationTitle={conversationTitle}
                 googleDriveSyncStatus={settings.googleDriveSyncStatus}
-                onClearChat={handleClearChat} // NEW: Pass clear chat handler
-                onSearchMessages={handleSearchMessages} // NEW: Pass search messages handler
+                onClearChat={handleClearChat}
+                onSearchMessages={handleSearchMessages}
             />
 
             <ScrollToBottomButton
@@ -185,29 +185,36 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                 onClick={scrollToBottom}
             />
 
-            {/* NEW: Search Input */}
+            {/* Search Input and Results Count */}
             {isSearchActive && (
-                <div className="px-3 md:px-4 py-2 bg-[var(--color-chat-area-bg)] border-b border-[var(--color-chat-header-border)] flex items-center gap-2">
-                    <TextInput
-                        id="search-messages"
-                        name="search-messages"
-                        placeholder="Buscar mensagens..."
-                        value={searchTerm}
-                        onChange={setSearchTerm}
-                        type="text"
-                        className="flex-grow"
-                    />
-                    <button
-                        onClick={() => {
-                            setSearchTerm('');
-                            setIsSearchActive(false);
-                        }}
-                        className="p-1 text-[var(--color-mobile-menu-button-text)] hover:text-[var(--color-mobile-menu-button-hover-text)]"
-                        title="Fechar busca"
-                        aria-label="Fechar busca"
-                    >
-                        <IoCloseOutline size={24} />
-                    </button>
+                <div className="px-3 md:px-4 py-2 bg-[var(--color-chat-area-bg)] border-b border-[var(--color-chat-header-border)]">
+                    <div className="flex items-center gap-2 mb-2"> {/* Added mb-2 for spacing */}
+                        <TextInput
+                            id="search-messages"
+                            name="search-messages"
+                            placeholder="Buscar mensagens..."
+                            value={searchTerm}
+                            onChange={setSearchTerm}
+                            type="text"
+                            className="flex-grow"
+                        />
+                        <button
+                            onClick={() => {
+                                setSearchTerm('');
+                                setIsSearchActive(false);
+                            }}
+                            className="p-1 text-[var(--color-mobile-menu-button-text)] hover:text-[var(--color-mobile-menu-button-hover-text)]"
+                            title="Fechar busca"
+                            aria-label="Fechar busca"
+                        >
+                            <IoCloseOutline size={24} />
+                        </button>
+                    </div>
+                    {searchTerm !== '' && (
+                        <div className="text-sm text-[var(--color-gray-500)]"> {/* Using a gray color for the count */}
+                            {filteredMessages.length} {filteredMessages.length === 1 ? 'ocorrência' : 'ocorrências'} encontrada{filteredMessages.length === 1 ? '' : 's'}.
+                        </div>
+                    )}
                 </div>
             )}
 
