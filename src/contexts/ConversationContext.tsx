@@ -48,6 +48,7 @@ interface ConversationContextType {
     removeMessageById: (conversationId: string, messageId: string) => void;
     removeMessagesAfterId: (conversationId: string, messageId: string) => Conversation | null;
     replaceAllConversations: (newConversations: Conversation[], source?: string) => void; // ADDED
+    clearMessagesInConversation: (conversationId: string) => void; // ADDED
 }
 
 const ConversationContext = createContext<ConversationContextType | undefined>(undefined);
@@ -259,6 +260,17 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
     }, [setAllConversations, activeId, setActiveId]);
 
+    const clearMessagesInConversation = useCallback((conversationId: string) => {
+        setAllConversations(prevConvos =>
+            prevConvos.map(c =>
+                c.id === conversationId
+                    ? { ...c, messages: [], updatedAt: new Date() }
+                    : c
+            ).sort(sortByUpdatedAtDesc)
+        );
+        lastConversationChangeSourceRef.current = 'user'; // Clearing messages is a user action
+    }, [setAllConversations]);
+
 
     // The useEffect hook for clearing renderIntervalRef is removed as it's no longer needed.
 
@@ -299,6 +311,7 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
             removeMessageById,
             removeMessagesAfterId,
             replaceAllConversations, // ADDED
+            clearMessagesInConversation, // ADDED
         }}>
             {children}
         </ConversationContext.Provider>

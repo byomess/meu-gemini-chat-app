@@ -10,6 +10,9 @@ import { ScrollToBottomButton } from './ScrollToBottomButton'
 import { WelcomeDisplay } from './WelcomeDisplay'
 import { ApiKeyMissingDisplay } from './ApiKeyMissingDisplay'
 import { NoMessagesDisplay } from './NoMessagesDisplay'
+import { useDialog } from '../../../contexts/DialogContext' // NEW: Import useDialog
+import TextInput from '../../common/TextInput' // NEW: Import TextInput for search
+import { IoCloseOutline } from 'react-icons/io5' // NEW: Import icon for closing search
 
 interface ChatAreaProps {
     onOpenMobileSidebar: () => void;
@@ -20,14 +23,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
     const {
         activeConversation,
         activeConversationId,
+        clearMessagesInConversation, // NEW: Destructure clearMessagesInConversation
     } = useConversations()
     const { settings } = useAppSettings()
     const isMobile = useIsMobile()
+    const { showDialog } = useDialog(); // NEW: Use the dialog hook
 
     const chatContainerRef = useRef<HTMLDivElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [isAtBottom, setIsAtBottom] = useState(true);
+    const [isSearchActive, setIsSearchActive] = useState(false); // NEW: State for search active
+    const [searchTerm, setSearchTerm] = useState(''); // NEW: State for search term
 
     const messages = activeConversation?.messages || []
     const conversationTitle = activeConversation?.title || 'Chat'
@@ -131,6 +138,35 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
     const logoSrc = isAulappDomain ? '/logo-aulapp.svg' : '/logo-loox.png';
     const logoAlt = isAulappDomain ? 'Logo Aulapp' : 'Logo Loox';
 
+    // NEW: Handle Clear Chat
+    const handleClearChat = useCallback(() => {
+        if (!activeConversationId) return;
+
+        showDialog({
+            title: 'Limpar Chat',
+            message: 'Tem certeza que deseja limpar todas as mensagens deste chat? Esta ação não pode ser desfeita.',
+            confirmText: 'Limpar',
+            cancelText: 'Cancelar',
+            onConfirm: () => {
+                clearMessagesInConversation(activeConversationId);
+            },
+            type: 'confirm',
+        });
+    }, [activeConversationId, clearMessagesInConversation, showDialog]);
+
+    // NEW: Handle Search Messages
+    const handleSearchMessages = useCallback(() => {
+        setIsSearchActive(prev => !prev);
+        if (isSearchActive) { // If closing search, clear term
+            setSearchTerm('');
+        }
+    }, [isSearchActive]);
+
+    // NEW: Filter messages based on search term
+    const filteredMessages = messages.filter(msg =>
+        searchTerm === '' || (msg.text && msg.text.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
     return (
         <main className="flex flex-col h-screen relative text-[var(--color-chat-area-text)] bg-[var(--color-chat-area-bg)]">
 
@@ -140,12 +176,40 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                 isIncognito={isIncognito}
                 conversationTitle={conversationTitle}
                 googleDriveSyncStatus={settings.googleDriveSyncStatus}
+                onClearChat={handleClearChat} // NEW: Pass clear chat handler
+                onSearchMessages={handleSearchMessages} // NEW: Pass search messages handler
             />
 
             <ScrollToBottomButton
                 isVisible={showFloatingButton}
                 onClick={scrollToBottom}
             />
+
+            {/* NEW: Search Input */}
+            {isSearchActive && (
+                <div className="px-3 md:px-4 py-2 bg-[var(--color-chat-area-bg)] border-b border-[var(--color-chat-header-border)] flex items-center gap-2">
+                    <TextInput
+                        id="search-messages"
+                        name="search-messages"
+                        placeholder="Buscar mensagens..."
+                        value={searchTerm}
+                        onChange={setSearchTerm}
+                        type="text"
+                        className="flex-grow"
+                    />
+                    <button
+                        onClick={() => {
+                            setSearchTerm('');
+                            setIsSearchActive(false);
+                        }}
+                        className="p-1 text-[var(--color-mobile-menu-button-text)] hover:text-[var(--color-mobile-menu-button-hover-text)]"
+                        title="Fechar busca"
+                        aria-label="Fechar busca"
+                    >
+                        <IoCloseOutline size={24} />
+                    </button>
+                </div>
+            )}
 
             <div
                 ref={chatContainerRef}
@@ -160,11 +224,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                     />
                 ) : showApiKeyMissing ? (
                     <ApiKeyMissingDisplay />
-                ) : messages.length === 0 ? (
+                ) : (isSearchActive && filteredMessages.length === 0 && searchTerm !== '') ? (
+                    <div className="flex flex-col items-center justify-center h-full text-[var(--color-no-messages-text-main)]">
+                        <p>Nenhuma mensagem encontrada para "{searchTerm}".</p>
+                    </div>
+                ) : (messages.length === 0 && !isSearchActive) ? (
                     <NoMessagesDisplay />
                 ) : (
                     <div className="space-y-4 sm:space-y-5 w-full">
-                        {messages.map(msg => (
+                        {filteredMessages.map(msg => (
                             <MessageBubble key={msg.id} message={msg} conversationId={activeConversationId!} />
                         ))}
                         <div ref={messagesEndRef} />
