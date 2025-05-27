@@ -1,84 +1,78 @@
 .theme-shades-of-purple {
-  /* Base Colors - Shades of Purple Theme (Updated) */
-  --color-gray-50: #504D7A;   /* Lighter background elements */
-  --color-gray-100: #353265;  /* Slightly lighter than main background, hover effects */
-  --color-gray-200: #454270;  /* AI Message Bubble BG, secondary button BG (distinct from sidebar) */
-  --color-gray-300: #555378;  /* Borders, icons, disabled elements */
-  --color-gray-400: #7E7AA2;  /* Muted purple for less important text, placeholders, some icons */
-  --color-gray-500: #9E9AA2;  /* Secondary text */
-  --color-gray-600: #D9D7F1;  /* General text (SoP Foreground) */
-  --color-gray-700: #D9D7F1;  /* Brightest text / Headings (SoP Foreground) */
-  --color-gray-800: #3A3860;  /* Sidebar BG, Input Container BG, Modal BG */
-  --color-gray-900: #2D2A55;  /* Main Chat Area BG (SoP Background) */
+  --color-gray-50: #504D7A;
+  --color-gray-100: #353265;
+  --color-gray-200: #454270;
+  --color-gray-300: #555378;
+  --color-gray-400: #7E7AA2;
+  --color-gray-500: #9E9AA2;
+  --color-gray-600: #D9D7F1;
+  --color-gray-700: #D9D7F1;
+  --color-gray-800: #3A3860;
+  --color-gray-900: #2D2A55;
 
-  /* Accent Colors from Shades of Purple (Updated) */
-  --color-pink-50: #4D2C3D; /* Muted pink/red for backgrounds */
-  --color-red-50: #4D2C3D; /* Error bubble background */
-  --color-red-100: #5C2D2D; /* Message actions delete hover bg */
-  --color-red-200: #FF79C6; /* SoP Pink - for text on dark red bg */
-  --color-red-300: #FF79C6; /* SoP Pink - Error bubble border */
-  --color-red-500: #FF79C6; /* SoP Pink - Error text, icons */
-  --color-red-600: #F24470; /* Slightly darker Pink - Error message text, danger button bg */
-  --color-red-700: #D9D7F1; /* Error bubble text (light on pink) */
-  --color-red-800: #E0305F; /* Darker Pink - Danger button active bg */
+  --color-pink-50: #4D2C3D;
+  --color-red-50: #4D2C3D;
+  --color-red-100: #5C2D2D;
+  --color-red-200: #FF79C6;
+  --color-red-300: #FF79C6;
+  --color-red-500: #FF79C6;
+  --color-red-600: #F24470;
+  --color-red-700: #D9D7F1;
+  --color-red-800: #E0305F;
 
-  --color-yellow-50: #54492E; /* Aborted bubble background (muted yellow) */
-  --color-yellow-400: #FFCA28; /* SoP Bright Yellow - Aborted bubble border */
-  --color-yellow-600: #FFCA28; /* SoP Bright Yellow - Aborted message text */
-  --color-yellow-700: #2D2A55; /* Aborted bubble text (dark on yellow) */
+  --color-yellow-50: #54492E;
+  --color-yellow-400: #FFCA28;
+  --color-yellow-600: #FFCA28;
+  --color-yellow-700: #2D2A55;
 
-  --color-indigo-50: #454270; /* Function bubble background (matches gray-200) */
-  --color-indigo-200: #8BE9FD; /* SoP Bright Cyan - Function bubble border */
-  --color-indigo-400: #8BE9FD; /* SoP Bright Cyan - Function avatar gradient from */
-  --color-indigo-600: #D9D7F1; /* Foreground - Function response text */
-  --color-indigo-700: #B392F0; /* SoP Bold Purple - Function bubble text, function response name */
+  --color-indigo-50: #454270;
+  --color-indigo-200: #8BE9FD;
+  --color-indigo-400: #8BE9FD;
+  --color-indigo-600: #D9D7F1;
+  --color-indigo-700: #B392F0;
 
-  --color-purple-500: #B392F0; /* SoP Bold Purple - Default AI avatar gradient to, function avatar gradient to */
-  --color-purple-600: #B392F0; /* SoP Bold Purple - Memory actions heading text */
+  --color-purple-500: #B392F0;
+  --color-purple-600: #B392F0;
 
-  --color-amber-50: #4D3C1D; /* Function call request bg (muted orange) */
-  --color-amber-200: #FF9D00; /* Orange - Function call request border */
-  --color-amber-600: #FF9D00; /* Orange - Function call request icon */
-  --color-amber-700: #2D2B55; /* Function call request text (dark on orange) */
-  --color-amber-800: #FF9D00; /* Orange - Function call request name */
+  --color-amber-50: #4D3C1D;
+  --color-amber-200: #FF9D00;
+  --color-amber-600: #FF9D00;
+  --color-amber-700: #2D2B55;
+  --color-amber-800: #FF9D00;
 
-  --color-green-500: #50FA7B; /* SoP Bright Green - Floating button autoscroll from, copied icon */
-  --color-emerald-600: #42E069; /* Lighter Green - Floating button autoscroll to */
+  --color-green-500: #50FA7B;
+  --color-emerald-600: #42E069;
 
-  --color-orange-600: #FF9D00; /* SoP Orange - API key missing text/icon */
+  --color-orange-600: #FF9D00;
 
-  --color-white: #D9D7F1;    /* SoP Foreground */
-  --color-black: #2D2A55;    /* SoP Background (darkest) */
+  --color-white: #D9D7F1;
+  --color-black: #2D2A55;
 
-  /* Custom Primary Color - Shades of Purple Primary Purple (Updated) */
-  --color-primary: #B392F0;       /* SoP Bold Purple */
-  --color-primary-dark: #9378D0;  /* Darker SoP Bold Purple */
+  --color-primary: #B392F0;
+  --color-primary-dark: #9378D0;
 
-  /* New: Body background and text colors for this theme */
   --color-body-bg: var(--color-gray-900);
-  --color-body-text: var(--color-white); /* Uses new --color-white */
+  --color-body-text: var(--color-white);
 
-  /* Semantic Colors */
   --color-sidebar-bg: var(--color-gray-800);
-  --color-sidebar-text: var(--color-gray-500); /* Uses new gray-500 */
+  --color-sidebar-text: var(--color-gray-500);
   --color-sidebar-border: var(--color-gray-300);
   --color-sidebar-heading-text: var(--color-gray-500);
 
-  --color-convo-item-text: var(--color-gray-500); /* Uses new gray-500 */
+  --color-convo-item-text: var(--color-gray-500);
   --color-convo-item-hover-bg: var(--color-gray-200);
-  --color-convo-item-hover-text: var(--color-white); /* Uses new white */
+  --color-convo-item-hover-text: var(--color-white);
   --color-convo-item-active-bg: var(--color-primary);
-  --color-convo-item-active-text: var(--color-black); /* Text on Primary Purple - uses new black */
+  --color-convo-item-active-text: var(--color-black);
   --color-convo-item-edit-bg: var(--color-gray-200);
-  --color-convo-item-edit-text: var(--color-white); /* Uses new white */
+  --color-convo-item-edit-text: var(--color-white);
   --color-convo-item-edit-border: color-mix(in srgb, var(--color-primary) 70%, transparent);
   --color-convo-item-edit-focus-border: var(--color-primary);
-  --color-convo-item-icon: var(--color-gray-400); /* Uses new gray-400 */
-  --color-convo-item-hover-icon: var(--color-white); /* Uses new white */
-  --color-convo-item-active-icon: var(--color-black); /* Icon on Primary Purple - uses new black */
+  --color-convo-item-icon: var(--color-gray-400);
+  --color-convo-item-hover-icon: var(--color-white);
+  --color-convo-item-active-icon: var(--color-black);
 
-  /* Incognito Chat Item Styles */
-  --color-convo-item-incognito-bg: var(--color-gray-100); /* Slightly different background */
+  --color-convo-item-incognito-bg: var(--color-gray-100);
   --color-convo-item-incognito-text: var(--color-gray-400);
   --color-convo-item-incognito-icon: var(--color-gray-300);
   --color-convo-item-incognito-hover-bg: var(--color-gray-200);
@@ -94,16 +88,16 @@
   --color-convo-item-active-actions-bg: color-mix(in srgb, var(--color-gray-800) 60%, transparent);
   --color-convo-item-active-actions-hover-bg: color-mix(in srgb, var(--color-gray-800) 80%, transparent);
   --color-convo-item-active-actions-button-hover-bg: color-mix(in srgb, var(--color-primary) 40%, transparent);
-  --color-convo-item-actions-icon: var(--color-gray-400); /* Uses new gray-400 */
+  --color-convo-item-actions-icon: var(--color-gray-400);
   --color-convo-item-actions-hover-icon: var(--color-convo-item-actions-icon);
-  --color-convo-item-actions-delete-hover-icon: var(--color-red-500); /* Uses new red-500 */
-  --color-convo-item-active-actions-icon: var(--color-black); /* Uses new black */
-  --color-convo-item-active-actions-delete-hover-icon: var(--color-red-500); /* Uses new red-500 */
+  --color-convo-item-actions-delete-hover-icon: var(--color-red-500);
+  --color-convo-item-active-actions-icon: var(--color-black);
+  --color-convo-item-active-actions-delete-hover-icon: var(--color-red-500);
 
-  --color-settings-button-text: var(--color-gray-500); /* Uses new gray-500 */
+  --color-settings-button-text: var(--color-gray-500);
   --color-settings-button-hover-bg: var(--color-gray-200);
-  --color-settings-button-hover-text: var(--color-white); /* Uses new white */
-  --color-settings-button-icon: var(--color-gray-400); /* Uses new gray-400 */
+  --color-settings-button-hover-text: var(--color-white);
+  --color-settings-button-icon: var(--color-gray-400);
   --color-settings-button-hover-icon: var(--color-primary);
 
   --color-mobile-close-button-bg: var(--color-gray-100);
@@ -116,14 +110,13 @@
   --color-focus-ring: var(--color-primary);
   --color-focus-ring-offset: var(--color-gray-900);
 
-  /* Message Bubble Colors */
   --color-message-bubble-user-bg: var(--color-primary);
-  --color-message-bubble-user-text: var(--color-black); /* Uses new black */
-  --color-message-bubble-ai-bg: var(--color-gray-200); /* Uses new gray-200 */
-  --color-message-bubble-ai-text: var(--color-white); /* Uses new white */
-  --color-message-bubble-ai-border: var(--color-gray-300); /* Uses new gray-300 */
-  --color-message-bubble-function-bg: var(--color-indigo-50); /* Uses new indigo-50 */
-  --color-message-bubble-function-text: var(--color-indigo-700); /* Uses new indigo-700 */
+  --color-message-bubble-user-text: var(--color-black);
+  --color-message-bubble-ai-bg: var(--color-gray-200);
+  --color-message-bubble-ai-text: var(--color-white);
+  --color-message-bubble-ai-border: var(--color-gray-300);
+  --color-message-bubble-function-bg: var(--color-indigo-50);
+  --color-message-bubble-function-text: var(--color-indigo-700);
   --color-message-bubble-function-border: var(--color-indigo-200);
   --color-message-bubble-error-bg: var(--color-red-50);
   --color-message-bubble-error-border: var(--color-red-300);
@@ -135,7 +128,6 @@
   --color-message-bubble-loading-bg: var(--color-gray-100);
   --color-message-bubble-loading-border: var(--color-gray-300);
 
-  /* Message Bubble Edit State */
   --color-message-bubble-edit-border: color-mix(in srgb, var(--color-primary) 70%, transparent);
   --color-message-bubble-user-edit-bg: var(--color-input-form-bg);
   --color-message-bubble-ai-edit-bg: var(--color-input-form-bg);
@@ -148,7 +140,6 @@
   --color-message-bubble-ai-edit-scrollbar-thumb: var(--color-scrollbar-thumb);
   --color-message-bubble-ai-edit-scrollbar-track: var(--color-scrollbar-track);
 
-  /* Message Bubble Edit Buttons */
   --color-message-bubble-user-edit-button-text: var(--color-gray-400);
   --color-message-bubble-user-edit-button-hover-text: var(--color-white);
   --color-message-bubble-user-edit-button-hover-bg: color-mix(in srgb, var(--color-primary) 70%, transparent);
@@ -156,55 +147,49 @@
   --color-message-bubble-ai-edit-button-hover-text: var(--color-gray-600);
   --color-message-bubble-ai-edit-button-hover-bg: color-mix(in srgb, var(--color-gray-100) 70%, transparent);
 
-  /* Message Bubble Reprocess Icon */
   --color-message-bubble-reprocess-icon-bg: var(--color-gray-300);
   --color-message-bubble-reprocess-icon-text: var(--color-gray-800);
 
-  /* Attached Files */
   --color-attached-file-bg: var(--color-gray-100);
   --color-attached-file-border: var(--color-gray-300);
   --color-attached-file-generic-icon-bg: var(--color-gray-200);
   --color-attached-file-generic-icon: var(--color-gray-400);
   --color-attached-file-generic-name: var(--color-gray-500);
 
-  /* Function Call Request */
   --color-function-call-request-bg: var(--color-amber-50);
   --color-function-call-request-border: var(--color-amber-200);
   --color-function-call-request-text: var(--color-amber-700);
   --color-function-call-request-icon: var(--color-amber-600);
   --color-function-call-request-name: var(--color-amber-800);
 
-  /* Function Response */
   --color-function-response-text: var(--color-indigo-600);
   --color-function-response-name: var(--color-indigo-700);
 
-  /* Markdown/Prose Styling */
-  --color-inline-code-text: var(--color-red-500); /* SoP often uses pink for inline code */
+  --color-inline-code-text: var(--color-red-500);
   --color-inline-code-bg: var(--color-gray-100);
   --color-inline-code-border: var(--color-gray-300);
   --color-inline-code-loading-bg: var(--color-gray-100);
   --color-code-block-loading-bg: var(--color-gray-800);
   --color-code-block-loading-border: var(--color-gray-300);
-  --color-code-block-loading-text: var(--color-gray-500); /* Uses new gray-500 */
-  --color-prose-p-text: var(--color-gray-600); /* Uses new gray-600 for better readability */
-  --color-prose-headings-text: var(--color-white); /* Uses new white */
+  --color-code-block-loading-text: var(--color-gray-500);
+  --color-prose-p-text: var(--color-gray-600);
+  --color-prose-headings-text: var(--color-white);
   --color-link-text: var(--color-primary);
   --color-link-hover-text: var(--color-primary-dark);
-  --color-blockquote-border: var(--color-gray-300); /* Uses new gray-300 */
-  --color-blockquote-text: var(--color-gray-400); /* Uses new gray-400 */
-  --color-table-border: var(--color-gray-300); /* Uses new gray-300 */
+  --color-blockquote-border: var(--color-gray-300);
+  --color-blockquote-text: var(--color-gray-400);
+  --color-table-border: var(--color-gray-300);
   --color-table-head-bg: var(--color-gray-100);
-  --color-table-cell-border: var(--color-gray-300); /* Uses new gray-300 */
-  --color-table-header-text: var(--color-gray-600); /* Uses new gray-600 */
-  --color-table-cell-text: var(--color-gray-500); /* Uses new gray-500 */
-  --color-strong-text: var(--color-white); /* Uses new white */
-  --color-error-message-text: var(--color-red-600); /* Uses new red-600 */
-  --color-error-message-border: color-mix(in srgb, var(--color-red-300) 60%, transparent); /* Uses new red-300 */
-  --color-aborted-message-text: var(--color-yellow-600); /* Uses new yellow-600 */
+  --color-table-cell-border: var(--color-gray-300);
+  --color-table-header-text: var(--color-gray-600);
+  --color-table-cell-text: var(--color-gray-500);
+  --color-strong-text: var(--color-white);
+  --color-error-message-text: var(--color-red-600);
+  --color-error-message-border: color-mix(in srgb, var(--color-red-300) 60%, transparent);
+  --color-aborted-message-text: var(--color-yellow-600);
   --color-aborted-message-border: color-mix(in srgb, var(--color-yellow-400) 60%, transparent);
   --color-memory-actions-heading-text: var(--color-purple-600);
 
-  /* Message Actions Bubble */
   --color-message-actions-bg: color-mix(in srgb, var(--color-gray-800) 80%, transparent);
   --color-message-actions-border: color-mix(in srgb, var(--color-gray-300) 90%, transparent);
   --color-message-actions-button-text: var(--color-gray-400);
@@ -213,7 +198,6 @@
   --color-message-actions-delete-button-hover-text: var(--color-red-500);
   --color-message-actions-delete-button-hover-bg: var(--color-red-100);
 
-  /* Avatars */
   --color-default-ai-avatar-gradient-from: var(--color-purple-500);
   --color-default-ai-avatar-gradient-to: var(--color-primary);
   --color-function-role-avatar-gradient-from: var(--color-indigo-400);
@@ -221,48 +205,42 @@
   --color-user-avatar-gradient-from: var(--color-primary);
   --color-user-avatar-gradient-to: var(--color-primary-dark);
 
-  /* Message Input Colors */
   --color-input-container-border: var(--color-gray-300);
   --color-input-container-bg: var(--color-gray-800);
   --color-api-key-warning-text: var(--color-orange-600);
   --color-api-key-warning-strong-text: var(--color-orange-600);
 
-  /* New variables for MessageInputForm and related components */
   --color-input-form-bg: var(--color-gray-200);
   --color-input-form-border: var(--color-gray-300);
-  --color-input-text: var(--color-white); /* Uses new white */
-  --color-input-placeholder: var(--color-gray-400); /* Uses new gray-400 */
+  --color-input-text: var(--color-white);
+  --color-input-placeholder: var(--color-gray-400);
   
   --color-input-attachment-preview-bg: var(--color-gray-200);
   --color-input-attachment-preview-border: var(--color-gray-300);
 
-  /* Error display colors */
   --color-error-bg: var(--color-red-50);
   --color-error-border: var(--color-red-300);
   --color-error-text: var(--color-red-700);
 
-  /* Warning display colors */
   --color-warning-bg: var(--color-yellow-50);
   --color-warning-border: var(--color-yellow-400);
   --color-warning-text: var(--color-yellow-700);
 
-  /* AttachedFileItem colors */
   --color-attached-item-bg: var(--color-gray-200);
   --color-attached-item-generic-bg: var(--color-gray-100);
   --color-attached-item-generic-text: var(--color-white);
   --color-attached-item-icon: var(--color-gray-400);
   --color-attached-item-subtext: var(--color-gray-400);
 
-  /* Button Colors */
   --color-button-primary-bg: var(--color-primary);
   --color-button-primary-hover-bg: var(--color-primary-dark);
-  --color-button-primary-active-bg: #7A60CC; /* Slightly darker than primary-dark for active based on new primary */
-  --color-button-primary-text: var(--color-black); /* Uses new black */
+  --color-button-primary-active-bg: #7A60CC;
+  --color-button-primary-text: var(--color-black);
 
-  --color-button-secondary-bg: var(--color-gray-200); /* Uses new gray-200 */
-  --color-button-secondary-hover-bg: var(--color-gray-100); /* Uses new gray-100 */
-  --color-button-secondary-active-bg: var(--color-gray-50); /* Uses new gray-50 */
-  --color-button-secondary-text: var(--color-white); /* Uses new white */
+  --color-button-secondary-bg: var(--color-gray-200);
+  --color-button-secondary-hover-bg: var(--color-gray-100);
+  --color-button-secondary-active-bg: var(--color-gray-50);
+  --color-button-secondary-text: var(--color-white);
   --color-button-secondary-border: var(--color-gray-300);
   --color-button-focus-ring-secondary: var(--color-gray-400);
 
@@ -271,17 +249,16 @@
   --color-button-danger-active-bg: var(--color-red-800);
   --color-button-danger-text: var(--color-white);
 
-  --color-button-icon-text: var(--color-gray-400); /* Uses new gray-400 */
+  --color-button-icon-text: var(--color-gray-400);
   --color-button-icon-hover-text: var(--color-primary);
-  --color-button-icon-hover-bg: var(--color-gray-100); /* Uses new gray-100 */
-  --color-button-icon-active-text: var(--color-black); /* Uses new black */
-  --color-button-icon-active-bg: var(--color-gray-50); /* Uses new gray-50 */
+  --color-button-icon-hover-bg: var(--color-gray-100);
+  --color-button-icon-active-text: var(--color-black);
+  --color-button-icon-active-bg: var(--color-gray-50);
 
-  --color-button-ghost-text: var(--color-gray-500); /* Uses new gray-500 */
+  --color-button-ghost-text: var(--color-gray-500);
   --color-button-ghost-hover-bg: var(--color-gray-100);
   --color-button-ghost-active-bg: var(--color-gray-200);
 
-  /* CustomAudioPlayer Colors */
   --color-audio-player-bg: var(--color-gray-800);
   --color-audio-player-border: var(--color-gray-300);
   --color-audio-player-button-bg: var(--color-gray-100);
@@ -304,7 +281,6 @@
   --color-audio-player-error-border: var(--color-red-300);
   --color-audio-player-error-text: var(--color-red-700);
 
-  /* CodeBlock Colors */
   --color-code-block-wrapper-bg: var(--color-gray-800);
   --color-code-block-wrapper-border: var(--color-gray-300);
   --color-code-block-header-bg: var(--color-gray-100);
@@ -321,14 +297,12 @@
   --color-inline-code-text-alt: var(--color-indigo-200);
   --color-inline-code-bg-alt: var(--color-gray-100);
 
-  /* CustomDialog Colors */
   --color-dialog-overlay-bg: color-mix(in srgb, var(--color-black) 70%, transparent);
   --color-dialog-bg: var(--color-gray-800);
   --color-dialog-border: var(--color-gray-300);
   --color-dialog-title-text: var(--color-white);
   --color-dialog-message-text: var(--color-gray-500);
 
-  /* TextInput Colors */
   --color-text-input-label-text: var(--color-gray-500);
   --color-text-input-bg: var(--color-input-form-bg);
   --color-text-input-border: var(--color-input-form-border);
@@ -341,7 +315,6 @@
   --color-text-input-icon-hover: var(--color-gray-600);
   --color-text-input-label-icon: var(--color-gray-400);
 
-  /* Settings Modal & Tabs Colors */
   --color-settings-modal-overlay-bg: color-mix(in srgb, var(--color-black) 85%, transparent);
   --color-settings-modal-bg: var(--color-gray-800);
   --color-settings-modal-border: var(--color-gray-200);
@@ -352,28 +325,24 @@
   --color-settings-modal-close-button-hover-bg: var(--color-gray-200);
   --color-settings-modal-close-button-hover-text: var(--color-gray-600);
 
-  /* Settings Tabs Navigation */
   --color-settings-tab-nav-bg: var(--color-gray-800);
   --color-settings-tab-nav-border: var(--color-gray-200);
-  --color-settings-tab-item-text: var(--color-gray-500); /* Uses new gray-500 */
+  --color-settings-tab-item-text: var(--color-gray-500);
   --color-settings-tab-item-hover-bg: var(--color-gray-200);
   --color-settings-tab-item-active-bg: var(--color-primary);
-  --color-settings-tab-item-active-text: var(--color-black); /* Uses new black */
-  --color-settings-tab-item-icon: var(--color-gray-400); /* Uses new gray-400 */
+  --color-settings-tab-item-active-text: var(--color-black);
+  --color-settings-tab-item-icon: var(--color-gray-400);
 
-  /* Settings Content Area */
   --color-settings-content-bg: var(--color-gray-800);
   --color-settings-section-title-text: var(--color-white);
   --color-settings-section-description-text: var(--color-gray-400);
   --color-settings-section-border: var(--color-gray-200);
 
-  /* Toggle Switch */
   --color-toggle-switch-bg-off: var(--color-gray-300);
   --color-toggle-switch-bg-on: var(--color-primary);
   --color-toggle-switch-handle-bg: var(--color-white);
   --color-toggle-switch-handle-shadow: color-mix(in srgb, var(--color-black) 50%, transparent);
 
-  /* Range Slider */
   --color-range-slider-track-bg: var(--color-gray-300);
   --color-range-slider-fill-bg: var(--color-primary);
   --color-range-slider-thumb-bg: var(--color-white);
@@ -386,7 +355,6 @@
   --color-range-slider-thumb-bg-disabled: var(--color-gray-500);
   --color-range-slider-thumb-border-disabled: var(--color-gray-300);
 
-  /* Table/List items */
   --color-table-row-bg: var(--color-gray-200);
   --color-table-row-hover-bg: var(--color-gray-100);
   --color-table-row-border: var(--color-gray-300);
@@ -399,7 +367,6 @@
   --color-table-item-edit-text: var(--color-white);
   --color-table-item-edit-placeholder: var(--color-gray-400);
 
-  /* Function Calling Tab Cards */
   --color-function-card-name-text: var(--color-white);
   --color-function-card-description-text: var(--color-gray-500);
   --color-function-card-http-method-bg: var(--color-gray-100);
@@ -407,7 +374,6 @@
   --color-function-card-http-method-border: var(--color-gray-300);
   --color-function-card-endpoint-text: var(--color-gray-400);
 
-  /* Function Calling Tab (Edit State) */
   --color-function-param-schema-bg: var(--color-input-form-bg);
   --color-function-param-schema-border: var(--color-input-form-border);
   --color-function-param-schema-text: var(--color-input-text);
@@ -418,7 +384,6 @@
   --color-function-method-dropdown-text: var(--color-input-text);
   --color-function-method-dropdown-hover-bg: var(--color-gray-100);
 
-  /* Data Settings Tab */
   --color-data-import-export-bg: var(--color-gray-800);
   --color-data-import-export-border: var(--color-gray-300);
   --color-data-import-export-text: var(--color-gray-500);
@@ -430,19 +395,16 @@
   --color-data-drag-drop-file-text: var(--color-gray-500);
   --color-data-drag-drop-file-remove-icon: var(--color-red-500);
 
-  /* General Settings Tab */
   --color-general-settings-api-key-text: var(--color-input-text);
   --color-general-settings-api-key-placeholder: var(--color-input-placeholder);
   --color-general-settings-api-key-focus-border: var(--color-primary);
   --color-general-settings-api-key-bg: var(--color-input-form-bg);
   --color-general-settings-api-key-border: var(--color-input-form-border);
 
-  /* Interface Settings Tab */
   --color-interface-settings-avatar-preview-bg: var(--color-gray-100);
   --color-interface-settings-avatar-preview-border: var(--color-gray-300);
   --color-interface-settings-avatar-preview-text: var(--color-gray-400);
 
-  /* Model Settings Tab */
   --color-model-settings-range-label-text: var(--color-gray-500);
   --color-model-settings-range-value-text: var(--color-primary);
   --color-model-settings-range-input-bg: var(--color-gray-300);
@@ -455,29 +417,24 @@
   --color-settings-model-select-focus-border: var(--color-primary);
   --color-settings-model-select-option-hover-bg: var(--color-gray-100);
 
-  /* Chat Area Colors */
   --color-chat-area-bg: var(--color-gray-900);
   --color-chat-area-text: var(--color-white);
 
-  /* Chat Header */
   --color-chat-header-bg: color-mix(in srgb, var(--color-gray-800) 80%, transparent);
   --color-chat-header-border: var(--color-gray-300);
   --color-chat-header-icon: var(--color-gray-400);
   --color-chat-header-title: var(--color-white);
 
-  /* Mobile Menu Button (in header) */
   --color-mobile-menu-button-text: var(--color-gray-400);
   --color-mobile-menu-button-hover-text: var(--color-white);
 
-  /* Floating Scroll Button */
   --color-floating-button-shadow: color-mix(in srgb, var(--color-primary) 30%, transparent);
-  --color-floating-button-text: var(--color-black); /* Uses new black */
+  --color-floating-button-text: var(--color-black);
   --color-floating-button-autoscroll-from: var(--color-green-500);
   --color-floating-button-autoscroll-to: var(--color-emerald-600);
   --color-floating-button-default-from: var(--color-primary);
   --color-floating-button-default-to: var(--color-primary-dark);
 
-  /* Welcome/Empty States */
   --color-welcome-text-main: var(--color-gray-500);
   --color-welcome-text-secondary: var(--color-gray-400);
   --color-api-key-missing-text: var(--color-orange-600);
@@ -485,17 +442,14 @@
   --color-no-messages-text-main: var(--color-gray-400);
   --color-no-messages-icon: var(--color-gray-400);
 
-  /* Scrollbar Colors */
   --color-scrollbar-track: var(--color-gray-900);
   --color-scrollbar-thumb: var(--color-gray-300);
   --color-scrollbar-thumb-hover: var(--color-gray-400);
 
-  /* Tooltip Colors */
   --color-tooltip-bg: var(--color-gray-200);
   --color-tooltip-text: var(--color-white);
   --color-tooltip-icon: var(--color-primary);
 
-  /* Dropdown Menu Colors */
   --color-dropdown-bg: var(--color-gray-800);
   --color-dropdown-border: var(--color-gray-300);
   --color-dropdown-item-text: var(--color-gray-500);
@@ -503,7 +457,6 @@
   --color-dropdown-item-hover-text: var(--color-white);
 }
 
-/* Scrollbar styles (mantendo os do loox.css por padrão) */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
