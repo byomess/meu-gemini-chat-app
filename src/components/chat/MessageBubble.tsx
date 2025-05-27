@@ -444,6 +444,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
     }
 
     const hasAnyContentForBubble = hasAttachedFiles || shouldRenderTextContent || showAITypingIndicator || functionCallPart || functionResponsePart || showActivityIndicator;
+
+    // Determine if attachments should be displayed based on sender and settings
+    const shouldDisplayAttachments = hasAttachedFiles && (isUser || settings.showAiFunctionCallAttachments);
     
     const userBubbleClasses = "bg-[var(--color-message-bubble-user-bg)] text-[var(--color-message-bubble-user-text)] shadow-md";
     const aiBubbleBaseClasses = "bg-[var(--color-message-bubble-ai-bg)] text-[var(--color-message-bubble-ai-text)] shadow-md border border-[var(--color-message-bubble-ai-border)]";
@@ -516,7 +519,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, conversationId }
                         )}
 
                         <div className={`flex flex-col w-full ${isMobile ? (isUser || isFunctionRole ? 'items-end' : 'items-start') : (isUser || isFunctionRole ? 'items-end' : 'items-start')}`}>
-                            {hasAttachedFiles && attachedFilesInfo && (
+                            {shouldDisplayAttachments && attachedFilesInfo && (
                                 <div className={`flex flex-wrap gap-2 mb-1.5 ${isUser || isFunctionRole ? 'justify-end' : 'justify-start'}`}>
                                     {attachedFilesInfo.map((fileInfo: AttachedFileInfo) => (
                                         <div key={fileInfo.id} className="bg-[var(--color-attached-file-bg)] border border-[var(--color-attached-file-border)] p-1.5 rounded-xl shadow-sm overflow-hidden max-w-[260px] sm:max-w-xs backdrop-blur-sm">
