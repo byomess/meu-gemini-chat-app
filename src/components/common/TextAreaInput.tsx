@@ -42,7 +42,9 @@ const TextAreaInput: React.FC<TextAreaInputProps> = ({
                 placeholder={placeholder}
                 disabled={disabled}
                 rows={rows}
-                className={`block w-full rounded-md border-0 py-1.5 bg-[var(--color-input-form-bg)] text-[var(--color-input-text)] shadow-sm ring-1 ring-inset ring-[var(--color-input-border)] placeholder:text-[var(--color-input-placeholder)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-input-focus-ring)] sm:text-sm sm:leading-6 transition-colors duration-200 ${inputClassName}`}
+                // Removed 'border-0' to allow inputClassName's border to apply correctly.
+                // Removed 'sm:text-sm sm:leading-6' to use a larger, more standard font size.
+                className={`block w-full rounded-md py-1.5 bg-[var(--color-input-form-bg)] text-[var(--color-input-text)] shadow-sm ring-1 ring-inset ring-[var(--color-input-border)] placeholder:text-[var(--color-input-placeholder)] focus:ring-2 focus:ring-inset focus:ring-[var(--color-input-focus-ring)] transition-colors duration-200 ${inputClassName}`}
             />
             {helperText && (
                 <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
