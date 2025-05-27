@@ -43,3 +43,8 @@ main {
     filter: none;
   }
 }
+
+/* Import theme files */
+@import "./themes/loox.css";
+@import "./themes/dracula-dark.css";
+@import "./themes/shades-of-purple.css";

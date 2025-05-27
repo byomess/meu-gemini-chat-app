@@ -51,7 +51,7 @@ export interface FunctionDeclaration {
 }
 
 // ADDED: Define ThemeName type
-export type ThemeName = 'loox' | 'aulapp' | 'dracula-dark' | 'solarized-light' | 'one-dark' | 'github-light';
+export type ThemeName = 'loox' | 'aulapp' | 'dracula-dark' | 'solarized-light' | 'one-dark' | 'github-light' | 'shades-of-purple';
 
 export interface AppSettings {
     apiKey: string;
