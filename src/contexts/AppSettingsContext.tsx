@@ -74,11 +74,20 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
         // Manage body class for themes.
         // The initial class is set by an inline script in index.html to prevent FOUC.
         // This effect handles subsequent theme changes during the app lifecycle.
-        const themesToRemove = ['theme-loox', 'theme-aulapp', 'theme-dracula-dark'];
-        document.body.classList.remove(...themesToRemove);
+        const THEMES_ON_BODY = ['theme-loox', 'theme-aulapp', 'theme-dracula-dark'];
+        const DARK_THEME_NAMES = ['loox', 'dracula-dark']; // Theme names that are dark
 
+        // Update body class
+        document.body.classList.remove(...THEMES_ON_BODY);
         if (settings.theme) {
             document.body.classList.add(`theme-${settings.theme}`);
+        }
+
+        // Update html class for dark mode
+        if (settings.theme && DARK_THEME_NAMES.includes(settings.theme)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
         }
     }, [settings.theme]);
 
