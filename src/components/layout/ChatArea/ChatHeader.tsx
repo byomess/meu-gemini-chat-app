@@ -65,13 +65,13 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             >
                 <button
                     onClick={onClearChat}
-                    className="block w-full text-left px-4 py-2 text-sm text-[var(--color-dropdown-item-text)] hover:bg-[var(--color-dropdown-item-hover-bg)] hover:text-[var(--color-dropdown-item-hover-text)]"
+                    // Removed specific styling classes, now handled by Dropdown component
                 >
                     Limpar chat
                 </button>
                 <button
                     onClick={onSearchMessages}
-                    className="block w-full text-left px-4 py-2 text-sm text-[var(--color-dropdown-item-text)] hover:bg-[var(--color-dropdown-item-hover-bg)] hover:text-[var(--color-dropdown-item-hover-text)]"
+                    // Removed specific styling classes, now handled by Dropdown component
                 >
                     Buscar mensagens
                 </button>

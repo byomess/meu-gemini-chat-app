@@ -94,6 +94,22 @@ const Dropdown: React.FC<DropdownProps> = ({
         };
     }, []);
 
+    // Default styling for dropdown items
+    const defaultItemClassName = `block w-full text-left px-4 py-2 text-sm
+                                  text-[var(--color-dropdown-item-text)]
+                                  hover:bg-[var(--color-dropdown-item-hover-bg)]
+                                  hover:text-[var(--color-dropdown-item-hover-text)]`.replace(/\s+/g, ' ').trim();
+
+    // Clone children to apply default item styling
+    const renderChildrenWithDefaultStyles = React.Children.map(children, child => {
+        if (React.isValidElement(child)) {
+            const existingClassName = child.props.className || '';
+            const newClassName = `${defaultItemClassName} ${existingClassName}`.trim();
+            return React.cloneElement(child, { className: newClassName });
+        }
+        return child;
+    });
+
     return (
         <div className={`relative ${className}`} ref={dropdownRef}>
             <div onClick={toggleDropdown} className="cursor-pointer">
@@ -109,7 +125,7 @@ const Dropdown: React.FC<DropdownProps> = ({
                         ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}
                     `}
                 >
-                    {children}
+                    {renderChildrenWithDefaultStyles}
                 </div>
             )}
         </div>

@@ -155,15 +155,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         >
             <Button
               variant="ghost"
-              className="w-full justify-start px-4 py-2 hover:bg-[var(--color-dropdown-item-hover-bg)] text-[var(--color-dropdown-item-text)] hover:text-[var(--color-dropdown-item-hover-text)]"
-              onClick={() => handleNewChatClick(false)}
+              // Removed specific styling classes, now handled by Dropdown component
             >
               <IoChatbubbleEllipsesOutline size={18} className="mr-2" /> Conversa Padrão
             </Button>
             <Button
               variant="ghost"
-              className="w-full justify-start px-4 py-2 hover:bg-[var(--color-dropdown-item-hover-bg)] text-[var(--color-dropdown-item-text)] hover:text-[var(--color-dropdown-item-hover-text)]"
-              onClick={() => handleNewChatClick(true)}
+              // Removed specific styling classes, now handled by Dropdown component
             >
               <GhostIcon size={18} className="mr-2" /> Conversa Incógnita
             </Button>
