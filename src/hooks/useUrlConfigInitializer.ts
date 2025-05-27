@@ -66,9 +66,10 @@ export function useUrlConfigInitializer() {
 
     useEffect(() => {
         const currentSearch = window.location.search;
-        console.log("useUrlConfigInitializer effect triggered. Dependencies: window.location.search, setSettings, replaceAllMemories.");
+        // The console.log for "effect triggered" will now reflect the actual dependencies.
+        // console.log("useUrlConfigInitializer effect triggered. Dependencies: window.location.search, setSettings, replaceAllMemories.");
 
-        if (!appSettingsContext) { // Keep original context checks for early exit if context itself is missing
+        if (!appSettingsContext) { 
             console.error("CRITICAL: AppSettingsContext not found in useUrlConfigInitializer.");
             return;
         }
@@ -77,23 +78,29 @@ export function useUrlConfigInitializer() {
             return;
         }
         
-        // Also check if the specific methods we depend on are available
         if (!setSettings) {
             console.error("CRITICAL: setSettings method not available from AppSettingsContext.");
             return;
         }
-        // replaceAllMemories is checked before use, but its presence in deps implies it should exist if memoryContext does.
+        // replaceAllMemories is checked before use if configToApply.memories is present.
+        // If replaceAllMemories were null and configToApply.memories existed, it would be a silent no-op for memories.
+        // For robustness, it could be checked here too if it's a strict dependency.
 
         const params = new URLSearchParams(currentSearch);
         const configUrl = params.get('configUrl');
         const functionDeclarationUrlEncoded = params.get('functionDeclarationUrlEncoded'); 
 
         if (!configUrl && !functionDeclarationUrlEncoded) {
-            console.log("No configUrl or functionDeclarationUrlEncoded query parameter found. Clearing states.");
+            // Only clear refs if they were potentially set by a previous run with a configUrl
+            if (fetchedUrlConfigDataRef.current || decodedFuncDeclDataRef.current) {
+                console.log("No configUrl or functionDeclarationUrlEncoded query parameter found. Clearing states and cached data.");
+                fetchedUrlConfigDataRef.current = null;
+                decodedFuncDeclDataRef.current = null;
+                // Optionally, reset parts of app settings if appropriate when config is removed.
+                // For now, just clearing local cache and loading states.
+            }
             setIsLoadingConfig(false);
             setConfigError(null);
-            fetchedUrlConfigDataRef.current = null;
-            decodedFuncDeclDataRef.current = null;
             return;
         }
 
@@ -101,12 +108,12 @@ export function useUrlConfigInitializer() {
             setIsLoadingConfig(true);
             let operationError: string | null = null; 
 
-            console.log("Starting processAndApply cycle for URL parameters.");
+            console.log("Starting processAndApply cycle for URL parameters:", currentSearch);
 
             try {
                 // --- Step 1: Fetch configUrl if new, changed, or not yet fetched ---
                 if (configUrl) {
-                    if (!fetchedUrlConfigDataRef.current || fetchedUrlConfigDataRef.current.url !== configUrl) {
+                    if (!fetchedUrlConfigDataRef.current || fetchedUrlUrlConfigDataRef.current.url !== configUrl) {
                         console.log(`Fetching configuration from configUrl: ${configUrl}`);
                         const response = await fetch(configUrl);
                         if (!response.ok) {
@@ -117,12 +124,14 @@ export function useUrlConfigInitializer() {
                         console.log("ConfigUrl data fetched and cached:", JSON.stringify(data, null, 2));
                         setConfigError(null); 
                     } else {
-                        console.log("Using cached configUrl data.");
+                        console.log("Using cached configUrl data for:", configUrl);
                     }
                 } else {
+                    // If configUrl is removed from query params, clear its cached data.
                     if (fetchedUrlConfigDataRef.current) {
-                        console.log("configUrl parameter removed, clearing cached data.");
+                        console.log("configUrl parameter removed, clearing cached configUrl data.");
                         fetchedUrlConfigDataRef.current = null;
+                        // Potentially reset settings derived from this configUrl if desired.
                     }
                 }
 
@@ -160,17 +169,20 @@ export function useUrlConfigInitializer() {
                         console.log("Using cached functionDeclarationUrlEncoded data.");
                     }
                 } else {
+                    // If functionDeclarationUrlEncoded is removed, clear its cached data.
                     if (decodedFuncDeclDataRef.current) {
-                        console.log("functionDeclarationUrlEncoded parameter removed, clearing cached data.");
+                        console.log("functionDeclarationUrlEncoded parameter removed, clearing cached function data.");
                         decodedFuncDeclDataRef.current = null;
+                        // Potentially update settings to remove this function declaration if desired.
                     }
                 }
 
                 // --- Step 3: Apply configurations from cached refs to the context ---
+                // This part will run even if data is from cache, to ensure settings are applied.
+                // The setSettings internal logic should prevent unnecessary updates if data is identical.
                 if (fetchedUrlConfigDataRef.current) {
                     const configToApply = fetchedUrlConfigDataRef.current.data;
                     console.log("Attempting to apply cached configUrl data to AppSettingsContext.");
-                    // setSettings is now from the outer scope, guaranteed by the effect's dependencies and checks
                     setSettings((prevSettings: AppSettings) => {
                         let changed = false;
                         const newAppSettings: AppSettings = { ...prevSettings };
@@ -271,6 +283,7 @@ export function useUrlConfigInitializer() {
                             return { id: mem.id || uuidv4(), content: mem.content, timestamp: timestampDate, sourceMessageId: mem.sourceMessageId };
                         }).filter(mem => mem !== null) as Memory[];
                         
+                        // Assuming replaceAllMemories is idempotent or handles existing memories appropriately.
                         replaceAllMemories(parsedMemories);
                         console.log("Memories applied from configUrl data:", parsedMemories.length, "memories.");
                     }
@@ -324,7 +337,7 @@ export function useUrlConfigInitializer() {
 
         processAndApply();
 
-    }, []);
+    }, [window.location.search, setSettings, replaceAllMemories, appSettingsContext, memoryContext]); // React to URL changes and context availability/methods.
 
     return { isLoadingConfig, configError };
 }
