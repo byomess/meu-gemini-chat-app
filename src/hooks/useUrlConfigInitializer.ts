@@ -113,7 +113,7 @@ export function useUrlConfigInitializer() {
             try {
                 // --- Step 1: Fetch configUrl if new, changed, or not yet fetched ---
                 if (configUrl) {
-                    if (!fetchedUrlConfigDataRef.current || fetchedUrlUrlConfigDataRef.current.url !== configUrl) {
+                    if (!fetchedUrlConfigDataRef.current || fetchedUrlConfigDataRef.current.url !== configUrl) {
                         console.log(`Fetching configuration from configUrl: ${configUrl}`);
                         const response = await fetch(configUrl);
                         if (!response.ok) {
