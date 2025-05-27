@@ -71,9 +71,35 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
     );
 
     useEffect(() => {
-        // MODIFIED: Remove all known theme classes before adding the new one
+        const themeId = 'dynamic-theme-stylesheet';
+        const themeMap: Record<ThemeName, string> = {
+            'loox': '/src/themes/loox.css', // Vite serves from public root, or src if processed
+            'aulapp': '/src/themes/aulapp.css',
+            'dracula-dark': '/src/themes/dracula-dark.css',
+        };
+
+        // Remove existing dynamic theme stylesheet if any
+        const existingLinkElement = document.getElementById(themeId);
+        if (existingLinkElement) {
+            existingLinkElement.remove();
+        }
+
+        // Add new theme stylesheet
+        if (settings.theme && themeMap[settings.theme]) {
+            const linkElement = document.createElement('link');
+            linkElement.id = themeId;
+            linkElement.rel = 'stylesheet';
+            linkElement.href = themeMap[settings.theme];
+            document.head.appendChild(linkElement);
+        }
+
+        // Manage body class for themes that might use it for direct styling
+        // or for components that check the body class.
         document.body.classList.remove('theme-loox', 'theme-aulapp', 'theme-dracula-dark');
-        document.body.classList.add(`theme-${settings.theme}`);
+        if (settings.theme) {
+            document.body.classList.add(`theme-${settings.theme}`);
+        }
+
     }, [settings.theme]);
 
     React.useEffect(() => {
