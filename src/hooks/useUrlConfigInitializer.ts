@@ -319,7 +319,7 @@ export function useUrlConfigInitializer() {
 
         processAndApply();
 
-    }, []); // Added appSettingsContext and memoryContext back for exhaustive-deps if linter complains about their direct usage for null checks, but primary drivers are search and stable methods.
+    }, [setSettings, replaceAllMemories, window.location.search]); // Added appSettingsContext and memoryContext back for exhaustive-deps if linter complains about their direct usage for null checks, but primary drivers are search and stable methods.
 
     return { isLoadingConfig, configError };
 }
