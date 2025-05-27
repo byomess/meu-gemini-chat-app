@@ -10,6 +10,7 @@ import {
 } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
 import type { Conversation } from '../../types';
+import Dropdown from '../common/Dropdown'; // Import the new Dropdown component
 
 // Import GhostIcon from lucide-react or similar if available, otherwise use a placeholder or another icon
 import { GhostIcon } from 'lucide-react'; // Example: if you have lucide-react installed
@@ -40,10 +41,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
   const [tempTitle, setTempTitle] = useState<string>('');
-  const [showNewChatOptions, setShowNewChatOptions] = useState(false);
-  const newChatButtonRef = useRef<HTMLButtonElement>(null);
-  const newChatOptionsRef = useRef<HTMLDivElement>(null);
-
 
   const sortedConversations = [...conversations]; 
 
@@ -99,23 +96,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const handleNewChatClick = useCallback((isIncognito: boolean = false) => {
     createNewConversation({ isIncognito });
-    setShowNewChatOptions(false); // Close options after selection
+    // No need to close options here, Dropdown component handles it
     if(isMobile && onSelectConversation) onSelectConversation();
   }, [createNewConversation, isMobile, onSelectConversation]);
-
-  // Close new chat options when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (newChatOptionsRef.current && !newChatOptionsRef.current.contains(event.target as Node) &&
-          newChatButtonRef.current && !newChatButtonRef.current.contains(event.target as Node)) {
-        setShowNewChatOptions(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   const baseClasses = `bg-[var(--color-sidebar-bg)] text-[var(--color-sidebar-text)] h-screen flex flex-col p-3 transition-all duration-300 ease-in-out shadow-xl`;
   
@@ -151,26 +134,25 @@ const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       <div className="mb-3 relative"> {/* Added relative for positioning options */}
-        <Button
-          ref={newChatButtonRef}
-          variant="primary"
-          className={`w-full !py-2.5 flex items-center justify-center space-x-2.5 rounded-lg
-                      text-sm font-semibold shadow-md hover:shadow-lg 
-                      focus:ring-offset-[var(--color-focus-ring-offset)] 
-                      transition-all duration-200 ease-in-out group/newConvo transform active:scale-[0.98]
-                      bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]`}
-          onClick={() => setShowNewChatOptions(!showNewChatOptions)} // Toggle options
-          title={isMobile ? "Nova Conversa" : ""}
-          aria-label="Nova Conversa"
+        <Dropdown
+            trigger={
+                <Button
+                    variant="primary"
+                    className={`w-full !py-2.5 flex items-center justify-center space-x-2.5 rounded-lg
+                                text-sm font-semibold shadow-md hover:shadow-lg 
+                                focus:ring-offset-[var(--color-focus-ring-offset)] 
+                                transition-all duration-200 ease-in-out group/newConvo transform active:scale-[0.98]
+                                bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]`}
+                    title={isMobile ? "Nova Conversa" : ""}
+                    aria-label="Nova Conversa"
+                >
+                    <IoAddCircleOutline size={22} className={'group-hover/newConvo:scale-110 group-hover/newConvo:rotate-90 transition-transform duration-300'} />
+                    <span className="whitespace-nowrap">Nova Conversa</span>
+                </Button>
+            }
+            position="left" // Position the dropdown menu to the left
+            menuClassName="w-full" // Make the dropdown menu take full width of its parent
         >
-          <IoAddCircleOutline size={22} className={'group-hover/newConvo:scale-110 group-hover/newConvo:rotate-90 transition-transform duration-300'} />
-          <span className="whitespace-nowrap">Nova Conversa</span>
-        </Button>
-        {showNewChatOptions && (
-          <div
-            ref={newChatOptionsRef}
-            className="absolute z-10 top-full left-0 right-0 mt-2 bg-[var(--color-sidebar-bg)] border border-[var(--color-sidebar-border)] rounded-md shadow-lg overflow-hidden"
-          >
             <Button
               variant="ghost"
               className="w-full justify-start px-4 py-2 hover:bg-[var(--color-hover-bg)] text-[var(--color-sidebar-text)]"
@@ -185,8 +167,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             >
               <GhostIcon size={18} className="mr-2" /> Conversa Incógnita
             </Button>
-          </div>
-        )}
+        </Dropdown>
       </div>
 
       <nav className={`flex-grow flex flex-col min-h-0`}>
