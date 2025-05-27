@@ -1,6 +1,3 @@
-import {
-    IoArrowDownCircleOutline,
-} from 'react-icons/io5'
 import MessageInput from '../../chat/MessageInput'
 import MessageBubble from '../../chat/MessageBubble'
 import { useConversations } from '../../../contexts/ConversationContext'
