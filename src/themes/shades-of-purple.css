@@ -54,7 +54,7 @@
   --color-body-bg: var(--color-gray-900);
   --color-body-text: var(--color-white);
 
-  --color-sidebar-bg: var(--color-gray-800);
+  --color-sidebar-bg: var(--color-gray-900);
   --color-sidebar-text: var(--color-gray-500);
   --color-sidebar-border: var(--color-gray-300);
   --color-sidebar-heading-text: var(--color-gray-500);
@@ -417,7 +417,7 @@
   --color-settings-model-select-focus-border: var(--color-primary);
   --color-settings-model-select-option-hover-bg: var(--color-gray-100);
 
-  --color-chat-area-bg: var(--color-gray-900);
+  --color-chat-area-bg: var(--color-gray-800);
   --color-chat-area-text: var(--color-white);
 
   --color-chat-header-bg: color-mix(in srgb, var(--color-gray-800) 80%, transparent);
