@@ -4,6 +4,7 @@ import TextInput from '../../common/TextInput';
 import { IoSparklesOutline } from 'react-icons/io5';
 import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
 import ToggleSwitch from '../../common/ToggleSwitch'; // Import the new ToggleSwitch component
+import SelectInput from '../../common/SelectInput'; // Import the new SelectInput component
 import type { ThemeName } from '../../../types'; // ADDED: Import ThemeName
 
 export interface InterfaceSettingsTabProps {
@@ -43,6 +44,15 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
     currentTheme, // Destructure new prop
     onThemeChange, // Destructure new prop
 }) => {
+    const themeOptions = [
+        { value: 'loox', label: 'Loox (Escuro)' },
+        { value: 'aulapp', label: 'Aulapp (Claro)' },
+        { value: 'dracula-dark', label: 'Dracula (Escuro)' },
+        { value: 'solarized-light', label: 'Solarized Light (Claro)' },
+        { value: 'one-dark', label: 'One Dark (Escuro)' },
+        { value: 'github-light', label: 'GitHub Light (Claro)' },
+    ];
+
     return (
         <div className="space-y-6">
             <SettingsPanel
@@ -83,27 +93,15 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
                     </div>
 
                     {/* Theme Selection - NEW */}
-                    <div className="flex flex-col space-y-2">
-                        <label htmlFor="theme-select" className="text-sm font-medium text-[var(--color-text-primary)]">
-                            Tema
-                        </label>
-                        <select
-                            id="theme-select"
-                            value={currentTheme}
-                            onChange={(e) => onThemeChange(e.target.value as ThemeName)}
-                            className="p-2 border rounded-md bg-[var(--color-input-bg)] border-[var(--color-input-border)] text-[var(--color-input-text)] focus:ring-[var(--color-focus-ring)] focus:border-[var(--color-focus-ring)]"
-                        >
-                            <option value="loox">Loox (Escuro)</option>
-                            <option value="aulapp">Aulapp (Claro)</option>
-                            <option value="dracula-dark">Dracula (Escuro)</option>
-                            <option value="solarized-light">Solarized Light (Claro)</option>
-                            <option value="one-dark">One Dark (Escuro)</option>
-                            <option value="github-light">GitHub Light (Claro)</option>
-                        </select>
-                        <p className="text-xs text-[var(--color-settings-section-description-text)] mt-1">
-                            Escolha o tema visual do aplicativo.
-                        </p>
-                    </div>
+                    <SelectInput
+                        id="theme-select"
+                        name="theme"
+                        label="Tema"
+                        value={currentTheme}
+                        onChange={(value) => onThemeChange(value as ThemeName)}
+                        options={themeOptions}
+                        helperText="Escolha o tema visual do aplicativo."
+                    />
 
                     {/* Code Syntax Highlight Toggle */}
                     <ToggleSwitch
