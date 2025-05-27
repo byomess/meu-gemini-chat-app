@@ -45,7 +45,8 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
     const actualInputType = type === 'password' && isPasswordVisible ? 'text' : type;
 
     // Base styles matching the original input in GeneralSettingsTab
-    const baseInputClasses = "w-full p-3 bg-[var(--color-text-input-bg)] border border-[var(--color-text-input-border)] rounded-xl focus:ring-2 focus:ring-[var(--color-text-input-focus-ring)] focus:border-[var(--color-text-input-focus-border)] placeholder-[var(--color-text-input-placeholder-text)] text-[var(--color-text-input-text)] shadow-sm transition-colors";
+    // Added focus:outline-none to remove browser's default focus outline
+    const baseInputClasses = "w-full p-3 bg-[var(--color-text-input-bg)] border border-[var(--color-text-input-border)] rounded-xl focus:ring-2 focus:ring-[var(--color-text-input-focus-ring)] focus:border-[var(--color-text-input-focus-border)] focus:outline-none placeholder-[var(--color-text-input-placeholder-text)] text-[var(--color-text-input-text)] shadow-sm transition-colors";
     
     const passwordSpecificClasses = type === 'password' ? "pr-12" : ""; // Adjust pr-X as needed for icon spacing
 
