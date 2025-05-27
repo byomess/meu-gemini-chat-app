@@ -1,7 +1,7 @@
 import React from 'react';
 import { IoChatbubblesOutline, IoMenuOutline, IoSyncOutline } from 'react-icons/io5';
 import { GhostIcon } from 'lucide-react';
-import { GoogleDriveSyncStatus } from '../../../types';
+import type { GoogleDriveSyncStatus } from '../../../types';
 
 interface ChatHeaderProps {
     onOpenMobileSidebar: () => void;
