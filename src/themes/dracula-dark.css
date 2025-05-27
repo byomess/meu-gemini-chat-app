@@ -100,6 +100,11 @@
   --color-convo-item-active-actions-bg: color-mix(in srgb, var(--color-gray-800) 60%, transparent);
   --color-convo-item-active-actions-hover-bg: color-mix(in srgb, var(--color-gray-800) 80%, transparent);
   --color-convo-item-active-actions-button-hover-bg: color-mix(in srgb, var(--color-primary) 40%, transparent);
+  --color-convo-item-actions-icon: var(--color-gray-400);
+  --color-convo-item-actions-hover-icon: var(--color-convo-item-actions-icon);
+  --color-convo-item-actions-delete-hover-icon: var(--color-red-500);
+  --color-convo-item-active-actions-icon: var(--color-white); /* Changed from var(--color-convo-item-active-text) */
+  --color-convo-item-active-actions-delete-hover-icon: var(--color-red-500);
 
   --color-settings-button-text: var(--color-gray-500);
   --color-settings-button-hover-bg: var(--color-gray-200);
