@@ -4,14 +4,17 @@ import ChatArea from './components/layout/ChatArea'
 import SettingsModal from './components/settings/SettingsModal';
 import useIsMobile from './hooks/useIsMobile';
 import React from 'react';
-import { useUrlConfigInitializer } from './hooks/useUrlConfigInitializer';
+// import { useUrlConfigInitializer } from './hooks/useUrlConfigInitializer';
 import { ConversationProvider, useConversations } from './contexts/ConversationContext';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
 import { DialogProvider } from './contexts/DialogContext';
 import { MemoryProvider, useMemories } from './contexts/MemoryContext';
 import { useGoogleDriveSync } from './hooks/useGoogleDriveSync';
+import { useUrlConfigInitializer } from './hooks/useUrlConfigInitializer';
 
 const AppContent = () => {
+    useUrlConfigInitializer();
+
     const { settings } = useAppSettings();
     const {
         allConversations,
@@ -140,8 +143,6 @@ const AppContent = () => {
 }
 
 function App() {
-    useUrlConfigInitializer();
-
     return (
         // Correct nesting of providers
         <AppSettingsProvider>
