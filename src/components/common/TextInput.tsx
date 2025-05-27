@@ -17,10 +17,10 @@ interface TextInputProps {
     helperText?: React.ReactNode; // New prop for helper text
 
     // Styling props
-    containerClassName?: string;
+    className?: string; // Renamed from containerClassName, applies to the root div
     labelClassName?: string; // Re-added labelClassName prop
-    inputWrapperClassName?: string;
-    inputClassName?: string; // Custom classes for the input element
+    inputWrapperClassName?: string; // For the div wrapping input and icon
+    inputClassName?: string; // Custom classes for the input element itself
 }
 
 const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
@@ -35,7 +35,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
     autoComplete,
     tooltipContent, // New prop
     helperText, // New prop
-    containerClassName = '', // Default: no extra classes for the main container
+    className = '', // Renamed from containerClassName, default empty
     labelClassName = "block text-sm font-medium text-[var(--color-text-input-label-text)] mb-1.5", // Re-added
     inputWrapperClassName = "relative", // For the div wrapping input and icon
     inputClassName: customInputClassName = "", // User-provided custom classes for input
@@ -52,7 +52,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
     const effectiveInputClassName = `${baseInputClasses} ${passwordSpecificClasses} ${customInputClassName}`.trim();
 
     return (
-        <div className={containerClassName}>
+        <div className={className}> {/* Apply the main className prop here */}
             {label && (
                 <div className="flex items-center mb-1.5">
                     {tooltipContent && (
@@ -65,7 +65,8 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(({
                     </label>
                 </div>
             )}
-            <div className={inputWrapperClassName}>
+            {/* Ensure the wrapper div also takes full width if it's a flex item or needs to contain a w-full input */}
+            <div className={`${inputWrapperClassName} w-full`}> {/* Added w-full here */}
                 <input
                     type={actualInputType}
                     id={id}

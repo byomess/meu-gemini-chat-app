@@ -196,7 +196,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                             value={searchTerm}
                             onChange={setSearchTerm}
                             type="text"
-                            className="flex-grow"
+                            className="flex-grow" {/* Changed from inputClassName to className */}
                         />
                         <button
                             onClick={() => {
