@@ -2,8 +2,9 @@ import React from 'react';
 import { IoChatbubblesOutline, IoMenuOutline, IoSyncOutline, IoEllipsisVertical, IoTrashBinOutline, IoSearchOutline } from 'react-icons/io5';
 import { GhostIcon } from 'lucide-react';
 import type { GoogleDriveSyncStatus } from '../../../types';
-import Dropdown from '../../common/Dropdown'; // Import the new Dropdown component
-import DropdownItem from '../../common/DropdownItem'; // Import the new DropdownItem component
+import Dropdown from '../../common/Dropdown';
+import DropdownItem from '../../common/DropdownItem';
+import useIsMobile from '../../../hooks/useIsMobile'; // Import the useIsMobile hook
 
 interface ChatHeaderProps {
     onOpenMobileSidebar: () => void;
@@ -11,10 +12,9 @@ interface ChatHeaderProps {
     isIncognito: boolean;
     conversationTitle: string;
     googleDriveSyncStatus: GoogleDriveSyncStatus;
-    // Novas propriedades para as ações do dropdown
-    onClearChat: () => void; // Callback para limpar o chat
-    onSearchMessages: () => void; // Callback para buscar mensagens
-    isMobile: boolean; // NOVA PROPRIEDADE: Indica se o dispositivo é móvel
+    onClearChat: () => void;
+    onSearchMessages: () => void;
+    // isMobile: boolean; // REMOVED: This will now be determined internally
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -25,11 +25,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     googleDriveSyncStatus,
     onClearChat,
     onSearchMessages,
-    isMobile // Desestruturar a nova propriedade
 }) => {
+    const isMobile = useIsMobile(); // Use the hook to determine if it's mobile
+
     return (
         <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 backdrop-blur-md bg-[var(--color-chat-header-bg)] border-b border-[var(--color-chat-header-border)] shadow-sm">
-            {/* O botão de menu só será renderizado se for mobile E showMobileMenuButton for true */}
+            {/* The menu button will only render if it's mobile AND showMobileMenuButton is true */}
             {isMobile && showMobileMenuButton && (
                 <button
                     onClick={onOpenMobileSidebar}
@@ -53,7 +54,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 <IoSyncOutline className="animate-spin text-[var(--color-chat-header-icon)] ml-2" size={20} />
             )}
 
-            {/* Menu de dropdown usando o novo componente Dropdown */}
             <Dropdown
                 className="ml-auto"
                 trigger={
