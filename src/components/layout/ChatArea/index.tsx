@@ -35,6 +35,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
     const [isAtBottom, setIsAtBottom] = useState(true);
     const [isSearchActive, setIsSearchActive] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const searchInputRef = useRef<HTMLInputElement>(null); // NEW: Ref for the search input
 
     const messages = activeConversation?.messages || []
     const conversationTitle = activeConversation?.title || 'Chat'
@@ -127,6 +128,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
         };
     }, [activeConversationId]);
 
+    // NEW: Effect to autofocus the search input when it becomes active
+    useEffect(() => {
+        if (isSearchActive && searchInputRef.current) {
+            searchInputRef.current.focus();
+        }
+    }, [isSearchActive]);
+
 
     const showWelcome = !activeConversationId
     const showApiKeyMissing = activeConversationId && !settings.apiKey
@@ -197,6 +205,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                             onChange={setSearchTerm}
                             type="text"
                             className="flex-grow"
+                            ref={searchInputRef} // NEW: Attach the ref here
                         />
                         <button
                             onClick={() => {
