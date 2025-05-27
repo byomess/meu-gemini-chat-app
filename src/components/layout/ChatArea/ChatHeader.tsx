@@ -1,5 +1,5 @@
 import React from 'react';
-import { IoChatbubblesOutline, IoMenuOutline, IoSyncOutline, IoEllipsisVertical } from 'react-icons/io5';
+import { IoChatbubblesOutline, IoMenuOutline, IoSyncOutline, IoEllipsisVertical, IoTrashBinOutline, IoSearchOutline } from 'react-icons/io5';
 import { GhostIcon } from 'lucide-react';
 import type { GoogleDriveSyncStatus } from '../../../types';
 import Dropdown from '../../common/Dropdown'; // Import the new Dropdown component
@@ -64,10 +64,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 }
                 position="right"
             >
-                <DropdownItem onClick={onClearChat}>
+                <DropdownItem onClick={onClearChat} icon={<IoTrashBinOutline size={18} />}>
                     Limpar chat
                 </DropdownItem>
-                <DropdownItem onClick={onSearchMessages}>
+                <DropdownItem onClick={onSearchMessages} icon={<IoSearchOutline size={18} />}>
                     Buscar mensagens
                 </DropdownItem>
             </Dropdown>
