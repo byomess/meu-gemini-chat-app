@@ -96,6 +96,7 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
                             <option value="loox">Loox (Escuro)</option>
                             <option value="aulapp">Aulapp (Claro)</option>
                             <option value="dracula-dark">Dracula (Escuro)</option>
+                            <option value="solarized-light">Solarized Light (Claro)</option>
                         </select>
                         <p className="text-xs text-[var(--color-settings-section-description-text)] mt-1">
                             Escolha o tema visual do aplicativo.
