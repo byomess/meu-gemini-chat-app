@@ -1,11 +1,12 @@
 import React, { createContext, useContext, type ReactNode, useCallback, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { HarmCategory, HarmBlockThreshold, type SafetySetting } from '../types';
-import type { AppSettings, GeminiModelConfig, FunctionDeclaration, GoogleDriveSyncStatus, GoogleDriveUser, ThemeName } from '../types'; // MODIFIED: Import ThemeName
+import type { AppSettings, GeminiModelConfig, FunctionDeclaration, GoogleDriveSyncStatus, GoogleDriveUser, ThemeName } from '../types';
+import { ALL_THEME_NAMES, DARK_THEME_NAMES } from '../constants/themes'; // NEW: Import theme constants
 
 const APP_SETTINGS_KEY = 'geminiChat_appSettings';
 
-export const DEFAULT_PERSONALITY_PROMPT = `Você é Loox, um assistente de IA pessoal projetado para ser um parceiro inteligente, prestativo e adaptável, operando dentro deste Web App. Sua missão é auxiliar os usuários em diversas tarefas, produtividade, explorar ideias e manter uma interação engajadora e personalizada.`;
+export const DEFAULT_PERSONALITY_PROMPT = `Você é Loox, um assistente de IA pessoal projetado para ser um parceiro inteligente, prestativo e adaptável, operando dentro deste Web App. Sua missão é auxiliar os usuários em diversas tarefas, produtividade, explorar ideias e manter uma interação engajante e personalizada.`;
 
 const defaultSafetySettings: SafetySetting[] = [
     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
@@ -32,7 +33,7 @@ const defaultAppSettings: AppSettings = {
     enableWebSearch: true,
     enableAttachments: true,
     hideNavigation: false,
-    theme: 'loox', // MODIFIED: Default theme
+    theme: 'loox',
     showProcessingIndicators: true,
     googleDriveAccessToken: undefined,
     googleDriveUser: null,
@@ -53,8 +54,8 @@ interface AppSettingsContextType {
     updateEnableWebSearch: (enabled: boolean) => void;
     updateAttachmentsEnabled: (enabled: boolean) => void;
     updateHideNavigation: (hidden: boolean) => void;
-    updateTheme: (theme: ThemeName) => void; // MODIFIED: Use ThemeName
-    updateShowProcessingIndicators: (enabled: boolean) => void; // Add this line
+    updateTheme: (theme: ThemeName) => void;
+    updateShowProcessingIndicators: (enabled: boolean) => void;
     connectGoogleDrive: (accessToken: string, user: GoogleDriveUser) => void;
     disconnectGoogleDrive: () => void;
     setGoogleDriveSyncStatus: (status: GoogleDriveSyncStatus) => void;
@@ -74,17 +75,19 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
         // Manage body class for themes.
         // The initial class is set by an inline script in index.html to prevent FOUC.
         // This effect handles subsequent theme changes during the app lifecycle.
-        const THEMES_ON_BODY = ['theme-loox', 'theme-aulapp', 'theme-dracula-dark'];
-        const DARK_THEME_NAMES = ['loox', 'dracula-dark']; // Theme names that are dark
+        const THEMES_ON_BODY = ALL_THEME_NAMES.map(name => `theme-${name}`);
+
+        // Ensure a valid theme is always used for application
+        const currentTheme = settings.theme && ALL_THEME_NAMES.includes(settings.theme)
+            ? settings.theme
+            : defaultAppSettings.theme; // Fallback to default if settings.theme is invalid or missing
 
         // Update body class
         document.body.classList.remove(...THEMES_ON_BODY);
-        if (settings.theme) {
-            document.body.classList.add(`theme-${settings.theme}`);
-        }
+        document.body.classList.add(`theme-${currentTheme}`);
 
         // Update html class for dark mode
-        if (settings.theme && DARK_THEME_NAMES.includes(settings.theme)) {
+        if (DARK_THEME_NAMES.includes(currentTheme)) {
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
@@ -122,7 +125,7 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
                 }));
             }
         }
-    }, [settings.geminiModelConfig?.safetySettings, setSettings]); // Added setSettings to dependency array
+    }, [settings.geminiModelConfig?.safetySettings, setSettings]);
 
     const saveApiKey = useCallback((apiKey: string) => {
         setSettings((prevSettings) => ({ ...prevSettings, apiKey }));
@@ -186,7 +189,7 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
         }));
     }, [setSettings]);
 
-    const updateTheme = useCallback((theme: ThemeName) => { // MODIFIED: Use ThemeName
+    const updateTheme = useCallback((theme: ThemeName) => {
         setSettings((prevSettings) => ({
             ...prevSettings,
             theme: theme,
@@ -249,7 +252,7 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
             updateAttachmentsEnabled,
             updateHideNavigation,
             updateTheme,
-            updateShowProcessingIndicators, // Add this to the context value
+            updateShowProcessingIndicators,
             connectGoogleDrive,
             disconnectGoogleDrive,
             setGoogleDriveSyncStatus,
