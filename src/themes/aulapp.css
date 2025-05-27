@@ -306,7 +306,7 @@
   --color-code-block-no-highlight-scrollbar-track: var(--color-gray-200);
   --color-inline-code-text-alt: var(--color-indigo-700);
   --color-inline-code-bg-alt: var(--color-gray-200);
-  --color-code-content-bg: var(--color-white); /* Changed to white */
+  --color-code-content-bg: var(--color-gray-50); /* Changed to gray-50 */
 
   /* CustomDialog Colors */
   --color-dialog-overlay-bg: color-mix(in srgb, var(--color-black) 10%, transparent);

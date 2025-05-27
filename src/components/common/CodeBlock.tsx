@@ -97,7 +97,7 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({
                         lineHeight: '1.6',
                         borderRadius: '0 0 0.5rem 0.5rem',
                         overflowX: 'auto',
-                        // Removed explicit backgroundColor override to allow the chosen syntax highlighter style to apply its background
+                        backgroundColor: 'var(--color-code-content-bg)', // Explicitly set background from theme
                     }}
                     codeTagProps={{
                         style: { 
