@@ -4,7 +4,7 @@ import TextInput from '../../common/TextInput';
 import { IoSparklesOutline } from 'react-icons/io5';
 import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
 import ToggleSwitch from '../../common/ToggleSwitch'; // Import the new ToggleSwitch component
-import { ThemeName } from '../../../types'; // ADDED: Import ThemeName
+import type { ThemeName } from '../../../types'; // ADDED: Import ThemeName
 
 export interface InterfaceSettingsTabProps {
     currentCodeHighlightEnabled: boolean;
