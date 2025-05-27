@@ -1,4 +1,3 @@
-// src/components/settings/tabs/ModelSettingsTab.tsx
 import React from 'react';
 import type { GeminiModelConfig, GeminiModel, SafetySetting } from '../../../types';
 import { HarmCategory, HarmBlockThreshold } from '@google/genai';
@@ -7,6 +6,7 @@ import TextInput from '../../common/TextInput';
 import Tooltip from '../../common/Tooltip'; // Import the new Tooltip component
 import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
 import { IoInformationCircleOutline } from 'react-icons/io5'; // Import info icon
+import SelectInput from '../../common/SelectInput'; // Import the new SelectInput component
 
 export interface ModelSettingsTabProps {
     currentGeminiModelConfig: GeminiModelConfig;
@@ -79,28 +79,15 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
                 <section className="space-y-5">
                     {/* Model Selection */}
                     <div>
-                        <div className="flex items-center mb-1.5">
-                            <Tooltip content="Escolha o modelo Gemini a ser utilizado.">
-                                <IoInformationCircleOutline size={18} className="text-[var(--color-text-input-label-icon)] mr-2" />
-                            </Tooltip>
-                            <label htmlFor="model-select" className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)]">
-                                Modelo Gemini
-                            </label>
-                        </div>
-                        <select
+                        <SelectInput
                             id="model-select"
                             name="model"
+                            label="Modelo Gemini"
+                            tooltipContent="Escolha o modelo Gemini a ser utilizado."
                             value={currentGeminiModelConfig.model}
-                            onChange={(e) => handleConfigChange('model', e.target.value as GeminiModel)}
-                            className="w-full p-3 bg-[var(--color-settings-model-select-bg)] border border-[var(--color-settings-model-select-border)] rounded-lg text-[var(--color-settings-model-select-text)] shadow-sm focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:border-[var(--color-settings-model-select-focus-border)] transition-colors
-                                [&>option]:bg-[var(--color-settings-model-select-bg)] [&>option]:text-[var(--color-settings-model-select-text)] [&>option:hover]:bg-[var(--color-settings-model-select-option-hover-bg)]"
-                        >
-                            {AVAILABLE_GEMINI_MODELS.map(model => (
-                                <option key={model} value={model}>
-                                    {model}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(value) => handleConfigChange('model', value as GeminiModel)}
+                            options={AVAILABLE_GEMINI_MODELS.map(model => ({ value: model, label: model }))}
+                        />
                     </div>
 
                     {/* Max Output Tokens */}
@@ -226,32 +213,23 @@ const ModelSettingsTab: React.FC<ModelSettingsTabProps> = ({
 
                         return (
                             <div key={harmCategory.id}>
-                                <div className="flex items-center mb-1.5">
-                                    <Tooltip content={`Define o nível de sensibilidade para bloquear conteúdo relacionado a "${harmCategory.label}".`}>
-                                        <IoInformationCircleOutline size={18} className="text-[var(--color-text-input-label-icon)] mr-2" />
-                                    </Tooltip>
-                                    <label htmlFor={`safety-setting-${harmCategory.id}`} className="block text-sm font-medium text-[var(--color-model-settings-range-label-text)]">
-                                        {harmCategory.label}
-                                    </label>
-                                </div>
-                                <select
+                                <SelectInput
                                     id={`safety-setting-${harmCategory.id}`}
+                                    name={`safety-setting-${harmCategory.id}`}
+                                    label={harmCategory.label}
+                                    tooltipContent={`Define o nível de sensibilidade para bloquear conteúdo relacionado a "${harmCategory.label}".`}
                                     value={currentThreshold}
-                                    onChange={(e) =>
+                                    onChange={(value) =>
                                         handleSafetySettingChange(
                                             harmCategory.id,
-                                            e.target.value as HarmBlockThreshold
+                                            value as HarmBlockThreshold
                                         )
                                     }
-                                    className="w-full p-3 bg-[var(--color-settings-model-select-bg)] border border-[var(--color-settings-model-select-border)] rounded-lg text-[var(--color-settings-model-select-text)] shadow-sm focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:border-[var(--color-settings-model-select-focus-border)] transition-colors
-                                    [&>option]:bg-[var(--color-settings-model-select-bg)] [&>option]:text-[var(--color-settings-model-select-text)] [&>option:hover]:bg-[var(--color-settings-model-select-option-hover-bg)]"
-                                >
-                                    {HARM_BLOCK_THRESHOLDS.map((thresholdOption) => (
-                                        <option key={thresholdOption.value} value={thresholdOption.value}>
-                                            {thresholdOption.label}
-                                        </option>
-                                    ))}
-                                </select>
+                                    options={HARM_BLOCK_THRESHOLDS.map(thresholdOption => ({
+                                        value: thresholdOption.value,
+                                        label: thresholdOption.label
+                                    }))}
+                                />
                             </div>
                         );
                     })}
