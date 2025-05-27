@@ -65,6 +65,7 @@ export interface AppSettings {
     hideNavigation: boolean;
     theme: 'loox' | 'aulapp';
     showProcessingIndicators: boolean; // Add this line
+    showAiFunctionCallAttachments: boolean; // New setting
     googleDriveAccessToken?: string;
     googleDriveUser?: GoogleDriveUser | null;
     googleDriveSyncStatus: GoogleDriveSyncStatus;
@@ -197,8 +198,5 @@ export interface StreamedGeminiResponseChunk {
         idToUpdate?: string;
     }[];
     error?: string;
-    isFinished: boolean;
-    processingStatus?: ProcessingStatus;
-    rawPartsForNextTurn?: Part[];
     functionAttachedFilesInfo?: AttachedFileInfo[]; // Add this line
 }
