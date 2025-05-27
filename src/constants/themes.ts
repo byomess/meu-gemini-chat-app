@@ -1,4 +1,5 @@
 // src/constants/themes.ts
+import { ThemeName } from '../types'; // Import ThemeName
 
 /**
  * All available theme names in the application.
@@ -9,4 +10,4 @@ export const ALL_THEME_NAMES = ['loox', 'aulapp', 'dracula-dark', 'solarized-lig
 /**
  * Theme names that are considered "dark" and should trigger the 'dark' class on the <html> element.
  */
-export const DARK_THEME_NAMES = ['loox', 'dracula-dark', 'one-dark'] as const;
+export const DARK_THEME_NAMES: readonly ThemeName[] = ['loox', 'dracula-dark', 'one-dark'];
