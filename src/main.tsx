@@ -14,6 +14,7 @@ import "./themes/solarized-light.css"; // ADDED: Import the solarized-light them
 import "./themes/one-dark.css"; // ADDED: Import the one-dark theme CSS
 import "./themes/github-light.css"; // ADDED: Import the github-light theme CSS
 import "./themes/shades-of-purple.css"; // ADDED: Import the shades-of-purple theme CSS
+import "./themes/shades-of-purple-light.css"; // ADDED: Import the shades-of-purple-light theme CSS
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
