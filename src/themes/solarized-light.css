@@ -1,0 +1,537 @@
+.theme-solarized-light {
+  /* Solarized Light Palette */
+  --solarized-base03: #002b36; /* Darkest background */
+  --solarized-base02: #073642;
+  --solarized-base01: #586e75;
+  --solarized-base00: #657b83;
+  --solarized-base0: #839496;
+  --solarized-base1: #93a1a1;
+  --solarized-base2: #eee8d5; /* Light background */
+  --solarized-base3: #fdf6e3; /* Lightest background */
+
+  --solarized-yellow: #b58900;
+  --solarized-orange: #cb4b16;
+  --solarized-red: #dc322f;
+  --solarized-magenta: #d33682;
+  --solarized-violet: #6c71c4;
+  --solarized-blue: #268bd2;
+  --solarized-cyan: #2aa198;
+  --solarized-green: #859900;
+
+  /* Base Colors - Mapping Solarized to generic gray/color names */
+  --color-gray-50: var(--solarized-base3); /* Very light */
+  --color-gray-100: var(--solarized-base2); /* Light background */
+  --color-gray-200: color-mix(in srgb, var(--solarized-base2) 90%, var(--solarized-base1) 10%); /* Slightly darker than base2 */
+  --color-gray-300: var(--solarized-base1); /* Light gray */
+  --color-gray-400: var(--solarized-base0); /* Medium light gray */
+  --color-gray-500: var(--solarized-base00); /* Medium gray */
+  --color-gray-600: var(--solarized-base01); /* Darker gray */
+  --color-gray-700: var(--solarized-base02); /* Dark text/elements */
+  --color-gray-800: var(--solarized-base03); /* Darkest text/elements */
+  --color-gray-900: var(--solarized-base03); /* Darkest text/elements */
+
+  --color-pink-50: color-mix(in srgb, var(--solarized-magenta) 5%, var(--solarized-base3) 95%); /* Lightest pinkish */
+  --color-red-50: color-mix(in srgb, var(--solarized-red) 5%, var(--solarized-base3) 95%); /* Lightest reddish */
+  --color-red-100: color-mix(in srgb, var(--solarized-red) 10%, var(--solarized-base3) 90%);
+  --color-red-200: color-mix(in srgb, var(--solarized-red) 20%, var(--solarized-base3) 80%);
+  --color-red-300: color-mix(in srgb, var(--solarized-red) 30%, var(--solarized-base3) 70%);
+  --color-red-500: var(--solarized-red);
+  --color-red-600: color-mix(in srgb, var(--solarized-red) 80%, var(--solarized-base03) 20%);
+  --color-red-700: color-mix(in srgb, var(--solarized-red) 90%, var(--solarized-base03) 10%);
+
+  --color-yellow-50: color-mix(in srgb, var(--solarized-yellow) 5%, var(--solarized-base3) 95%);
+  --color-yellow-400: var(--solarized-yellow);
+  --color-yellow-600: color-mix(in srgb, var(--solarized-yellow) 80%, var(--solarized-base03) 20%);
+  --color-yellow-700: color-mix(in srgb, var(--solarized-yellow) 90%, var(--solarized-base03) 10%);
+
+  --color-indigo-50: color-mix(in srgb, var(--solarized-violet) 5%, var(--solarized-base3) 95%);
+  --color-indigo-200: color-mix(in srgb, var(--solarized-violet) 20%, var(--solarized-base3) 80%);
+  --color-indigo-400: var(--solarized-violet);
+  --color-indigo-600: color-mix(in srgb, var(--solarized-violet) 80%, var(--solarized-base03) 20%);
+  --color-indigo-700: color-mix(in srgb, var(--solarized-violet) 90%, var(--solarized-base03) 10%);
+
+  --color-purple-500: var(--solarized-magenta); /* Using magenta for purple */
+  --color-purple-600: color-mix(in srgb, var(--solarized-magenta) 80%, var(--solarized-base03) 20%);
+
+  --color-amber-50: color-mix(in srgb, var(--solarized-orange) 5%, var(--solarized-base3) 95%);
+  --color-amber-200: color-mix(in srgb, var(--solarized-orange) 20%, var(--solarized-base3) 80%);
+  --color-amber-600: color-mix(in srgb, var(--solarized-orange) 80%, var(--solarized-base03) 20%);
+  --color-amber-700: color-mix(in srgb, var(--solarized-orange) 90%, var(--solarized-base03) 10%);
+  --color-amber-800: color-mix(in srgb, var(--solarized-orange) 95%, var(--solarized-base03) 5%);
+
+  --color-green-500: var(--solarized-green);
+  --color-emerald-600: color-mix(in srgb, var(--solarized-green) 80%, var(--solarized-base03) 20%);
+
+  --color-orange-600: var(--solarized-orange);
+
+  --color-white: var(--solarized-base3); /* Lightest background */
+  --color-black: var(--solarized-base03); /* Darkest text */
+
+  /* Custom Primary Color */
+  --color-primary: var(--solarized-blue);
+  --color-primary-dark: color-mix(in srgb, var(--solarized-blue) 80%, var(--solarized-base03) 20%);
+
+  /* Body background and text colors */
+  --color-body-bg: var(--solarized-base2);
+  --color-body-text: var(--solarized-base03);
+
+  /* Semantic Colors (Sidebar specific for now) */
+  --color-sidebar-bg: var(--solarized-base3);
+  --color-sidebar-text: var(--solarized-base02);
+  --color-sidebar-border: var(--solarized-base1);
+  --color-sidebar-heading-text: var(--solarized-base01);
+
+  --color-convo-item-text: var(--solarized-base02);
+  --color-convo-item-hover-bg: var(--solarized-base2);
+  --color-convo-item-hover-text: var(--solarized-base03);
+  --color-convo-item-active-bg: var(--solarized-blue);
+  --color-convo-item-active-text: var(--solarized-base3);
+  --color-convo-item-edit-bg: var(--solarized-base2);
+  --color-convo-item-edit-text: var(--solarized-base03);
+  --color-convo-item-edit-border: color-mix(in srgb, var(--solarized-blue) 70%, transparent);
+  --color-convo-item-edit-focus-border: var(--solarized-blue);
+  --color-convo-item-icon: var(--solarized-base01);
+  --color-convo-item-hover-icon: var(--solarized-base03);
+  --color-convo-item-active-icon: var(--solarized-base3);
+
+  /* Incognito Chat Item Styles */
+  --color-convo-item-incognito-bg: var(--solarized-base2);
+  --color-convo-item-incognito-text: var(--solarized-base01);
+  --color-convo-item-incognito-icon: var(--solarized-base02);
+  --color-convo-item-incognito-hover-bg: var(--solarized-base1);
+  --color-convo-item-incognito-hover-text: var(--solarized-base03);
+  --color-convo-item-incognito-active-bg: var(--color-indigo-50); /* Using indigo for incognito active */
+  --color-convo-item-incognito-active-text: var(--color-indigo-700);
+  --color-convo-item-incognito-active-icon: var(--color-indigo-600);
+
+  --color-convo-item-actions-bg: color-mix(in srgb, var(--solarized-base3) 50%, transparent);
+  --color-convo-item-actions-hover-bg: color-mix(in srgb, var(--solarized-base2) 80%, transparent);
+  --color-convo-item-actions-button-hover-bg: color-mix(in srgb, var(--solarized-base1) 80%, transparent);
+  --color-convo-item-actions-icon: var(--solarized-base01);
+  --color-convo-item-actions-hover-icon: var(--solarized-base03);
+  --color-convo-item-actions-delete-hover-icon: var(--solarized-red);
+
+  --color-convo-item-active-actions-bg: color-mix(in srgb, var(--solarized-blue) 20%, transparent);
+  --color-convo-item-active-actions-hover-bg: color-mix(in srgb, var(--solarized-blue) 30%, transparent);
+  --color-convo-item-active-actions-button-hover-bg: color-mix(in srgb, var(--solarized-blue) 40%, transparent);
+  --color-convo-item-active-actions-icon: var(--solarized-base3);
+  --color-convo-item-active-actions-delete-hover-icon: var(--color-red-200);
+
+  --color-settings-button-text: var(--solarized-base02);
+  --color-settings-button-hover-bg: var(--solarized-base2);
+  --color-settings-button-hover-text: var(--solarized-base03);
+  --color-settings-button-icon: var(--solarized-base01);
+  --color-settings-button-hover-icon: var(--solarized-blue);
+
+  --color-mobile-close-button-bg: var(--solarized-base2);
+  --color-mobile-close-button-hover-bg: var(--solarized-base1);
+  --color-mobile-close-button-icon: var(--solarized-base01);
+  --color-mobile-close-button-hover-icon: var(--solarized-base03);
+
+  --color-logo-text: var(--solarized-base01);
+
+  --color-focus-ring: var(--solarized-blue);
+  --color-focus-ring-offset: var(--solarized-base3);
+
+  /* Message Bubble Colors */
+  --color-message-bubble-user-bg: var(--solarized-blue);
+  --color-message-bubble-user-text: var(--solarized-base3);
+  --color-message-bubble-ai-bg: var(--solarized-base3);
+  --color-message-bubble-ai-text: var(--solarized-base03);
+  --color-message-bubble-ai-border: var(--solarized-base1);
+  --color-message-bubble-function-bg: var(--color-indigo-50);
+  --color-message-bubble-function-text: var(--color-indigo-700);
+  --color-message-bubble-function-border: var(--color-indigo-200);
+  --color-message-bubble-error-bg: var(--color-red-50);
+  --color-message-bubble-error-border: var(--color-red-300);
+  --color-message-bubble-error-text: var(--color-red-700);
+  --color-message-bubble-aborted-bg: var(--color-yellow-50);
+  --color-message-bubble-aborted-border: var(--color-yellow-400);
+  --color-message-bubble-aborted-text: var(--color-yellow-700);
+  --color-message-bubble-aborted-shadow: color-mix(in srgb, var(--solarized-yellow) 10%, transparent);
+  --color-message-bubble-loading-bg: var(--solarized-base2);
+  --color-message-bubble-loading-border: var(--solarized-base1);
+
+  /* Message Bubble Edit State */
+  --color-message-bubble-edit-border: color-mix(in srgb, var(--solarized-blue) 70%, transparent);
+  --color-message-bubble-user-edit-bg: color-mix(in srgb, var(--solarized-blue) 10%, var(--solarized-base3) 90%);
+  --color-message-bubble-ai-edit-bg: color-mix(in srgb, var(--solarized-base2) 90%, transparent);
+  --color-message-bubble-user-edit-text: var(--solarized-base03);
+  --color-message-bubble-user-edit-placeholder: var(--solarized-base01);
+  --color-message-bubble-user-edit-scrollbar-thumb: var(--solarized-base0);
+  --color-message-bubble-user-edit-scrollbar-track: var(--solarized-base2);
+  --color-message-bubble-ai-edit-text: var(--solarized-base03);
+  --color-message-bubble-ai-edit-placeholder: var(--solarized-base01);
+  --color-message-bubble-ai-edit-scrollbar-thumb: var(--solarized-base0);
+  --color-message-bubble-ai-edit-scrollbar-track: var(--solarized-base2);
+
+  /* Message Bubble Edit Buttons */
+  --color-message-bubble-user-edit-button-text: var(--solarized-base3);
+  --color-message-bubble-user-edit-button-hover-text: var(--solarized-base3);
+  --color-message-bubble-user-edit-button-hover-bg: color-mix(in srgb, var(--solarized-blue) 70%, transparent);
+  --color-message-bubble-ai-edit-button-text: var(--solarized-base01);
+  --color-message-bubble-ai-edit-button-hover-text: var(--solarized-base03);
+  --color-message-bubble-ai-edit-button-hover-bg: color-mix(in srgb, var(--solarized-base1) 70%, transparent);
+
+  /* Message Bubble Reprocess Icon */
+  --color-message-bubble-reprocess-icon-bg: var(--solarized-base1);
+  --color-message-bubble-reprocess-icon-text: var(--solarized-base01);
+
+  /* Attached Files */
+  --color-attached-file-bg: var(--solarized-base2);
+  --color-attached-file-border: var(--solarized-base1);
+  --color-attached-file-generic-icon-bg: var(--solarized-base1);
+  --color-attached-file-generic-icon: var(--solarized-base01);
+  --color-attached-file-generic-name: var(--solarized-base01);
+
+  /* Function Call Request */
+  --color-function-call-request-bg: var(--color-amber-50);
+  --color-function-call-request-border: var(--color-amber-200);
+  --color-function-call-request-text: var(--color-amber-700);
+  --color-function-call-request-icon: var(--color-amber-600);
+  --color-function-call-request-name: var(--color-amber-800);
+
+  /* Function Response */
+  --color-function-response-text: var(--color-indigo-600);
+  --color-function-response-name: var(--color-indigo-700);
+
+  /* Markdown/Prose Styling */
+  --color-inline-code-text: var(--solarized-orange); /* Using orange for inline code */
+  --color-inline-code-bg: color-mix(in srgb, var(--solarized-orange) 5%, var(--solarized-base3) 95%);
+  --color-inline-code-border: color-mix(in srgb, var(--solarized-orange) 20%, var(--solarized-base3) 80%);
+  --color-inline-code-loading-bg: var(--solarized-base2);
+  --color-code-block-loading-bg: var(--solarized-base2);
+  --color-code-block-loading-border: var(--solarized-base1);
+  --color-code-block-loading-text: var(--solarized-base02);
+  --color-prose-p-text: var(--solarized-base02);
+  --color-prose-headings-text: var(--solarized-base03);
+  --color-link-text: var(--solarized-blue);
+  --color-link-hover-text: var(--color-primary-dark);
+  --color-blockquote-border: var(--solarized-base1);
+  --color-blockquote-text: var(--solarized-base01);
+  --color-table-border: var(--solarized-base1);
+  --color-table-head-bg: var(--solarized-base2);
+  --color-table-cell-border: var(--solarized-base1);
+  --color-table-header-text: var(--solarized-base02);
+  --color-table-cell-text: var(--solarized-base01);
+  --color-strong-text: var(--solarized-base03);
+  --color-error-message-text: var(--color-red-600);
+  --color-error-message-border: color-mix(in srgb, var(--color-red-300) 60%, transparent);
+  --color-aborted-message-text: var(--color-yellow-600);
+  --color-aborted-message-border: color-mix(in srgb, var(--color-yellow-400) 60%, transparent);
+  --color-memory-actions-heading-text: var(--color-purple-600);
+
+  /* Message Actions Bubble */
+  --color-message-actions-bg: color-mix(in srgb, var(--solarized-base3) 80%, transparent);
+  --color-message-actions-border: color-mix(in srgb, var(--solarized-base1) 90%, transparent);
+  --color-message-actions-button-text: var(--solarized-base01);
+  --color-message-actions-edit-button-hover-text: var(--solarized-blue);
+  --color-message-actions-edit-button-hover-bg: var(--solarized-base2);
+  --color-message-actions-delete-button-hover-text: var(--solarized-red);
+  --color-message-actions-delete-button-hover-bg: var(--color-red-100);
+
+  /* Avatars */
+  --color-default-ai-avatar-gradient-from: var(--solarized-magenta);
+  --color-default-ai-avatar-gradient-to: var(--solarized-violet);
+  --color-function-role-avatar-gradient-from: var(--solarized-violet);
+  --color-function-role-avatar-gradient-to: var(--solarized-magenta);
+  --color-user-avatar-gradient-from: var(--solarized-blue);
+  --color-user-avatar-gradient-to: var(--color-primary-dark);
+
+  /* Message Input Colors */
+  --color-input-container-border: var(--solarized-base1);
+  --color-input-container-bg: var(--solarized-base3);
+  --color-input-form-bg: var(--solarized-base3);
+  --color-input-form-border: var(--solarized-base1);
+  --color-input-text: var(--solarized-base03);
+  --color-input-placeholder: var(--solarized-base01);
+  --color-input-attachment-preview-bg: var(--solarized-base2);
+  --color-input-attachment-preview-border: var(--solarized-base1);
+  --color-api-key-warning-text: var(--solarized-orange);
+  --color-api-key-warning-strong-text: color-mix(in srgb, var(--solarized-orange) 90%, var(--solarized-base03) 10%);
+
+  /* Error display colors */
+  --color-error-bg: var(--color-red-50);
+  --color-error-border: var(--color-red-300);
+  --color-error-text: var(--color-red-700);
+
+  /* Warning display colors */
+  --color-warning-bg: var(--color-yellow-50);
+  --color-warning-border: var(--color-yellow-400);
+  --color-warning-text: var(--color-yellow-700);
+
+  /* AttachedFileItem colors */
+  --color-attached-item-bg: var(--solarized-base3);
+  --color-attached-item-generic-bg: var(--solarized-base2);
+  --color-attached-item-generic-text: var(--solarized-base02);
+  --color-attached-item-icon: var(--solarized-base01);
+  --color-attached-item-subtext: var(--solarized-base0);
+
+  /* Button Colors */
+  --color-button-primary-bg: var(--solarized-blue);
+  --color-button-primary-hover-bg: var(--color-primary-dark);
+  --color-button-primary-active-bg: color-mix(in srgb, var(--solarized-blue) 80%, var(--solarized-base03) 20%);
+  --color-button-primary-text: var(--solarized-base3);
+
+  --color-button-secondary-bg: var(--solarized-base2);
+  --color-button-secondary-hover-bg: var(--solarized-base1);
+  --color-button-secondary-active-bg: var(--solarized-base0);
+  --color-button-secondary-text: var(--solarized-base02);
+  --color-button-secondary-border: var(--solarized-base1);
+  --color-button-focus-ring-secondary: var(--solarized-base0);
+
+  --color-button-danger-bg: var(--color-red-600);
+  --color-button-danger-hover-bg: var(--color-red-700);
+  --color-button-danger-active-bg: color-mix(in srgb, var(--solarized-red) 95%, var(--solarized-base03) 5%);
+  --color-button-danger-text: var(--solarized-base3);
+
+  --color-button-icon-text: var(--solarized-base01);
+  --color-button-icon-hover-text: var(--solarized-blue);
+  --color-button-icon-hover-bg: var(--solarized-base2);
+  --color-button-icon-active-bg: var(--solarized-base1);
+
+  --color-button-ghost-text: var(--solarized-base02);
+  --color-button-ghost-hover-bg: var(--solarized-base2);
+  --color-button-ghost-active-bg: var(--solarized-base1);
+
+  /* CustomAudioPlayer Colors */
+  --color-audio-player-bg: var(--solarized-base3);
+  --color-audio-player-border: var(--solarized-base1);
+  --color-audio-player-button-bg: var(--solarized-base2);
+  --color-audio-player-button-hover-bg: var(--solarized-base1);
+  --color-audio-player-button-text: var(--solarized-base02);
+  --color-audio-player-button-hover-text: var(--solarized-blue);
+  --color-audio-player-progress-track-bg: var(--solarized-base1);
+  --color-audio-player-progress-fill-bg: var(--solarized-blue);
+  --color-audio-player-progress-thumb-bg: var(--solarized-base3);
+  --color-audio-player-progress-thumb-border: var(--solarized-base1);
+  --color-audio-player-time-text: var(--solarized-base01);
+  --color-audio-player-volume-control-bg: var(--solarized-base3);
+  --color-audio-player-volume-control-border: var(--solarized-base1);
+  --color-audio-player-volume-track-bg: var(--solarized-base1);
+  --color-audio-player-volume-fill-bg: var(--solarized-blue);
+  --color-audio-player-volume-thumb-bg: var(--solarized-base3);
+  --color-audio-player-volume-thumb-border: var(--solarized-base1);
+  --color-audio-player-filename-text: var(--solarized-base01);
+  --color-audio-player-error-bg: var(--color-red-50);
+  --color-audio-player-error-border: var(--color-red-300);
+  --color-audio-player-error-text: var(--color-red-700);
+
+  /* CodeBlock Colors */
+  --color-code-block-wrapper-bg: var(--solarized-base3);
+  --color-code-block-wrapper-border: var(--solarized-base1);
+  --color-code-block-header-bg: var(--solarized-base2);
+  --color-code-block-header-border: var(--solarized-base1);
+  --color-code-block-language-text: var(--solarized-base01);
+  --color-code-block-copy-button-text: var(--solarized-base01);
+  --color-code-block-copy-button-hover-text: var(--solarized-base03);
+  --color-code-block-copy-button-hover-bg: var(--solarized-base1);
+  --color-code-block-copy-button-copied-icon: var(--solarized-green);
+  --color-code-block-no-highlight-bg: var(--solarized-base2);
+  --color-code-block-no-highlight-text: var(--solarized-base03);
+  --color-code-block-no-highlight-scrollbar-thumb: var(--solarized-base0);
+  --color-code-block-no-highlight-scrollbar-track: var(--solarized-base2);
+  --color-inline-code-text-alt: var(--solarized-violet);
+  --color-inline-code-bg-alt: var(--solarized-base2);
+
+  /* CustomDialog Colors */
+  --color-dialog-overlay-bg: color-mix(in srgb, var(--solarized-base03) 10%, transparent);
+  --color-dialog-bg: var(--solarized-base3);
+  --color-dialog-border: var(--solarized-base1);
+  --color-dialog-title-text: var(--solarized-base03);
+  --color-dialog-message-text: var(--solarized-base02);
+
+  /* TextInput Colors */
+  --color-text-input-label-text: var(--solarized-base02);
+  --color-text-input-bg: var(--solarized-base3);
+  --color-text-input-border: var(--solarized-base1);
+  --color-text-input-focus-ring: var(--solarized-blue);
+  --color-text-input-focus-border: var(--solarized-blue);
+  --color-text-input-placeholder-text: var(--solarized-base0);
+  --color-text-input-text: var(--solarized-base03);
+  --color-text-input-helper-text: var(--solarized-base01);
+  --color-text-input-icon: var(--solarized-base01);
+  --color-text-input-icon-hover: var(--solarized-base02);
+
+  /* Settings Modal & Tabs Colors */
+  --color-settings-modal-overlay-bg: color-mix(in srgb, var(--solarized-base03) 70%, transparent);
+  --color-settings-modal-bg: var(--solarized-base3);
+  --color-settings-modal-border: var(--solarized-base1);
+  --color-settings-modal-header-bg: var(--solarized-base2);
+  --color-settings-modal-header-border: var(--solarized-base1);
+  --color-settings-modal-title-text: var(--solarized-base03);
+  --color-settings-modal-close-button-text: var(--solarized-base01);
+  --color-settings-modal-close-button-hover-bg: var(--solarized-base2);
+  --color-settings-modal-close-button-hover-text: var(--solarized-base02);
+
+  /* Settings Tabs Navigation */
+  --color-settings-tab-nav-bg: var(--solarized-base2);
+  --color-settings-tab-nav-border: var(--solarized-base1);
+  --color-settings-tab-item-text: var(--solarized-base01);
+  --color-settings-tab-item-hover-bg: var(--solarized-base2);
+  --color-settings-tab-item-active-bg: var(--solarized-blue);
+  --color-settings-tab-item-active-text: var(--solarized-base3);
+  --color-settings-tab-item-active-border: var(--solarized-blue);
+  --color-settings-tab-item-icon: var(--solarized-base0);
+
+  /* Settings Content Area */
+  --color-settings-content-bg: var(--solarized-base3);
+  --color-settings-section-title-text: var(--solarized-base03);
+  --color-settings-section-description-text: var(--solarized-base01);
+  --color-settings-section-border: var(--solarized-base1);
+
+  /* Toggle Switch */
+  --color-toggle-switch-bg-off: var(--solarized-base1);
+  --color-toggle-switch-bg-on: var(--solarized-blue);
+  --color-toggle-switch-handle-bg: var(--solarized-base3);
+  --color-toggle-switch-handle-shadow: color-mix(in srgb, var(--solarized-base0) 50%, transparent);
+
+  /* Range Slider */
+  --color-range-slider-track-bg: var(--solarized-base1);
+  --color-range-slider-fill-bg: var(--solarized-blue);
+  --color-range-slider-thumb-bg: var(--solarized-base3);
+  --color-range-slider-thumb-border: var(--solarized-base1);
+  --color-range-slider-value-text: var(--solarized-blue);
+  --color-range-slider-label-text-disabled: var(--solarized-base0);
+  --color-range-slider-value-text-disabled: var(--solarized-base01);
+  --color-range-slider-track-bg-disabled: var(--solarized-base1);
+  --color-range-slider-fill-bg-disabled: var(--solarized-base2);
+  --color-range-slider-thumb-bg-disabled: var(--solarized-base3);
+  --color-range-slider-thumb-border-disabled: var(--solarized-base1);
+
+  /* Table/List items (for Function Calling, Data, Memories) */
+  --color-table-row-bg: var(--solarized-base3);
+  --color-table-row-hover-bg: var(--solarized-base2);
+  --color-table-row-border: var(--solarized-base1);
+  --color-table-item-text: var(--solarized-base03);
+  --color-table-item-secondary-text: var(--solarized-base02);
+  --color-table-item-icon: var(--solarized-base01);
+  --color-table-item-icon-hover: var(--solarized-base02);
+  --color-table-item-edit-bg: var(--solarized-base2);
+  --color-table-item-edit-border: var(--solarized-base1);
+  --color-table-item-edit-text: var(--solarized-base03);
+  --color-table-item-edit-placeholder: var(--solarized-base01);
+
+  /* Specific for Function Calling Tab Cards (Display State) */
+  --color-function-card-name-text: var(--solarized-base03);
+  --color-function-card-description-text: var(--solarized-base01);
+  --color-function-card-http-method-bg: var(--solarized-base2);
+  --color-function-card-http-method-text: var(--solarized-base02);
+  --color-function-card-http-method-border: var(--solarized-base1);
+  --color-function-card-endpoint-text: var(--solarized-base01);
+
+  /* Specific for Function Calling Tab (Edit State) */
+  --color-function-param-schema-bg: var(--solarized-base3);
+  --color-function-param-schema-border: var(--solarized-base1);
+  --color-function-param-schema-text: var(--solarized-base03);
+  --color-function-param-schema-placeholder: var(--solarized-base0);
+  --color-function-param-schema-focus-border: var(--solarized-blue);
+  --color-function-method-dropdown-bg: var(--solarized-base3);
+  --color-function-method-dropdown-border: var(--solarized-base1);
+  --color-function-method-dropdown-text: var(--solarized-base03);
+  --color-function-method-dropdown-hover-bg: var(--solarized-base2);
+
+  /* Specific for Data Settings Tab */
+  --color-data-import-export-bg: var(--solarized-base3);
+  --color-data-import-export-border: var(--solarized-base1);
+  --color-data-import-export-text: var(--solarized-base02);
+  --color-data-drag-drop-border: var(--solarized-base1);
+  --color-data-drag-drop-text: var(--solarized-base01);
+  --color-data-drag-drop-hover-bg: var(--solarized-base2);
+  --color-data-drag-drop-active-border: var(--solarized-blue);
+  --color-data-drag-drop-active-text: var(--solarized-blue);
+  --color-data-drag-drop-file-text: var(--solarized-base02);
+  --color-data-drag-drop-file-remove-icon: var(--solarized-red);
+
+  /* Specific for General Settings Tab */
+  --color-general-settings-api-key-text: var(--solarized-base03);
+  --color-general-settings-api-key-placeholder: var(--solarized-base0);
+  --color-general-settings-api-key-focus-border: var(--solarized-blue);
+  --color-general-settings-api-key-bg: var(--solarized-base3);
+  --color-general-settings-api-key-border: var(--solarized-base1);
+
+  /* Specific for Interface Settings Tab */
+  --color-interface-settings-avatar-preview-bg: var(--solarized-base2);
+  --color-interface-settings-avatar-preview-border: var(--solarized-base1);
+  --color-interface-settings-avatar-preview-text: var(--solarized-base01);
+
+  /* Specific for Model Settings Tab */
+  --color-model-settings-range-label-text: var(--solarized-base02);
+  --color-model-settings-range-value-text: var(--solarized-blue);
+  --color-model-settings-range-input-bg: var(--solarized-base1);
+  --color-model-settings-range-input-fill: var(--solarized-blue);
+  --color-model-settings-range-input-thumb: var(--solarized-base3);
+  --color-model-settings-range-input-thumb-border: var(--solarized-base1);
+  --color-settings-model-select-bg: var(--solarized-base3);
+  --color-settings-model-select-border: var(--solarized-base1);
+  --color-settings-model-select-text: var(--solarized-base03);
+  --color-settings-model-select-focus-border: var(--solarized-blue);
+  --color-settings-model-select-option-hover-bg: var(--solarized-base2);
+
+  /* Chat Area Colors */
+  --color-chat-area-bg: var(--solarized-base2);
+  --color-chat-area-text: var(--solarized-base03);
+
+  /* Chat Header */
+  --color-chat-header-bg: color-mix(in srgb, var(--solarized-base3) 80%, transparent);
+  --color-chat-header-border: var(--solarized-base1);
+  --color-chat-header-icon: var(--solarized-base01);
+  --color-chat-header-title: var(--solarized-base03);
+
+  /* Mobile Menu Button (in header) */
+  --color-mobile-menu-button-text: var(--solarized-base01);
+  --color-mobile-menu-button-hover-text: var(--solarized-base03);
+
+  /* Floating Scroll Button */
+  --color-floating-button-shadow: color-mix(in srgb, var(--solarized-blue) 30%, transparent);
+  --color-floating-button-text: var(--solarized-base3);
+  --color-floating-button-autoscroll-from: var(--solarized-green);
+  --color-floating-button-autoscroll-to: var(--solarized-cyan); /* Using cyan for emerald */
+  --color-floating-button-default-from: var(--solarized-blue);
+  --color-floating-button-default-to: var(--color-primary-dark);
+
+  /* Welcome/Empty States */
+  --color-welcome-text-main: var(--solarized-base01);
+  --color-welcome-text-secondary: var(--solarized-base0);
+  --color-api-key-missing-text: var(--solarized-orange);
+  --color-api-key-missing-icon: var(--solarized-orange);
+  --color-no-messages-text-main: var(--solarized-base01);
+  --color-no-messages-icon: var(--solarized-base01);
+
+  /* Scrollbar Colors */
+  --color-scrollbar-track: var(--solarized-base2);
+  --color-scrollbar-thumb: var(--solarized-base0);
+  --color-scrollbar-thumb-hover: var(--solarized-base00);
+
+  /* Tooltip Colors */
+  --color-tooltip-bg: var(--solarized-base02);
+  --color-tooltip-text: var(--solarized-base3);
+  --color-tooltip-icon: var(--solarized-base01);
+
+  /* Dropdown Menu Colors */
+  --color-dropdown-bg: var(--solarized-base3);
+  --color-dropdown-border: var(--solarized-base1);
+  --color-dropdown-item-text: var(--solarized-base02);
+  --color-dropdown-item-hover-bg: var(--solarized-base2);
+  --color-dropdown-item-hover-text: var(--solarized-base03);
+}
+
+/* Scrollbar styles moved outside @theme block */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
+}
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+}
