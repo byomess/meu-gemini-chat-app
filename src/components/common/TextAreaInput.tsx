@@ -42,14 +42,14 @@ const TextAreaInput: React.FC<TextAreaInputProps> = ({
                 placeholder={placeholder}
                 disabled={disabled}
                 rows={rows}
-                // Added px-3 for horizontal padding
-                // Added default border and focus:border using generic input variables
-                // Added focus:outline-none to remove default browser outline
-                className={`block w-full rounded-md py-1.5 px-3 shadow-sm transition-colors duration-200
-                    bg-[var(--color-input-form-bg)]
+                // Aligned styling with TextInput component
+                className={`block w-full p-3 shadow-sm transition-colors duration-200
+                    bg-[var(--color-text-input-bg)]
                     border border-[var(--color-text-input-border)]
-                    text-[var(--color-input-text)]
-                    placeholder:text-[var(--color-input-placeholder)]
+                    rounded-xl
+                    text-[var(--color-text-input-text)]
+                    placeholder-[var(--color-text-input-placeholder-text)]
+                    focus:ring-2 focus:ring-[var(--color-text-input-focus-ring)]
                     focus:border-[var(--color-text-input-focus-border)]
                     focus:outline-none
                     ${inputClassName}
