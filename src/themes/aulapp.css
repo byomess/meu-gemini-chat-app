@@ -478,6 +478,13 @@
   --color-tooltip-bg: var(--color-gray-800); /* Dark background for tooltip */
   --color-tooltip-text: var(--color-white); /* White text for tooltip */
   --color-tooltip-icon: var(--color-gray-500); /* Info icon color */
+
+  /* Dropdown Menu Colors */
+  --color-dropdown-bg: var(--color-white);
+  --color-dropdown-border: var(--color-gray-200);
+  --color-dropdown-item-text: var(--color-gray-700);
+  --color-dropdown-item-hover-bg: var(--color-gray-100);
+  --color-dropdown-item-hover-text: var(--color-gray-900);
 }
 
 /* Scrollbar styles moved outside @theme block */

@@ -493,6 +493,13 @@
   --color-tooltip-bg: var(--color-gray-200); /* Current Line */
   --color-tooltip-text: var(--color-white);   /* Foreground */
   --color-tooltip-icon: var(--color-purple-500); /* Purple */
+
+  /* Dropdown Menu Colors */
+  --color-dropdown-bg: var(--color-gray-800);
+  --color-dropdown-border: var(--color-gray-300);
+  --color-dropdown-item-text: var(--color-gray-500);
+  --color-dropdown-item-hover-bg: var(--color-gray-200);
+  --color-dropdown-item-hover-text: var(--color-white);
 }
 
 /* Scrollbar styles (mantendo os do loox.css por padrão) */

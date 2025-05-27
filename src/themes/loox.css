@@ -88,7 +88,7 @@
   --color-convo-item-incognito-text: var(--color-gray-400); /* Slightly muted text */
   --color-convo-item-incognito-icon: var(--color-gray-500); /* Muted icon - changed from gray-300 for better contrast */
   --color-convo-item-incognito-hover-bg: var(--color-gray-200); /* Hover state */
-  --color-convo-item-incognito-hover-text: var(--color-gray-500);
+  --color-convo-item-incognito-hover-text: var(--color-500);
   --color-convo-item-incognito-active-bg: var(--color-indigo-50); /* Active incognito */
   --color-convo-item-incognito-active-text: var(--color-indigo-700);
   --color-convo-item-incognito-active-icon: var(--color-indigo-600);
@@ -498,6 +498,13 @@
   --color-tooltip-bg: var(--color-gray-400); /* Changed to a lighter gray for background */
   --color-tooltip-text: var(--color-gray-800); /* Changed to a darker gray for text */
   --color-tooltip-icon: var(--color-gray-600); /* Changed to a darker gray for the icon */
+
+  /* Dropdown Menu Colors */
+  --color-dropdown-bg: var(--color-gray-800);
+  --color-dropdown-border: var(--color-gray-300);
+  --color-dropdown-item-text: var(--color-gray-500);
+  --color-dropdown-item-hover-bg: var(--color-gray-200);
+  --color-dropdown-item-hover-text: var(--color-gray-700);
 }
 
 /* Scrollbar styles moved outside @theme block */
