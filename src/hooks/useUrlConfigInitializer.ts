@@ -65,6 +65,19 @@ export function useUrlConfigInitializer() {
 
     const [isLoadingConfig, setIsLoadingConfig] = useState<boolean>(false);
     const [configError, setConfigError] = useState<string | null>(null);
+    const [locationChangeSignal, setLocationChangeSignal] = useState(0);
+
+    // Effect to listen for popstate and trigger re-evaluation of the main effect
+    useEffect(() => {
+        const handlePopState = () => {
+            // console.log("popstate event fired. Triggering location change signal.");
+            setLocationChangeSignal(prev => prev + 1);
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, []); // Runs once on mount/unmount
 
     useEffect(() => {
         const currentSearch = window.location.search;
@@ -360,7 +373,7 @@ export function useUrlConfigInitializer() {
 
         processAndApply();
 
-    }, [window.location.search, setSettings, replaceAllMemories, appSettingsContext, memoryContext]); // React to URL changes and context availability/methods.
+    }, [window.location.search, setSettings, replaceAllMemories, appSettingsContext, memoryContext, locationChangeSignal]); // React to URL changes, context availability/methods, and popstate.
 
     return { isLoadingConfig, configError };
 }
