@@ -12,6 +12,7 @@ import "./themes/loox.css"; // Import the dark theme CSS
 import "./themes/dracula-dark.css" // ADDED: Import the dracula-dark theme CSS
 import "./themes/solarized-light.css"; // ADDED: Import the solarized-light theme CSS
 import "./themes/one-dark.css"; // ADDED: Import the one-dark theme CSS
+import "./themes/github-light.css"; // ADDED: Import the github-light theme CSS
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>

@@ -1,0 +1,538 @@
+.theme-github-light {
+  /* GitHub Light Palette */
+  --github-white: #ffffff;
+  --github-gray-0: #f6f8fa; /* Used for light backgrounds, e.g., sidebar */
+  --github-gray-1: #e1e4e8; /* Borders, light elements */
+  --github-gray-2: #d1d5da; /* Slightly darker borders */
+  --github-gray-3: #959da5; /* Muted text, icons */
+  --github-gray-4: #6a737d; /* Secondary text, comments */
+  --github-gray-5: #586069; /* Darker secondary text */
+  --github-gray-6: #444d56; /* Darker text */
+  --github-gray-7: #2f363d; /* Darker text, some backgrounds */
+  --github-gray-8: #24292e; /* Main text, darkest elements */
+
+  --github-blue: #0366d6;
+  --github-green: #28a745;
+  --github-red: #d73a49;
+  --github-yellow: #f69d50; /* Orange-ish yellow */
+  --github-purple: #6f42c1;
+  --github-pink: #e362ea; /* A bright pink for accents */
+
+  /* Base Colors - Mapping GitHub to generic gray/color names */
+  --color-gray-50: var(--github-gray-0); /* Very light */
+  --color-gray-100: var(--github-gray-0); /* Light background */
+  --color-gray-200: var(--github-gray-1); /* Borders, light elements */
+  --color-gray-300: var(--github-gray-2); /* Slightly darker borders */
+  --color-gray-400: var(--github-gray-3); /* Muted text, icons */
+  --color-gray-500: var(--github-gray-4); /* Secondary text, comments */
+  --color-gray-600: var(--github-gray-5); /* Darker secondary text */
+  --color-gray-700: var(--github-gray-6); /* Darker text */
+  --color-gray-800: var(--github-gray-7); /* Darker text, some backgrounds */
+  --color-gray-900: var(--github-gray-8); /* Main text, darkest elements */
+
+  --color-pink-50: color-mix(in srgb, var(--github-pink) 5%, var(--github-white) 95%);
+  --color-red-50: color-mix(in srgb, var(--github-red) 5%, var(--github-white) 95%);
+  --color-red-100: color-mix(in srgb, var(--github-red) 10%, var(--github-white) 90%);
+  --color-red-200: color-mix(in srgb, var(--github-red) 20%, var(--github-white) 80%);
+  --color-red-300: color-mix(in srgb, var(--github-red) 30%, var(--github-white) 70%);
+  --color-red-500: var(--github-red);
+  --color-red-600: color-mix(in srgb, var(--github-red) 80%, var(--github-gray-8) 20%);
+  --color-red-700: color-mix(in srgb, var(--github-red) 90%, var(--github-gray-8) 10%);
+
+  --color-yellow-50: color-mix(in srgb, var(--github-yellow) 5%, var(--github-white) 95%);
+  --color-yellow-400: var(--github-yellow);
+  --color-yellow-600: color-mix(in srgb, var(--github-yellow) 80%, var(--github-gray-8) 20%);
+  --color-yellow-700: color-mix(in srgb, var(--github-yellow) 90%, var(--github-gray-8) 10%);
+
+  --color-indigo-50: color-mix(in srgb, var(--github-purple) 5%, var(--github-white) 95%);
+  --color-indigo-200: color-mix(in srgb, var(--github-purple) 20%, var(--github-white) 80%);
+  --color-indigo-400: var(--github-purple);
+  --color-indigo-600: color-mix(in srgb, var(--github-purple) 80%, var(--github-gray-8) 20%);
+  --color-indigo-700: color-mix(in srgb, var(--github-purple) 90%, var(--github-gray-8) 10%);
+
+  --color-purple-500: var(--github-purple);
+  --color-purple-600: color-mix(in srgb, var(--github-purple) 80%, var(--github-gray-8) 20%);
+
+  --color-amber-50: color-mix(in srgb, var(--github-yellow) 5%, var(--github-white) 95%); /* Using yellow for amber */
+  --color-amber-200: color-mix(in srgb, var(--github-yellow) 20%, var(--github-white) 80%);
+  --color-amber-600: color-mix(in srgb, var(--github-yellow) 80%, var(--github-gray-8) 20%);
+  --color-amber-700: color-mix(in srgb, var(--github-yellow) 90%, var(--github-gray-8) 10%);
+  --color-amber-800: color-mix(in srgb, var(--github-yellow) 95%, var(--github-gray-8) 5%);
+
+  --color-green-500: var(--github-green);
+  --color-emerald-600: color-mix(in srgb, var(--github-green) 80%, var(--github-gray-8) 20%);
+
+  --color-orange-600: var(--github-yellow); /* Using yellow for orange */
+
+  --color-white: var(--github-white);
+  --color-black: var(--github-gray-8);
+
+  /* Custom Primary Color */
+  --color-primary: var(--github-blue);
+  --color-primary-dark: color-mix(in srgb, var(--github-blue) 80%, var(--github-gray-8) 20%);
+
+  /* Body background and text colors */
+  --color-body-bg: var(--github-white);
+  --color-body-text: var(--github-gray-8);
+
+  /* Semantic Colors (Sidebar specific for now) */
+  --color-sidebar-bg: var(--github-gray-0);
+  --color-sidebar-text: var(--github-gray-7);
+  --color-sidebar-border: var(--github-gray-1);
+  --color-sidebar-heading-text: var(--github-gray-5);
+
+  --color-convo-item-text: var(--github-gray-7);
+  --color-convo-item-hover-bg: var(--github-gray-1);
+  --color-convo-item-hover-text: var(--github-gray-8);
+  --color-convo-item-active-bg: var(--github-blue);
+  --color-convo-item-active-text: var(--github-white);
+  --color-convo-item-edit-bg: var(--github-gray-1);
+  --color-convo-item-edit-text: var(--github-gray-8);
+  --color-convo-item-edit-border: color-mix(in srgb, var(--github-blue) 70%, transparent);
+  --color-convo-item-edit-focus-border: var(--github-blue);
+  --color-convo-item-icon: var(--github-gray-4);
+  --color-convo-item-hover-icon: var(--github-gray-7);
+  --color-convo-item-active-icon: var(--github-white);
+
+  /* Incognito Chat Item Styles */
+  --color-convo-item-incognito-bg: var(--github-gray-0);
+  --color-convo-item-incognito-text: var(--github-gray-5);
+  --color-convo-item-incognito-icon: var(--github-gray-6);
+  --color-convo-item-incognito-hover-bg: var(--github-gray-1);
+  --color-convo-item-incognito-hover-text: var(--github-gray-7);
+  --color-convo-item-incognito-active-bg: var(--color-indigo-50);
+  --color-convo-item-incognito-active-text: var(--color-indigo-700);
+  --color-convo-item-incognito-active-icon: var(--color-indigo-600);
+
+  --color-convo-item-actions-bg: color-mix(in srgb, var(--github-white) 50%, transparent);
+  --color-convo-item-actions-hover-bg: color-mix(in srgb, var(--github-gray-0) 80%, transparent);
+  --color-convo-item-actions-button-hover-bg: color-mix(in srgb, var(--github-gray-1) 80%, transparent);
+  --color-convo-item-actions-icon: var(--github-gray-4);
+  --color-convo-item-actions-hover-icon: var(--github-gray-7);
+  --color-convo-item-actions-delete-hover-icon: var(--github-red);
+
+  --color-convo-item-active-actions-bg: color-mix(in srgb, var(--github-blue) 20%, transparent);
+  --color-convo-item-active-actions-hover-bg: color-mix(in srgb, var(--github-blue) 30%, transparent);
+  --color-convo-item-active-actions-button-hover-bg: color-mix(in srgb, var(--github-blue) 40%, transparent);
+  --color-convo-item-active-actions-icon: var(--github-white);
+  --color-convo-item-active-actions-delete-hover-icon: var(--color-red-200);
+
+  --color-settings-button-text: var(--github-gray-7);
+  --color-settings-button-hover-bg: var(--github-gray-0);
+  --color-settings-button-hover-text: var(--github-gray-8);
+  --color-settings-button-icon: var(--github-gray-4);
+  --color-settings-button-hover-icon: var(--github-blue);
+
+  --color-mobile-close-button-bg: var(--github-gray-0);
+  --color-mobile-close-button-hover-bg: var(--github-gray-1);
+  --color-mobile-close-button-icon: var(--github-gray-4);
+  --color-mobile-close-button-hover-icon: var(--github-gray-7);
+
+  --color-logo-text: var(--github-gray-6);
+
+  --color-focus-ring: var(--github-blue);
+  --color-focus-ring-offset: var(--github-white);
+
+  /* Message Bubble Colors */
+  --color-message-bubble-user-bg: var(--github-blue);
+  --color-message-bubble-user-text: var(--github-white);
+  --color-message-bubble-ai-bg: var(--github-white);
+  --color-message-bubble-ai-text: var(--github-gray-8);
+  --color-message-bubble-ai-border: var(--github-gray-1);
+  --color-message-bubble-function-bg: var(--color-indigo-50);
+  --color-message-bubble-function-text: var(--color-indigo-700);
+  --color-message-bubble-function-border: var(--color-indigo-200);
+  --color-message-bubble-error-bg: var(--color-red-50);
+  --color-message-bubble-error-border: var(--color-red-300);
+  --color-message-bubble-error-text: var(--color-red-700);
+  --color-message-bubble-aborted-bg: var(--color-yellow-50);
+  --color-message-bubble-aborted-border: var(--color-yellow-400);
+  --color-message-bubble-aborted-text: var(--color-yellow-700);
+  --color-message-bubble-aborted-shadow: color-mix(in srgb, var(--github-yellow) 10%, transparent);
+  --color-message-bubble-loading-bg: var(--github-gray-1);
+  --color-message-bubble-loading-border: var(--github-gray-2);
+
+  /* Message Bubble Edit State */
+  --color-message-bubble-edit-border: color-mix(in srgb, var(--github-blue) 70%, transparent);
+  --color-message-bubble-user-edit-bg: color-mix(in srgb, var(--github-blue) 10%, var(--github-white) 90%);
+  --color-message-bubble-ai-edit-bg: color-mix(in srgb, var(--github-gray-0) 90%, transparent);
+  --color-message-bubble-user-edit-text: var(--github-gray-8);
+  --color-message-bubble-user-edit-placeholder: var(--github-gray-4);
+  --color-message-bubble-user-edit-scrollbar-thumb: var(--github-gray-3);
+  --color-message-bubble-user-edit-scrollbar-track: var(--github-gray-1);
+  --color-message-bubble-ai-edit-text: var(--github-gray-8);
+  --color-message-bubble-ai-edit-placeholder: var(--github-gray-4);
+  --color-message-bubble-ai-edit-scrollbar-thumb: var(--github-gray-3);
+  --color-message-bubble-ai-edit-scrollbar-track: var(--github-gray-1);
+
+  /* Message Bubble Edit Buttons */
+  --color-message-bubble-user-edit-button-text: var(--github-white);
+  --color-message-bubble-user-edit-button-hover-text: var(--github-white);
+  --color-message-bubble-user-edit-button-hover-bg: color-mix(in srgb, var(--github-blue) 70%, transparent);
+  --color-message-bubble-ai-edit-button-text: var(--github-gray-4);
+  --color-message-bubble-ai-edit-button-hover-text: var(--github-gray-8);
+  --color-message-bubble-ai-edit-button-hover-bg: color-mix(in srgb, var(--github-gray-1) 70%, transparent);
+
+  /* Message Bubble Reprocess Icon */
+  --color-message-bubble-reprocess-icon-bg: var(--github-gray-2);
+  --color-message-bubble-reprocess-icon-text: var(--github-gray-5);
+
+  /* Attached Files */
+  --color-attached-file-bg: var(--github-gray-0);
+  --color-attached-file-border: var(--github-gray-1);
+  --color-attached-file-generic-icon-bg: var(--github-gray-1);
+  --color-attached-file-generic-icon: var(--github-gray-4);
+  --color-attached-file-generic-name: var(--github-gray-5);
+
+  /* Function Call Request */
+  --color-function-call-request-bg: var(--color-amber-50);
+  --color-function-call-request-border: var(--color-amber-200);
+  --color-function-call-request-text: var(--color-amber-700);
+  --color-function-call-request-icon: var(--color-amber-600);
+  --color-function-call-request-name: var(--color-amber-800);
+
+  /* Function Response */
+  --color-function-response-text: var(--color-indigo-600);
+  --color-function-response-name: var(--color-indigo-700);
+
+  /* Markdown/Prose Styling */
+  --color-inline-code-text: var(--github-red); /* Using red for inline code */
+  --color-inline-code-bg: color-mix(in srgb, var(--github-red) 5%, var(--github-white) 95%);
+  --color-inline-code-border: color-mix(in srgb, var(--github-red) 20%, var(--github-white) 80%);
+  --color-inline-code-loading-bg: var(--github-gray-1);
+  --color-code-block-loading-bg: var(--github-gray-1);
+  --color-code-block-loading-border: var(--github-gray-2);
+  --color-code-block-loading-text: var(--github-gray-7);
+  --color-prose-p-text: var(--github-gray-7);
+  --color-prose-headings-text: var(--github-gray-8);
+  --color-link-text: var(--github-blue);
+  --color-link-hover-text: var(--color-primary-dark);
+  --color-blockquote-border: var(--github-gray-2);
+  --color-blockquote-text: var(--github-gray-5);
+  --color-table-border: var(--github-gray-2);
+  --color-table-head-bg: var(--github-gray-0);
+  --color-table-cell-border: var(--github-gray-2);
+  --color-table-header-text: var(--github-gray-7);
+  --color-table-cell-text: var(--github-gray-6);
+  --color-strong-text: var(--github-gray-8);
+  --color-error-message-text: var(--color-red-600);
+  --color-error-message-border: color-mix(in srgb, var(--color-red-300) 60%, transparent);
+  --color-aborted-message-text: var(--color-yellow-600);
+  --color-aborted-message-border: color-mix(in srgb, var(--color-yellow-400) 60%, transparent);
+  --color-memory-actions-heading-text: var(--color-purple-600);
+
+  /* Message Actions Bubble */
+  --color-message-actions-bg: color-mix(in srgb, var(--github-white) 80%, transparent);
+  --color-message-actions-border: color-mix(in srgb, var(--github-gray-1) 90%, transparent);
+  --color-message-actions-button-text: var(--github-gray-4);
+  --color-message-actions-edit-button-hover-text: var(--github-blue);
+  --color-message-actions-edit-button-hover-bg: var(--github-gray-0);
+  --color-message-actions-delete-button-hover-text: var(--github-red);
+  --color-message-actions-delete-button-hover-bg: var(--color-red-100);
+
+  /* Avatars */
+  --color-default-ai-avatar-gradient-from: var(--github-purple);
+  --color-default-ai-avatar-gradient-to: var(--github-pink);
+  --color-function-role-avatar-gradient-from: var(--github-blue);
+  --color-function-role-avatar-gradient-to: var(--github-purple);
+  --color-user-avatar-gradient-from: var(--github-green);
+  --color-user-avatar-gradient-to: var(--github-blue);
+
+  /* Message Input Colors */
+  --color-input-container-border: var(--github-gray-1);
+  --color-input-container-bg: var(--github-white);
+  --color-input-form-bg: var(--github-white);
+  --color-input-form-border: var(--github-gray-1);
+  --color-input-text: var(--github-gray-8);
+  --color-input-placeholder: var(--github-gray-4);
+  --color-input-attachment-preview-bg: var(--github-gray-0);
+  --color-input-attachment-preview-border: var(--github-gray-1);
+  --color-api-key-warning-text: var(--github-yellow);
+  --color-api-key-warning-strong-text: color-mix(in srgb, var(--github-yellow) 90%, var(--github-gray-8) 10%);
+
+  /* Error display colors */
+  --color-error-bg: var(--color-red-50);
+  --color-error-border: var(--color-red-300);
+  --color-error-text: var(--color-red-700);
+
+  /* Warning display colors */
+  --color-warning-bg: var(--color-yellow-50);
+  --color-warning-border: var(--color-yellow-400);
+  --color-warning-text: var(--color-yellow-700);
+
+  /* AttachedFileItem colors */
+  --color-attached-item-bg: var(--github-white);
+  --color-attached-item-generic-bg: var(--github-gray-0);
+  --color-attached-item-generic-text: var(--github-gray-7);
+  --color-attached-item-icon: var(--github-gray-4);
+  --color-attached-item-subtext: var(--github-gray-3);
+
+  /* Button Colors */
+  --color-button-primary-bg: var(--github-blue);
+  --color-button-primary-hover-bg: var(--color-primary-dark);
+  --color-button-primary-active-bg: color-mix(in srgb, var(--github-blue) 80%, var(--github-gray-8) 20%);
+  --color-button-primary-text: var(--github-white);
+
+  --color-button-secondary-bg: var(--github-gray-1);
+  --color-button-secondary-hover-bg: var(--github-gray-2);
+  --color-button-secondary-active-bg: var(--github-gray-3);
+  --color-button-secondary-text: var(--github-gray-7);
+  --color-button-secondary-border: var(--github-gray-2);
+  --color-button-focus-ring-secondary: var(--github-gray-3);
+
+  --color-button-danger-bg: var(--color-red-600);
+  --color-button-danger-hover-bg: var(--color-red-700);
+  --color-button-danger-active-bg: color-mix(in srgb, var(--github-red) 95%, var(--github-gray-8) 5%);
+  --color-button-danger-text: var(--github-white);
+
+  --color-button-icon-text: var(--github-gray-4);
+  --color-button-icon-hover-text: var(--github-blue);
+  --color-button-icon-hover-bg: var(--github-gray-0);
+  --color-button-icon-active-bg: var(--github-gray-1);
+
+  --color-button-ghost-text: var(--github-gray-7);
+  --color-button-ghost-hover-bg: var(--github-gray-0);
+  --color-button-ghost-active-bg: var(--github-gray-1);
+
+  /* CustomAudioPlayer Colors */
+  --color-audio-player-bg: var(--github-white);
+  --color-audio-player-border: var(--github-gray-1);
+  --color-audio-player-button-bg: var(--github-gray-0);
+  --color-audio-player-button-hover-bg: var(--github-gray-1);
+  --color-audio-player-button-text: var(--github-gray-7);
+  --color-audio-player-button-hover-text: var(--github-blue);
+  --color-audio-player-progress-track-bg: var(--github-gray-1);
+  --color-audio-player-progress-fill-bg: var(--github-blue);
+  --color-audio-player-progress-thumb-bg: var(--github-white);
+  --color-audio-player-progress-thumb-border: var(--github-gray-1);
+  --color-audio-player-time-text: var(--github-gray-4);
+  --color-audio-player-volume-control-bg: var(--github-white);
+  --color-audio-player-volume-control-border: var(--github-gray-1);
+  --color-audio-player-volume-track-bg: var(--github-gray-1);
+  --color-audio-player-volume-fill-bg: var(--github-blue);
+  --color-audio-player-volume-thumb-bg: var(--github-white);
+  --color-audio-player-volume-thumb-border: var(--github-gray-1);
+  --color-audio-player-filename-text: var(--github-gray-4);
+  --color-audio-player-error-bg: var(--color-red-50);
+  --color-audio-player-error-border: var(--color-red-300);
+  --color-audio-player-error-text: var(--color-red-700);
+
+  /* CodeBlock Colors */
+  --color-code-block-wrapper-bg: var(--github-white);
+  --color-code-block-wrapper-border: var(--github-gray-1);
+  --color-code-block-header-bg: var(--github-gray-0);
+  --color-code-block-header-border: var(--github-gray-1);
+  --color-code-block-language-text: var(--github-gray-4);
+  --color-code-block-copy-button-text: var(--github-gray-4);
+  --color-code-block-copy-button-hover-text: var(--github-gray-8);
+  --color-code-block-copy-button-hover-bg: var(--github-gray-1);
+  --color-code-block-copy-button-copied-icon: var(--github-green);
+  --color-code-block-no-highlight-bg: var(--github-gray-0);
+  --color-code-block-no-highlight-text: var(--github-gray-8);
+  --color-code-block-no-highlight-scrollbar-thumb: var(--github-gray-3);
+  --color-code-block-no-highlight-scrollbar-track: var(--github-gray-1);
+  --color-inline-code-text-alt: var(--github-purple);
+  --color-inline-code-bg-alt: var(--github-gray-1);
+  --color-code-content-bg: var(--github-white); /* Pure white for code content */
+
+  /* CustomDialog Colors */
+  --color-dialog-overlay-bg: color-mix(in srgb, var(--github-gray-8) 10%, transparent);
+  --color-dialog-bg: var(--github-white);
+  --color-dialog-border: var(--github-gray-1);
+  --color-dialog-title-text: var(--github-gray-8);
+  --color-dialog-message-text: var(--github-gray-7);
+
+  /* TextInput Colors */
+  --color-text-input-label-text: var(--github-gray-7);
+  --color-text-input-bg: var(--github-white);
+  --color-text-input-border: var(--github-gray-2);
+  --color-text-input-focus-ring: var(--github-blue);
+  --color-text-input-focus-border: var(--github-blue);
+  --color-text-input-placeholder-text: var(--github-gray-3);
+  --color-text-input-text: var(--github-gray-8);
+  --color-text-input-helper-text: var(--github-gray-4);
+  --color-text-input-icon: var(--github-gray-4);
+  --color-text-input-icon-hover: var(--github-gray-7);
+
+  /* Settings Modal & Tabs Colors */
+  --color-settings-modal-overlay-bg: color-mix(in srgb, var(--github-gray-8) 70%, transparent);
+  --color-settings-modal-bg: var(--github-white);
+  --color-settings-modal-border: var(--github-gray-1);
+  --color-settings-modal-header-bg: var(--github-gray-0);
+  --color-settings-modal-header-border: var(--github-gray-1);
+  --color-settings-modal-title-text: var(--github-gray-8);
+  --color-settings-modal-close-button-text: var(--github-gray-4);
+  --color-settings-modal-close-button-hover-bg: var(--github-gray-0);
+  --color-settings-modal-close-button-hover-text: var(--github-gray-7);
+
+  /* Settings Tabs Navigation */
+  --color-settings-tab-nav-bg: var(--github-gray-0);
+  --color-settings-tab-nav-border: var(--github-gray-1);
+  --color-settings-tab-item-text: var(--github-gray-5);
+  --color-settings-tab-item-hover-bg: var(--github-gray-0);
+  --color-settings-tab-item-active-bg: var(--github-blue);
+  --color-settings-tab-item-active-text: var(--github-white);
+  --color-settings-tab-item-active-border: var(--github-blue);
+  --color-settings-tab-item-icon: var(--github-gray-3);
+
+  /* Settings Content Area */
+  --color-settings-content-bg: var(--github-white);
+  --color-settings-section-title-text: var(--github-gray-8);
+  --color-settings-section-description-text: var(--github-gray-4);
+  --color-settings-section-border: var(--github-gray-1);
+
+  /* Toggle Switch */
+  --color-toggle-switch-bg-off: var(--github-gray-2);
+  --color-toggle-switch-bg-on: var(--github-blue);
+  --color-toggle-switch-handle-bg: var(--github-white);
+  --color-toggle-switch-handle-shadow: color-mix(in srgb, var(--github-gray-3) 50%, transparent);
+
+  /* Range Slider */
+  --color-range-slider-track-bg: var(--github-gray-2);
+  --color-range-slider-fill-bg: var(--github-blue);
+  --color-range-slider-thumb-bg: var(--github-white);
+  --color-range-slider-thumb-border: var(--github-gray-2);
+  --color-range-slider-value-text: var(--github-blue);
+  --color-range-slider-label-text-disabled: var(--github-gray-3);
+  --color-range-slider-value-text-disabled: var(--github-gray-4);
+  --color-range-slider-track-bg-disabled: var(--github-gray-2);
+  --color-range-slider-fill-bg-disabled: var(--github-gray-0);
+  --color-range-slider-thumb-bg-disabled: var(--github-white);
+  --color-range-slider-thumb-border-disabled: var(--github-gray-2);
+
+  /* Table/List items (for Function Calling, Data, Memories) */
+  --color-table-row-bg: var(--github-white);
+  --color-table-row-hover-bg: var(--github-gray-0);
+  --color-table-row-border: var(--github-gray-1);
+  --color-table-item-text: var(--github-gray-8);
+  --color-table-item-secondary-text: var(--github-gray-7);
+  --color-table-item-icon: var(--github-gray-4);
+  --color-table-item-icon-hover: var(--github-gray-7);
+  --color-table-item-edit-bg: var(--github-gray-0);
+  --color-table-item-edit-border: var(--github-gray-2);
+  --color-table-item-edit-text: var(--github-gray-8);
+  --color-table-item-edit-placeholder: var(--github-gray-4);
+
+  /* Specific for Function Calling Tab Cards (Display State) */
+  --color-function-card-name-text: var(--github-gray-8);
+  --color-function-card-description-text: var(--github-gray-5);
+  --color-function-card-http-method-bg: var(--github-gray-0);
+  --color-function-card-http-method-text: var(--github-gray-7);
+  --color-function-card-http-method-border: var(--github-gray-2);
+  --color-function-card-endpoint-text: var(--github-gray-4);
+
+  /* Specific for Function Calling Tab (Edit State) */
+  --color-function-param-schema-bg: var(--github-white);
+  --color-function-param-schema-border: var(--github-gray-2);
+  --color-function-param-schema-text: var(--github-gray-8);
+  --color-function-param-schema-placeholder: var(--github-gray-3);
+  --color-function-param-schema-focus-border: var(--github-blue);
+  --color-function-method-dropdown-bg: var(--github-white);
+  --color-function-method-dropdown-border: var(--github-gray-2);
+  --color-function-method-dropdown-text: var(--github-gray-8);
+  --color-function-method-dropdown-hover-bg: var(--github-gray-0);
+
+  /* Specific for Data Settings Tab */
+  --color-data-import-export-bg: var(--github-white);
+  --color-data-import-export-border: var(--github-gray-1);
+  --color-data-import-export-text: var(--github-gray-7);
+  --color-data-drag-drop-border: var(--github-gray-2);
+  --color-data-drag-drop-text: var(--github-gray-4);
+  --color-data-drag-drop-hover-bg: var(--github-gray-0);
+  --color-data-drag-drop-active-border: var(--github-blue);
+  --color-data-drag-drop-active-text: var(--github-blue);
+  --color-data-drag-drop-file-text: var(--github-gray-7);
+  --color-data-drag-drop-file-remove-icon: var(--github-red);
+
+  /* Specific for General Settings Tab */
+  --color-general-settings-api-key-text: var(--github-gray-8);
+  --color-general-settings-api-key-placeholder: var(--github-gray-3);
+  --color-general-settings-api-key-focus-border: var(--github-blue);
+  --color-general-settings-api-key-bg: var(--github-white);
+  --color-general-settings-api-key-border: var(--github-gray-2);
+
+  /* Specific for Interface Settings Tab */
+  --color-interface-settings-avatar-preview-bg: var(--github-gray-0);
+  --color-interface-settings-avatar-preview-border: var(--github-gray-1);
+  --color-interface-settings-avatar-preview-text: var(--github-gray-4);
+
+  /* Specific for Model Settings Tab */
+  --color-model-settings-range-label-text: var(--github-gray-7);
+  --color-model-settings-range-value-text: var(--github-blue);
+  --color-model-settings-range-input-bg: var(--github-gray-2);
+  --color-model-settings-range-input-fill: var(--github-blue);
+  --color-model-settings-range-input-thumb: var(--github-white);
+  --color-model-settings-range-input-thumb-border: var(--github-gray-2);
+  --color-settings-model-select-bg: var(--github-white);
+  --color-settings-model-select-border: var(--github-gray-2);
+  --color-settings-model-select-text: var(--github-gray-8);
+  --color-settings-model-select-focus-border: var(--github-blue);
+  --color-settings-model-select-option-hover-bg: var(--github-gray-0);
+
+  /* Chat Area Colors */
+  --color-chat-area-bg: var(--github-white);
+  --color-chat-area-text: var(--github-gray-8);
+
+  /* Chat Header */
+  --color-chat-header-bg: color-mix(in srgb, var(--github-white) 80%, transparent);
+  --color-chat-header-border: var(--github-gray-1);
+  --color-chat-header-icon: var(--github-gray-4);
+  --color-chat-header-title: var(--github-gray-8);
+
+  /* Mobile Menu Button (in header) */
+  --color-mobile-menu-button-text: var(--github-gray-4);
+  --color-mobile-menu-button-hover-text: var(--github-gray-8);
+
+  /* Floating Scroll Button */
+  --color-floating-button-shadow: color-mix(in srgb, var(--github-blue) 30%, transparent);
+  --color-floating-button-text: var(--github-white);
+  --color-floating-button-autoscroll-from: var(--github-green);
+  --color-floating-button-autoscroll-to: var(--github-blue); /* Using blue for emerald */
+  --color-floating-button-default-from: var(--github-blue);
+  --color-floating-button-default-to: var(--color-primary-dark);
+
+  /* Welcome/Empty States */
+  --color-welcome-text-main: var(--github-gray-5);
+  --color-welcome-text-secondary: var(--github-gray-4);
+  --color-api-key-missing-text: var(--github-yellow);
+  --color-api-key-missing-icon: var(--github-yellow);
+  --color-no-messages-text-main: var(--github-gray-4);
+  --color-no-messages-icon: var(--github-gray-4);
+
+  /* Scrollbar Colors */
+  --color-scrollbar-track: var(--github-gray-0);
+  --color-scrollbar-thumb: var(--github-gray-3);
+  --color-scrollbar-thumb-hover: var(--github-gray-4);
+
+  /* Tooltip Colors */
+  --color-tooltip-bg: var(--github-gray-7);
+  --color-tooltip-text: var(--github-white);
+  --color-tooltip-icon: var(--github-gray-4);
+
+  /* Dropdown Menu Colors */
+  --color-dropdown-bg: var(--github-white);
+  --color-dropdown-border: var(--github-gray-1);
+  --color-dropdown-item-text: var(--github-gray-7);
+  --color-dropdown-item-hover-bg: var(--github-gray-0);
+  --color-dropdown-item-hover-text: var(--github-gray-8);
+}
+
+/* Scrollbar styles moved outside @theme block */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
+}
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+}

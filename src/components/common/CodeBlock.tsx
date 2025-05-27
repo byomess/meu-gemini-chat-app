@@ -2,7 +2,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { PrismAsyncLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import RSHLightAsync from 'react-syntax-highlighter/dist/esm/light-async';
-import { vscDarkPlus, solarizedlight } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Added solarizedlight
+import { vscDarkPlus, solarizedlight, github } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Added github
 import { IoCopyOutline, IoCheckmarkDoneOutline } from 'react-icons/io5';
 
 import jsx from 'react-syntax-highlighter/dist/esm/languages/prism/jsx';
@@ -59,6 +59,14 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({
     // Determine if the current theme is a dark theme
     const isDarkTheme = DARK_THEME_NAMES.includes(settings.theme);
 
+    // Choose syntax highlighter style based on theme
+    const syntaxHighlightStyle = useMemo(() => {
+        if (settings.theme === 'github-light') {
+            return github;
+        }
+        return isDarkTheme ? vscDarkPlus : solarizedlight;
+    }, [settings.theme, isDarkTheme]);
+
     if (inline) {
         return (
             <code className={`${className || ''} px-1 py-0.5 bg-[var(--color-inline-code-bg-alt)] text-[var(--color-inline-code-text-alt)] rounded text-[0.85em] font-mono`}>
@@ -84,7 +92,7 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({
             </div>
             {settings.codeSynthaxHighlightEnabled && language ? (
                 <SyntaxHighlighter
-                    style={isDarkTheme ? vscDarkPlus : solarizedlight} // Conditionally apply dark or light theme
+                    style={syntaxHighlightStyle} // Use the determined style
                     language={language}
                     PreTag="div"
                     showLineNumbers={false}

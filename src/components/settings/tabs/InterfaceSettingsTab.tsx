@@ -98,6 +98,7 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
                             <option value="dracula-dark">Dracula (Escuro)</option>
                             <option value="solarized-light">Solarized Light (Claro)</option>
                             <option value="one-dark">One Dark (Escuro)</option>
+                            <option value="github-light">GitHub Light (Claro)</option>
                         </select>
                         <p className="text-xs text-[var(--color-settings-section-description-text)] mt-1">
                             Escolha o tema visual do aplicativo.
@@ -135,7 +136,7 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
                     <ToggleSwitch
                         id="hide-navigation-toggle"
                         label="Esconder Navegação"
-                        description="Oculta a barra lateral de navegação por padrão."
+                        description="Oculta a barra lateral de navegação por default."
                         checked={currentHideNavigation}
                         onChange={onToggleHideNavigation}
                     />
