@@ -115,14 +115,21 @@ export function useUrlConfigInitializer() {
             }
             setIsLoadingConfig(false);
             setConfigError(null);
+            processedSearchStringRef.current = currentSearch; // Mark this "empty" search as processed
             return;
         }
 
         const processAndApply = async () => {
+            // This 'if' block was part of the original logic when no params were found.
+            // It's now effectively handled by the block above, which also sets processedSearchStringRef.
+            // However, processAndApply is only called if configUrl or functionDeclarationUrlEncoded exists.
+            // So, the above block handles the "no params" case for the entire useEffect.
+
             setIsLoadingConfig(true);
+            setConfigError(null); // Clear previous error for a new attempt
             let operationError: string | null = null; 
 
-            console.log("Starting processAndApply cycle for URL parameters:", currentSearch);
+            // console.log("Starting processAndApply cycle for URL parameters:", currentSearch);
 
             try {
                 // --- Step 1: Fetch configUrl if new, changed, or not yet fetched ---
