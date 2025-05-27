@@ -19,8 +19,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
   box-sizing: border-box;
   margin: 0;
-  background-color: #f8f9fa;
-  color: #212529;
+  /* Use theme-defined variables for background and text color, with fallbacks */
+  background-color: var(--color-body-bg, #f8f9fa);
+  color: var(--color-body-text, #212529);
   font-size: 16px;
 }
 
@@ -41,13 +42,4 @@ main {
   .loox-logo-blue {
     filter: none;
   }
-}
-
-body.theme-loox {
-    /* General body styling for Loox theme */
-    background-color: #1a1a1a; /* This could also be a var from loox.css e.g. var(--color-body-bg) */
-    color: #f0f0f0; /* This could also be a var from loox.css e.g. var(--color-body-text) */
-
-    /* Specific input, error, attachment variables are now defined in src/themes/loox.css */
-    /* This ensures src/themes/loox.css is the single source of truth for these values. */
 }

@@ -1,6 +1,4 @@
-@import "tailwindcss";
-
-@theme {
+.theme-loox {
   /* Base Colors - Loox Dark Theme */
   --color-gray-50: #3A4468; /* Lighter accent for dark theme, e.g., hover states */
   --color-gray-100: #2D375A; /* Used for some backgrounds or darker hover states */
@@ -63,6 +61,10 @@
   /* Custom Primary Color - Loox Blue */
   --color-primary: #2563EB; /* Tailwind blue-600 */
   --color-primary-dark: #1D4ED8; /* Tailwind blue-700 */
+
+  /* New: Body background and text colors for this theme */
+  --color-body-bg: var(--color-gray-900);
+  --color-body-text: var(--color-gray-600);
 
   /* Semantic Colors (Sidebar specific for now) */
   --color-sidebar-bg: var(--color-gray-800);
@@ -368,7 +370,7 @@
   --color-settings-content-bg: var(--color-gray-800);
   --color-settings-section-title-text: var(--color-gray-600);
   --color-settings-section-description-text: var(--color-gray-400);
-  --color-settings-section-border: var(--color-gray-200); /* Changed to a more subtle border */
+  --color-settings-section-border: var(--color-gray-200);
 
   /* Toggle Switch */
   --color-toggle-switch-bg-off: var(--color-gray-300);

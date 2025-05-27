@@ -1,6 +1,4 @@
-@import "tailwindcss";
-
-@theme {
+.theme-dracula-dark {
   /* Base Colors - Dracula Theme */
   --color-gray-50: #44475A;   /* Current Line - Lighter accent */
   --color-gray-100: #3A3F50;  /* Slightly lighter than Background for some elements */
@@ -61,6 +59,10 @@
   /* Custom Primary Color - Using Dracula's Pink as primary for now */
   --color-primary: #FF79C6;       /* Pink */
   --color-primary-dark: #E06AB6;  /* Darker Pink */
+
+  /* New: Body background and text colors for this theme */
+  --color-body-bg: var(--color-gray-900);
+  --color-body-text: var(--color-white);
 
   /* Semantic Colors */
   --color-sidebar-bg: var(--color-gray-800);
