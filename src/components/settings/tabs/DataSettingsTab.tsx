@@ -12,6 +12,7 @@ import {
     fetchUserProfile,
     revokeAccessToken
 } from '../../../services/googleAuthService';
+import useIsMobile from '../../../hooks/useIsMobile'; // Import the hook
 
 export interface DataSettingsTabProps {
     syncDriveData: () => Promise<void>;
@@ -22,6 +23,7 @@ const GOOGLE_DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file profile 
 const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
     const { showDialog } = useDialog();
     const { settings, connectGoogleDrive, disconnectGoogleDrive, setGoogleDriveSyncStatus, setGoogleDriveError } = useAppSettings();
+    const isMobile = useIsMobile(); // Use the hook to detect mobile
 
     const [isGoogleClientInitialized, setIsGoogleClientInitialized] = useState(false);
     const [authActionLoading, setAuthActionLoading] = useState(false);
@@ -380,40 +382,47 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
                             Carregue um arquivo de backup para restaurar suas configurações e conversas.
                             Isso substituirá os dados existentes.
                         </p>
-                        <div
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onDrop={handleDrop}
-                            className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg transition-all duration-200 ease-in-out
-                                ${isDragging ? 'border-[var(--color-data-drag-drop-active-border)] bg-[var(--color-data-drag-drop-hover-bg)] text-[var(--color-data-drag-drop-active-text)]' : 'border-[var(--color-data-drag-drop-border)] bg-transparent text-[var(--color-data-drag-drop-text)] hover:bg-[var(--color-data-drag-drop-hover-bg)]'}`}
-                        >
-                            <IoCloudUploadOutline size={40} className="mb-3" />
-                            <p className="text-center text-sm font-semibold">
-                                Arraste e solte seu arquivo JSON aqui
-                            </p>
-                            <p className="text-center text-xs text-[var(--color-data-drag-drop-text-secondary)] mb-3">
-                                ou clique no botão abaixo para selecionar um arquivo.
-                            </p>
-                            <Button variant="secondary" onClick={triggerFileInput} className="mt-3">
-                                Selecionar Arquivo
-                            </Button>
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileChange}
-                                accept="application/json"
-                                className="hidden"
-                            />
-                            {selectedFile && (
-                                <div className="mt-4 flex items-center bg-[var(--color-data-drag-drop-file-bg)] p-2 rounded-md shadow-inner">
-                                    <IoDocumentOutline size={18} className="mr-2 text-[var(--color-data-drag-drop-file-icon)]" />
-                                    <span className="text-sm font-medium text-[var(--color-data-drag-drop-file-text)]">{selectedFile.name}</span>
-                                    <Button variant="ghost" size="icon-sm" onClick={() => setSelectedFile(null)} className="ml-2 text-[var(--color-data-drag-drop-file-remove-icon)] hover:bg-transparent">
-                                        <IoCloseOutline size={18} />
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
+
+                        {/* Always present file input and selection display */}
+                        <Button variant="secondary" onClick={triggerFileInput} className="mt-3 w-full sm:w-auto">
+                            Selecionar Arquivo
+                        </Button>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            accept="application/json"
+                            className="hidden"
+                        />
+                        {selectedFile && (
+                            <div className="mt-4 flex items-center bg-[var(--color-data-drag-drop-file-bg)] p-2 rounded-md shadow-inner">
+                                <IoDocumentOutline size={18} className="mr-2 text-[var(--color-data-drag-drop-file-icon)]" />
+                                <span className="text-sm font-medium text-[var(--color-data-drag-drop-file-text)]">{selectedFile.name}</span>
+                                <Button variant="ghost" size="icon-sm" onClick={() => setSelectedFile(null)} className="ml-2 text-[var(--color-data-drag-drop-file-remove-icon)] hover:bg-transparent">
+                                    <IoCloseOutline size={18} />
+                                </Button>
+                            </div>
+                        )}
+
+                        {/* Conditional drag-and-drop area for non-mobile devices */}
+                        {!isMobile && (
+                            <div
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg transition-all duration-200 ease-in-out mt-4
+                                    ${isDragging ? 'border-[var(--color-data-drag-drop-active-border)] bg-[var(--color-data-drag-drop-hover-bg)] text-[var(--color-data-drag-drop-active-text)]' : 'border-[var(--color-data-drag-drop-border)] bg-transparent text-[var(--color-data-drag-drop-text)] hover:bg-[var(--color-data-drag-drop-hover-bg)]'}`}
+                            >
+                                <IoCloudUploadOutline size={40} className="mb-3" />
+                                <p className="text-center text-sm font-semibold">
+                                    Arraste e solte seu arquivo JSON aqui
+                                </p>
+                                <p className="text-center text-xs text-[var(--color-data-drag-drop-text-secondary)] mb-3">
+                                    ou clique no botão acima para selecionar um arquivo.
+                                </p>
+                            </div>
+                        )}
+
                         <Button
                             variant="primary"
                             onClick={handleImportData}
