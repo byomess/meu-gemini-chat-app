@@ -1,4 +1,5 @@
 import { useEffect, useState, useContext, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import type { AppSettings, GeminiModelConfig, FunctionDeclaration, Memory, SafetySetting } from '../types';
 import { AppSettingsContext } from '../contexts/AppSettingsContext';
 import { MemoryContext } from '../contexts/MemoryContext';
@@ -65,22 +66,10 @@ export function useUrlConfigInitializer() {
 
     const [isLoadingConfig, setIsLoadingConfig] = useState<boolean>(false);
     const [configError, setConfigError] = useState<string | null>(null);
-    const [locationChangeSignal, setLocationChangeSignal] = useState(0);
-
-    // Effect to listen for popstate and trigger re-evaluation of the main effect
-    useEffect(() => {
-        const handlePopState = () => {
-            // console.log("popstate event fired. Triggering location change signal.");
-            setLocationChangeSignal(prev => prev + 1);
-        };
-        window.addEventListener('popstate', handlePopState);
-        return () => {
-            window.removeEventListener('popstate', handlePopState);
-        };
-    }, []); // Runs once on mount/unmount
+    const location = useLocation();
 
     useEffect(() => {
-        const currentSearch = window.location.search;
+        const currentSearch = location.search;
 
         if (processedSearchStringRef.current === currentSearch) {
             // console.log("Configuration for current search string already processed. Skipping effect.", currentSearch);
@@ -373,7 +362,7 @@ export function useUrlConfigInitializer() {
 
         processAndApply();
 
-    }, [window.location.search, setSettings, replaceAllMemories, appSettingsContext, memoryContext, locationChangeSignal]); // React to URL changes, context availability/methods, and popstate.
+    }, [location.search, setSettings, replaceAllMemories, appSettingsContext, memoryContext]); // React to URL changes (via useLocation) and context availability/methods.
 
     return { isLoadingConfig, configError };
 }
