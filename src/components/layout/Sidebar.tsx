@@ -147,7 +147,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     title={isMobile ? "Nova Conversa" : ""}
                     aria-label="Nova Conversa"
                 >
-                    <IoAddCircleOutline size={22} className={'group-hover/newConvo:scale-110 group-hover/newConvo:rotate-90 transition-transform duration-300'} />
+                    <IoAddCircleOutline size={22} className={'group-hover/newConvo:scale-105 transition-transform duration-300'} />
                     <span className="whitespace-nowrap">Nova Conversa</span>
                 </Button>
             }
@@ -168,6 +168,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             Recentes
           </p>
         <div className={`flex-grow overflow-y-auto space-y-1 pr-1 -mr-1`}>
+            {/* Add custom scrollbar utility classes here if available, e.g., 'custom-scrollbar' */}
           {sortedConversations.map((convo) => (
             <div
               key={convo.id}
@@ -256,7 +257,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     aria-label="Editar título da conversa"
                     className={`${convo.id === activeConversationId ? 'text-[var(--color-convo-item-active-actions-icon)] opacity-80 hover:text-[var(--color-convo-item-active-actions-icon)]' : 'text-[var(--color-convo-item-actions-icon)] hover:text-[var(--color-convo-item-actions-hover-icon)]'} transition-colors`}
                   >
-                    <IoPencilOutline size={15} />
+                    <IoPencilOutline size={16} /> {/* Changed size from 15 to 16 */}
                   </Button>
                   <Button
                     variant="ghost" // Using ghost variant for minimal styling
@@ -266,7 +267,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     aria-label="Excluir conversa"
                     className={`${convo.id === activeConversationId ? 'text-[var(--color-convo-item-active-actions-icon)] opacity-80 hover:text-[var(--color-convo-item-active-actions-delete-hover-icon)]' : 'text-[var(--color-convo-item-actions-icon)] hover:text-[var(--color-convo-item-actions-delete-hover-icon)]'} transition-colors`}
                   >
-                    <IoTrashBinOutline size={15} />
+                    <IoTrashBinOutline size={16} /> {/* Changed size from 15 to 16 */}
                   </Button>
                 </div>
               )}
