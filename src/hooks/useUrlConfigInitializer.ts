@@ -54,6 +54,8 @@ export function useUrlConfigInitializer() {
     const appSettingsContext = useContext(AppSettingsContext);
     const memoryContext = useContext(MemoryContext);
 
+    const processedSearchStringRef = useRef<string | null>(null); // Ref to track processed search strings
+
     // Destructure methods from contexts. These should have stable references if provided correctly.
     const setSettings = appSettingsContext?.setSettings;
     const replaceAllMemories = memoryContext?.replaceAllMemories;
@@ -66,25 +68,37 @@ export function useUrlConfigInitializer() {
 
     useEffect(() => {
         const currentSearch = window.location.search;
-        // The console.log for "effect triggered" will now reflect the actual dependencies.
-        // console.log("useUrlConfigInitializer effect triggered. Dependencies: window.location.search, setSettings, replaceAllMemories.");
+
+        if (processedSearchStringRef.current === currentSearch) {
+            // console.log("Configuration for current search string already processed. Skipping effect.", currentSearch);
+            return; 
+        }
+
+        // console.log("useUrlConfigInitializer effect triggered. Processing search:", currentSearch);
 
         if (!appSettingsContext) { 
             console.error("CRITICAL: AppSettingsContext not found in useUrlConfigInitializer.");
+            setConfigError("AppSettingsContext not found.");
+            setIsLoadingConfig(false);
+            processedSearchStringRef.current = currentSearch; // Mark as processed
             return;
         }
         if (!memoryContext) {
             console.error("CRITICAL: MemoryContext not found in useUrlConfigInitializer.");
+            setConfigError("MemoryContext not found.");
+            setIsLoadingConfig(false);
+            processedSearchStringRef.current = currentSearch; // Mark as processed
             return;
         }
         
         if (!setSettings) {
             console.error("CRITICAL: setSettings method not available from AppSettingsContext.");
+            setConfigError("setSettings method not available.");
+            setIsLoadingConfig(false);
+            processedSearchStringRef.current = currentSearch; // Mark as processed
             return;
         }
         // replaceAllMemories is checked before use if configToApply.memories is present.
-        // If replaceAllMemories were null and configToApply.memories existed, it would be a silent no-op for memories.
-        // For robustness, it could be checked here too if it's a strict dependency.
 
         const params = new URLSearchParams(currentSearch);
         const configUrl = params.get('configUrl');
@@ -331,7 +345,9 @@ export function useUrlConfigInitializer() {
                     setConfigError(operationError); 
                 }
                 setIsLoadingConfig(false);
-                console.log("Finished processAndApply cycle for URL parameters.");
+                // console.log("Finished processAndApply cycle for URL parameters.");
+                // CRUCIAL: Mark this search string as processed, regardless of success or failure of the attempt.
+                processedSearchStringRef.current = currentSearch;
             }
         };
 
