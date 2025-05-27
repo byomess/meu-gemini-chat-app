@@ -3,6 +3,7 @@ import { IoChatbubblesOutline, IoMenuOutline, IoSyncOutline, IoEllipsisVertical 
 import { GhostIcon } from 'lucide-react';
 import type { GoogleDriveSyncStatus } from '../../../types';
 import Dropdown from '../../common/Dropdown'; // Import the new Dropdown component
+import DropdownItem from '../../common/DropdownItem'; // Import the new DropdownItem component
 
 interface ChatHeaderProps {
     onOpenMobileSidebar: () => void;
@@ -63,18 +64,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 }
                 position="right"
             >
-                <button
-                    onClick={onClearChat}
-                    // Removed specific styling classes, now handled by Dropdown component
-                >
+                <DropdownItem onClick={onClearChat}>
                     Limpar chat
-                </button>
-                <button
-                    onClick={onSearchMessages}
-                    // Removed specific styling classes, now handled by Dropdown component
-                >
+                </DropdownItem>
+                <DropdownItem onClick={onSearchMessages}>
                     Buscar mensagens
-                </button>
+                </DropdownItem>
             </Dropdown>
         </div>
     );

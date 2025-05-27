@@ -11,6 +11,7 @@ import {
 import { useConversations } from '../../contexts/ConversationContext';
 import type { Conversation } from '../../types';
 import Dropdown from '../common/Dropdown'; // Import the new Dropdown component
+import DropdownItem from '../common/DropdownItem'; // Import the new DropdownItem component
 
 // Import GhostIcon from lucide-react or similar if available, otherwise use a placeholder or another icon
 import { GhostIcon } from 'lucide-react'; // Example: if you have lucide-react installed
@@ -153,18 +154,12 @@ const Sidebar: React.FC<SidebarProps> = ({
             position="left" // Position the dropdown menu to the left
             menuClassName="w-full" // Make the dropdown menu take full width of its parent
         >
-            <Button
-              variant="ghost"
-              // Removed specific styling classes, now handled by Dropdown component
-            >
-              <IoChatbubbleEllipsesOutline size={18} className="mr-2" /> Conversa Padrão
-            </Button>
-            <Button
-              variant="ghost"
-              // Removed specific styling classes, now handled by Dropdown component
-            >
-              <GhostIcon size={18} className="mr-2" /> Conversa Incógnita
-            </Button>
+            <DropdownItem onClick={() => handleNewChatClick(false)} icon={<IoChatbubbleEllipsesOutline size={18} />}>
+                Conversa Padrão
+            </DropdownItem>
+            <DropdownItem onClick={() => handleNewChatClick(true)} icon={<GhostIcon size={18} />}>
+                Conversa Incógnita
+            </DropdownItem>
         </Dropdown>
       </div>
 
