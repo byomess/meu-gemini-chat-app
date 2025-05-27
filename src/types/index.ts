@@ -13,10 +13,9 @@ export type Part = GenaiPart;
 export type GeminiModel =
     | "gemini-2.5-pro-preview-05-06"
     | "gemini-2.5-flash-preview-05-20"
-    | "gemini-2.5-flash-preview-04-17"
     | "gemini-1.5-pro-latest"
     | "gemini-1.5-flash-latest"
-    | "gemini-pro";
+    | "gemini-1.5-flash-preview-04-17";
 
 export interface GeminiModelConfig {
     model: GeminiModel;
@@ -53,6 +52,9 @@ export interface FunctionDeclaration {
     httpMethod: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 }
 
+// ADDED: Define ThemeName type
+export type ThemeName = 'loox' | 'aulapp' | 'dracula-dark';
+
 export interface AppSettings {
     apiKey: string;
     geminiModelConfig: GeminiModelConfig;
@@ -63,7 +65,7 @@ export interface AppSettings {
     enableWebSearch: boolean;
     enableAttachments: boolean;
     hideNavigation: boolean;
-    theme: 'loox' | 'aulapp';
+    theme: ThemeName; // MODIFIED: Use ThemeName
     showProcessingIndicators: boolean; // Add this line
     showAiFunctionCallAttachments: boolean; // New setting
     googleDriveAccessToken?: string;

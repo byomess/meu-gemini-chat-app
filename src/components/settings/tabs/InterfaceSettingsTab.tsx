@@ -4,6 +4,7 @@ import TextInput from '../../common/TextInput';
 import { IoSparklesOutline } from 'react-icons/io5';
 import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
 import ToggleSwitch from '../../common/ToggleSwitch'; // Import the new ToggleSwitch component
+import { ThemeName } from '../../../types'; // ADDED: Import ThemeName
 
 export interface InterfaceSettingsTabProps {
     currentCodeHighlightEnabled: boolean;
@@ -20,6 +21,8 @@ export interface InterfaceSettingsTabProps {
     onToggleShowProcessingIndicators: () => void;
     currentShowAiFunctionCallAttachments: boolean; // New prop
     onToggleShowAiFunctionCallAttachments: () => void; // New prop
+    currentTheme: ThemeName; // ADDED: New prop for theme
+    onThemeChange: (theme: ThemeName) => void; // ADDED: New prop for theme change handler
 }
 
 const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
@@ -37,6 +40,8 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
     onToggleShowProcessingIndicators,
     currentShowAiFunctionCallAttachments, // Destructure new prop
     onToggleShowAiFunctionCallAttachments, // Destructure new prop
+    currentTheme, // Destructure new prop
+    onThemeChange, // Destructure new prop
 }) => {
     return (
         <div className="space-y-6">
@@ -75,6 +80,26 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
                                 </div>
                             )}
                         </div>
+                    </div>
+
+                    {/* Theme Selection - NEW */}
+                    <div className="flex flex-col space-y-2">
+                        <label htmlFor="theme-select" className="text-sm font-medium text-[var(--color-text-primary)]">
+                            Tema
+                        </label>
+                        <select
+                            id="theme-select"
+                            value={currentTheme}
+                            onChange={(e) => onThemeChange(e.target.value as ThemeName)}
+                            className="p-2 border rounded-md bg-[var(--color-input-bg)] border-[var(--color-input-border)] text-[var(--color-input-text)] focus:ring-[var(--color-focus-ring)] focus:border-[var(--color-focus-ring)]"
+                        >
+                            <option value="loox">Loox (Escuro)</option>
+                            <option value="aulapp">Aulapp (Claro)</option>
+                            <option value="dracula-dark">Dracula (Escuro)</option>
+                        </select>
+                        <p className="text-xs text-[var(--color-settings-section-description-text)] mt-1">
+                            Escolha o tema visual do aplicativo.
+                        </p>
                     </div>
 
                     {/* Code Syntax Highlight Toggle */}

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, type ReactNode, useCallback, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { HarmCategory, HarmBlockThreshold, type SafetySetting } from '../types';
-import type { AppSettings, GeminiModelConfig, FunctionDeclaration, GoogleDriveSyncStatus, GoogleDriveUser } from '../types';
+import type { AppSettings, GeminiModelConfig, FunctionDeclaration, GoogleDriveSyncStatus, GoogleDriveUser, ThemeName } from '../types'; // MODIFIED: Import ThemeName
 
 const APP_SETTINGS_KEY = 'geminiChat_appSettings';
 
@@ -32,7 +32,7 @@ const defaultAppSettings: AppSettings = {
     enableWebSearch: true,
     enableAttachments: true,
     hideNavigation: false,
-    theme: 'aulapp',
+    theme: 'loox', // MODIFIED: Default theme
     showProcessingIndicators: true,
     googleDriveAccessToken: undefined,
     googleDriveUser: null,
@@ -53,7 +53,7 @@ interface AppSettingsContextType {
     updateEnableWebSearch: (enabled: boolean) => void;
     updateAttachmentsEnabled: (enabled: boolean) => void;
     updateHideNavigation: (hidden: boolean) => void;
-    updateTheme: (theme: 'loox' | 'aulapp') => void;
+    updateTheme: (theme: ThemeName) => void; // MODIFIED: Use ThemeName
     updateShowProcessingIndicators: (enabled: boolean) => void; // Add this line
     connectGoogleDrive: (accessToken: string, user: GoogleDriveUser) => void;
     disconnectGoogleDrive: () => void;
@@ -71,7 +71,8 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
     );
 
     useEffect(() => {
-        document.body.classList.remove('theme-loox', 'theme-aulapp');
+        // MODIFIED: Remove all known theme classes before adding the new one
+        document.body.classList.remove('theme-loox', 'theme-aulapp', 'theme-dracula-dark');
         document.body.classList.add(`theme-${settings.theme}`);
     }, [settings.theme]);
 
@@ -106,7 +107,7 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
                 }));
             }
         }
-    }, [settings.geminiModelConfig?.safetySettings]);
+    }, [settings.geminiModelConfig?.safetySettings, setSettings]); // Added setSettings to dependency array
 
     const saveApiKey = useCallback((apiKey: string) => {
         setSettings((prevSettings) => ({ ...prevSettings, apiKey }));
@@ -170,7 +171,7 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
         }));
     }, [setSettings]);
 
-    const updateTheme = useCallback((theme: 'loox' | 'aulapp') => {
+    const updateTheme = useCallback((theme: ThemeName) => { // MODIFIED: Use ThemeName
         setSettings((prevSettings) => ({
             ...prevSettings,
             theme: theme,
