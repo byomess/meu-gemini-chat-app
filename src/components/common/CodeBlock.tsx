@@ -2,8 +2,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { PrismAsyncLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import RSHLightAsync from 'react-syntax-highlighter/dist/esm/light-async';
-import { vscDarkPlus, solarizedlight } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Added github
-import github from 'react-syntax-highlighter/dist/cjs/styles/hljs/github'; // Import github light theme
+import { vscDarkPlus, solarizedlight, github } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Corrected: Imported github from Prism styles
 import { IoCopyOutline, IoCheckmarkDoneOutline } from 'react-icons/io5';
 
 import jsx from 'react-syntax-highlighter/dist/esm/languages/prism/jsx';
@@ -63,7 +62,7 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({
     // Choose syntax highlighter style based on theme
     const syntaxHighlightStyle = useMemo(() => {
         if (settings.theme === 'github-light') {
-            return github;
+            return github; // Now correctly refers to Prism.js GitHub style
         }
         return isDarkTheme ? vscDarkPlus : solarizedlight;
     }, [settings.theme, isDarkTheme]);
