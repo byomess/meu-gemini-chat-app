@@ -31,28 +31,35 @@ const Dropdown: React.FC<DropdownProps> = ({
     const [isVisible, setIsVisible] = useState(false); // Controls visual opacity/transform
 
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null); // To manage transition timeouts
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null); // To manage setTimeout for unmounting
 
     // Effect to manage mounting/unmounting and visibility based on isOpen
     useEffect(() => {
+        // Clear any existing timeout to prevent conflicts
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
         }
 
         if (isOpen) {
-            setIsMounted(true); // Mount the component
-            timeoutRef.current = setTimeout(() => {
-                setIsVisible(true); // Start the fade-in transition
-                if (onOpen) onOpen();
-            }, 10); // Small delay to ensure CSS transition applies
+            setIsMounted(true); // Mount the component immediately
+            // Use requestAnimationFrame to ensure the DOM has updated before applying the 'visible' class
+            // This helps trigger the CSS transition correctly.
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => { // Double rAF for more reliable transition start
+                    setIsVisible(true);
+                    if (onOpen) onOpen();
+                });
+            });
         } else {
-            setIsVisible(false); // Start the fade-out transition
+            setIsVisible(false); // Immediately start fading out
+            // Set a timeout to unmount the component after the transition completes
             timeoutRef.current = setTimeout(() => {
                 setIsMounted(false); // Unmount the component from DOM
                 if (onClose) onClose();
             }, 200); // Match the CSS transition duration (duration-200)
         }
 
+        // Cleanup function for the effect
         return () => {
             if (timeoutRef.current) {
                 clearTimeout(timeoutRef.current);
@@ -95,7 +102,7 @@ const Dropdown: React.FC<DropdownProps> = ({
 
             {isMounted && ( // Render only when mounted
                 <div
-                    className={`absolute mt-2 w-48 bg-[var(--color-dropdown-bg)] border border-[var(--color-dropdown-border)] rounded-md shadow-lg z-30 overflow-hidden
+                    className={`absolute mt-2 bg-[var(--color-dropdown-bg)] border border-[var(--color-dropdown-border)] rounded-md shadow-lg z-30 overflow-hidden
                         ${position === 'left' ? 'left-0' : 'right-0'}
                         ${menuClassName}
                         transition-opacity transition-transform duration-200 ease-out
