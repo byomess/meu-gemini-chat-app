@@ -17,7 +17,7 @@ interface TextInputProps {
     helperText?: React.ReactNode; // New prop for helper text
 
     // Styling props
-    className?: string; // Renamed from containerClassName, applies to the root div
+    className?: string; // Renamed from Name, applies to the root div
     labelClassName?: string; // Re-added labelClassName prop
     inputWrapperClassName?: string; // For the div wrapping input and icon
     inputClassName?: string; // Custom classes for the input element itself

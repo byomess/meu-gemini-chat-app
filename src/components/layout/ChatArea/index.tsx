@@ -196,7 +196,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                             value={searchTerm}
                             onChange={setSearchTerm}
                             type="text"
-                            className="flex-grow" {/* Changed from inputClassName to className */}
+                            className="flex-grow"
                         />
                         <button
                             onClick={() => {
@@ -212,7 +212,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onOpenMobileSidebar, showMobileMenu
                     </div>
                     {searchTerm !== '' && (
                         <div className="text-sm text-[var(--color-gray-500)]"> {/* Using a gray color for the count */}
-                            {filteredMessages.length} {filteredMessages.length === 1 ? 'ocorrência' : 'ocorrências'} encontrada{filteredMessages.length === 1 ? '' : 's'}.
+                            {filteredMessages.length} {filteredMessages.length === 1 ? 'resultado' : 'resultados'} encontrada{filteredMessages.length === 1 ? '' : 's'}.
                         </div>
                     )}
                 </div>

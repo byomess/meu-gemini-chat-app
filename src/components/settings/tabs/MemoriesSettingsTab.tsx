@@ -248,7 +248,7 @@ const MemoriesSettingsTab: React.FC = () => {
                             value={newMemoryText}
                             onChange={setNewMemoryText}
                             placeholder="Adicionar nova memória..."
-                            containerClassName="w-full"
+                            className="w-full"
                             inputClassName="p-2.5 text-sm" // Match original styling
                         />
                     </div>

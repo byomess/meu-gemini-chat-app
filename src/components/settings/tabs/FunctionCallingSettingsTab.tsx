@@ -274,7 +274,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                             onChange={(val) => setNewFunction(prev => ({ ...prev, endpointUrl: val }))}
                                             placeholder="Ex: https://api.example.com/weather"
                                             type="url"
-                                            containerClassName="flex-1"
+                                            className="flex-1"
                                             inputClassName="bg-[var(--color-table-item-edit-bg)] border-[var(--color-table-item-edit-border)] text-[var(--color-table-item-edit-text)] placeholder-[var(--color-table-item-edit-placeholder)]"
                                         />
                                     </div>
@@ -387,7 +387,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                             onChange={(val) => setNewFunction(prev => ({ ...prev, endpointUrl: val }))}
                                             placeholder="Ex: https://api.example.com/weather"
                                             type="url"
-                                            containerClassName="flex-1"
+                                            className="flex-1"
                                             inputClassName="bg-[var(--color-table-item-edit-bg)] border-[var(--color-table-item-edit-border)] text-[var(--color-table-item-edit-text)] placeholder-[var(--color-table-item-edit-placeholder)]"
                                         />
                                     </div>

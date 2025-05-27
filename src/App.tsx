@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from './components/layout/Sidebar';
-import ChatArea from './components/layout/ChatArea';
+import ChatArea from './components/layout/ChatArea'
 import SettingsModal from './components/settings/SettingsModal';
 import useIsMobile from './hooks/useIsMobile';
 import React from 'react';
