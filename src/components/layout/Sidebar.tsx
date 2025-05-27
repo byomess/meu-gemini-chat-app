@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import Button from '../common/Button'; // Certifique-se que o caminho está correto
 import {
   IoSettingsOutline,
