@@ -33,54 +33,50 @@ const Dropdown: React.FC<DropdownProps> = ({
     const dropdownRef = useRef<HTMLDivElement>(null);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null); // To manage transition timeouts
 
-    const openDropdown = useCallback(() => {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current); // Clear any pending close timeout
-        setIsMounted(true); // Mount the component
-        // Allow a tiny delay for the DOM to update with initial hidden state
-        timeoutRef.current = setTimeout(() => {
-            setIsVisible(true); // Start the fade-in transition
-            if (onOpen) onOpen();
-        }, 10); // Small delay to ensure CSS transition applies
-    }, [onOpen]);
+    // Effect to manage mounting/unmounting and visibility based on isOpen
+    useEffect(() => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
 
-    const closeDropdown = useCallback(() => {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current); // Clear any pending open timeout
-        setIsVisible(false); // Start the fade-out transition
-        // Wait for the transition to complete before unmounting
-        timeoutRef.current = setTimeout(() => {
-            setIsMounted(false); // Unmount the component from DOM
-            if (onClose) onClose();
-        }, 200); // Match the CSS transition duration (duration-200)
-    }, [onClose]);
+        if (isOpen) {
+            setIsMounted(true); // Mount the component
+            timeoutRef.current = setTimeout(() => {
+                setIsVisible(true); // Start the fade-in transition
+                if (onOpen) onOpen();
+            }, 10); // Small delay to ensure CSS transition applies
+        } else {
+            setIsVisible(false); // Start the fade-out transition
+            timeoutRef.current = setTimeout(() => {
+                setIsMounted(false); // Unmount the component from DOM
+                if (onClose) onClose();
+            }, 200); // Match the CSS transition duration (duration-200)
+        }
+
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, [isOpen, onOpen, onClose]); // Re-run when isOpen changes
 
     const toggleDropdown = useCallback(() => {
-        if (isOpen) {
-            closeDropdown();
-        } else {
-            openDropdown();
-        }
-        setIsOpen(prev => !prev); // Toggle the logical state
-    }, [isOpen, openDropdown, closeDropdown]);
+        setIsOpen(prev => !prev); // Simply toggle the logical state
+    }, []);
 
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                if (isOpen) { // Only attempt to close if it's logically open
-                    closeDropdown();
-                    setIsOpen(false);
-                }
+                setIsOpen(false); // Set logical state to false
             }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
-            if (timeoutRef.current) { // Clean up timeout on effect cleanup
-                clearTimeout(timeoutRef.current);
-            }
         };
-    }, [isOpen, closeDropdown]); // Depend on isOpen to re-evaluate click outside logic
+    }, []); // No dependencies needed here, as setIsOpen is stable
 
     // Cleanup timeout on component unmount
     useEffect(() => {
