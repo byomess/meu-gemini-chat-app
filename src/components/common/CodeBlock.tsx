@@ -2,7 +2,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { PrismAsyncLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import RSHLightAsync from 'react-syntax-highlighter/dist/esm/light-async';
-import { vscDarkPlus, solarizedlight, github } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Added github
+import { vscDarkPlus, solarizedlight } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Added github
+import github from 'react-syntax-highlighter/dist/cjs/styles/hljs/github'; // Import github light theme
 import { IoCopyOutline, IoCheckmarkDoneOutline } from 'react-icons/io5';
 
 import jsx from 'react-syntax-highlighter/dist/esm/languages/prism/jsx';

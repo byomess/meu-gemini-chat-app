@@ -1,5 +1,5 @@
 // src/constants/themes.ts
-import { ThemeName } from '../types'; // Import ThemeName
+import type { ThemeName } from '../types'; // Import ThemeName
 
 /**
  * All available theme names in the application.
