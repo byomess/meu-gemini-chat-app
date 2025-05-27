@@ -42,8 +42,18 @@ const TextAreaInput: React.FC<TextAreaInputProps> = ({
                 placeholder={placeholder}
                 disabled={disabled}
                 rows={rows}
-                // Removed 'ring' classes to ensure border styling is solely controlled by inputClassName
-                className={`block w-full rounded-md py-1.5 bg-[var(--color-input-form-bg)] text-[var(--color-input-text)] shadow-sm placeholder:text-[var(--color-input-placeholder)] transition-colors duration-200 ${inputClassName}`}
+                // Added px-3 for horizontal padding
+                // Added default border and focus:border using generic input variables
+                // Added focus:outline-none to remove default browser outline
+                className={`block w-full rounded-md py-1.5 px-3 shadow-sm transition-colors duration-200
+                    bg-[var(--color-input-form-bg)]
+                    border border-[var(--color-text-input-border)]
+                    text-[var(--color-input-text)]
+                    placeholder:text-[var(--color-input-placeholder)]
+                    focus:border-[var(--color-text-input-focus-border)]
+                    focus:outline-none
+                    ${inputClassName}
+                `}
             />
             {helperText && (
                 <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
