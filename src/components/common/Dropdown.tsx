@@ -118,7 +118,7 @@ const Dropdown: React.FC<DropdownProps> = ({
 
             {isMounted && ( // Render only when mounted
                 <div
-                    className={`absolute mt-2 bg-[var(--color-dropdown-bg)] border border-[var(--color-dropdown-border)] rounded-md shadow-lg z-30 overflow-hidden
+                    className={`absolute mt-2 w-56 bg-[var(--color-dropdown-bg)] border border-[var(--color-dropdown-border)] rounded-md shadow-lg z-30 overflow-hidden
                         ${position === 'left' ? 'left-0' : 'right-0'}
                         ${menuClassName}
                         transition-opacity transition-transform duration-200 ease-out
