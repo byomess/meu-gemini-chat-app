@@ -513,7 +513,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
                                                                             onToggleHideNavigation={handleToggleHideNavigationForTab}
                                                                             currentShowProcessingIndicators={currentShowProcessingIndicatorsState}
                                                                             onToggleShowProcessingIndicators={handleToggleShowProcessingIndicatorsForTab}
-                                                                        />
+                                                                            currentShowAiFunctionCallAttachments={false}
+                                                                            onToggleShowAiFunctionCallAttachments={function (): void {
+                                                                                throw new Error("Function not implemented.");
+                                                                            } }                                                                        />
                                                                     )}
                                                                     {tab.id === "memories" && (
                                                                         <MemoriesSettingsTab />
