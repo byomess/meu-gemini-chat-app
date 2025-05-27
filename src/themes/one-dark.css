@@ -1,0 +1,530 @@
+.theme-one-dark {
+  /* One Dark Pro Palette */
+  --one-dark-bg: #282c34;
+  --one-dark-fg: #abb2bf;
+  --one-dark-comments: #5c6370;
+  --one-dark-red: #e06c75;
+  --one-dark-green: #98c379;
+  --one-dark-yellow: #e5c07b;
+  --one-dark-blue: #61afef;
+  --one-dark-magenta: #c678dd;
+  --one-dark-cyan: #56b6c2;
+  --one-dark-orange: #d19a66;
+
+  /* Base Colors - Mapping One Dark to generic gray/color names */
+  --color-gray-50: color-mix(in srgb, var(--one-dark-fg) 5%, var(--one-dark-bg) 95%); /* Very light gray for light elements */
+  --color-gray-100: color-mix(in srgb, var(--one-dark-fg) 10%, var(--one-dark-bg) 90%);
+  --color-gray-200: color-mix(in srgb, var(--one-dark-fg) 15%, var(--one-dark-bg) 85%);
+  --color-gray-300: color-mix(in srgb, var(--one-dark-fg) 20%, var(--one-dark-bg) 80%);
+  --color-gray-400: var(--one-dark-comments); /* Comments color for medium gray */
+  --color-gray-500: color-mix(in srgb, var(--one-dark-fg) 50%, var(--one-dark-bg) 50%);
+  --color-gray-600: color-mix(in srgb, var(--one-dark-fg) 60%, var(--one-dark-bg) 40%);
+  --color-gray-700: color-mix(in srgb, var(--one-dark-fg) 70%, var(--one-dark-bg) 30%);
+  --color-gray-800: var(--one-dark-fg); /* Foreground color for dark gray */
+  --color-gray-900: color-mix(in srgb, var(--one-dark-fg) 90%, var(--one-dark-bg) 10%);
+
+  --color-pink-50: color-mix(in srgb, var(--one-dark-magenta) 5%, var(--one-dark-bg) 95%);
+  --color-red-50: color-mix(in srgb, var(--one-dark-red) 5%, var(--one-dark-bg) 95%);
+  --color-red-100: color-mix(in srgb, var(--one-dark-red) 10%, var(--one-dark-bg) 90%);
+  --color-red-200: color-mix(in srgb, var(--one-dark-red) 20%, var(--one-dark-bg) 80%);
+  --color-red-300: color-mix(in srgb, var(--one-dark-red) 30%, var(--one-dark-bg) 70%);
+  --color-red-500: var(--one-dark-red);
+  --color-red-600: color-mix(in srgb, var(--one-dark-red) 80%, var(--one-dark-bg) 20%);
+  --color-red-700: color-mix(in srgb, var(--one-dark-red) 90%, var(--one-dark-bg) 10%);
+
+  --color-yellow-50: color-mix(in srgb, var(--one-dark-yellow) 5%, var(--one-dark-bg) 95%);
+  --color-yellow-400: var(--one-dark-yellow);
+  --color-yellow-600: color-mix(in srgb, var(--one-dark-yellow) 80%, var(--one-dark-bg) 20%);
+  --color-yellow-700: color-mix(in srgb, var(--one-dark-yellow) 90%, var(--one-dark-bg) 10%);
+
+  --color-indigo-50: color-mix(in srgb, var(--one-dark-magenta) 5%, var(--one-dark-bg) 95%); /* Using magenta for indigo */
+  --color-indigo-200: color-mix(in srgb, var(--one-dark-magenta) 20%, var(--one-dark-bg) 80%);
+  --color-indigo-400: var(--one-dark-magenta);
+  --color-indigo-600: color-mix(in srgb, var(--one-dark-magenta) 80%, var(--one-dark-bg) 20%);
+  --color-indigo-700: color-mix(in srgb, var(--one-dark-magenta) 90%, var(--one-dark-bg) 10%);
+
+  --color-purple-500: var(--one-dark-magenta);
+  --color-purple-600: color-mix(in srgb, var(--one-dark-magenta) 80%, var(--one-dark-bg) 20%);
+
+  --color-amber-50: color-mix(in srgb, var(--one-dark-orange) 5%, var(--one-dark-bg) 95%);
+  --color-amber-200: color-mix(in srgb, var(--one-dark-orange) 20%, var(--one-dark-bg) 80%);
+  --color-amber-600: color-mix(in srgb, var(--one-dark-orange) 80%, var(--one-dark-bg) 20%);
+  --color-amber-700: color-mix(in srgb, var(--one-dark-orange) 90%, var(--one-dark-bg) 10%);
+  --color-amber-800: color-mix(in srgb, var(--one-dark-orange) 95%, var(--one-dark-bg) 5%);
+
+  --color-green-500: var(--one-dark-green);
+  --color-emerald-600: color-mix(in srgb, var(--one-dark-green) 80%, var(--one-dark-bg) 20%);
+
+  --color-orange-600: var(--one-dark-orange);
+
+  --color-white: var(--one-dark-fg); /* Foreground for white */
+  --color-black: var(--one-dark-bg); /* Background for black */
+
+  /* Custom Primary Color */
+  --color-primary: var(--one-dark-blue);
+  --color-primary-dark: color-mix(in srgb, var(--one-dark-blue) 80%, var(--one-dark-bg) 20%);
+
+  /* Body background and text colors */
+  --color-body-bg: var(--one-dark-bg);
+  --color-body-text: var(--one-dark-fg);
+
+  /* Semantic Colors (Sidebar specific for now) */
+  --color-sidebar-bg: #21252b; /* Slightly darker than main bg */
+  --color-sidebar-text: var(--one-dark-fg);
+  --color-sidebar-border: #2c313a;
+  --color-sidebar-heading-text: var(--one-dark-comments);
+
+  --color-convo-item-text: var(--one-dark-fg);
+  --color-convo-item-hover-bg: #2c313a;
+  --color-convo-item-hover-text: var(--one-dark-fg);
+  --color-convo-item-active-bg: var(--one-dark-blue);
+  --color-convo-item-active-text: var(--one-dark-bg);
+  --color-convo-item-edit-bg: #2c313a;
+  --color-convo-item-edit-text: var(--one-dark-fg);
+  --color-convo-item-edit-border: color-mix(in srgb, var(--one-dark-blue) 70%, transparent);
+  --color-convo-item-edit-focus-border: var(--one-dark-blue);
+  --color-convo-item-icon: var(--one-dark-comments);
+  --color-convo-item-hover-icon: var(--one-dark-fg);
+  --color-convo-item-active-icon: var(--one-dark-bg);
+
+  /* Incognito Chat Item Styles */
+  --color-convo-item-incognito-bg: #2c313a;
+  --color-convo-item-incognito-text: var(--one-dark-comments);
+  --color-convo-item-incognito-icon: var(--one-dark-comments);
+  --color-convo-item-incognito-hover-bg: #3a404a;
+  --color-convo-item-incognito-hover-text: var(--one-dark-fg);
+  --color-convo-item-incognito-active-bg: color-mix(in srgb, var(--one-dark-magenta) 20%, transparent);
+  --color-convo-item-incognito-active-text: var(--one-dark-magenta);
+  --color-convo-item-incognito-active-icon: var(--one-dark-magenta);
+
+  --color-convo-item-actions-bg: color-mix(in srgb, var(--one-dark-bg) 50%, transparent);
+  --color-convo-item-actions-hover-bg: color-mix(in srgb, #2c313a 80%, transparent);
+  --color-convo-item-actions-button-hover-bg: color-mix(in srgb, #3a404a 80%, transparent);
+  --color-convo-item-actions-icon: var(--one-dark-comments);
+  --color-convo-item-actions-hover-icon: var(--one-dark-fg);
+  --color-convo-item-actions-delete-hover-icon: var(--one-dark-red);
+
+  --color-convo-item-active-actions-bg: color-mix(in srgb, var(--one-dark-blue) 20%, transparent);
+  --color-convo-item-active-actions-hover-bg: color-mix(in srgb, var(--one-dark-blue) 30%, transparent);
+  --color-convo-item-active-actions-button-hover-bg: color-mix(in srgb, var(--one-dark-blue) 40%, transparent);
+  --color-convo-item-active-actions-icon: var(--one-dark-bg);
+  --color-convo-item-active-actions-delete-hover-icon: color-mix(in srgb, var(--one-dark-red) 80%, var(--one-dark-bg) 20%);
+
+  --color-settings-button-text: var(--one-dark-fg);
+  --color-settings-button-hover-bg: #2c313a;
+  --color-settings-button-hover-text: var(--one-dark-fg);
+  --color-settings-button-icon: var(--one-dark-comments);
+  --color-settings-button-hover-icon: var(--one-dark-blue);
+
+  --color-mobile-close-button-bg: #2c313a;
+  --color-mobile-close-button-hover-bg: #3a404a;
+  --color-mobile-close-button-icon: var(--one-dark-comments);
+  --color-mobile-close-button-hover-icon: var(--one-dark-fg);
+
+  --color-logo-text: var(--one-dark-fg);
+
+  --color-focus-ring: var(--one-dark-blue);
+  --color-focus-ring-offset: var(--one-dark-bg);
+
+  /* Message Bubble Colors */
+  --color-message-bubble-user-bg: var(--one-dark-blue);
+  --color-message-bubble-user-text: var(--one-dark-bg);
+  --color-message-bubble-ai-bg: #2c313a;
+  --color-message-bubble-ai-text: var(--one-dark-fg);
+  --color-message-bubble-ai-border: #3a404a;
+  --color-message-bubble-function-bg: color-mix(in srgb, var(--one-dark-magenta) 10%, var(--one-dark-bg) 90%);
+  --color-message-bubble-function-text: var(--one-dark-magenta);
+  --color-message-bubble-function-border: color-mix(in srgb, var(--one-dark-magenta) 20%, var(--one-dark-bg) 80%);
+  --color-message-bubble-error-bg: color-mix(in srgb, var(--one-dark-red) 10%, var(--one-dark-bg) 90%);
+  --color-message-bubble-error-border: color-mix(in srgb, var(--one-dark-red) 30%, var(--one-dark-bg) 70%);
+  --color-message-bubble-error-text: var(--one-dark-red);
+  --color-message-bubble-aborted-bg: color-mix(in srgb, var(--one-dark-yellow) 10%, var(--one-dark-bg) 90%);
+  --color-message-bubble-aborted-border: color-mix(in srgb, var(--one-dark-yellow) 40%, var(--one-dark-bg) 60%);
+  --color-message-bubble-aborted-text: var(--one-dark-yellow);
+  --color-message-bubble-aborted-shadow: color-mix(in srgb, var(--one-dark-yellow) 10%, transparent);
+  --color-message-bubble-loading-bg: #2c313a;
+  --color-message-bubble-loading-border: #3a404a;
+
+  /* Message Bubble Edit State */
+  --color-message-bubble-edit-border: color-mix(in srgb, var(--one-dark-blue) 70%, transparent);
+  --color-message-bubble-user-edit-bg: color-mix(in srgb, var(--one-dark-blue) 10%, var(--one-dark-bg) 90%);
+  --color-message-bubble-ai-edit-bg: color-mix(in srgb, #2c313a 90%, transparent);
+  --color-message-bubble-user-edit-text: var(--one-dark-fg);
+  --color-message-bubble-user-edit-placeholder: var(--one-dark-comments);
+  --color-message-bubble-user-edit-scrollbar-thumb: var(--one-dark-comments);
+  --color-message-bubble-user-edit-scrollbar-track: #2c313a;
+  --color-message-bubble-ai-edit-text: var(--one-dark-fg);
+  --color-message-bubble-ai-edit-placeholder: var(--one-dark-comments);
+  --color-message-bubble-ai-edit-scrollbar-thumb: var(--one-dark-comments);
+  --color-message-bubble-ai-edit-scrollbar-track: #2c313a;
+
+  /* Message Bubble Edit Buttons */
+  --color-message-bubble-user-edit-button-text: var(--one-dark-bg);
+  --color-message-bubble-user-edit-button-hover-text: var(--one-dark-bg);
+  --color-message-bubble-user-edit-button-hover-bg: color-mix(in srgb, var(--one-dark-blue) 70%, transparent);
+  --color-message-bubble-ai-edit-button-text: var(--one-dark-comments);
+  --color-message-bubble-ai-edit-button-hover-text: var(--one-dark-fg);
+  --color-message-bubble-ai-edit-button-hover-bg: color-mix(in srgb, #3a404a 70%, transparent);
+
+  /* Message Bubble Reprocess Icon */
+  --color-message-bubble-reprocess-icon-bg: #3a404a;
+  --color-message-bubble-reprocess-icon-text: var(--one-dark-comments);
+
+  /* Attached Files */
+  --color-attached-file-bg: #2c313a;
+  --color-attached-file-border: #3a404a;
+  --color-attached-file-generic-icon-bg: #3a404a;
+  --color-attached-file-generic-icon: var(--one-dark-comments);
+  --color-attached-file-generic-name: var(--one-dark-comments);
+
+  /* Function Call Request */
+  --color-function-call-request-bg: color-mix(in srgb, var(--one-dark-orange) 10%, var(--one-dark-bg) 90%);
+  --color-function-call-request-border: color-mix(in srgb, var(--one-dark-orange) 20%, var(--one-dark-bg) 80%);
+  --color-function-call-request-text: var(--one-dark-orange);
+  --color-function-call-request-icon: var(--one-dark-orange);
+  --color-function-call-request-name: var(--one-dark-orange);
+
+  /* Function Response */
+  --color-function-response-text: var(--one-dark-magenta);
+  --color-function-response-name: var(--one-dark-magenta);
+
+  /* Markdown/Prose Styling */
+  --color-inline-code-text: var(--one-dark-orange);
+  --color-inline-code-bg: color-mix(in srgb, var(--one-dark-orange) 5%, var(--one-dark-bg) 95%);
+  --color-inline-code-border: color-mix(in srgb, var(--one-dark-orange) 20%, var(--one-dark-bg) 80%);
+  --color-inline-code-loading-bg: #2c313a;
+  --color-code-block-loading-bg: #2c313a;
+  --color-code-block-loading-border: #3a404a;
+  --color-code-block-loading-text: var(--one-dark-comments);
+  --color-prose-p-text: var(--one-dark-fg);
+  --color-prose-headings-text: var(--one-dark-fg);
+  --color-link-text: var(--one-dark-blue);
+  --color-link-hover-text: var(--color-primary-dark);
+  --color-blockquote-border: var(--one-dark-comments);
+  --color-blockquote-text: var(--one-dark-comments);
+  --color-table-border: #3a404a;
+  --color-table-head-bg: #2c313a;
+  --color-table-cell-border: #3a404a;
+  --color-table-header-text: var(--one-dark-fg);
+  --color-table-cell-text: var(--one-dark-fg);
+  --color-strong-text: var(--one-dark-fg);
+  --color-error-message-text: var(--one-dark-red);
+  --color-error-message-border: color-mix(in srgb, var(--one-dark-red) 30%, transparent);
+  --color-aborted-message-text: var(--one-dark-yellow);
+  --color-aborted-message-border: color-mix(in srgb, var(--one-dark-yellow) 40%, transparent);
+  --color-memory-actions-heading-text: var(--one-dark-magenta);
+
+  /* Message Actions Bubble */
+  --color-message-actions-bg: color-mix(in srgb, var(--one-dark-bg) 80%, transparent);
+  --color-message-actions-border: color-mix(in srgb, #3a404a 90%, transparent);
+  --color-message-actions-button-text: var(--one-dark-comments);
+  --color-message-actions-edit-button-hover-text: var(--one-dark-blue);
+  --color-message-actions-edit-button-hover-bg: #2c313a;
+  --color-message-actions-delete-button-hover-text: var(--one-dark-red);
+  --color-message-actions-delete-button-hover-bg: color-mix(in srgb, var(--one-dark-red) 10%, var(--one-dark-bg) 90%);
+
+  /* Avatars */
+  --color-default-ai-avatar-gradient-from: var(--one-dark-magenta);
+  --color-default-ai-avatar-gradient-to: var(--one-dark-blue);
+  --color-function-role-avatar-gradient-from: var(--one-dark-blue);
+  --color-function-role-avatar-gradient-to: var(--one-dark-cyan);
+  --color-user-avatar-gradient-from: var(--one-dark-green);
+  --color-user-avatar-gradient-to: var(--one-dark-yellow);
+
+  /* Message Input Colors */
+  --color-input-container-border: #3a404a;
+  --color-input-container-bg: var(--one-dark-bg);
+  --color-input-form-bg: var(--one-dark-bg);
+  --color-input-form-border: #3a404a;
+  --color-input-text: var(--one-dark-fg);
+  --color-input-placeholder: var(--one-dark-comments);
+  --color-input-attachment-preview-bg: #2c313a;
+  --color-input-attachment-preview-border: #3a404a;
+  --color-api-key-warning-text: var(--one-dark-yellow);
+  --color-api-key-warning-strong-text: color-mix(in srgb, var(--one-dark-yellow) 90%, var(--one-dark-fg) 10%);
+
+  /* Error display colors */
+  --color-error-bg: color-mix(in srgb, var(--one-dark-red) 10%, var(--one-dark-bg) 90%);
+  --color-error-border: color-mix(in srgb, var(--one-dark-red) 30%, var(--one-dark-bg) 70%);
+  --color-error-text: var(--one-dark-red);
+
+  /* Warning display colors */
+  --color-warning-bg: color-mix(in srgb, var(--one-dark-yellow) 10%, var(--one-dark-bg) 90%);
+  --color-warning-border: color-mix(in srgb, var(--one-dark-yellow) 40%, var(--one-dark-bg) 60%);
+  --color-warning-text: var(--one-dark-yellow);
+
+  /* AttachedFileItem colors */
+  --color-attached-item-bg: var(--one-dark-bg);
+  --color-attached-item-generic-bg: #2c313a;
+  --color-attached-item-generic-text: var(--one-dark-fg);
+  --color-attached-item-icon: var(--one-dark-comments);
+  --color-attached-item-subtext: var(--one-dark-comments);
+
+  /* Button Colors */
+  --color-button-primary-bg: var(--one-dark-blue);
+  --color-button-primary-hover-bg: var(--color-primary-dark);
+  --color-button-primary-active-bg: color-mix(in srgb, var(--one-dark-blue) 80%, var(--one-dark-bg) 20%);
+  --color-button-primary-text: var(--one-dark-bg);
+
+  --color-button-secondary-bg: #2c313a;
+  --color-button-secondary-hover-bg: #3a404a;
+  --color-button-secondary-active-bg: #4a505a;
+  --color-button-secondary-text: var(--one-dark-fg);
+  --color-button-secondary-border: #3a404a;
+  --color-button-focus-ring-secondary: #4a505a;
+
+  --color-button-danger-bg: var(--one-dark-red);
+  --color-button-danger-hover-bg: color-mix(in srgb, var(--one-dark-red) 80%, var(--one-dark-bg) 20%);
+  --color-button-danger-active-bg: color-mix(in srgb, var(--one-dark-red) 95%, var(--one-dark-bg) 5%);
+  --color-button-danger-text: var(--one-dark-bg);
+
+  --color-button-icon-text: var(--one-dark-comments);
+  --color-button-icon-hover-text: var(--one-dark-blue);
+  --color-button-icon-hover-bg: #2c313a;
+  --color-button-icon-active-bg: #3a404a;
+
+  --color-button-ghost-text: var(--one-dark-fg);
+  --color-button-ghost-hover-bg: #2c313a;
+  --color-button-ghost-active-bg: #3a404a;
+
+  /* CustomAudioPlayer Colors */
+  --color-audio-player-bg: var(--one-dark-bg);
+  --color-audio-player-border: #3a404a;
+  --color-audio-player-button-bg: #2c313a;
+  --color-audio-player-button-hover-bg: #3a404a;
+  --color-audio-player-button-text: var(--one-dark-fg);
+  --color-audio-player-button-hover-text: var(--one-dark-blue);
+  --color-audio-player-progress-track-bg: #3a404a;
+  --color-audio-player-progress-fill-bg: var(--one-dark-blue);
+  --color-audio-player-progress-thumb-bg: var(--one-dark-fg);
+  --color-audio-player-progress-thumb-border: var(--one-dark-blue);
+  --color-audio-player-time-text: var(--one-dark-comments);
+  --color-audio-player-volume-control-bg: var(--one-dark-bg);
+  --color-audio-player-volume-control-border: #3a404a;
+  --color-audio-player-volume-track-bg: #3a404a;
+  --color-audio-player-volume-fill-bg: var(--one-dark-blue);
+  --color-audio-player-volume-thumb-bg: var(--one-dark-fg);
+  --color-audio-player-volume-thumb-border: var(--one-dark-blue);
+  --color-audio-player-filename-text: var(--one-dark-comments);
+  --color-audio-player-error-bg: color-mix(in srgb, var(--one-dark-red) 10%, var(--one-dark-bg) 90%);
+  --color-audio-player-error-border: color-mix(in srgb, var(--one-dark-red) 30%, var(--one-dark-bg) 70%);
+  --color-audio-player-error-text: var(--one-dark-red);
+
+  /* CodeBlock Colors */
+  --color-code-block-wrapper-bg: var(--one-dark-bg);
+  --color-code-block-wrapper-border: #3a404a;
+  --color-code-block-header-bg: #2c313a;
+  --color-code-block-header-border: #3a404a;
+  --color-code-block-language-text: var(--one-dark-comments);
+  --color-code-block-copy-button-text: var(--one-dark-comments);
+  --color-code-block-copy-button-hover-text: var(--one-dark-fg);
+  --color-code-block-copy-button-hover-bg: #3a404a;
+  --color-code-block-copy-button-copied-icon: var(--one-dark-green);
+  --color-code-block-no-highlight-bg: #2c313a;
+  --color-code-block-no-highlight-text: var(--one-dark-fg);
+  --color-code-block-no-highlight-scrollbar-thumb: var(--one-dark-comments);
+  --color-code-block-no-highlight-scrollbar-track: #2c313a;
+  --color-inline-code-text-alt: var(--one-dark-magenta);
+  --color-inline-code-bg-alt: #2c313a;
+
+  /* CustomDialog Colors */
+  --color-dialog-overlay-bg: color-mix(in srgb, var(--one-dark-bg) 10%, transparent);
+  --color-dialog-bg: var(--one-dark-bg);
+  --color-dialog-border: #3a404a;
+  --color-dialog-title-text: var(--one-dark-fg);
+  --color-dialog-message-text: var(--one-dark-comments);
+
+  /* TextInput Colors */
+  --color-text-input-label-text: var(--one-dark-fg);
+  --color-text-input-bg: var(--one-dark-bg);
+  --color-text-input-border: #3a404a;
+  --color-text-input-focus-ring: var(--one-dark-blue);
+  --color-text-input-focus-border: var(--one-dark-blue);
+  --color-text-input-placeholder-text: var(--one-dark-comments);
+  --color-text-input-text: var(--one-dark-fg);
+  --color-text-input-helper-text: var(--one-dark-comments);
+  --color-text-input-icon: var(--one-dark-comments);
+  --color-text-input-icon-hover: var(--one-dark-fg);
+
+  /* Settings Modal & Tabs Colors */
+  --color-settings-modal-overlay-bg: color-mix(in srgb, var(--one-dark-bg) 70%, transparent);
+  --color-settings-modal-bg: var(--one-dark-bg);
+  --color-settings-modal-border: #3a404a;
+  --color-settings-modal-header-bg: #2c313a;
+  --color-settings-modal-header-border: #3a404a;
+  --color-settings-modal-title-text: var(--one-dark-fg);
+  --color-settings-modal-close-button-text: var(--one-dark-comments);
+  --color-settings-modal-close-button-hover-bg: #3a404a;
+  --color-settings-modal-close-button-hover-text: var(--one-dark-fg);
+
+  /* Settings Tabs Navigation */
+  --color-settings-tab-nav-bg: #2c313a;
+  --color-settings-tab-nav-border: #3a404a;
+  --color-settings-tab-item-text: var(--one-dark-comments);
+  --color-settings-tab-item-hover-bg: #3a404a;
+  --color-settings-tab-item-active-bg: var(--one-dark-blue);
+  --color-settings-tab-item-active-text: var(--one-dark-bg);
+  --color-settings-tab-item-active-border: var(--one-dark-blue);
+  --color-settings-tab-item-icon: var(--one-dark-comments);
+
+  /* Settings Content Area */
+  --color-settings-content-bg: var(--one-dark-bg);
+  --color-settings-section-title-text: var(--one-dark-fg);
+  --color-settings-section-description-text: var(--one-dark-comments);
+  --color-settings-section-border: #3a404a;
+
+  /* Toggle Switch */
+  --color-toggle-switch-bg-off: #3a404a;
+  --color-toggle-switch-bg-on: var(--one-dark-blue);
+  --color-toggle-switch-handle-bg: var(--one-dark-fg);
+  --color-toggle-switch-handle-shadow: color-mix(in srgb, var(--one-dark-fg) 50%, transparent);
+
+  /* Range Slider */
+  --color-range-slider-track-bg: #3a404a;
+  --color-range-slider-fill-bg: var(--one-dark-blue);
+  --color-range-slider-thumb-bg: var(--one-dark-fg);
+  --color-range-slider-thumb-border: var(--one-dark-blue);
+  --color-range-slider-value-text: var(--one-dark-blue);
+  --color-range-slider-label-text-disabled: var(--one-dark-comments);
+  --color-range-slider-value-text-disabled: var(--one-dark-comments);
+  --color-range-slider-track-bg-disabled: #3a404a;
+  --color-range-slider-fill-bg-disabled: #2c313a;
+  --color-range-slider-thumb-bg-disabled: var(--one-dark-comments);
+  --color-range-slider-thumb-border-disabled: #3a404a;
+
+  /* Table/List items (for Function Calling, Data, Memories) */
+  --color-table-row-bg: var(--one-dark-bg);
+  --color-table-row-hover-bg: #2c313a;
+  --color-table-row-border: #3a404a;
+  --color-table-item-text: var(--one-dark-fg);
+  --color-table-item-secondary-text: var(--one-dark-comments);
+  --color-table-item-icon: var(--one-dark-comments);
+  --color-table-item-icon-hover: var(--one-dark-fg);
+  --color-table-item-edit-bg: #2c313a;
+  --color-table-item-edit-border: #3a404a;
+  --color-table-item-edit-text: var(--one-dark-fg);
+  --color-table-item-edit-placeholder: var(--one-dark-comments);
+
+  /* Specific for Function Calling Tab Cards (Display State) */
+  --color-function-card-name-text: var(--one-dark-fg);
+  --color-function-card-description-text: var(--one-dark-comments);
+  --color-function-card-http-method-bg: #2c313a;
+  --color-function-card-http-method-text: var(--one-dark-fg);
+  --color-function-card-http-method-border: #3a404a;
+  --color-function-card-endpoint-text: var(--one-dark-comments);
+
+  /* Specific for Function Calling Tab (Edit State) */
+  --color-function-param-schema-bg: var(--one-dark-bg);
+  --color-function-param-schema-border: #3a404a;
+  --color-function-param-schema-text: var(--one-dark-fg);
+  --color-function-param-schema-placeholder: var(--one-dark-comments);
+  --color-function-param-schema-focus-border: var(--one-dark-blue);
+  --color-function-method-dropdown-bg: var(--one-dark-bg);
+  --color-function-method-dropdown-border: #3a404a;
+  --color-function-method-dropdown-text: var(--one-dark-fg);
+  --color-function-method-dropdown-hover-bg: #2c313a;
+
+  /* Specific for Data Settings Tab */
+  --color-data-import-export-bg: var(--one-dark-bg);
+  --color-data-import-export-border: #3a404a;
+  --color-data-import-export-text: var(--one-dark-fg);
+  --color-data-drag-drop-border: #3a404a;
+  --color-data-drag-drop-text: var(--one-dark-comments);
+  --color-data-drag-drop-hover-bg: #2c313a;
+  --color-data-drag-drop-active-border: var(--one-dark-blue);
+  --color-data-drag-drop-active-text: var(--one-dark-blue);
+  --color-data-drag-drop-file-text: var(--one-dark-fg);
+  --color-data-drag-drop-file-remove-icon: var(--one-dark-red);
+
+  /* Specific for General Settings Tab */
+  --color-general-settings-api-key-text: var(--one-dark-fg);
+  --color-general-settings-api-key-placeholder: var(--one-dark-comments);
+  --color-general-settings-api-key-focus-border: var(--one-dark-blue);
+  --color-general-settings-api-key-bg: var(--one-dark-bg);
+  --color-general-settings-api-key-border: #3a404a;
+
+  /* Specific for Interface Settings Tab */
+  --color-interface-settings-avatar-preview-bg: #2c313a;
+  --color-interface-settings-avatar-preview-border: #3a404a;
+  --color-interface-settings-avatar-preview-text: var(--one-dark-comments);
+
+  /* Specific for Model Settings Tab */
+  --color-model-settings-range-label-text: var(--one-dark-fg);
+  --color-model-settings-range-value-text: var(--one-dark-blue);
+  --color-model-settings-range-input-bg: #3a404a;
+  --color-model-settings-range-input-fill: var(--one-dark-blue);
+  --color-model-settings-range-input-thumb: var(--one-dark-fg);
+  --color-model-settings-range-input-thumb-border: var(--one-dark-blue);
+  --color-settings-model-select-bg: var(--one-dark-bg);
+  --color-settings-model-select-border: #3a404a;
+  --color-settings-model-select-text: var(--one-dark-fg);
+  --color-settings-model-select-focus-border: var(--one-dark-blue);
+  --color-settings-model-select-option-hover-bg: #2c313a;
+
+  /* Chat Area Colors */
+  --color-chat-area-bg: var(--one-dark-bg);
+  --color-chat-area-text: var(--one-dark-fg);
+
+  /* Chat Header */
+  --color-chat-header-bg: color-mix(in srgb, var(--one-dark-bg) 80%, transparent);
+  --color-chat-header-border: #3a404a;
+  --color-chat-header-icon: var(--one-dark-comments);
+  --color-chat-header-title: var(--one-dark-fg);
+
+  /* Mobile Menu Button (in header) */
+  --color-mobile-menu-button-text: var(--one-dark-comments);
+  --color-mobile-menu-button-hover-text: var(--one-dark-fg);
+
+  /* Floating Scroll Button */
+  --color-floating-button-shadow: color-mix(in srgb, var(--one-dark-blue) 30%, transparent);
+  --color-floating-button-text: var(--one-dark-bg);
+  --color-floating-button-autoscroll-from: var(--one-dark-green);
+  --color-floating-button-autoscroll-to: var(--one-dark-cyan);
+  --color-floating-button-default-from: var(--one-dark-blue);
+  --color-floating-button-default-to: var(--color-primary-dark);
+
+  /* Welcome/Empty States */
+  --color-welcome-text-main: var(--one-dark-comments);
+  --color-welcome-text-secondary: var(--one-dark-comments);
+  --color-api-key-missing-text: var(--one-dark-yellow);
+  --color-api-key-missing-icon: var(--one-dark-yellow);
+  --color-no-messages-text-main: var(--one-dark-comments);
+  --color-no-messages-icon: var(--one-dark-comments);
+
+  /* Scrollbar Colors */
+  --color-scrollbar-track: #2c313a;
+  --color-scrollbar-thumb: var(--one-dark-comments);
+  --color-scrollbar-thumb-hover: #4a505a;
+
+  /* Tooltip Colors */
+  --color-tooltip-bg: #2c313a;
+  --color-tooltip-text: var(--one-dark-fg);
+  --color-tooltip-icon: var(--one-dark-comments);
+
+  /* Dropdown Menu Colors */
+  --color-dropdown-bg: var(--one-dark-bg);
+  --color-dropdown-border: #3a404a;
+  --color-dropdown-item-text: var(--one-dark-fg);
+  --color-dropdown-item-hover-bg: #2c313a;
+  --color-dropdown-item-hover-text: var(--one-dark-fg);
+}
+
+/* Scrollbar styles moved outside @theme block */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
+}
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+}
