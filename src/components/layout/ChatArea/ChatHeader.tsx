@@ -14,6 +14,7 @@ interface ChatHeaderProps {
     // Novas propriedades para as ações do dropdown
     onClearChat: () => void; // Callback para limpar o chat
     onSearchMessages: () => void; // Callback para buscar mensagens
+    isMobile: boolean; // NOVA PROPRIEDADE: Indica se o dispositivo é móvel
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -23,11 +24,13 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     conversationTitle,
     googleDriveSyncStatus,
     onClearChat,
-    onSearchMessages
+    onSearchMessages,
+    isMobile // Desestruturar a nova propriedade
 }) => {
     return (
         <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 backdrop-blur-md bg-[var(--color-chat-header-bg)] border-b border-[var(--color-chat-header-border)] shadow-sm">
-            {showMobileMenuButton && (
+            {/* O botão de menu só será renderizado se for mobile E showMobileMenuButton for true */}
+            {isMobile && showMobileMenuButton && (
                 <button
                     onClick={onOpenMobileSidebar}
                     className="p-1 text-[var(--color-mobile-menu-button-text)] hover:text-[var(--color-mobile-menu-button-hover-text)]"
