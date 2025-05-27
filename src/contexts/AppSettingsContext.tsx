@@ -33,12 +33,13 @@ const defaultAppSettings: AppSettings = {
     enableAttachments: true,
     hideNavigation: false,
     theme: 'aulapp',
-    showProcessingIndicators: true, // Add this line
+    showProcessingIndicators: true,
     googleDriveAccessToken: undefined,
     googleDriveUser: null,
     googleDriveSyncStatus: 'Disconnected',
     googleDriveLastSync: undefined,
     googleDriveError: undefined,
+    showAiFunctionCallAttachments: true
 };
 
 interface AppSettingsContextType {
