@@ -18,6 +18,8 @@ export interface InterfaceSettingsTabProps {
     onToggleHideNavigation: () => void;
     currentShowProcessingIndicators: boolean;
     onToggleShowProcessingIndicators: () => void;
+    currentShowAiFunctionCallAttachments: boolean; // New prop
+    onToggleShowAiFunctionCallAttachments: () => void; // New prop
 }
 
 const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
@@ -33,6 +35,8 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
     onToggleHideNavigation,
     currentShowProcessingIndicators,
     onToggleShowProcessingIndicators,
+    currentShowAiFunctionCallAttachments, // Destructure new prop
+    onToggleShowAiFunctionCallAttachments, // Destructure new prop
 }) => {
     return (
         <div className="space-y-6">
@@ -61,7 +65,7 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
                                     alt="AI Avatar Preview"
                                     className="w-10 h-10 rounded-full object-cover border border-[var(--color-interface-settings-avatar-preview-border)] shadow-sm"
                                     onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { // Explicitly type the event
-                                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3Cline x1='12' y1='8' x2='12' y2='12'%3E%3C/line%3Cline x1='12' y1='16' x2='12.01' y2='16'%3E%3C/line%3E%3C/svg%3E"; // Fallback to a generic error icon
+                                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3Cline x1='12' y1='8' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'%3E%3C/line%3E%3C/svg%3E"; // Fallback to a generic error icon
                                         e.currentTarget.className = "w-10 h-10 rounded-full object-cover border border-[var(--color-interface-settings-avatar-preview-border)] shadow-sm p-2 text-[var(--color-interface-settings-avatar-preview-text)] bg-[var(--color-interface-settings-avatar-preview-bg)]";
                                     }}
                                 />
@@ -116,6 +120,15 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
                         description="Controla a visibilidade dos indicadores de processamento de arquivos e chamadas de função nas mensagens da IA."
                         checked={currentShowProcessingIndicators}
                         onChange={onToggleShowProcessingIndicators}
+                    />
+
+                    {/* Show AI Function Call Attachments Toggle - NEW */}
+                    <ToggleSwitch
+                        id="show-ai-attachments-toggle"
+                        label="Exibir Anexos de Chamadas de Função da IA"
+                        description="Controla se os anexos gerados ou processados pela IA através de chamadas de função são exibidos nas mensagens."
+                        checked={currentShowAiFunctionCallAttachments}
+                        onChange={onToggleShowAiFunctionCallAttachments}
                     />
                 </section>
             </SettingsPanel>
