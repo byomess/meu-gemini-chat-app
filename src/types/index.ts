@@ -45,9 +45,13 @@ export interface FunctionDeclaration {
     id: string;
     name: string;
     description: string;
-    parametersSchema: string;
-    endpointUrl: string;
-    httpMethod: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+    parametersSchema: string; // JSON string for parameters schema
+    isNative?: boolean;       // True for native functions, defaults to false/undefined for user-defined
+    type: 'api' | 'javascript'; // Execution type
+    endpointUrl?: string;     // Optional: For 'api' type
+    httpMethod?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'; // Optional: For 'api' type
+    code?: string;            // Optional: For 'javascript' type, e.g., "alert(params.message); return { success: true };"
+                              // This should be the body of the function.
 }
 
 // ADDED: Define ThemeName type
