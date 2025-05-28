@@ -65,14 +65,14 @@
   --color-convo-item-hover-bg: var(--color-gray-200);
   --color-convo-item-hover-text: var(--color-white);
   --color-convo-item-active-bg: var(--color-primary); /* Neon */
-  --color-convo-item-active-text: var(--color-white); /* Changed for better contrast */
+  --color-convo-item-active-text: var(--color-black); /* Changed for better contrast */
   --color-convo-item-edit-bg: var(--color-gray-200);
   --color-convo-item-edit-text: var(--color-white);
   --color-convo-item-edit-border: color-mix(in srgb, var(--color-primary) 70%, transparent); /* Neon */
   --color-convo-item-edit-focus-border: var(--color-primary); /* Neon */
   --color-convo-item-icon: var(--color-electric-blue); /* Changed to electric blue */
   --color-convo-item-hover-icon: var(--color-white);
-  --color-convo-item-active-icon: var(--color-white); /* Changed for better contrast */
+  --color-convo-item-active-icon: var(--color-black); /* Changed for better contrast */
 
   --color-convo-item-incognito-bg: var(--color-gray-100);
   --color-convo-item-incognito-text: var(--color-gray-400);
