@@ -106,19 +106,29 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
                 return { status: 'error', message: 'Notification permission denied. Proactive notifications require permission.' };
             }
 
-            const SCHEDULE_ENDPOINT = 'http://localhost:5000/schedule-proactive-notification';
+            // Updated endpoint to match backend documentation
+            const SCHEDULE_ENDPOINT = 'http://localhost:5000/schedule-notification';
+            
+            // Constructing the payload according to backend API documentation
+            const payload = {
+                id: notificationId,
+                text: notificationText,
+                type: notificationType,
+                scheduleType: 'RECURRENT', // Assuming proactive means recurrent
+                recurrenceRule: {
+                    type: 'INTERVAL',
+                    intervalMs: targetIntervalMs,
+                },
+                maxSends: -1, // Assuming infinite sends for proactive notifications
+            };
+
             try {
                 const response = await fetch(SCHEDULE_ENDPOINT, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        notificationId,
-                        notificationType,
-                        targetIntervalMs,
-                        notificationText,
-                    }),
+                    body: JSON.stringify(payload),
                 });
 
                 if (!response.ok) {
