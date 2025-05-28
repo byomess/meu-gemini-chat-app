@@ -120,7 +120,9 @@ async function handlePeriodicSyncLogic() {
     console.log('Service Worker: Periodic sync event triggered for', GENERIC_SYNC_TAG);
     let db: IDBDatabase | null = null;
     try {
+        console.log('Service Worker: [handlePeriodicSyncLogic] Attempting to open DB...');
         db = await openDB();
+        console.log('Service Worker: [handlePeriodicSyncLogic] DB opened successfully.');
         const notifications = await getScheduledNotifications(db);
         const now = Date.now();
 
@@ -144,9 +146,9 @@ async function handlePeriodicSyncLogic() {
                 await updateScheduledNotification(db, notification);
                 console.log(`Service Worker: Notification ${notification.id} rescheduled for ${new Date(notification.nextTriggerTime).toLocaleString()}`);
             } else if (notification.enabled) {
-                // console.log(`Service Worker: Notification ${notification.id} not yet due (due at ${new Date(notification.nextTriggerTime).toLocaleString()}).`);
+                console.log(`Service Worker: Notification ${notification.id} (Type: ${notification.type}) is enabled but not yet due (Next trigger: ${new Date(notification.nextTriggerTime).toLocaleString()}). Current time: ${new Date(now).toLocaleString()}`);
             } else {
-                // console.log(`Service Worker: Notification ${notification.id} is disabled.`);
+                console.log(`Service Worker: Notification ${notification.id} (Type: ${notification.type}) is disabled.`);
             }
         }
         console.log('Service Worker: Finished processing scheduled notifications.');
@@ -209,3 +211,5 @@ self.addEventListener('periodicsync', (event: Event) => {
         console.log('Service Worker: Received periodic sync event for an unknown tag:', periodicSyncEvent.tag);
     }
 });
+
+console.log('Service Worker: periodic sync event listener attached for tag:', GENERIC_SYNC_TAG);

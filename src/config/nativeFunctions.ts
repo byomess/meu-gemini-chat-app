@@ -116,7 +116,9 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
         }
 
         async function saveScheduledNotification(notificationData) {
+            console.log('[Frontend JS scheduleProactiveNotification] Opening IndexedDB to save notification...');
             const db = await openIndexedDB();
+            console.log('[Frontend JS scheduleProactiveNotification] IndexedDB opened. Saving notification:', notificationData);
             const transaction = db.transaction(STORE_NAME, 'readwrite');
             const store = transaction.objectStore(STORE_NAME);
             await store.put(notificationData);
@@ -170,6 +172,7 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
 
         // --- Main execution for the function call (wrapped in async IIFE) ---
         return (async () => {
+            console.log('[Frontend JS scheduleProactiveNotification] Function called with params:', params);
             const { notificationId, notificationType, targetIntervalMs, initialMessagePrompt } = params;
 
             const permission = await requestNotificationPermission();
@@ -194,10 +197,12 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
             };
 
             try {
+                console.log('[Frontend JS scheduleProactiveNotification] Attempting to save scheduled notification:', newSchedule);
                 await saveScheduledNotification(newSchedule);
                 console.log('[Frontend] Scheduled notification saved to IndexedDB:', newSchedule);
 
                 // Always register the generic sync tag for the SW to check all notifications
+                console.log(`[Frontend JS scheduleProactiveNotification] Attempting to register Periodic Sync with tag: '${GENERIC_SYNC_TAG}' and minInterval: ${GENERIC_SYNC_MIN_INTERVAL}ms`);
                 const syncResult = await registerPeriodicSync(GENERIC_SYNC_TAG, GENERIC_SYNC_MIN_INTERVAL);
                 console.log('[Frontend] Periodic Sync registration result:', syncResult);
 
