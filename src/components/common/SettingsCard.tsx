@@ -26,6 +26,11 @@ interface SettingsCardProps {
      * Optional additional CSS class names for the main card container div.
      */
     className?: string;
+    /**
+     * Optional boolean to indicate if the card represents a native item.
+     * Can be used for distinct styling.
+     */
+    isNative?: boolean;
 }
 
 /**
@@ -37,17 +42,20 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
     editForm,
     isEditing,
     actions,
-    className
+    className,
+    isNative
 }) => {
+    const nativeClasses = isNative ? 'border-[var(--color-native-item-border)] bg-[var(--color-native-item-bg)] hover:bg-[var(--color-native-item-hover-bg)]' : 'border-[var(--color-table-row-border)] bg-[var(--color-table-row-bg)] hover:bg-[var(--color-table-row-hover-bg)]';
+    const editingClasses = isEditing ? 'border-[var(--color-table-item-edit-border)] bg-[var(--color-table-item-edit-bg)]' : nativeClasses;
+
     return (
-        <div className={`relative bg-[var(--color-table-row-bg)] rounded-lg shadow-md border border-[var(--color-table-row-border)] transition-colors ${!isEditing ? 'hover:bg-[var(--color-table-row-hover-bg)]' : ''} ${className || ''}`}>
+        <div className={`relative rounded-lg shadow-md transition-colors ${editingClasses} ${className || ''}`}>
             {isEditing ? (
                 editForm
             ) : (
                 <>
                     {actions && (
-                        // Actions are positioned absolutely at the top-right
-                        <div className="absolute top-[1px] right-[1px] flex space-x-1 z-10">
+                        <div className="absolute top-[1px] right-[1px] flex space-x-1 z-10 p-1.5">
                             {actions}
                         </div>
                     )}
