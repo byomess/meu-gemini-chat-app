@@ -164,53 +164,8 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
                     },
                     "required": [
                         "type"
-                    ],
-                    "allOf": [
-                        {
-                            "if": {
-                                "properties": {
-                                    "type": {
-                                        "const": "INTERVAL"
-                                    }
-                                }
-                            },
-                            "then": {
-                                "required": [
-                                    "intervalMs"
-                                ]
-                            }
-                        },
-                        {
-                            "if": {
-                                "properties": {
-                                    "type": {
-                                        "const": "WEEKLY"
-                                    }
-                                }
-                            },
-                            "then": {
-                                "required": [
-                                    "daysOfWeek",
-                                    "timeOfDay"
-                                ]
-                            }
-                        },
-                        {
-                            "if": {
-                                "properties": {
-                                    "type": {
-                                        "const": "MONTHLY"
-                                    }
-                                }
-                            },
-                            "then": {
-                                "required": [
-                                    "daysOfMonth",
-                                    "timeOfDay"
-                                ]
-                            }
-                        }
                     ]
+                    // Removed allOf conditional requirements for recurrenceRule properties
                 },
                 "maxSends": {
                     "type": "number",
@@ -222,44 +177,8 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
                 "text",
                 "type",
                 "scheduleType"
-            ],
-            "allOf": [
-                {
-                    "if": {
-                        "properties": {
-                            "scheduleType": {
-                                "const": "SINGLE"
-                            }
-                        }
-                    },
-                    "then": {
-                        "oneOf": [
-                            { "required": ["sendAt"] },
-                            { "required": ["sendAfter"] }
-                        ],
-                        "not": {
-                            "allOf": [
-                                { "required": ["sendAt"] },
-                                { "required": ["sendAfter"] }
-                            ]
-                        }
-                    }
-                },
-                {
-                    "if": {
-                        "properties": {
-                            "scheduleType": {
-                                "const": "RECURRENT"
-                            }
-                        }
-                    },
-                    "then": {
-                        "required": [
-                            "recurrenceRule"
-                        ]
-                    }
-                }
             ]
+            // Removed allOf, oneOf, not conditional requirements for top-level properties
         }),
         isNative: true,
         type: 'javascript',
@@ -276,7 +195,7 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
 
         // --- Main execution for the function call (wrapped in async IIFE) ---
         return (async () => {
-            const { id, text, type, scheduleType, sendAt, recurrenceRule, maxSends } = params;
+            const { id, text, type, scheduleType, sendAt, sendAfter, recurrenceRule, maxSends } = params;
 
             const permission = await requestNotificationPermission();
             if (permission !== 'granted') {
@@ -295,12 +214,24 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
             };
 
             if (scheduleType === 'SINGLE') {
-                let finalSendAt = sendAt;
+                let finalSendAt;
                 const now = Date.now();
-                // If sendAt is undefined or in the past, adjust it to 5 seconds from now
-                if (finalSendAt === undefined || finalSendAt < now) {
-                    console.warn(\`[Frontend] Provided sendAt (\${finalSendAt}) is in the past or undefined. Adjusting to 5 seconds from now.\`);
-                    finalSendAt = now + 5000; // Schedule 5 seconds from the current client time
+
+                if (sendAfter !== undefined && sendAfter > 0) {
+                    finalSendAt = now + sendAfter;
+                    console.log(\`[Frontend] Scheduling SINGLE notification for \${sendAfter}ms from now.\`);
+                } else if (sendAt !== undefined) {
+                    finalSendAt = sendAt;
+                    // If sendAt is in the past, adjust it to 5 seconds from now
+                    if (finalSendAt < now) {
+                        console.warn(\`[Frontend] Provided sendAt (\${finalSendAt}) is in the past. Adjusting to 5 seconds from now.\`);
+                        finalSendAt = now + 5000; // Schedule 5 seconds from the current client time
+                    }
+                    console.log(\`[Frontend] Scheduling SINGLE notification for specific time: \${finalSendAt}.\`);
+                } else {
+                    // Fallback if neither sendAt nor sendAfter is provided for SINGLE
+                    console.warn('[Frontend] Neither sendAt nor sendAfter provided for SINGLE notification. Defaulting to 5 seconds from now.');
+                    finalSendAt = now + 5000;
                 }
                 payload.sendAt = finalSendAt;
             } else if (scheduleType === 'RECURRENT') {
