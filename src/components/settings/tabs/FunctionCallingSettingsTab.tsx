@@ -417,7 +417,6 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                 key={func.id}
                                 isEditing={editingFunctionId === func.id}
                                 isNative={isTrulyNative} 
-                                // Explicitly apply background and border to ensure consistency across all cards
                                 className="bg-[var(--color-table-row-bg)] border border-[var(--color-table-row-border)]" 
                                 editForm={renderEditForm(newFunction)} 
                                 actions={
@@ -431,11 +430,19 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                             </Button>
                                         </>
                                     ) : (
-                                        <Tooltip content="Visualizar detalhes (somente leitura)">
-                                            <Button variant="ghost" size="icon-sm" onClick={() => { setEditingFunctionId(func.id); setNewFunction(func);}} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-table-item-icon-hover)]">
-                                                <IoInformationCircleOutline size={19} />
-                                            </Button>
-                                        </Tooltip>
+                                        <div className="flex items-center space-x-2"> {/* Added flex container for alignment */}
+                                            <Tooltip content="Função Nativa">
+                                                <span className="flex-shrink-0 flex items-center px-2 py-1 text-xs font-medium bg-[var(--color-gray-500)] text-[var(--color-gray-900)] border border-[var(--color-gray-400)] rounded-full">
+                                                    <IoLockClosedOutline className="mr-1.5" />
+                                                    Nativa
+                                                </span>
+                                            </Tooltip>
+                                            <Tooltip content="Visualizar detalhes (somente leitura)">
+                                                <Button variant="ghost" size="icon-sm" onClick={() => { setEditingFunctionId(func.id); setNewFunction(func);}} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-table-item-icon-hover)]">
+                                                    <IoInformationCircleOutline size={19} />
+                                                </Button>
+                                            </Tooltip>
+                                        </div>
                                     )
                                 }
                             >
@@ -445,20 +452,13 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                             <p className="text-lg font-semibold text-[var(--color-function-card-name-text)] mb-1 truncate pr-2">{func.name}</p>
                                             <p className="text-sm text-[var(--color-function-card-description-text)] mb-2 max-h-10 overflow-hidden leading-snug">{func.description}</p>
                                         </div>
-                                        {isTrulyNative && ( 
-                                            <Tooltip content="Função Nativa">
-                                                <span className="ml-2 mt-1 flex-shrink-0 flex items-center px-2 py-1 text-xs font-medium bg-[var(--color-gray-500)] text-[var(--color-gray-900)] border border-[var(--color-gray-400)] rounded-full">
-                                                    <IoLockClosedOutline className="mr-1.5" />
-                                                    Nativa
-                                                </span>
-                                            </Tooltip>
-                                        )}
+                                        {/* Removed the Nativa badge from here, it's now in the actions prop */}
                                     </div>
 
-                                    {func.type === 'api' && ( // Changed condition to always show badge for API type
+                                    {func.type === 'api' && ( 
                                         <div className="flex items-center text-xs mt-2">
                                             <span className="font-mono uppercase px-2 py-0.5 rounded-md bg-[var(--color-function-card-http-method-bg)] text-[var(--color-function-card-http-method-text)] border border-[var(--color-function-card-http-method-border)] mr-2">
-                                                {func.httpMethod || 'N/A'} {/* Display N/A if httpMethod is not set */}
+                                                {func.httpMethod || 'N/A'} 
                                             </span>
                                             <span className="font-mono text-[var(--color-function-card-endpoint-text)] truncate" title={func.endpointUrl}>
                                                 {func.endpointUrl}
@@ -489,7 +489,6 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                             isEditing={true}
                             editForm={renderEditForm(newFunction)} 
                             isNative={false} 
-                            // Explicitly apply background and border for new function card as well
                             className="bg-[var(--color-table-row-bg)] border border-[var(--color-table-row-border)]" 
                         >
                             <></> 
