@@ -115,9 +115,9 @@
 
   --color-message-bubble-user-bg: var(--color-primary); /* Neon */
   --color-message-bubble-user-text: var(--color-black);
-  --color-message-bubble-ai-bg: var(--color-electric-blue-dark);
+  --color-message-bubble-ai-bg: var(--color-purple-600);
   --color-message-bubble-ai-text: var(--color-electric-blue);
-  --color-message-bubble-ai-border: var(--color-electric-blue-dark);
+  --color-message-bubble-ai-border: var(--color-purple-600);
   --color-message-bubble-function-bg: var(--color-indigo-50);
   --color-message-bubble-function-text: var(--color-indigo-700);
   --color-message-bubble-function-border: var(--color-indigo-200);
