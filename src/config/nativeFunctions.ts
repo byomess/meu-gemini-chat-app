@@ -98,7 +98,7 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
           },
           "sendAt": {
               "type": "number",
-              "format": "int64",
+              // Removed "format": "int64" as it's not supported by the API
               "description": "Timestamp UNIX em milissegundos para quando uma notificação do tipo 'SINGLE' deve ser enviada. Deve ser uma data/hora no futuro. Ignorado para 'RECURRENT'."
           },
           "recurrenceRule": {
