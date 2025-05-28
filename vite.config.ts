@@ -9,6 +9,9 @@ export default defineConfig({
         react(),
         tailwindcss(),
         VitePWA({
+            strategies: 'injectManifest', // MODIFIED: Use injectManifest strategy
+            srcDir: 'src',                // ADDED: Directory of your custom SW
+            filename: 'sw-periodic-notification-test.ts', // ADDED: Your custom SW file name
             registerType: 'autoUpdate',
             includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
             manifest: {
@@ -45,11 +48,7 @@ export default defineConfig({
                 ],
             },
             workbox: {
-                // Força o novo Service Worker a pular a fase de 'waiting' e ativar imediatamente.
-                skipWaiting: true,
-                // Permite que um Service Worker ativado comece a controlar clientes
-                // (abas do app) não controlados imediatamente.
-                clientsClaim: true,
+                // skipWaiting and clientsClaim are now handled in sw-periodic-notification-test.ts
                 // Adicionalmente, para garantir que assets críticos como o index.html
                 // sejam sempre revalidados, você pode configurar runtimeCaching.
                 // Exemplo para o index.html (ou outros arquivos que você quer sempre frescos):
