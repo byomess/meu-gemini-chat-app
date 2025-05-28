@@ -69,7 +69,7 @@ export function buildApiTools(
  * Converts media to Blob and creates AttachedFileInfo objects.
  */
 async function processMediaFromFunctionResponseJson(
-    jsonResponse: Record<string, unknown>, // Removed genAI parameter as it's not used here
+    jsonResponse: Record<string, unknown>, 
     funcName: string,
     abortSignal?: AbortSignal,
 ): Promise<AttachedFileInfo[]> {
@@ -103,9 +103,9 @@ async function processMediaFromFunctionResponseJson(
     for (const mediaType of base64MediaTypes) {
         if (jsonResponse[mediaType.key] && typeof jsonResponse[mediaType.key] === 'string') {
             try {
-                const base64Data = jsonResponse[mediaType.key] as string; // Added type assertion
-                const mimeType = (jsonResponse[`${mediaType.key}_mime_type`] as string) || `${mediaType.mimePrefix}jpeg`; // Added type assertion
-                const fileName = (jsonResponse[`${mediaType.key}_name`] as string) || `${mediaType.defaultName}_${funcName}_${Date.now()}.${mimeType.split('/')[1] || 'bin'}`; // Added type assertion
+                const base64Data = jsonResponse[mediaType.key] as string; 
+                const mimeType = (jsonResponse[`${mediaType.key}_mime_type`] as string) || `${mediaType.mimePrefix}jpeg`; 
+                const fileName = (jsonResponse[`${mediaType.key}_name`] as string) || `${mediaType.defaultName}_${funcName}_${Date.now()}.${mimeType.split('/')[1] || 'bin'}`; 
 
                 const byteCharacters = atob(base64Data);
                 const byteNumbers = new Array(byteCharacters.length);
@@ -124,9 +124,9 @@ async function processMediaFromFunctionResponseJson(
 
     if (jsonResponse.file_url && typeof jsonResponse.file_url === 'string' && jsonResponse.mime_type && typeof jsonResponse.mime_type === 'string') {
         try {
-            const fileUrl = jsonResponse.file_url as string; // Added type assertion
-            const mimeType = jsonResponse.mime_type as string; // Added type assertion
-            const fileName = (jsonResponse.file_name as string) || `file_${funcName}_${Date.now()}.${mimeType.split('/')[1] || 'bin'}`; // Added type assertion
+            const fileUrl = jsonResponse.file_url as string; 
+            const mimeType = jsonResponse.mime_type as string; 
+            const fileName = (jsonResponse.file_name as string) || `file_${funcName}_${Date.now()}.${mimeType.split('/')[1] || 'bin'}`; 
 
             const response = await fetch(fileUrl, { signal: abortSignal });
             if (!response.ok) throw new Error(`Failed to fetch file from URL: ${response.statusText}`);
@@ -153,7 +153,7 @@ export async function* executeDeclaredFunctionAndProcessResult(
 ): AsyncGenerator<{ delta?: string; isFinished: boolean; processingStatus?: ProcessingStatus; functionAttachedFilesInfo?: AttachedFileInfo[] }, { functionResponseContent: unknown; fileDataPartForUserContext?: Part; attachedFilesFromFunction?: AttachedFileInfo[] }, undefined> {
     const funcName = declaredFunction.name;
     let functionResponseContent: unknown;
-    let fileDataPartForUserContext = undefined;
+    let fileDataPartForUserContext: Part | undefined = undefined;
     const attachedFilesFromFunction: AttachedFileInfo[] = [];
 
     yield {
@@ -163,140 +163,178 @@ export async function* executeDeclaredFunctionAndProcessResult(
     };
 
     try {
-        let targetUrl = declaredFunction.endpointUrl;
-        const requestOptions: RequestInit = {
-            method: declaredFunction.httpMethod,
-            headers: { 'Content-Type': 'application/json', 'Accept': '*/*' },
-            signal: abortSignal,
-        };
-
-        if (declaredFunction.httpMethod === 'GET') {
-            const queryParams = new URLSearchParams(funcArgs as Record<string, string>).toString();
-            if (queryParams) targetUrl += (targetUrl.includes('?') ? '&' : '?') + queryParams;
-        } else if (['POST', 'PUT', 'PATCH'].includes(declaredFunction.httpMethod)) {
-            requestOptions.body = JSON.stringify(funcArgs);
-        } else {
-            const headers = requestOptions.headers as Record<string, string>;
-            delete headers['Content-Type'];
-        }
-
-        yield {
-            isFinished: false,
-            processingStatus: { type: 'function_call_execution', stage: 'in_progress', name: funcName, details: 'Contactando API externa...' }
-        };
-
-        const apiResponse = await fetch(targetUrl, requestOptions);
-        if (abortSignal?.aborted) throw new DOMException("Aborted during function call fetch", "AbortError");
-
-        if (!apiResponse.ok) {
-            let errorBody = `Erro HTTP: ${apiResponse.status} ${apiResponse.statusText}`;
-            try { const errJson = await apiResponse.json(); errorBody += ` - ${JSON.stringify(errJson)}`; } catch { /* no json body */ }
-            throw new Error(errorBody);
-        }
-        yield {
-            isFinished: false,
-            processingStatus: { type: 'function_call_execution', stage: 'completed', name: funcName, details: 'Resposta da API externa recebida.' }
-        };
-
-        const contentTypeHeader = apiResponse.headers.get("content-type")?.toLowerCase() || "";
-        const contentDispositionHeader = apiResponse.headers.get("content-disposition");
-        const directFileMimeTypes = [
-            "application/pdf", "text/plain", "text/markdown", "text/csv",
-            "image/jpeg", "image/png", "image/webp", "image/gif",
-            "audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4",
-            "video/mp4", "video/webm", "video/quicktime"
-        ];
-        const isDirectFileLink = directFileMimeTypes.some(fileType => contentTypeHeader.startsWith(fileType));
-
-        if (isDirectFileLink) {
-            const fileBlob = await apiResponse.blob();
-            const actualMimeType = fileBlob.type || contentTypeHeader;
-            let downloadedFileName = "downloaded-file";
-            if (contentDispositionHeader) {
-                const filenameMatch = contentDispositionHeader.match(/filename\*?=['"]?([^'";]+)['"]?/);
-                if (filenameMatch && filenameMatch[1]) downloadedFileName = decodeURIComponent(filenameMatch[1]);
-            }
-            if (downloadedFileName === "downloaded-file") {
-                try { const urlPath = new URL(targetUrl).pathname; const lastSegment = urlPath.substring(urlPath.lastIndexOf('/') + 1); if (lastSegment) downloadedFileName = decodeURIComponent(lastSegment); } catch { /* ignore */ }
-            }
-            const downloadedFileBaseName = downloadedFileName.substring(0, downloadedFileName.lastIndexOf('.')) || downloadedFileName;
-            const googleResourceNameForFuncFile = sanitizeGoogleResourceName(downloadedFileBaseName);
-
-            const processingTypeFileFromFunc: ProcessingType = 'file_from_function_processing';
+        if (declaredFunction.type === 'javascript') {
             yield {
-                delta: `[Loox: Link de arquivo (${contentTypeHeader}) detectado. Processando '${downloadedFileName}'...]\n`,
                 isFinished: false,
-                processingStatus: { type: processingTypeFileFromFunc, stage: 'in_progress', name: downloadedFileName, details: `Fazendo upload de '${downloadedFileName}' para API Gemini...` }
+                processingStatus: { type: 'function_call_execution', stage: 'in_progress', name: funcName, details: `Executando código JavaScript '${funcName}' no navegador...` }
+            };
+            if (!declaredFunction.code) {
+                throw new Error('Código da função JavaScript não definido.');
+            }
+            const jsFunc = new Function('params', declaredFunction.code);
+            // funcArgs are the arguments from the AI
+            const result = await Promise.resolve(jsFunc(funcArgs)); 
+            functionResponseContent = result;
+
+            yield {
+                delta: `[Loox: Função JavaScript '${funcName}' executada.]\n`,
+                isFinished: false,
+                processingStatus: { type: 'function_call_execution', stage: 'completed', name: funcName, details: 'Execução JavaScript concluída.' }
             };
 
-            const initialUploadResponse = await genAI.files.upload({
-                file: fileBlob, config: { mimeType: actualMimeType, displayName: downloadedFileName, name: googleResourceNameForFuncFile }
-            });
-            const uploadedFileMetadata = initialUploadResponse as { name: string; uri: string; mimeType: string; };
+        } else if (declaredFunction.type === 'api') {
+            // Existing API call logic
+            let targetUrl = declaredFunction.endpointUrl;
+            if (!targetUrl) { // Should be caught by form validation, but as a safeguard
+                throw new Error(`URL do Endpoint não definida para a função API '${funcName}'.`);
+            }
+            const requestOptions: RequestInit = {
+                method: declaredFunction.httpMethod,
+                headers: { 'Content-Type': 'application/json', 'Accept': '*/*' },
+                signal: abortSignal,
+            };
 
-            if (!uploadedFileMetadata || !uploadedFileMetadata.name || !uploadedFileMetadata.uri) {
-                throw new Error("Falha no upload do arquivo (função): Metadados ou URI ausentes.");
+            if (declaredFunction.httpMethod === 'GET') {
+                const queryParams = new URLSearchParams(funcArgs as Record<string, string>).toString();
+                if (queryParams) targetUrl += (targetUrl.includes('?') ? '&' : '?') + queryParams;
+            } else if (['POST', 'PUT', 'PATCH'].includes(declaredFunction.httpMethod || '')) {
+                requestOptions.body = JSON.stringify(funcArgs);
+            } else if (declaredFunction.httpMethod === 'DELETE') {
+                // For DELETE, body might be optional or disallowed depending on server.
+                // Content-Type might also be irrelevant if no body.
+                // If funcArgs are meant for URL params in DELETE, that needs specific handling.
+                // For now, assume no body for DELETE or it's handled by funcArgs in URL if needed.
+                const headers = requestOptions.headers as Record<string, string>;
+                delete headers['Content-Type']; // Remove Content-Type if no body is standard for DELETE
+            }
+
+
+            yield {
+                isFinished: false,
+                processingStatus: { type: 'function_call_execution', stage: 'in_progress', name: funcName, details: 'Contactando API externa...' }
+            };
+
+            const apiResponse = await fetch(targetUrl, requestOptions);
+            if (abortSignal?.aborted) throw new DOMException("Aborted during function call fetch", "AbortError");
+
+            if (!apiResponse.ok) {
+                let errorBody = `Erro HTTP: ${apiResponse.status} ${apiResponse.statusText}`;
+                try { const errJson = await apiResponse.json(); errorBody += ` - ${JSON.stringify(errJson)}`; } catch { /* no json body */ }
+                throw new Error(errorBody);
             }
             yield {
                 isFinished: false,
-                processingStatus: { type: processingTypeFileFromFunc, stage: 'in_progress', name: downloadedFileName, details: `Aguardando ativação de '${downloadedFileName}'...` }
+                processingStatus: { type: 'function_call_execution', stage: 'completed', name: funcName, details: 'Resposta da API externa recebida.' }
             };
 
-            const activeFileMetadata = await waitForFileActive(genAI, uploadedFileMetadata.name, abortSignal);
+            const contentTypeHeader = apiResponse.headers.get("content-type")?.toLowerCase() || "";
+            const contentDispositionHeader = apiResponse.headers.get("content-disposition");
+            const directFileMimeTypes = [
+                "application/pdf", "text/plain", "text/markdown", "text/csv",
+                "image/jpeg", "image/png", "image/webp", "image/gif",
+                "audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4",
+                "video/mp4", "video/webm", "video/quicktime"
+            ];
+            const isDirectFileLink = directFileMimeTypes.some(fileType => contentTypeHeader.startsWith(fileType));
 
-            functionResponseContent = {
-                status: "success",
-                message: `Arquivo '${downloadedFileName}' (${actualMimeType}) obtido e disponibilizado com URI '${activeFileMetadata.uri}'. A IA deve agora usar este URI para analisar o arquivo.`,
-                fileName: downloadedFileName, mimeType: activeFileMetadata.mimeType, fileUri: activeFileMetadata.uri,
-            };
-            fileDataPartForUserContext = { fileData: { mimeType: activeFileMetadata.mimeType, fileUri: activeFileMetadata.uri } };
+            if (isDirectFileLink) {
+                const fileBlob = await apiResponse.blob();
+                const actualMimeType = fileBlob.type || contentTypeHeader;
+                let downloadedFileName = "downloaded-file";
+                if (contentDispositionHeader) {
+                    const filenameMatch = contentDispositionHeader.match(/filename\*?=['"]?([^'";]+)['"]?/);
+                    if (filenameMatch && filenameMatch[1]) downloadedFileName = decodeURIComponent(filenameMatch[1]);
+                }
+                if (downloadedFileName === "downloaded-file") {
+                    try { const urlPath = new URL(targetUrl).pathname; const lastSegment = urlPath.substring(urlPath.lastIndexOf('/') + 1); if (lastSegment) downloadedFileName = decodeURIComponent(lastSegment); } catch { /* ignore */ }
+                }
+                const downloadedFileBaseName = downloadedFileName.substring(0, downloadedFileName.lastIndexOf('.')) || downloadedFileName;
+                const googleResourceNameForFuncFile = sanitizeGoogleResourceName(downloadedFileBaseName);
 
-            const dataUrl = await new Promise<string>((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.readAsDataURL(fileBlob);
-            });
-            attachedFilesFromFunction.push({
-                id: crypto.randomUUID(),
-                name: downloadedFileName,
-                type: actualMimeType,
-                size: fileBlob.size,
-                dataUrl: dataUrl,
-            });
-
-            yield {
-                delta: `[Loox: Arquivo '${downloadedFileName}' adicionado ao contexto. Aguardando IA processar...]\n`,
-                isFinished: false,
-                processingStatus: { type: processingTypeFileFromFunc, stage: 'awaiting_ai', name: downloadedFileName, details: 'Arquivo pronto e aguardando análise da IA.' }
-            };
-        } else if (contentTypeHeader.includes("application/json")) {
-            const jsonResponse = await apiResponse.json();
-            functionResponseContent = jsonResponse;
-
-            const mediaFromJsonResponse = await processMediaFromFunctionResponseJson(jsonResponse, funcName, abortSignal); // Removed genAI
-            if (mediaFromJsonResponse.length > 0) {
-                attachedFilesFromFunction.push(...mediaFromJsonResponse);
+                const processingTypeFileFromFunc: ProcessingType = 'file_from_function_processing';
                 yield {
-                    delta: `[Loox: Mídia detectada na resposta JSON da função '${funcName}'.]\n`,
+                    delta: `[Loox: Link de arquivo (${contentTypeHeader}) detectado. Processando '${downloadedFileName}'...]\n`,
                     isFinished: false,
-                    functionAttachedFilesInfo: mediaFromJsonResponse,
-                    processingStatus: { type: 'file_from_function_processing', stage: 'completed', details: 'Mídia da função processada.' }
+                    processingStatus: { type: processingTypeFileFromFunc, stage: 'in_progress', name: downloadedFileName, details: `Fazendo upload de '${downloadedFileName}' para API Gemini...` }
                 };
+
+                const initialUploadResponse = await genAI.files.upload({
+                    file: fileBlob, config: { mimeType: actualMimeType, displayName: downloadedFileName, name: googleResourceNameForFuncFile }
+                });
+                const uploadedFileMetadata = initialUploadResponse as { name: string; uri: string; mimeType: string; };
+
+                if (!uploadedFileMetadata || !uploadedFileMetadata.name || !uploadedFileMetadata.uri) {
+                    throw new Error("Falha no upload do arquivo (função): Metadados ou URI ausentes.");
+                }
+                yield {
+                    isFinished: false,
+                    processingStatus: { type: processingTypeFileFromFunc, stage: 'in_progress', name: downloadedFileName, details: `Aguardando ativação de '${downloadedFileName}'...` }
+                };
+
+                const activeFileMetadata = await waitForFileActive(genAI, uploadedFileMetadata.name, abortSignal);
+
+                functionResponseContent = {
+                    status: "success",
+                    message: `Arquivo '${downloadedFileName}' (${actualMimeType}) obtido e disponibilizado com URI '${activeFileMetadata.uri}'. A IA deve agora usar este URI para analisar o arquivo.`,
+                    fileName: downloadedFileName, mimeType: activeFileMetadata.mimeType, fileUri: activeFileMetadata.uri,
+                };
+                fileDataPartForUserContext = { fileData: { mimeType: activeFileMetadata.mimeType, fileUri: activeFileMetadata.uri } };
+
+                const dataUrl = await new Promise<string>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.readAsDataURL(fileBlob);
+                });
+                attachedFilesFromFunction.push({
+                    id: crypto.randomUUID(),
+                    name: downloadedFileName,
+                    type: actualMimeType,
+                    size: fileBlob.size,
+                    dataUrl: dataUrl,
+                });
+
+                yield {
+                    delta: `[Loox: Arquivo '${downloadedFileName}' adicionado ao contexto. Aguardando IA processar...]\n`,
+                    isFinished: false,
+                    processingStatus: { type: processingTypeFileFromFunc, stage: 'awaiting_ai', name: downloadedFileName, details: 'Arquivo pronto e aguardando análise da IA.' },
+                    functionAttachedFilesInfo: attachedFilesFromFunction.length > 0 ? [...attachedFilesFromFunction] : undefined,
+                };
+            } else if (contentTypeHeader.includes("application/json")) {
+                const jsonResponse = await apiResponse.json();
+                functionResponseContent = jsonResponse;
+
+                const mediaFromJsonResponse = await processMediaFromFunctionResponseJson(jsonResponse, funcName, abortSignal); 
+                if (mediaFromJsonResponse.length > 0) {
+                    attachedFilesFromFunction.push(...mediaFromJsonResponse);
+                    yield {
+                        delta: `[Loox: Mídia detectada na resposta JSON da função '${funcName}'.]\n`,
+                        isFinished: false,
+                        functionAttachedFilesInfo: mediaFromJsonResponse,
+                        processingStatus: { type: 'file_from_function_processing', stage: 'completed', details: 'Mídia da função processada.' }
+                    };
+                } else {
+                    yield { delta: `[Loox: API JSON '${funcName}' respondeu.]\n`, isFinished: false };
+                }
             } else {
-                yield { delta: `[Loox: API JSON '${funcName}' respondeu.]\n`, isFinished: false };
+                functionResponseContent = await apiResponse.text();
+                yield { delta: `[Loox: API Texto '${funcName}' respondeu.]\n`, isFinished: false };
             }
         } else {
-            functionResponseContent = await apiResponse.text();
-            yield { delta: `[Loox: API Texto '${funcName}' respondeu.]\n`, isFinished: false };
+            // Should not happen if type is always 'api' or 'javascript'
+            throw new Error(`Tipo de função desconhecido: ${declaredFunction.type}`);
         }
+
     } catch (executionError: unknown) {
-        if (executionError instanceof DOMException && executionError.name === "AbortError") throw executionError;
+        if (executionError instanceof DOMException && executionError.name === "AbortError") throw executionError; // Re-throw to be caught by the main handler in streamMessageToGemini
+        
         const errorMsg = executionError instanceof Error ? executionError.message : "Erro desconhecido na execução da função.";
         functionResponseContent = { status: "error", error_message: `Erro ao executar a função '${funcName}': ${errorMsg}` };
+        
+        const processingStage: ProcessingStatus['stage'] = declaredFunction.type === 'javascript' ? 'failed' : 'failed'; // Could differentiate if needed
         yield {
             delta: `\n[Loox: Erro com '${funcName}'.]\n`,
             isFinished: false,
-            processingStatus: { type: 'function_call_execution', stage: 'failed', name: funcName, error: errorMsg }
+            processingStatus: { type: 'function_call_execution', stage: processingStage, name: funcName, error: errorMsg }
         };
     }
     return { functionResponseContent, fileDataPartForUserContext, attachedFilesFromFunction };
