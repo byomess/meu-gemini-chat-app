@@ -271,7 +271,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                     value={funcToEdit.description}
                     onChange={(val) => setNewFunction(prev => ({ ...prev, description: val }))}
                     placeholder="Ex: Obtém a previsão do tempo para uma cidade"
-                    inputClassName="bg-[var(--color-table-item-edit-bg)] border-[var(--color-table-item-edit-border)] text-[var(--color-table-item-edit-text)] placeholder-[var(--color-table-item-edit-placeholder)]"
+                    inputClassName="bg-[var(--color-table-item-edit-bg)] border-[var(--color-table-item-edit-border)] text-[var(--color-item-edit-text)] placeholder-[var(--color-table-item-edit-placeholder)]"
                     disabled={isActuallyNativeEditing}
                 />
 
@@ -450,7 +450,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                     <div className="flex justify-between items-start">
                                         <div className="min-w-0 flex-1"> {/* Container for name and description */}
                                             <p className="text-lg font-semibold text-[var(--color-function-card-name-text)] mb-1 truncate pr-2">{func.name}</p>
-                                            <p className="text-sm text-[var(--color-function-card-description-text)] mb-2 max-h-10 overflow-hidden leading-snug">{func.description}</p>
+                                            <p className="text-sm text-[var(--color-function-card-description-text)] mb-2 whitespace-nowrap overflow-hidden text-ellipsis">{func.description}</p>
                                         </div>
                                         {/* Removed the Nativa badge from here, it's now in the actions prop */}
                                     </div>
