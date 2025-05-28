@@ -149,7 +149,7 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
                     if (isFirefox) {
                         message = 'Periodic Background Sync is not currently supported by default in Firefox. Proactive notifications requiring background sync may not work as expected. You might check Firefox about:config for experimental flags like dom.backgroundSync.periodic.enabled, but this is not recommended for general use.';
                     }
-                    console.warn(`[Frontend] ${message}`);
+                    console.warn(\`[Frontend] \${message}\`);
                     return { success: false, message: message };
                 }
 
