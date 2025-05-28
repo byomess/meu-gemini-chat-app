@@ -22,7 +22,7 @@ import { registerSW } from 'virtual:pwa-register';
 // --- Push Notification Subscription Logic ---
 
 // IMPORTANT: Replace this with your actual VAPID public key from your push server
-const VAPID_PUBLIC_KEY = 'YOUR_SERVER_VAPID_PUBLIC_KEY_HERE';
+const VAPID_PUBLIC_KEY = 'BPnvDJGXsrAq3XbOJZIBh_yZt2mdOTcZBYjF9HO55BoDp7S9xw6Joj_xza6OCYPemEw2dRiI1Z_paqip9K6h2xs';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -44,7 +44,7 @@ async function subscribeToPushNotifications() {
         console.warn('Push messaging is not supported');
         return;
     }
-    if (!VAPID_PUBLIC_KEY || VAPID_PUBLIC_KEY === 'YOUR_SERVER_VAPID_PUBLIC_KEY_HERE') {
+    if (!VAPID_PUBLIC_KEY || VAPID_PUBLIC_KEY !== 'BPnvDJGXsrAq3XbOJZIBh_yZt2mdOTcZBYjF9HO55BoDp7S9xw6Joj_xza6OCYPemEw2dRiI1Z_paqip9K6h2xs') {
         console.error('VAPID_PUBLIC_KEY is not set. Please set it to your server\'s VAPID public key.');
         // alert('Push notification setup error: VAPID key missing.'); // Optional user alert
         return;
