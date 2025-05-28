@@ -1,13 +1,14 @@
 // src/components/settings/tabs/FunctionCallingSettingsTab.tsx
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import Button from '../../common/Button';
 import TextInput from '../../common/TextInput';
-import { IoAddCircleOutline, IoTrashOutline, IoPencilOutline, IoCheckmarkOutline, IoCloseOutline, IoArrowUpCircleOutline, IoArrowDownCircleOutline, IoInformationCircleOutline, IoLockClosedOutline, IoCodeSlashOutline, IoCloudOutline } from 'react-icons/io5';
+import { IoAddCircleOutline, IoTrashOutline, IoPencilOutline, IoCheckmarkOutline, IoCloseOutline, IoArrowUpCircleOutline, IoArrowDownCircleOutline, IoInformationCircleOutline, IoLockClosedOutline, IoCodeSlashOutline } from 'react-icons/io5';
 import {type  FunctionDeclaration } from '../../../types'; // Import FunctionDeclaration
 import { useDialog } from '../../../contexts/DialogContext';
 import SettingsCard from '../../common/SettingsCard'; // Import the new SettingsCard
 import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
 import Tooltip from '../../common/Tooltip'; // Import Tooltip for select elements
+import { nativeFunctionDeclarations } from '../../../config/nativeFunctions'; // Import native functions directly
 
 export interface FunctionCallingSettingsTabProps {
     currentFunctionDeclarations: FunctionDeclaration[];
@@ -36,6 +37,15 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
     const [newFunction, setNewFunction] = useState<FunctionDeclaration>(initialNewFunctionState);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Create a set of native function IDs for efficient lookup
+    const nativeFunctionIds = useMemo(() => {
+        return new Set(nativeFunctionDeclarations.map(nf => nf.id));
+    }, []);
+
+    const isFunctionTrulyNative = useCallback((funcId: string, funcIsNativeFlag?: boolean) => {
+        return nativeFunctionIds.has(funcId) || funcIsNativeFlag === true;
+    }, [nativeFunctionIds]);
 
     const handleAddFunction = useCallback(() => {
         setEditingFunctionId('new');
@@ -86,44 +96,49 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
         }
 
         if (editingFunctionId === 'new') {
-            // Ensure new functions are correctly typed as 'api' and don't have 'code'
             const functionToAdd: FunctionDeclaration = {
                 ...newFunction,
-                type: 'api',
+                type: 'api', // Users can only add API functions for now
                 code: undefined,
                 isNative: false, // Explicitly set for safety
             };
             setCurrentFunctionDeclarations([...currentFunctionDeclarations, functionToAdd]);
         } else if (editingFunctionId) {
+            // When saving an existing function, ensure its 'isNative' status is preserved from its original state.
+            // The form should prevent editing of native functions anyway.
+            const originalFunction = currentFunctionDeclarations.find(f => f.id === editingFunctionId);
             setCurrentFunctionDeclarations(currentFunctionDeclarations.map(f =>
-                f.id === editingFunctionId ? { ...newFunction, isNative: f.isNative } : f // Preserve isNative status
+                f.id === editingFunctionId ? { ...newFunction, isNative: originalFunction ? isFunctionTrulyNative(originalFunction.id, originalFunction.isNative) : false } : f
             ));
         }
         setEditingFunctionId(null);
         setNewFunction(initialNewFunctionState);
-    }, [newFunction, editingFunctionId, currentFunctionDeclarations, setCurrentFunctionDeclarations, showDialog]);
+    }, [newFunction, editingFunctionId, currentFunctionDeclarations, setCurrentFunctionDeclarations, showDialog, isFunctionTrulyNative]);
 
     const handleEditFunction = useCallback((func: FunctionDeclaration) => {
-        if (func.isNative) { // Should not happen if edit button is hidden, but as a safeguard
+        if (isFunctionTrulyNative(func.id, func.isNative)) {
             showDialog({
                 title: "Função Nativa",
-                message: "Funções nativas não podem ser editadas diretamente.",
+                message: "Funções nativas não podem ser editadas. Você pode visualizar seus detalhes.",
                 type: "alert",
+                onConfirm: () => { // Open in view-only mode
+                    setEditingFunctionId(func.id);
+                    setNewFunction({ ...func });
+                }
             });
             return;
         }
         setEditingFunctionId(func.id);
         setNewFunction({ ...func });
-    }, [showDialog]);
+    }, [showDialog, isFunctionTrulyNative]);
 
     const handleCancelEdit = useCallback(() => {
         setEditingFunctionId(null);
         setNewFunction(initialNewFunctionState);
     }, []);
 
-    const handleDeleteFunction = useCallback((id: string) => {
-        const funcToDelete = currentFunctionDeclarations.find(f => f.id === id);
-        if (funcToDelete?.isNative) { // Should not happen if delete button is hidden
+    const handleDeleteFunction = useCallback((id: string, isNativeFlag?: boolean) => {
+        if (isFunctionTrulyNative(id, isNativeFlag)) {
             showDialog({
                 title: "Função Nativa",
                 message: "Funções nativas não podem ser excluídas.",
@@ -141,10 +156,9 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                 setCurrentFunctionDeclarations(currentFunctionDeclarations.filter(f => f.id !== id));
             }
         });
-    }, [currentFunctionDeclarations, setCurrentFunctionDeclarations, showDialog]);
+    }, [currentFunctionDeclarations, setCurrentFunctionDeclarations, showDialog, isFunctionTrulyNative]);
 
     const handleExportFunctions = useCallback(() => {
-        // currentFunctionDeclarations already includes native functions from AppSettingsContext
         const dataStr = JSON.stringify(currentFunctionDeclarations, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -173,7 +187,6 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                     'name' in item && typeof item.name === 'string' &&
                     'description' in item && typeof item.description === 'string' &&
                     'parametersSchema' in item && typeof item.parametersSchema === 'string'
-                    // Type, endpointUrl, httpMethod, code are optional in the file
                 )) {
                     showDialog({
                         title: "Erro de Importação",
@@ -184,13 +197,13 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                 }
 
                 const existingIds = new Set(currentFunctionDeclarations.map(f => f.id));
-                const nativeIds = new Set(currentFunctionDeclarations.filter(f => f.isNative).map(f => f.id));
+                // nativeFunctionIds is already available from useMemo
 
                 const functionsToImport: FunctionDeclaration[] = importedData
-                    .filter(func => !nativeIds.has(func.id!)) // Do not import if ID matches a native function
+                    .filter(func => !nativeFunctionIds.has(func.id!)) // Do not import if ID matches a native function
                     .map(func => {
                         const baseFunction = {
-                            ...initialNewFunctionState, // Start with defaults
+                            ...initialNewFunctionState,
                             id: existingIds.has(func.id!) ? crypto.randomUUID() : func.id!,
                             name: func.name!,
                             description: func.description!,
@@ -198,11 +211,11 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                             isNative: false, // Imported functions are never native
                         };
 
-                        if (func.type === 'javascript') {
+                        if (func.type === 'javascript' && func.code) { // Only if type is JS and code is provided
                             return {
                                 ...baseFunction,
                                 type: 'javascript',
-                                code: func.code || '// Código JavaScript aqui',
+                                code: func.code,
                                 endpointUrl: undefined,
                                 httpMethod: undefined,
                             };
@@ -235,11 +248,12 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
-    }, [currentFunctionDeclarations, setCurrentFunctionDeclarations, showDialog]);
+    }, [currentFunctionDeclarations, setCurrentFunctionDeclarations, showDialog, nativeFunctionIds]);
 
 
     const renderEditForm = (funcToEdit: FunctionDeclaration) => {
-        const isNativeEditing = funcToEdit.isNative || false; // If editing an existing native func (view only)
+        // Use the robust check for determining if the function being edited/viewed is native
+        const isActuallyNativeEditing = isFunctionTrulyNative(funcToEdit.id, funcToEdit.isNative);
         const currentType = funcToEdit.type;
 
         return (
@@ -253,7 +267,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                     onChange={(val) => setNewFunction(prev => ({ ...prev, name: val }))}
                     placeholder="Ex: getWeather"
                     inputClassName="bg-[var(--color-table-item-edit-bg)] border-[var(--color-table-item-edit-border)] text-[var(--color-table-item-edit-text)] placeholder-[var(--color-table-item-edit-placeholder)]"
-                    disabled={isNativeEditing}
+                    disabled={isActuallyNativeEditing}
                 />
                 <TextInput
                     id={`description-${funcToEdit.id}`}
@@ -264,7 +278,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                     onChange={(val) => setNewFunction(prev => ({ ...prev, description: val }))}
                     placeholder="Ex: Obtém a previsão do tempo para uma cidade"
                     inputClassName="bg-[var(--color-table-item-edit-bg)] border-[var(--color-table-item-edit-border)] text-[var(--color-table-item-edit-text)] placeholder-[var(--color-table-item-edit-placeholder)]"
-                    disabled={isNativeEditing}
+                    disabled={isActuallyNativeEditing}
                 />
 
                 {currentType === 'api' && (
@@ -282,7 +296,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                 value={funcToEdit.httpMethod || 'POST'}
                                 onChange={(e) => setNewFunction(prev => ({ ...prev, httpMethod: e.target.value as FunctionDeclaration['httpMethod'] }))}
                                 className="w-full p-3 bg-[var(--color-function-method-dropdown-bg)] border border-[var(--color-function-method-dropdown-border)] rounded-lg text-[var(--color-function-method-dropdown-text)] shadow-sm focus:ring-2 focus:ring-[var(--color-text-input-focus-ring)] focus:border-[var(--color-text-input-focus-border)] transition-colors hover:bg-[var(--color-function-method-dropdown-hover-bg)]"
-                                disabled={isNativeEditing}
+                                disabled={isActuallyNativeEditing}
                             >
                                 <option value="GET">GET</option>
                                 <option value="POST">POST</option>
@@ -302,7 +316,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                             type="url"
                             className="flex-1"
                             inputClassName="bg-[var(--color-table-item-edit-bg)] border-[var(--color-table-item-edit-border)] text-[var(--color-table-item-edit-text)] placeholder-[var(--color-table-item-edit-placeholder)]"
-                            disabled={isNativeEditing}
+                            disabled={isActuallyNativeEditing}
                         />
                     </div>
                 )}
@@ -342,10 +356,10 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                         rows={6}
                         className="w-full p-3 bg-[var(--color-function-param-schema-bg)] border border-[var(--color-function-param-schema-border)] rounded-lg text-[var(--color-function-param-schema-text)] placeholder-[var(--color-function-param-schema-placeholder)] shadow-sm focus:ring-2 focus:ring-[var(--color-text-input-focus-ring)] focus:border-[var(--color-function-param-schema-focus-border)] transition-colors font-mono text-xs"
                         placeholder={`{\n  "type": "object",\n  "properties": {\n    "city": {\n      "type": "string",\n      "description": "Nome da cidade"\n    }\n  },\n  "required": ["city"]\n}`}
-                        disabled={isNativeEditing}
+                        disabled={isActuallyNativeEditing}
                     ></textarea>
                 </div>
-                {!isNativeEditing && (
+                {!isActuallyNativeEditing && (
                     <div className="flex justify-end space-x-2">
                         <Button variant="secondary" size="sm" onClick={handleCancelEdit}>
                             <IoCloseOutline className="mr-1" /> Cancelar
@@ -355,7 +369,7 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                         </Button>
                     </div>
                 )}
-                 {isNativeEditing && (
+                 {isActuallyNativeEditing && (
                     <div className="flex justify-end space-x-2">
                         <Button variant="secondary" size="sm" onClick={handleCancelEdit}>
                             <IoCloseOutline className="mr-1" /> Fechar
@@ -401,82 +415,85 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                 </div>
 
                 <div className="space-y-4">
-                    {currentFunctionDeclarations.map((func) => (
-                        <SettingsCard
-                            key={func.id}
-                            isEditing={editingFunctionId === func.id}
-                            isNative={func.isNative}
-                            editForm={renderEditForm(newFunction)}
-                            actions={
-                                !func.isNative ? (
-                                    <>
-                                        <Button variant="ghost" size="icon-sm" onClick={() => handleEditFunction(func)} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-table-item-icon-hover)]">
-                                            <IoPencilOutline size={19} />
-                                        </Button>
-                                        <Button variant="ghost" size="icon-sm" onClick={() => handleDeleteFunction(func.id)} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-red-500)]">
-                                            <IoTrashOutline size={19} />
-                                        </Button>
-                                    </>
-                                ) : (
-                                    // Optionally, show a view/info button for native functions if needed, or nothing
-                                    <Tooltip content="Visualizar detalhes (somente leitura)">
-                                        <Button variant="ghost" size="icon-sm" onClick={() => { setEditingFunctionId(func.id); setNewFunction(func);}} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-table-item-icon-hover)]">
-                                            <IoInformationCircleOutline size={19} />
-                                        </Button>
-                                    </Tooltip>
-                                )
-                            }
-                        >
-                            <div className="p-4">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <p className="text-lg font-semibold text-[var(--color-function-card-name-text)] mb-1 truncate pr-16">{func.name}</p>
-                                        <p className="text-sm text-[var(--color-function-card-description-text)] mb-2 truncate">{func.description}</p>
-                                    </div>
-                                    {func.isNative && (
-                                        <Tooltip content="Função Nativa">
-                                            <span className="ml-2 mt-1 flex items-center px-2 py-1 text-xs font-medium bg-[var(--color-native-badge-bg)] text-[var(--color-native-badge-text)] border border-[var(--color-native-badge-border)] rounded-full">
-                                                <IoLockClosedOutline className="mr-1.5" />
-                                                Nativa
-                                            </span>
+                    {currentFunctionDeclarations.map((func) => {
+                        const isTrulyNative = isFunctionTrulyNative(func.id, func.isNative);
+                        return (
+                            <SettingsCard
+                                key={func.id}
+                                isEditing={editingFunctionId === func.id}
+                                isNative={isTrulyNative} // Pass the robust check result
+                                editForm={renderEditForm(newFunction)} // newFunction is used here, which is correct for the form
+                                actions={
+                                    !isTrulyNative ? (
+                                        <>
+                                            <Button variant="ghost" size="icon-sm" onClick={() => handleEditFunction(func)} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-table-item-icon-hover)]">
+                                                <IoPencilOutline size={19} />
+                                            </Button>
+                                            <Button variant="ghost" size="icon-sm" onClick={() => handleDeleteFunction(func.id, func.isNative)} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-red-500)]">
+                                                <IoTrashOutline size={19} />
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <Tooltip content="Visualizar detalhes (somente leitura)">
+                                            <Button variant="ghost" size="icon-sm" onClick={() => { setEditingFunctionId(func.id); setNewFunction(func);}} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-table-item-icon-hover)]">
+                                                <IoInformationCircleOutline size={19} />
+                                            </Button>
                                         </Tooltip>
-                                    )}
-                                </div>
-
-                                {func.type === 'api' && func.endpointUrl && (
-                                    <div className="flex items-center text-xs mt-2">
-                                        <span className="font-mono uppercase px-2 py-0.5 rounded-md bg-[var(--color-function-card-http-method-bg)] text-[var(--color-function-card-http-method-text)] border border-[var(--color-function-card-http-method-border)] mr-2">
-                                            {func.httpMethod}
-                                        </span>
-                                        <span className="font-mono text-[var(--color-function-card-endpoint-text)] truncate" title={func.endpointUrl}>
-                                            {func.endpointUrl}
-                                        </span>
-                                    </div>
-                                )}
-                                {func.type === 'javascript' && (
-                                    <div className="flex items-center text-xs mt-2">
-                                        <span className="font-mono uppercase px-2 py-0.5 rounded-md bg-[var(--color-function-card-js-badge-bg)] text-[var(--color-function-card-js-badge-text)] border border-[var(--color-function-card-js-badge-border)] mr-2 flex items-center">
-                                            <IoCodeSlashOutline className="mr-1" /> JavaScript
-                                        </span>
-                                        {func.code && (
-                                            <Tooltip content={func.code}>
-                                                <span className="font-mono text-[var(--color-function-card-code-snippet-text)] truncate italic">
-                                                    Hover para ver o código
+                                    )
+                                }
+                            >
+                                <div className="p-4">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-lg font-semibold text-[var(--color-function-card-name-text)] mb-1 truncate pr-16">{func.name}</p>
+                                            <p className="text-sm text-[var(--color-function-card-description-text)] mb-2 truncate">{func.description}</p>
+                                        </div>
+                                        {isTrulyNative && ( // Use the robust check for badge display
+                                            <Tooltip content="Função Nativa">
+                                                <span className="ml-2 mt-1 flex items-center px-2 py-1 text-xs font-medium bg-[var(--color-native-badge-bg)] text-[var(--color-native-badge-text)] border border-[var(--color-native-badge-border)] rounded-full">
+                                                    <IoLockClosedOutline className="mr-1.5" />
+                                                    Nativa
                                                 </span>
                                             </Tooltip>
                                         )}
                                     </div>
-                                )}
-                            </div>
-                        </SettingsCard>
-                    ))}
+
+                                    {func.type === 'api' && func.endpointUrl && (
+                                        <div className="flex items-center text-xs mt-2">
+                                            <span className="font-mono uppercase px-2 py-0.5 rounded-md bg-[var(--color-function-card-http-method-bg)] text-[var(--color-function-card-http-method-text)] border border-[var(--color-function-card-http-method-border)] mr-2">
+                                                {func.httpMethod}
+                                            </span>
+                                            <span className="font-mono text-[var(--color-function-card-endpoint-text)] truncate" title={func.endpointUrl}>
+                                                {func.endpointUrl}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {func.type === 'javascript' && (
+                                        <div className="flex items-center text-xs mt-2">
+                                            <span className="font-mono uppercase px-2 py-0.5 rounded-md bg-[var(--color-function-card-js-badge-bg)] text-[var(--color-function-card-js-badge-text)] border border-[var(--color-function-card-js-badge-border)] mr-2 flex items-center">
+                                                <IoCodeSlashOutline className="mr-1" /> JavaScript
+                                            </span>
+                                            {func.code && (
+                                                <Tooltip content={func.code}>
+                                                    <span className="font-mono text-[var(--color-function-card-code-snippet-text)] truncate italic">
+                                                        Hover para ver o código
+                                                    </span>
+                                                </Tooltip>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </SettingsCard>
+                        );
+                    })}
 
                     {editingFunctionId === 'new' && (
                         <SettingsCard
                             isEditing={true}
-                            editForm={renderEditForm(newFunction)}
+                            editForm={renderEditForm(newFunction)} // newFunction is correct here for a new item
+                            isNative={false} // New functions are never native
                         >
-                            <></>
+                            <></> 
                         </SettingsCard>
                     )}
                 </div>
