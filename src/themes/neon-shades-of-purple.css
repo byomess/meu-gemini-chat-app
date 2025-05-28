@@ -21,10 +21,11 @@
   --color-red-700: #D9D7F1;
   --color-red-800: #E0305F;
 
-  --color-yellow-50: #54492E;
-  --color-yellow-400: #FFFF00; /* Bright Neon Yellow from image */
-  --color-yellow-600: #FFFF00; /* Aligned with new yellow-400 */
-  --color-yellow-700: #2D2A55;
+  /* Removed yellow variables as they are replaced */
+  /* --color-yellow-50: #54492E; */
+  /* --color-yellow-400: #FFFF00; */
+  /* --color-yellow-600: #FFFF00; */
+  /* --color-yellow-700: #2D2A55; */
 
   --color-indigo-50: #454270;
   --color-indigo-200: #8BE9FD;
@@ -41,9 +42,10 @@
   --color-amber-700: #2D2B55;
   --color-amber-800: #FF9D00;
 
-  /* NEON OVERRIDES - Adjusted for softer primary and new yellow */
+  /* NEON OVERRIDES - Adjusted for softer primary and new accent colors */
   --color-primary: #FF66FF; /* Softer Magenta */
   --color-primary-dark: #CC33CC; /* Darker Softer Magenta */
+  --color-electric-blue: #00C0FF; /* New Electric Blue */
 
   --color-green-500: #00FF00; /* Lime Green */
   --color-emerald-600: #00CC00; /* Darker Lime Green */
@@ -59,7 +61,7 @@
   --color-sidebar-border: var(--color-gray-300);
   --color-sidebar-heading-text: var(--color-gray-500);
 
-  --color-convo-item-text: var(--color-yellow-400); /* Changed to yellow */
+  --color-convo-item-text: var(--color-electric-blue); /* Changed to electric blue */
   --color-convo-item-hover-bg: var(--color-gray-200);
   --color-convo-item-hover-text: var(--color-white);
   --color-convo-item-active-bg: var(--color-primary); /* Neon */
@@ -68,7 +70,7 @@
   --color-convo-item-edit-text: var(--color-white);
   --color-convo-item-edit-border: color-mix(in srgb, var(--color-primary) 70%, transparent); /* Neon */
   --color-convo-item-edit-focus-border: var(--color-primary); /* Neon */
-  --color-convo-item-icon: var(--color-yellow-400); /* Changed to yellow */
+  --color-convo-item-icon: var(--color-electric-blue); /* Changed to electric blue */
   --color-convo-item-hover-icon: var(--color-white);
   --color-convo-item-active-icon: var(--color-black);
 
@@ -88,7 +90,7 @@
   --color-convo-item-active-actions-bg: color-mix(in srgb, var(--color-gray-800) 60%, transparent);
   --color-convo-item-active-actions-hover-bg: color-mix(in srgb, var(--color-gray-800) 80%, transparent);
   --color-convo-item-active-actions-button-hover-bg: color-mix(in srgb, var(--color-primary) 40%, transparent); /* Neon */
-  --color-convo-item-actions-icon: var(--color-gray-400);
+  --color-convo-item-actions-icon: var(--color-gray-400); /* Reverted to gray-400 for actions icon */
   --color-convo-item-actions-hover-icon: var(--color-convo-item-actions-icon);
   --color-convo-item-actions-delete-hover-icon: var(--color-red-500);
   --color-convo-item-active-actions-icon: var(--color-black);
@@ -121,10 +123,10 @@
   --color-message-bubble-error-bg: var(--color-red-50);
   --color-message-bubble-error-border: var(--color-red-300);
   --color-message-bubble-error-text: var(--color-red-700);
-  --color-message-bubble-aborted-bg: var(--color-yellow-50);
-  --color-message-bubble-aborted-border: var(--color-yellow-400);
-  --color-message-bubble-aborted-text: var(--color-yellow-700);
-  --color-message-bubble-aborted-shadow: color-mix(in srgb, var(--color-yellow-400) 10%, transparent);
+  --color-message-bubble-aborted-bg: var(--color-amber-50); /* Changed to amber */
+  --color-message-bubble-aborted-border: var(--color-amber-200); /* Changed to amber */
+  --color-message-bubble-aborted-text: var(--color-amber-700); /* Changed to amber */
+  --color-message-bubble-aborted-shadow: color-mix(in srgb, var(--color-amber-200) 10%, transparent); /* Changed to amber */
   --color-message-bubble-loading-bg: var(--color-gray-100);
   --color-message-bubble-loading-border: var(--color-gray-300);
 
@@ -186,8 +188,8 @@
   --color-strong-text: var(--color-white);
   --color-error-message-text: var(--color-red-600);
   --color-error-message-border: color-mix(in srgb, var(--color-red-300) 60%, transparent);
-  --color-aborted-message-text: var(--color-yellow-600);
-  --color-aborted-message-border: color-mix(in srgb, var(--color-yellow-400) 60%, transparent);
+  --color-aborted-message-text: var(--color-amber-600); /* Changed to amber */
+  --color-aborted-message-border: color-mix(in srgb, var(--color-amber-200) 60%, transparent); /* Changed to amber */
   --color-memory-actions-heading-text: var(--color-purple-600);
 
   --color-message-actions-bg: color-mix(in srgb, var(--color-gray-800) 80%, transparent);
@@ -207,8 +209,8 @@
 
   --color-input-container-border: var(--color-gray-300);
   --color-input-container-bg: var(--color-gray-900);
-  --color-api-key-warning-text: var(--color-orange-600);
-  --color-api-key-warning-strong-text: var(--color-orange-600);
+  --color-api-key-warning-text: var(--color-amber-600); /* Changed to amber */
+  --color-api-key-warning-strong-text: var(--color-amber-600); /* Changed to amber */
 
   --color-input-form-bg: var(--color-gray-200);
   --color-input-form-border: var(--color-gray-300);
@@ -222,9 +224,9 @@
   --color-error-border: var(--color-red-300);
   --color-error-text: var(--color-red-700);
 
-  --color-warning-bg: var(--color-yellow-50);
-  --color-warning-border: var(--color-yellow-400);
-  --color-warning-text: var(--color-yellow-700);
+  --color-warning-bg: var(--color-amber-50); /* Changed to amber */
+  --color-warning-border: var(--color-amber-200); /* Changed to amber */
+  --color-warning-text: var(--color-amber-700); /* Changed to amber */
 
   --color-attached-item-bg: var(--color-gray-200);
   --color-attached-item-generic-bg: var(--color-gray-100);
@@ -310,7 +312,7 @@
   --color-text-input-focus-border: var(--color-primary); /* Neon */
   --color-text-input-placeholder-text: var(--color-input-placeholder);
   --color-text-input-text: var(--color-input-text);
-  --color-text-input-helper-text: var(--color-yellow-400); /* Changed to yellow */
+  --color-text-input-helper-text: var(--color-electric-blue); /* Changed to electric blue */
   --color-text-input-icon: var(--color-gray-400);
   --color-text-input-icon-hover: var(--color-gray-600);
   --color-text-input-label-icon: var(--color-gray-400);
@@ -335,7 +337,7 @@
 
   --color-settings-content-bg: var(--color-gray-800);
   --color-settings-section-title-text: var(--color-white);
-  --color-settings-section-description-text: var(--color-yellow-400); /* Changed to yellow */
+  --color-settings-section-description-text: var(--color-electric-blue); /* Changed to electric blue */
   --color-settings-section-border: var(--color-gray-200);
 
   --color-toggle-switch-bg-off: var(--color-gray-300);
@@ -437,8 +439,8 @@
 
   --color-welcome-text-main: var(--color-gray-500);
   --color-welcome-text-secondary: var(--color-gray-400);
-  --color-api-key-missing-text: var(--color-orange-600);
-  --color-api-key-missing-icon: var(--color-orange-600);
+  --color-api-key-missing-text: var(--color-amber-600); /* Changed to amber */
+  --color-api-key-missing-icon: var(--color-amber-600); /* Changed to amber */
   --color-no-messages-text-main: var(--color-gray-400);
   --color-no-messages-icon: var(--color-gray-400);
 
