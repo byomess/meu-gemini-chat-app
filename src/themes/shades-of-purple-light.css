@@ -15,7 +15,7 @@
   /* Accent Colors - Keep similar hues, adjust lightness */
   --color-pink-50: #FCE4EC; /* Light pink */
   --color-red-50: #FCE4EC; /* Light red */
-  --color-red-100: #F8D0D0; /* Lighter red */
+  --color-100: #F8D0D0; /* Lighter red */
   --color-red-200: #FF79C6; /* Keep vibrant pink */
   --color-red-300: #FFB3E0; /* Lighter vibrant pink */
   --color-red-500: #E0305F; /* Keep vibrant red */
@@ -67,7 +67,7 @@
   --color-sidebar-heading-text: var(--color-gray-500); /* Medium text */
 
   /* Conversation Item */
-  --color-convo-item-text: #FFFFFF;
+  --color-convo-item-text: var(--color-purple-600);
   --color-convo-item-hover-bg: var(--color-gray-200);
   --color-convo-item-hover-text: var(--color-gray-800);
   --color-convo-item-active-bg: var(--color-primary);
@@ -76,7 +76,7 @@
   --color-convo-item-edit-text: var(--color-gray-800);
   --color-convo-item-edit-border: color-mix(in srgb, var(--color-primary) 70%, transparent);
   --color-convo-item-edit-focus-border: var(--color-primary);
-  --color-convo-item-icon: #FFFFFF;
+  --color-convo-item-icon: var(--color-purple-600);
   --color-convo-item-hover-icon: var(--color-primary);
   --color-convo-item-active-icon: var(--color-white); /* Should be dark now */
 
@@ -567,7 +567,7 @@
   --color-sidebar-heading-text: var(--color-gray-600);
 
   /* Conversation Item */
-  --color-convo-item-text: #FFFFFF;
+  --color-convo-item-text: var(--color-purple-600);
   --color-convo-item-hover-bg: var(--color-gray-200);
   --color-convo-item-hover-text: var(--color-gray-900); /* Dark text on hover */
   --color-convo-item-active-bg: var(--color-primary);
@@ -576,7 +576,7 @@
   --color-convo-item-edit-text: var(--color-gray-900);
   --color-convo-item-edit-border: color-mix(in srgb, var(--color-primary) 70%, transparent);
   --color-convo-item-edit-focus-border: var(--color-primary);
-  --color-convo-item-icon: #FFFFFF;
+  --color-convo-item-icon: var(--color-purple-600);
   --color-convo-item-hover-icon: var(--color-primary);
   --color-convo-item-active-icon: #FFFFFF;
 
@@ -797,7 +797,7 @@
   --color-code-block-copy-button-hover-text: var(--color-primary);
   --color-code-block-copy-button-hover-bg: var(--color-gray-300);
   --color-code-block-copy-button-copied-icon: var(--color-green-500);
-  --color-code-block-no-highlight-bg: var(--color-gray-100);
+  --color-code-block-no-highlight-bg: var(--color-100);
   --color-code-block-no-highlight-text: var(--color-gray-900);
   --color-code-block-no-highlight-scrollbar-thumb: var(--color-gray-400);
   --color-code-block-no-highlight-scrollbar-track: var(--color-gray-200);
