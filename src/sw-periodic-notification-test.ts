@@ -1,159 +1,53 @@
 /// <reference lib="webworker" />
 declare const self: ServiceWorkerGlobalScope;
 
-// Define PeriodicSyncEvent if not globally available
-interface PeriodicSyncEvent extends ExtendableEvent {
-    readonly tag: string;
-}
-
+// workbox imports
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
 import { registerRoute } from 'workbox-routing';
 import { NetworkOnly } from 'workbox-strategies';
 
-// Constants for IndexedDB and Periodic Sync
-const DB_NAME = 'LooxAppDB';
-const DB_VERSION = 1;
-const STORE_NAME = 'scheduledNotifications';
-const GENERIC_SYNC_TAG = 'loox-notification-check'; // Must match the tag used in nativeFunctions.ts
-
-// Define the structure of a scheduled notification for type safety within the SW
-interface ScheduledNotification {
-    id: string;
-    type: string; // e.g., 'productivity-tip'
-    targetIntervalMs: number;
-    nextTriggerTime: number;
-    notificationText: string; // Direct text for the notification
-    enabled: boolean;
-    createdAt: number;
-}
-
-function showNotification(title: string, body: string, tag?: string) {
-    if (Notification.permission === 'granted') {
-        self.registration.showNotification(title, {
-            body: body,
-            icon: '/pwa-192x192.png',
-            tag: tag || 'sw-notification',
-        });
-    } else {
-        console.log(`Service Worker: Notification permission not granted. Cannot show: ${title}`);
+// --- Push Event Listener ---
+self.addEventListener('push', (event: PushEvent) => {
+    console.log('[Service Worker] Push Received.');
+    if (!event.data) {
+        console.warn('[Service Worker] Push event but no data');
+        // Optionally show a generic notification if no data is present
+        event.waitUntil(
+            self.registration.showNotification('Nova mensagem', {
+                body: 'Você tem uma nova atualização.',
+                icon: '/pwa-192x192.png',
+                tag: 'generic-push-fallback'
+            })
+        );
+        return;
     }
-}
 
-// --- IndexedDB Utility Functions ---
-
-function openDB(): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-        const request = self.indexedDB.open(DB_NAME, DB_VERSION);
-
-        request.onupgradeneeded = (event) => {
-            const db = (event.target as IDBOpenDBRequest).result;
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                // Ensure the object store exists, matching the frontend setup
-                db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-                console.log(`Service Worker: Object store ${STORE_NAME} created during onupgradeneeded.`);
-            }
-        };
-
-        request.onsuccess = (event) => {
-            resolve((event.target as IDBOpenDBRequest).result);
-        };
-
-        request.onerror = (event) => {
-            console.error("Service Worker: IndexedDB error:", (event.target as IDBOpenDBRequest).error);
-            reject((event.target as IDBOpenDBRequest).error);
-        };
-    });
-}
-
-function getScheduledNotifications(db: IDBDatabase): Promise<ScheduledNotification[]> {
-    return new Promise((resolve, reject) => {
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-            console.warn(`Service Worker: Object store "${STORE_NAME}" not found during get. Returning empty array.`);
-            resolve([]);
-            return;
-        }
-        const transaction = db.transaction(STORE_NAME, 'readonly');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.getAll() as IDBRequest<ScheduledNotification[]>;
-
-        request.onsuccess = () => {
-            resolve(request.result || []);
-        };
-
-        request.onerror = (event) => {
-            console.error("Service Worker: Error fetching scheduled notifications:", (event.target as IDBRequest).error);
-            reject((event.target as IDBRequest).error);
-        };
-    });
-}
-
-function updateScheduledNotification(db: IDBDatabase, notification: ScheduledNotification): Promise<void> {
-    return new Promise((resolve, reject) => {
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-            console.error(`Service Worker: Object store "${STORE_NAME}" not found during update. Cannot update notification.`);
-            reject(new Error(`Object store "${STORE_NAME}" not found.`));
-            return;
-        }
-        const transaction = db.transaction(STORE_NAME, 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.put(notification);
-
-        request.onsuccess = () => {
-            resolve();
-        };
-
-        request.onerror = (event) => {
-            console.error("Service Worker: Error updating scheduled notification:", (event.target as IDBRequest).error);
-            reject((event.target as IDBRequest).error);
-        };
-    });
-}
-
-
-// --- Main Periodic Sync Logic ---
-
-async function handlePeriodicSyncLogic() {
-    console.log('Service Worker: Periodic sync event triggered for', GENERIC_SYNC_TAG);
-    let db: IDBDatabase | null = null;
+    let pushData;
     try {
-        console.log('Service Worker: [handlePeriodicSyncLogic] Attempting to open DB...');
-        db = await openDB();
-        console.log('Service Worker: [handlePeriodicSyncLogic] DB opened successfully.');
-        const notifications = await getScheduledNotifications(db);
-        const now = Date.now();
-
-        console.log(`Service Worker: Found ${notifications.length} scheduled notifications to check.`);
-
-        for (const notification of notifications) {
-            if (notification.enabled && now >= notification.nextTriggerTime) {
-                console.log(`Service Worker: Triggering notification for ID: ${notification.id} (Type: ${notification.type})`);
-                
-                showNotification(
-                    `Lembrete Agendado: ${notification.type}`, // Title
-                    notification.notificationText,             // Body
-                    notification.id                            // Tag (unique ID for the notification)
-                );
-
-                // Update next trigger time
-                notification.nextTriggerTime = now + notification.targetIntervalMs;
-                await updateScheduledNotification(db, notification);
-                console.log(`Service Worker: Notification ${notification.id} rescheduled for ${new Date(notification.nextTriggerTime).toLocaleString()}`);
-            } else if (notification.enabled) {
-                console.log(`Service Worker: Notification ${notification.id} (Type: ${notification.type}) is enabled but not yet due (Next trigger: ${new Date(notification.nextTriggerTime).toLocaleString()}). Current time: ${new Date(now).toLocaleString()}`);
-            } else {
-                console.log(`Service Worker: Notification ${notification.id} (Type: ${notification.type}) is disabled.`);
-            }
-        }
-        console.log('Service Worker: Finished processing scheduled notifications.');
-    } catch (error) {
-        console.error('Service Worker: Error during periodic sync handling:', error);
-    } finally {
-        if (db) {
-            db.close();
-        }
+        pushData = event.data.json();
+        console.log('[Service Worker] Push data: ', pushData);
+    } catch (e) {
+        console.error('[Service Worker] Failed to parse push data as JSON. Data:', event.data.text());
+        // Fallback for non-JSON data or parse error
+        pushData = { title: 'Nova Notificação', body: event.data.text() };
     }
-}
+
+    const title = pushData.title || 'Nova Notificação';
+    const options: NotificationOptions = {
+        body: pushData.body || 'Você recebeu uma nova mensagem.',
+        icon: pushData.icon || '/pwa-192x192.png', // Default icon
+        badge: pushData.badge || '/pwa-72x72.png', // Example badge, ensure this asset exists
+        tag: pushData.tag || 'general-push-notification', // Tag to group notifications
+        data: pushData.data || null, // Any additional data associated with the notification
+        // actions: pushData.actions || [] // Example: [{ action: 'explore', title: 'Explore' }]
+    };
+
+    event.waitUntil(self.registration.showNotification(title, options));
+});
+
+
+// --- Service Worker Lifecycle ---
 
 self.skipWaiting();
 clientsClaim();
@@ -170,40 +64,48 @@ precacheAndRoute(self.__WB_MANIFEST || []);
 cleanupOutdatedCaches();
 
 self.addEventListener('activate', (event) => {
-    console.log('Periodic Notification Test Service Worker activated.');
+    console.log('Push Notification Service Worker activated.');
     event.waitUntil(
         self.clients.claim().then(() => {
-            // Check if periodicSync is available on the registration
-            if ('periodicSync' in self.registration) {
-                showNotification(
-                    'Sincronização Periódica Pronta', // Title: Periodic Sync Ready
-                    'O sistema de notificações periódicas está pronto para ser configurado.' // Body: The periodic notification system is ready to be configured.
-                );
-                console.log('Service Worker: Activated. Periodic Sync is available.');
+            console.log('Service Worker: Claimed clients.');
+            // Notify that the SW is active and ready for push notifications.
+            // This can be helpful for debugging or initial setup confirmation.
+            // Ensure Notification permission has been granted by the user in the main app
+            // for this to be visible.
+            if ('PushManager' in self.registration) {
+                 self.registration.showNotification(
+                    'Notificações Ativadas', // Title: Notifications Activated
+                    'O sistema está pronto para receber notificações push.' // Body: The system is ready to receive push notifications.
+                ).catch(err => console.error('[SW Activate] Error showing notification:', err));
+                console.log('Service Worker: Activated. PushManager is available.');
             } else {
-                showNotification(
-                    'Service Worker Ativado', // Title: Service Worker Activated
-                    'O Service Worker para notificações está ativo (sincronização periódica pode não ser suportada neste navegador).' // Body: The Service Worker for notifications is active (periodic sync may not be supported in this browser).
-                );
-                console.log('Service Worker: Activated. Periodic Sync may not be supported.');
+                console.log('Service Worker: Activated. PushManager may not be supported or available.');
             }
         })
     );
 });
 
-// Remove old message listeners for start/stop test as they are no longer needed.
+// Listener for notification clicks (optional, but good practice)
+self.addEventListener('notificationclick', (event: NotificationEvent) => {
+    console.log('[Service Worker] Notification click Received.', event.notification.tag);
+    event.notification.close(); // Close the notification
 
-// Listen for the periodic sync event
-self.addEventListener('periodicsync', (event: Event) => {
-    // Assert the event to our custom PeriodicSyncEvent type
-    const periodicSyncEvent = event as PeriodicSyncEvent;
+    // Example: Open a specific URL or focus an existing window
+    // You can use event.notification.data to pass URLs or other info
+    const targetUrl = event.notification.data && event.notification.data.url ? event.notification.data.url : '/';
 
-    if (periodicSyncEvent.tag === GENERIC_SYNC_TAG) {
-        console.log('Service Worker: Received periodic sync event for tag:', periodicSyncEvent.tag);
-        periodicSyncEvent.waitUntil(handlePeriodicSyncLogic());
-    } else {
-        console.log('Service Worker: Received periodic sync event for an unknown tag:', periodicSyncEvent.tag);
-    }
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+            for (const client of clientList) {
+                if (client.url === targetUrl && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (self.clients.openWindow) {
+                return self.clients.openWindow(targetUrl);
+            }
+        })
+    );
 });
 
-console.log('Service Worker: periodic sync event listener attached for tag:', GENERIC_SYNC_TAG);
+console.log('Service Worker: Event listeners for push and notificationclick attached.');

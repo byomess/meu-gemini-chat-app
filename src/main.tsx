@@ -17,31 +17,125 @@ import "./themes/shades-of-purple.css"; // ADDED: Import the shades-of-purple th
 import "./themes/shades-of-purple-light.css"; // ADDED: Import the shades-of-purple-light theme CSS
 import "./themes/nebula.css"; // UPDATED: Import the nebula theme CSS
 
-// ADD: Import registerSW
 import { registerSW } from 'virtual:pwa-register';
 
-// ADD: Periodic SW update logic
-const intervalMS = 60 * 60 * 1000; // Check every hour
+// --- Push Notification Subscription Logic ---
+
+// IMPORTANT: Replace this with your actual VAPID public key from your push server
+const VAPID_PUBLIC_KEY = 'YOUR_SERVER_VAPID_PUBLIC_KEY_HERE';
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+async function subscribeToPushNotifications() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.warn('Push messaging is not supported');
+        return;
+    }
+    if (!VAPID_PUBLIC_KEY || VAPID_PUBLIC_KEY === 'YOUR_SERVER_VAPID_PUBLIC_KEY_HERE') {
+        console.error('VAPID_PUBLIC_KEY is not set. Please set it to your server\'s VAPID public key.');
+        // alert('Push notification setup error: VAPID key missing.'); // Optional user alert
+        return;
+    }
+
+    try {
+        const permissionResult = await Notification.requestPermission();
+        if (permissionResult !== 'granted') {
+            console.log('Notification permission not granted by the user.');
+            // Optionally, inform the user that notifications are disabled
+            // alert('Você não receberá notificações pois a permissão foi negada.');
+            return;
+        }
+        console.log('Notification permission granted.');
+
+        const registration = await navigator.serviceWorker.ready;
+        console.log('Service Worker ready for push subscription.');
+
+        let subscription = await registration.pushManager.getSubscription();
+
+        if (subscription) {
+            console.log('User is already subscribed:', subscription);
+            // You might want to re-send the subscription to your server here
+            // if there's a chance it wasn't synced, or if your server needs periodic updates.
+        } else {
+            console.log('User not subscribed. Attempting to subscribe...');
+            const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: applicationServerKey,
+            });
+            console.log('User subscribed successfully:', subscription);
+        }
+
+        // Send the subscription to your backend server
+        // IMPORTANT: Replace 'http://localhost:5000/subscribe' with your actual server endpoint
+        const PUSH_SERVER_SUBSCRIBE_URL = 'http://localhost:5000/subscribe';
+        await fetch(PUSH_SERVER_SUBSCRIBE_URL, {
+            method: 'POST',
+            body: JSON.stringify(subscription),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        console.log('Subscription details sent to the server.');
+        // alert('Inscrito para notificações com sucesso!'); // Optional user feedback
+
+    } catch (error) {
+        console.error('Error during push notification subscription:', error);
+        // alert('Falha ao se inscrever para notificações.'); // Optional user feedback
+    }
+}
+
+// --- Service Worker Registration and Update ---
+const intervalMS = 60 * 60 * 1000; // Check for SW updates every hour
 
 registerSW({
-    onRegisteredSW(swUrl, r) {
-        r && setInterval(async () => {
-            if (!(!r.installing && navigator)) return; // Simplified check
+    onRegisteredSW(swUrl, registration) {
+        console.log(`Service Worker registered: ${swUrl}`);
+        if (registration) {
+            // Once the SW is registered and active, attempt to subscribe to push notifications.
+            // This ensures that we have an active SW registration to work with.
+            subscribeToPushNotifications();
 
-            if (('connection' in navigator) && !navigator.onLine) return;
+            // Existing SW update check logic
+            setInterval(async () => {
+                if (!registration.installing && navigator) { // Simplified check
+                    if (('connection' in navigator) && !navigator.onLine) return;
 
-            const resp = await fetch(swUrl, {
-                cache: 'no-store',
-                headers: {
-                    'cache': 'no-store',
-                    'cache-control': 'no-cache',
-                },
-            });
+                    try {
+                        const resp = await fetch(swUrl, {
+                            cache: 'no-store',
+                            headers: {
+                                'cache': 'no-store',
+                                'cache-control': 'no-cache',
+                            },
+                        });
 
-            if (resp?.status === 200) {
-                await r.update();
-            }
-        }, intervalMS);
+                        if (resp?.status === 200) {
+                            await registration.update();
+                            console.log('Service Worker update check: Update found and applied or no update needed.');
+                        }
+                    } catch (e) {
+                        console.error('Service Worker update check: Failed to fetch SW file.', e);
+                    }
+                }
+            }, intervalMS);
+        }
+    },
+    onRegisterError(error) {
+        console.error('Service Worker registration failed:', error);
     }
 });
 
