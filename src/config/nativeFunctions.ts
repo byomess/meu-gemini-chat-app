@@ -98,7 +98,6 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
           },
           "sendAt": {
               "type": "number",
-              // Removed "format": "int64" as it's not supported by the API
               "description": "Timestamp UNIX em milissegundos para quando uma notificação do tipo 'SINGLE' deve ser enviada. Deve ser uma data/hora no futuro. Ignorado para 'RECURRENT'."
           },
           "recurrenceRule": {
@@ -209,7 +208,14 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
             };
 
             if (scheduleType === 'SINGLE') {
-                payload.sendAt = sendAt;
+                let finalSendAt = sendAt;
+                const now = Date.now();
+                // If sendAt is undefined or in the past, adjust it to 5 seconds from now
+                if (finalSendAt === undefined || finalSendAt < now) {
+                    console.warn(\`[Frontend] Provided sendAt (\${finalSendAt}) is in the past or undefined. Adjusting to 5 seconds from now.\`);
+                    finalSendAt = now + 5000; // Schedule 5 seconds from the current client time
+                }
+                payload.sendAt = finalSendAt;
             } else if (scheduleType === 'RECURRENT') {
                 payload.recurrenceRule = recurrenceRule;
             }
