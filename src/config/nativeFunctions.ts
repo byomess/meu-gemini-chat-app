@@ -68,26 +68,140 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
       }
       return { currentDateTime: formattedDateTime, timezoneOffset: now.getTimezoneOffset() };
     `
-  }
-  // Future native functions can be added here.
-  // For example, a native API function that requires a POST request:
-  /*
+  },
   {
-    id: 'native_api_postExample',
-    name: 'postExampleData',
-    description: 'Sends example data to a test API endpoint.',
+    id: 'native_js_scheduleProactiveNotification',
+    name: 'scheduleProactiveNotification',
+    description: 'Schedules a periodic proactive notification and registers a generic Periodic Background Sync task for the Service Worker to check for pending notifications.',
     parametersSchema: JSON.stringify({
-      type: 'object',
-      properties: {
-        data: { type: 'string', description: 'Some data to post.' },
-        userId: { type: 'number', description: 'A user ID.' }
-      },
-      required: ['data']
+        type: 'object',
+        properties: {
+            notificationId: { type: 'string', description: 'A unique UUID for this scheduled notification.' },
+            notificationType: { type: 'string', description: "A type or category for this notification (e.g., 'productivity-tip', 'hydration-reminder')." },
+            targetIntervalMs: { type: 'number', description: 'The desired interval in milliseconds for this specific notification to be sent (e.g., 7200000 for 2 hours, 14400000 for 4 hours).' },
+            initialMessagePrompt: { type: 'string', description: 'An initial prompt for the AI to generate the notification message.' }
+        },
+        required: ['notificationId', 'notificationType', 'targetIntervalMs', 'initialMessagePrompt']
     }),
     isNative: true,
-    type: 'api',
-    endpointUrl: 'https://jsonplaceholder.typicode.com/posts', // Example endpoint
-    httpMethod: 'POST',
+    type: 'javascript',
+    code: `
+        const DB_NAME = 'LooxAppDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'scheduledNotifications';
+        const GENERIC_SYNC_TAG = 'loox-notification-check';
+        // const GENERIC_SYNC_MIN_INTERVAL = 600000; // 10 minutes in milliseconds
+        const GENERIC_SYNC_MIN_INTERVAL = 60000; // 1 minute in milliseconds
+
+        function openIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    }
+                };
+
+                request.onsuccess = (event) => {
+                    resolve(event.target.result);
+                };
+
+                request.onerror = (event) => {
+                    console.error("IndexedDB error:", event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        async function saveScheduledNotification(notificationData) {
+            const db = await openIndexedDB();
+            const transaction = db.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            await store.put(notificationData);
+            await transaction.done;
+            db.close();
+        }
+
+        async function requestNotificationPermission() {
+            if (!('Notification' in window)) {
+                return 'unsupported';
+            }
+            if (Notification.permission === 'granted') {
+                return 'granted';
+            }
+            return await Notification.requestPermission();
+        }
+
+        async function registerPeriodicSync(tag, minInterval) {
+            if (!('serviceWorker' in navigator) || !(navigator.serviceWorker.ready)) {
+                console.warn('Service Worker not supported or not ready. Periodic Background Sync may not work.');
+                return { success: false, message: 'Service Worker not supported or not ready.' };
+            }
+
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                // Check if periodicSync is available on the registration object
+                if (!('periodicSync' in registration)) {
+                    console.warn('Periodic Background Sync not available on Service Worker registration. Consider checking browser support or HTTPS.');
+                    return { success: false, message: 'Periodic Background Sync not available.' };
+                }
+
+                await registration.periodicSync.register(tag, {
+                    minInterval: minInterval,
+                });
+                console.log(\`[Frontend] Periodic Sync '\${tag}' registered with interval \${minInterval}ms.\`);
+                return { success: true, message: \`Periodic Sync '\${tag}' registered.\` };
+            } catch (error) {
+                console.error(\`[Frontend] Error registering Periodic Sync '\${tag}':\`, error);
+                // Specifically check for NotAllowedError if user denied permissions or other issues
+                if (error.name === 'NotAllowedError') {
+                    return { success: false, message: \`Periodic Sync registration denied. Ensure browser permissions are granted and user has interacted with the site.\` };
+                }
+                return { success: false, message: \`Error registering Periodic Sync: \${error.message}\` };
+            }
+        }
+
+        // --- Main execution for the function call ---
+        const { notificationId, notificationType, targetIntervalMs, initialMessagePrompt } = params;
+
+        const permission = await requestNotificationPermission();
+
+        if (permission !== 'granted') {
+            console.warn('Notification permission not granted. Cannot schedule proactive notification.');
+            return { status: 'error', message: 'Notification permission denied by user.' };
+        }
+
+        const newSchedule = {
+            id: notificationId,
+            type: notificationType, // Use 'type' to avoid collision with 'tag' for sync
+            targetIntervalMs: targetIntervalMs,
+            nextTriggerTime: Date.now() + targetIntervalMs, // First trigger attempt
+            messagePrompt: initialMessagePrompt,
+            currentMessage: '', // Will be filled by SW after Gemini call
+            messageVariations: [], // Will be filled by SW
+            lastVariationIndex: -1,
+            enabled: true,
+            createdAt: Date.now(),
+        };
+
+        try {
+            await saveScheduledNotification(newSchedule);
+            console.log('[Frontend] Scheduled notification saved to IndexedDB:', newSchedule);
+
+            // Always register the generic sync tag for the SW to check all notifications
+            const syncResult = await registerPeriodicSync(GENERIC_SYNC_TAG, GENERIC_SYNC_MIN_INTERVAL);
+
+            if (syncResult.success) {
+                return { status: 'success', message: 'Proactive notification scheduled successfully!', scheduleId: notificationId };
+            } else {
+                return { status: 'warning', message: \`Proactive notification saved, but Periodic Sync registration failed: \${syncResult.message}\`, scheduleId: notificationId };
+            }
+        } catch (error) {
+            console.error('[Frontend] Error scheduling proactive notification:', error);
+            return { status: 'error', message: \`Failed to schedule proactive notification: \${error.message}\` };
+        }
+    `
   }
-  */
 ];
