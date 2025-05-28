@@ -39,7 +39,7 @@ const sixtySecondsInMs = 60 * 1000;
 // Start the interval when the service worker script is evaluated
 const intervalId = setInterval(showPeriodicNotification, sixtySecondsInMs);
 
-self.addEventListener('activate', (event) => {
+self.addEventListener('activate', () => {
     console.log('Periodic Notification Test Service Worker activated. Interval task is running.');
     // Attempt to show a notification immediately on activation if permission is granted
     // This helps confirm the SW is active and permissions are set.
