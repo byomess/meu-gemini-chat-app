@@ -67,9 +67,10 @@ export default defineConfig({
                     }
                 ]
             },
-            // devOptions: { // Removido: Esta opção deve ser 'false' ou omitida para builds de produção
-            //     enabled: true,
-            // }
+            devOptions: {
+                enabled: true,
+                type: 'module', // Important for TypeScript service workers in dev
+            }
         })
     ]
 })
