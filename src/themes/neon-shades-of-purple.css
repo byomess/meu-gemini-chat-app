@@ -41,9 +41,9 @@
   --color-amber-700: #2D2B55;
   --color-amber-800: #FF9D00;
 
-  /* NEON OVERRIDES */
-  --color-primary: #FF00FF; /* Vibrant Magenta */
-  --color-primary-dark: #CC00CC; /* Darker Magenta */
+  /* NEON OVERRIDES - Adjusted for softer primary and new yellow */
+  --color-primary: #FF66FF; /* Softer Magenta */
+  --color-primary-dark: #CC33CC; /* Darker Softer Magenta */
 
   --color-green-500: #00FF00; /* Lime Green */
   --color-emerald-600: #00CC00; /* Darker Lime Green */
@@ -112,7 +112,7 @@
 
   --color-message-bubble-user-bg: var(--color-primary); /* Neon */
   --color-message-bubble-user-text: var(--color-black);
-  --color-message-bubble-ai-bg: var(--color-gray-200);
+  --color-message-bubble-ai-bg: var(--color-gray-300); /* Lighter gray for AI bubble */
   --color-message-bubble-ai-text: var(--color-white);
   --color-message-bubble-ai-border: var(--color-gray-300);
   --color-message-bubble-function-bg: var(--color-indigo-50);
@@ -310,7 +310,7 @@
   --color-text-input-focus-border: var(--color-primary); /* Neon */
   --color-text-input-placeholder-text: var(--color-input-placeholder);
   --color-text-input-text: var(--color-input-text);
-  --color-text-input-helper-text: var(--color-gray-400);
+  --color-text-input-helper-text: var(--color-yellow-400); /* Changed to yellow */
   --color-text-input-icon: var(--color-gray-400);
   --color-text-input-icon-hover: var(--color-gray-600);
   --color-text-input-label-icon: var(--color-gray-400);
@@ -335,7 +335,7 @@
 
   --color-settings-content-bg: var(--color-gray-800);
   --color-settings-section-title-text: var(--color-white);
-  --color-settings-section-description-text: var(--color-gray-400);
+  --color-settings-section-description-text: var(--color-yellow-400); /* Changed to yellow */
   --color-settings-section-border: var(--color-gray-200);
 
   --color-toggle-switch-bg-off: var(--color-gray-300);
