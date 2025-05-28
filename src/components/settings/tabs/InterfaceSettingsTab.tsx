@@ -53,7 +53,7 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
         { value: 'github-light', label: 'GitHub Light (Claro)' },
         { value: 'shades-of-purple', label: 'Shades of Purple (Escuro)' },
         { value: 'shades-of-purple-light', label: 'Shades of Purple Light (Claro)' },
-        { value: 'neon-shades-of-purple', label: 'Neon Shades of Purple (Escuro)' }, // ADDED: New theme option
+        { value: 'nebula', label: 'Nebula (Escuro)' }, // UPDATED: New theme option
     ];
 
     return (

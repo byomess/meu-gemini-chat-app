@@ -15,7 +15,7 @@ import "./themes/one-dark.css"; // ADDED: Import the one-dark theme CSS
 import "./themes/github-light.css"; // ADDED: Import the github-light theme CSS
 import "./themes/shades-of-purple.css"; // ADDED: Import the shades-of-purple theme CSS
 import "./themes/shades-of-purple-light.css"; // ADDED: Import the shades-of-purple-light theme CSS
-import "./themes/neon-shades-of-purple.css"; // ADDED: Import the neon-shades-of-purple theme CSS
+import "./themes/nebula.css"; // UPDATED: Import the nebula theme CSS
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
