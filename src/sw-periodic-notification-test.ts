@@ -36,16 +36,6 @@ function showNotification(title: string, body: string, tag?: string) {
     }
 }
 
-function handlePeriodicNotification() {
-    const time = new Date().toLocaleTimeString();
-    console.log(`Service Worker: Attempting to show periodic notification at ${time}`);
-    showNotification(
-        'Periodic SW Test',
-        `Notification from Service Worker at ${time}`,
-        'sw-periodic-test-notification'
-    );
-}
-
 // --- IndexedDB Utility Functions ---
 
 function openDB(): Promise<IDBDatabase> {
@@ -181,8 +171,7 @@ self.addEventListener('activate', (event) => {
 // Remove old message listeners for start/stop test as they are no longer needed.
 
 // Listen for the periodic sync event
-// Use `any` for event type if PeriodicSyncEvent is not globally recognized by TypeScript in this context
-self.addEventListener('periodicsync', (event: any) => { 
+self.addEventListener('periodicsync', (event: PeriodicSyncEvent) => {
     if (event.tag === GENERIC_SYNC_TAG) {
         console.log('Service Worker: Received periodic sync event for tag:', event.tag);
         event.waitUntil(handlePeriodicSyncLogic());
