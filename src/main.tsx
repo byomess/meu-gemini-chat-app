@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import { AppSettingsProvider } from './contexts/AppSettingsContext.tsx';
-import { ConversationProvider } './contexts/ConversationContext.tsx';
+import { ConversationProvider } from './contexts/ConversationContext.tsx';
 import { MemoryProvider } from './contexts/MemoryContext.tsx';
 
 import './index.css';
