@@ -67,7 +67,7 @@
   --color-sidebar-heading-text: var(--color-gray-500); /* Medium text */
 
   /* Conversation Item */
-  --color-convo-item-text: var(--color-purple-600);
+  --color-convo-item-text: var(--color-gray-900);
   --color-convo-item-hover-bg: var(--color-gray-200);
   --color-convo-item-hover-text: var(--color-gray-800);
   --color-convo-item-active-bg: var(--color-primary);
@@ -76,7 +76,7 @@
   --color-convo-item-edit-text: var(--color-gray-800);
   --color-convo-item-edit-border: color-mix(in srgb, var(--color-primary) 70%, transparent);
   --color-convo-item-edit-focus-border: var(--color-primary);
-  --color-convo-item-icon: var(--color-purple-600);
+  --color-convo-item-icon: var(--color-gray-900);
   --color-convo-item-hover-icon: var(--color-primary);
   --color-convo-item-active-icon: var(--color-white); /* Should be dark now */
 
@@ -567,7 +567,7 @@
   --color-sidebar-heading-text: var(--color-gray-600);
 
   /* Conversation Item */
-  --color-convo-item-text: var(--color-purple-600);
+  --color-convo-item-text: var(--color-gray-900);
   --color-convo-item-hover-bg: var(--color-gray-200);
   --color-convo-item-hover-text: var(--color-gray-900); /* Dark text on hover */
   --color-convo-item-active-bg: var(--color-primary);
@@ -576,7 +576,7 @@
   --color-convo-item-edit-text: var(--color-gray-900);
   --color-convo-item-edit-border: color-mix(in srgb, var(--color-primary) 70%, transparent);
   --color-convo-item-edit-focus-border: var(--color-primary);
-  --color-convo-item-icon: var(--color-purple-600);
+  --color-convo-item-icon: var(--color-gray-900);
   --color-convo-item-hover-icon: var(--color-primary);
   --color-convo-item-active-icon: #FFFFFF;
 
