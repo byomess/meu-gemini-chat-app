@@ -202,7 +202,7 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
                 console.log('[Frontend] Scheduled notification saved to IndexedDB:', newSchedule);
 
                 // Always register the generic sync tag for the SW to check all notifications
-                console.log(`[Frontend JS scheduleProactiveNotification] Attempting to register Periodic Sync with tag: '${GENERIC_SYNC_TAG}' and minInterval: ${GENERIC_SYNC_MIN_INTERVAL}ms`);
+                console.log(\`[Frontend JS scheduleProactiveNotification] Attempting to register Periodic Sync with tag: '\${GENERIC_SYNC_TAG}' and minInterval: \${GENERIC_SYNC_MIN_INTERVAL}ms\`);
                 const syncResult = await registerPeriodicSync(GENERIC_SYNC_TAG, GENERIC_SYNC_MIN_INTERVAL);
                 console.log('[Frontend] Periodic Sync registration result:', syncResult);
 
