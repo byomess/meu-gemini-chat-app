@@ -72,7 +72,7 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
   {
     id: 'native_js_scheduleProactiveNotification',
     name: 'scheduleProactiveNotification',
-    description: 'Schedules a periodic proactive notification and registers a generic Periodic Background Sync task for the Service Worker to check for pending notifications.',
+    description: 'Schedules a periodic proactive notification by sending a request to the backend push server.',
     parametersSchema: JSON.stringify({
         type: 'object',
         properties: {
@@ -86,10 +86,6 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
     isNative: true,
     type: 'javascript',
     code: `
-        // This function is now deprecated as the notification system shifts to server-driven push.
-        // It no longer schedules client-side periodic notifications.
-        // It will only request notification permission and log a message.
-
         async function requestNotificationPermission() {
             if (!('Notification' in window)) {
                 return 'unsupported';
@@ -102,25 +98,41 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
 
         // --- Main execution for the function call (wrapped in async IIFE) ---
         return (async () => {
-            console.warn('[Frontend JS scheduleProactiveNotification] This function is deprecated. Proactive notifications are now server-driven via push notifications.');
-            console.log('[Frontend JS scheduleProactiveNotification] Function called with params:', params);
             const { notificationId, notificationType, targetIntervalMs, notificationText } = params;
 
             const permission = await requestNotificationPermission();
-            console.log('[Frontend] Notification permission status:', permission);
-
             if (permission !== 'granted') {
                 console.warn('[Frontend] Notification permission not granted. Cannot schedule proactive notification.');
-                return { status: 'error', message: 'Notification permission denied by user. Proactive notifications require permission.' };
+                return { status: 'error', message: 'Notification permission denied. Proactive notifications require permission.' };
             }
 
-            // In a server-driven model, the client doesn't "schedule" the notification directly.
-            // It only subscribes to push notifications (handled by main.tsx) and the server sends them.
-            // This function now serves as a placeholder or a way to ensure permission is requested.
-            console.log(\`[Frontend] Proactive notification request received (ID: \${notificationId}, Type: \${notificationType}, Text: "\${notificationText}").
-            Please ensure your backend is configured to send push notifications based on your desired logic.\`);
+            const SCHEDULE_ENDPOINT = 'http://localhost:5000/schedule-proactive-notification';
+            try {
+                const response = await fetch(SCHEDULE_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        notificationId,
+                        notificationType,
+                        targetIntervalMs,
+                        notificationText,
+                    }),
+                });
 
-            return { status: 'info', message: 'Proactive notification request processed. Server-driven push notifications are now used. Ensure your backend is configured to send these notifications.', details: { notificationId, notificationType, targetIntervalMs, notificationText } };
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(\`Server responded with status \${response.status}: \${errorData.message || 'Unknown error'}\`);
+                }
+
+                const result = await response.json();
+                console.log('[Frontend] Proactive notification scheduled via server:', result);
+                return { status: 'success', message: 'Proactive notification scheduled via server.', details: result };
+            } catch (error) {
+                console.error('[Frontend] Error scheduling proactive notification via server:', error);
+                return { status: 'error', message: \`Failed to schedule proactive notification: \${error.message}\` };
+            }
         })();
     `
   }

@@ -44,9 +44,9 @@ async function subscribeToPushNotifications() {
         console.warn('Push messaging is not supported');
         return;
     }
-    if (!VAPID_PUBLIC_KEY || VAPID_PUBLIC_KEY !== 'BPnvDJGXsrAq3XbOJZIBh_yZt2mdOTcZBYjF9HO55BoDp7S9xw6Joj_xza6OCYPemEw2dRiI1Z_paqip9K6h2xs') {
+    // Simplified VAPID_PUBLIC_KEY check
+    if (!VAPID_PUBLIC_KEY) {
         console.error('VAPID_PUBLIC_KEY is not set. Please set it to your server\'s VAPID public key.');
-        // alert('Push notification setup error: VAPID key missing.'); // Optional user alert
         return;
     }
 
@@ -54,8 +54,6 @@ async function subscribeToPushNotifications() {
         const permissionResult = await Notification.requestPermission();
         if (permissionResult !== 'granted') {
             console.log('Notification permission not granted by the user.');
-            // Optionally, inform the user that notifications are disabled
-            // alert('Você não receberá notificações pois a permissão foi negada.');
             return;
         }
         console.log('Notification permission granted.');
@@ -80,7 +78,6 @@ async function subscribeToPushNotifications() {
         }
 
         // Send the subscription to your backend server
-        // IMPORTANT: Replace 'http://localhost:5000/subscribe' with your actual server endpoint
         const PUSH_SERVER_SUBSCRIBE_URL = 'http://localhost:5000/subscribe';
         await fetch(PUSH_SERVER_SUBSCRIBE_URL, {
             method: 'POST',
@@ -90,11 +87,9 @@ async function subscribeToPushNotifications() {
             },
         });
         console.log('Subscription details sent to the server.');
-        // alert('Inscrito para notificações com sucesso!'); // Optional user feedback
 
     } catch (error) {
         console.error('Error during push notification subscription:', error);
-        // alert('Falha ao se inscrever para notificações.'); // Optional user feedback
     }
 }
 
