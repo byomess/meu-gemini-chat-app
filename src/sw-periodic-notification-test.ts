@@ -1,6 +1,11 @@
 /// <reference lib="webworker" />
 declare const self: ServiceWorkerGlobalScope;
 
+// Define PeriodicSyncEvent if not globally available
+interface PeriodicSyncEvent extends ExtendableEvent {
+    readonly tag: string;
+}
+
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
 
