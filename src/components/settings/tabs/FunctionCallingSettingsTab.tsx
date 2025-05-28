@@ -117,20 +117,14 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
 
     const handleEditFunction = useCallback((func: FunctionDeclaration) => {
         if (isFunctionTrulyNative(func.id, func.isNative)) {
-            showDialog({
-                title: "Função Nativa",
-                message: "Funções nativas não podem ser editadas. Você pode visualizar seus detalhes.",
-                type: "alert",
-                onConfirm: () => { // Open in view-only mode
-                    setEditingFunctionId(func.id);
-                    setNewFunction({ ...func });
-                }
-            });
+            // For native functions, directly open in view-only mode without a dialog
+            setEditingFunctionId(func.id);
+            setNewFunction({ ...func });
             return;
         }
         setEditingFunctionId(func.id);
         setNewFunction({ ...func });
-    }, [showDialog, isFunctionTrulyNative]);
+    }, [isFunctionTrulyNative]);
 
     const handleCancelEdit = useCallback(() => {
         setEditingFunctionId(null);
@@ -417,12 +411,17 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                 <div className="space-y-4">
                     {currentFunctionDeclarations.map((func) => {
                         const isTrulyNative = isFunctionTrulyNative(func.id, func.isNative);
+                        const cardClassName = isTrulyNative 
+                            ? "border-[var(--color-gray-300)] bg-[var(--color-gray-800)] hover:bg-[var(--color-gray-200)]" 
+                            : ""; // Default classes will be applied by SettingsCard for non-native
+
                         return (
                             <SettingsCard
                                 key={func.id}
                                 isEditing={editingFunctionId === func.id}
-                                isNative={isTrulyNative} // Pass the robust check result
-                                editForm={renderEditForm(newFunction)} // newFunction is used here, which is correct for the form
+                                isNative={isTrulyNative} 
+                                className={cardClassName}
+                                editForm={renderEditForm(newFunction)} 
                                 actions={
                                     !isTrulyNative ? (
                                         <>
@@ -444,13 +443,13 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                             >
                                 <div className="p-4">
                                     <div className="flex justify-between items-start">
-                                        <div>
-                                            <p className="text-lg font-semibold text-[var(--color-function-card-name-text)] mb-1 truncate pr-16">{func.name}</p>
-                                            <p className="text-sm text-[var(--color-function-card-description-text)] mb-2 truncate">{func.description}</p>
+                                        <div className="min-w-0 flex-1"> {/* Container for name and description */}
+                                            <p className="text-lg font-semibold text-[var(--color-function-card-name-text)] mb-1 truncate pr-2">{func.name}</p>
+                                            <p className="text-sm text-[var(--color-function-card-description-text)] mb-2 max-h-10 overflow-hidden leading-snug">{func.description}</p>
                                         </div>
-                                        {isTrulyNative && ( // Use the robust check for badge display
+                                        {isTrulyNative && ( 
                                             <Tooltip content="Função Nativa">
-                                                <span className="ml-2 mt-1 flex items-center px-2 py-1 text-xs font-medium bg-[var(--color-native-badge-bg)] text-[var(--color-native-badge-text)] border border-[var(--color-native-badge-border)] rounded-full">
+                                                <span className="ml-2 mt-1 flex-shrink-0 flex items-center px-2 py-1 text-xs font-medium bg-[var(--color-gray-500)] text-[var(--color-gray-900)] border border-[var(--color-gray-400)] rounded-full">
                                                     <IoLockClosedOutline className="mr-1.5" />
                                                     Nativa
                                                 </span>
@@ -470,12 +469,12 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                     )}
                                     {func.type === 'javascript' && (
                                         <div className="flex items-center text-xs mt-2">
-                                            <span className="font-mono uppercase px-2 py-0.5 rounded-md bg-[var(--color-function-card-js-badge-bg)] text-[var(--color-function-card-js-badge-text)] border border-[var(--color-function-card-js-badge-border)] mr-2 flex items-center">
+                                            <span className="font-mono uppercase px-2 py-0.5 rounded-md bg-[var(--color-indigo-50)] text-[var(--color-indigo-700)] border border-[var(--color-indigo-200)] mr-2 flex items-center">
                                                 <IoCodeSlashOutline className="mr-1" /> JavaScript
                                             </span>
                                             {func.code && (
                                                 <Tooltip content={func.code}>
-                                                    <span className="font-mono text-[var(--color-function-card-code-snippet-text)] truncate italic">
+                                                    <span className="font-mono text-[var(--color-indigo-600)] truncate italic">
                                                         Hover para ver o código
                                                     </span>
                                                 </Tooltip>
@@ -490,8 +489,8 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                     {editingFunctionId === 'new' && (
                         <SettingsCard
                             isEditing={true}
-                            editForm={renderEditForm(newFunction)} // newFunction is correct here for a new item
-                            isNative={false} // New functions are never native
+                            editForm={renderEditForm(newFunction)} 
+                            isNative={false} 
                         >
                             <></> 
                         </SettingsCard>
