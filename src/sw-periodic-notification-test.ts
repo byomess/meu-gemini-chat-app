@@ -163,20 +163,19 @@ self.skipWaiting();
 clientsClaim();
 
 // Ensure API calls to Google Generative Language are handled by the network directly
+console.log('[SW] Attempting to register Google API route...');
 registerRoute(
   ({url}) => {
-    // Log all URLs being checked by this specific route handler
-    console.log(`[SW] Route predicate check. URL: ${url.href}, Origin: ${url.origin}`);
+    console.log(`[SW] Google API Route Predicate CHECKING URL: ${url.href} (Origin: ${url.origin})`);
     const isGoogleApi = url.origin === 'https://generativelanguage.googleapis.com';
     if (isGoogleApi) {
-      console.log('[SW] Google API call MATCHED by origin:', url.href);
-    } else {
-      // console.log('[SW] Google API call NOT MATCHED by origin for this route.');
+      console.log('[SW] Google API call MATCHED by origin for NetworkOnly strategy:', url.href);
     }
     return isGoogleApi;
   },
   new NetworkOnly()
 );
+console.log('[SW] Google API route registration attempt COMPLETE.');
 
 precacheAndRoute(self.__WB_MANIFEST || []);
 cleanupOutdatedCaches();
