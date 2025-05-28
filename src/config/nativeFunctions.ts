@@ -91,7 +91,7 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
         const STORE_NAME = 'scheduledNotifications';
         const GENERIC_SYNC_TAG = 'loox-notification-check';
         // const GENERIC_SYNC_MIN_INTERVAL = 600000; // 10 minutes in milliseconds
-        const GENERIC_SYNC_MIN_INTERVAL = 60000; // 1 minute in milliseconds
+        const GENERIC_SYNC_MIN_INTERVAL = 3600000; // 1 hour in milliseconds
 
         function openIndexedDB() {
             return new Promise((resolve, reject) => {
