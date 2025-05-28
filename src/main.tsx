@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import { AppSettingsProvider } from './contexts/AppSettingsContext.tsx';
-import { ConversationProvider } from './contexts/ConversationContext.tsx';
+import { ConversationProvider } './contexts/ConversationContext.tsx';
 import { MemoryProvider } from './contexts/MemoryContext.tsx';
 
 import './index.css';
@@ -74,7 +74,7 @@ async function subscribeToPushNotifications() {
             const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
             subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: applicationServerKey,
+                applicationServerKey: applicationServerKey as BufferSource, // Type assertion added here
             });
             console.log('User subscribed successfully:', subscription);
         }
