@@ -144,8 +144,13 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
                 const registration = await navigator.serviceWorker.ready;
                 // Check if periodicSync is available on the registration object
                 if (!('periodicSync' in registration)) {
-                    console.warn('Periodic Background Sync not available on Service Worker registration. Consider checking browser support or HTTPS.');
-                    return { success: false, message: 'Periodic Background Sync not available.' };
+                    const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+                    let message = 'Periodic Background Sync not available on Service Worker registration. Consider checking browser support or HTTPS.';
+                    if (isFirefox) {
+                        message = 'Periodic Background Sync is not currently supported by default in Firefox. Proactive notifications requiring background sync may not work as expected. You might check Firefox about:config for experimental flags like dom.backgroundSync.periodic.enabled, but this is not recommended for general use.';
+                    }
+                    console.warn(`[Frontend] ${message}`);
+                    return { success: false, message: message };
                 }
 
                 await registration.periodicSync.register(tag, {
