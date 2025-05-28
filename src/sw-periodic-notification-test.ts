@@ -23,10 +23,7 @@ interface ScheduledNotification {
     type: string; // e.g., 'productivity-tip'
     targetIntervalMs: number;
     nextTriggerTime: number;
-    messagePrompt: string; // Prompt for AI to generate message, or the message itself
-    currentMessage: string; // Potentially AI-generated message
-    messageVariations: string[];
-    lastVariationIndex: number;
+    notificationText: string; // Direct text for the notification
     enabled: boolean;
     createdAt: number;
 }
@@ -132,12 +129,9 @@ async function handlePeriodicSyncLogic() {
             if (notification.enabled && now >= notification.nextTriggerTime) {
                 console.log(`Service Worker: Triggering notification for ID: ${notification.id} (Type: ${notification.type})`);
                 
-                // For now, use the messagePrompt as the body.
-                // Future enhancement: Use notification.currentMessage if populated by an AI,
-                // or call AI here to generate a message based on notification.messagePrompt.
                 showNotification(
                     `Lembrete Agendado: ${notification.type}`, // Title
-                    notification.messagePrompt,                // Body
+                    notification.notificationText,             // Body
                     notification.id                            // Tag (unique ID for the notification)
                 );
 

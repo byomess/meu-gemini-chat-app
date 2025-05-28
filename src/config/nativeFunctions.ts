@@ -79,9 +79,9 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
             notificationId: { type: 'string', description: 'A unique UUID for this scheduled notification.' },
             notificationType: { type: 'string', description: "A type or category for this notification (e.g., 'productivity-tip', 'hydration-reminder')." },
             targetIntervalMs: { type: 'number', description: 'The desired interval in milliseconds for this specific notification to be sent (e.g., 7200000 for 2 hours, 14400000 for 4 hours).' },
-            initialMessagePrompt: { type: 'string', description: 'An initial prompt for the AI to generate the notification message.' }
+            notificationText: { type: 'string', description: 'The exact text to be displayed in the notification.' }
         },
-        required: ['notificationId', 'notificationType', 'targetIntervalMs', 'initialMessagePrompt']
+        required: ['notificationId', 'notificationType', 'targetIntervalMs', 'notificationText']
     }),
     isNative: true,
     type: 'javascript',
@@ -173,7 +173,7 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
         // --- Main execution for the function call (wrapped in async IIFE) ---
         return (async () => {
             console.log('[Frontend JS scheduleProactiveNotification] Function called with params:', params);
-            const { notificationId, notificationType, targetIntervalMs, initialMessagePrompt } = params;
+            const { notificationId, notificationType, targetIntervalMs, notificationText } = params;
 
             const permission = await requestNotificationPermission();
             console.log('[Frontend] Notification permission status:', permission);
@@ -192,14 +192,8 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
                 targetIntervalMs: targetIntervalMs,
                 // Timestamp (ms since epoch) when this notification is next scheduled to be triggered.
                 nextTriggerTime: Date.now() + targetIntervalMs, // First trigger attempt
-                // Initial text/prompt for generating the notification message (can be used directly or by an AI).
-                messagePrompt: initialMessagePrompt,
-                // Placeholder for the actual AI-generated message to be displayed (intended to be filled by the Service Worker).
-                currentMessage: '', // Will be filled by SW after Gemini call
-                // Placeholder for a list of different message variations for this notification type (intended to be filled by SW).
-                messageVariations: [], // Will be filled by SW
-                // Index to keep track of the last used message variation from the messageVariations array.
-                lastVariationIndex: -1,
+                // Direct text for the notification.
+                notificationText: notificationText,
                 // Flag to indicate if this scheduled notification is active (true) or paused (false).
                 enabled: true,
                 // Timestamp (ms since epoch) when this notification schedule was created.
