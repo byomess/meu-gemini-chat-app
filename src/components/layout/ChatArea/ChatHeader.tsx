@@ -71,7 +71,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     Limpar chat
                 </DropdownItem>
                 <DropdownItem onClick={onSearchMessages} icon={<IoSearchOutline size={18} />}>
-                    Buscar mensagens
+                    Buscar
                 </DropdownItem>
             </Dropdown>
         </div>
