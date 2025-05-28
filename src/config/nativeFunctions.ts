@@ -163,50 +163,52 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
             }
         }
 
-        // --- Main execution for the function call ---
-        const { notificationId, notificationType, targetIntervalMs, initialMessagePrompt } = params;
+        // --- Main execution for the function call (wrapped in async IIFE) ---
+        return (async () => {
+            const { notificationId, notificationType, targetIntervalMs, initialMessagePrompt } = params;
 
-        const permission = await requestNotificationPermission();
-        console.log('[Frontend] Notification permission status:', permission);
+            const permission = await requestNotificationPermission();
+            console.log('[Frontend] Notification permission status:', permission);
 
-        if (permission !== 'granted') {
-            console.warn('[Frontend] Notification permission not granted. Cannot schedule proactive notification.');
-            return { status: 'error', message: 'Notification permission denied by user.' };
-        }
-
-        const newSchedule = {
-            id: notificationId,
-            type: notificationType, // Use 'type' to avoid collision with 'tag' for sync
-            targetIntervalMs: targetIntervalMs,
-            nextTriggerTime: Date.now() + targetIntervalMs, // First trigger attempt
-            messagePrompt: initialMessagePrompt,
-            currentMessage: '', // Will be filled by SW after Gemini call
-            messageVariations: [], // Will be filled by SW
-            lastVariationIndex: -1,
-            enabled: true,
-            createdAt: Date.now(),
-        };
-
-        try {
-            await saveScheduledNotification(newSchedule);
-            console.log('[Frontend] Scheduled notification saved to IndexedDB:', newSchedule);
-
-            // Always register the generic sync tag for the SW to check all notifications
-            const syncResult = await registerPeriodicSync(GENERIC_SYNC_TAG, GENERIC_SYNC_MIN_INTERVAL);
-            console.log('[Frontend] Periodic Sync registration result:', syncResult);
-
-            if (syncResult.success) {
-                console.log('[Frontend] Returning success for scheduleProactiveNotification.');
-                return { status: 'success', message: 'Proactive notification scheduled successfully!', scheduleId: notificationId };
-            } else {
-                console.warn('[Frontend] Returning warning for scheduleProactiveNotification due to sync registration failure.');
-                return { status: 'warning', message: \`Proactive notification saved, but Periodic Sync registration failed: \${syncResult.message}\`, scheduleId: notificationId };
+            if (permission !== 'granted') {
+                console.warn('[Frontend] Notification permission not granted. Cannot schedule proactive notification.');
+                return { status: 'error', message: 'Notification permission denied by user.' };
             }
-        } catch (error) {
-            console.error('[Frontend] Error scheduling proactive notification:', error);
-            console.log('[Frontend] Returning error for scheduleProactiveNotification due to caught exception.');
-            return { status: 'error', message: \`Failed to schedule proactive notification: \${error.message}\` };
-        }
+
+            const newSchedule = {
+                id: notificationId,
+                type: notificationType, // Use 'type' to avoid collision with 'tag' for sync
+                targetIntervalMs: targetIntervalMs,
+                nextTriggerTime: Date.now() + targetIntervalMs, // First trigger attempt
+                messagePrompt: initialMessagePrompt,
+                currentMessage: '', // Will be filled by SW after Gemini call
+                messageVariations: [], // Will be filled by SW
+                lastVariationIndex: -1,
+                enabled: true,
+                createdAt: Date.now(),
+            };
+
+            try {
+                await saveScheduledNotification(newSchedule);
+                console.log('[Frontend] Scheduled notification saved to IndexedDB:', newSchedule);
+
+                // Always register the generic sync tag for the SW to check all notifications
+                const syncResult = await registerPeriodicSync(GENERIC_SYNC_TAG, GENERIC_SYNC_MIN_INTERVAL);
+                console.log('[Frontend] Periodic Sync registration result:', syncResult);
+
+                if (syncResult.success) {
+                    console.log('[Frontend] Returning success for scheduleProactiveNotification.');
+                    return { status: 'success', message: 'Proactive notification scheduled successfully!', scheduleId: notificationId };
+                } else {
+                    console.warn('[Frontend] Returning warning for scheduleProactiveNotification due to sync registration failure.');
+                    return { status: 'warning', message: \`Proactive notification saved, but Periodic Sync registration failed: \${syncResult.message}\`, scheduleId: notificationId };
+                }
+            } catch (error) {
+                console.error('[Frontend] Error scheduling proactive notification:', error);
+                console.log('[Frontend] Returning error for scheduleProactiveNotification due to caught exception.');
+                return { status: 'error', message: \`Failed to schedule proactive notification: \${error.message}\` };
+            }
+        })();
     `
   }
 ];
