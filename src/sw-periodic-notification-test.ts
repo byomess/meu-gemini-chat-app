@@ -175,12 +175,24 @@ cleanupOutdatedCaches();
 
 self.addEventListener('activate', (event) => {
     console.log('Periodic Notification Test Service Worker activated.');
-    showNotification(
-        'Service Worker Ativado', // Changed to Portuguese
-        'O Service Worker para notificações proativas está ativo.' // Changed to Portuguese
+    event.waitUntil(
+        self.clients.claim().then(() => {
+            // Check if periodicSync is available on the registration
+            if ('periodicSync' in self.registration) {
+                showNotification(
+                    'Sincronização Periódica Pronta', // Title: Periodic Sync Ready
+                    'O sistema de notificações periódicas está pronto para ser configurado.' // Body: The periodic notification system is ready to be configured.
+                );
+                console.log('Service Worker: Activated. Periodic Sync is available.');
+            } else {
+                showNotification(
+                    'Service Worker Ativado', // Title: Service Worker Activated
+                    'O Service Worker para notificações está ativo (sincronização periódica pode não ser suportada neste navegador).' // Body: The Service Worker for notifications is active (periodic sync may not be supported in this browser).
+                );
+                console.log('Service Worker: Activated. Periodic Sync may not be supported.');
+            }
+        })
     );
-    console.log('Service Worker: Activated. Ready for periodic sync events.');
-    event.waitUntil(self.clients.claim());
 });
 
 // Remove old message listeners for start/stop test as they are no longer needed.
