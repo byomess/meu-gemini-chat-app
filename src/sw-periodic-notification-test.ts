@@ -27,7 +27,7 @@ self.addEventListener('push', (event: PushEvent) => {
     try {
         pushData = event.data.json();
         console.log('[Service Worker] Push data: ', pushData);
-    } catch (e) {
+    } catch {
         console.error('[Service Worker] Failed to parse push data as JSON. Data:', event.data.text());
         // Fallback for non-JSON data or parse error
         pushData = { title: 'Nova Notificação', body: event.data.text() };
@@ -75,7 +75,10 @@ self.addEventListener('activate', (event) => {
             if ('PushManager' in self.registration) {
                  self.registration.showNotification(
                     'Notificações Ativadas', // Title: Notifications Activated
-                    'O sistema está pronto para receber notificações push.' // Body: The system is ready to receive push notifications.
+                    {
+                        body: 'O sistema está pronto para receber notificações push.', // Body: The system is ready to receive push notifications.
+                        icon: '/pwa-192x192.png'
+                    }
                 ).catch(err => console.error('[SW Activate] Error showing notification:', err));
                 console.log('Service Worker: Activated. PushManager is available.');
             } else {
