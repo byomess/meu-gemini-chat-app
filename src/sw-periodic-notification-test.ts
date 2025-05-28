@@ -164,7 +164,13 @@ clientsClaim();
 
 // Ensure API calls to Google Generative Language are handled by the network directly
 registerRoute(
-  ({url}) => url.origin === 'https://generativelanguage.googleapis.com',
+  ({url}) => {
+    const isGoogleApi = url.origin === 'https://generativelanguage.googleapis.com';
+    if (isGoogleApi) {
+      console.log('[SW] Routing Google API call with NetworkOnly:', url.href);
+    }
+    return isGoogleApi;
+  },
   new NetworkOnly()
 );
 
