@@ -411,15 +411,14 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                 <div className="space-y-4">
                     {currentFunctionDeclarations.map((func) => {
                         const isTrulyNative = isFunctionTrulyNative(func.id, func.isNative);
-                        // Removed cardClassName conditional to allow SettingsCard to apply its default styling
-                        // to all cards, ensuring consistent background and border.
-
+                        
                         return (
                             <SettingsCard
                                 key={func.id}
                                 isEditing={editingFunctionId === func.id}
                                 isNative={isTrulyNative} 
-                                // className={cardClassName} // No longer needed, SettingsCard applies default
+                                // Explicitly apply background and border to ensure consistency across all cards
+                                className="bg-[var(--color-table-row-bg)] border border-[var(--color-table-row-border)]" 
                                 editForm={renderEditForm(newFunction)} 
                                 actions={
                                     !isTrulyNative ? (
@@ -456,10 +455,10 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                         )}
                                     </div>
 
-                                    {func.type === 'api' && func.endpointUrl && (
+                                    {func.type === 'api' && ( // Changed condition to always show badge for API type
                                         <div className="flex items-center text-xs mt-2">
                                             <span className="font-mono uppercase px-2 py-0.5 rounded-md bg-[var(--color-function-card-http-method-bg)] text-[var(--color-function-card-http-method-text)] border border-[var(--color-function-card-http-method-border)] mr-2">
-                                                {func.httpMethod}
+                                                {func.httpMethod || 'N/A'} {/* Display N/A if httpMethod is not set */}
                                             </span>
                                             <span className="font-mono text-[var(--color-function-card-endpoint-text)] truncate" title={func.endpointUrl}>
                                                 {func.endpointUrl}
@@ -490,6 +489,8 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                             isEditing={true}
                             editForm={renderEditForm(newFunction)} 
                             isNative={false} 
+                            // Explicitly apply background and border for new function card as well
+                            className="bg-[var(--color-table-row-bg)] border border-[var(--color-table-row-border)]" 
                         >
                             <></> 
                         </SettingsCard>
