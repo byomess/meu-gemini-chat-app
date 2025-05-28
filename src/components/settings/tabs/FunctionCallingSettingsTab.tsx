@@ -411,16 +411,15 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                 <div className="space-y-4">
                     {currentFunctionDeclarations.map((func) => {
                         const isTrulyNative = isFunctionTrulyNative(func.id, func.isNative);
-                        const cardClassName = isTrulyNative 
-                            ? "border-[var(--color-gray-300)] bg-[var(--color-gray-800)] hover:bg-[var(--color-gray-200)]" 
-                            : ""; // Default classes will be applied by SettingsCard for non-native
+                        // Removed cardClassName conditional to allow SettingsCard to apply its default styling
+                        // to all cards, ensuring consistent background and border.
 
                         return (
                             <SettingsCard
                                 key={func.id}
                                 isEditing={editingFunctionId === func.id}
                                 isNative={isTrulyNative} 
-                                className={cardClassName}
+                                // className={cardClassName} // No longer needed, SettingsCard applies default
                                 editForm={renderEditForm(newFunction)} 
                                 actions={
                                     !isTrulyNative ? (
