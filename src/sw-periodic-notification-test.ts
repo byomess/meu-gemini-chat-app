@@ -34,7 +34,7 @@ function showPeriodicNotification() {
     }
 }
 
-const sixtySecondsInMs = 60 * 1000;
+const sixtySecondsInMs = 10 * 1000; // Changed to 10 seconds
 
 // Start the interval when the service worker script is evaluated
 const intervalId = setInterval(showPeriodicNotification, sixtySecondsInMs);
