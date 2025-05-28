@@ -167,9 +167,10 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
         const { notificationId, notificationType, targetIntervalMs, initialMessagePrompt } = params;
 
         const permission = await requestNotificationPermission();
+        console.log('[Frontend] Notification permission status:', permission);
 
         if (permission !== 'granted') {
-            console.warn('Notification permission not granted. Cannot schedule proactive notification.');
+            console.warn('[Frontend] Notification permission not granted. Cannot schedule proactive notification.');
             return { status: 'error', message: 'Notification permission denied by user.' };
         }
 
@@ -192,14 +193,18 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
 
             // Always register the generic sync tag for the SW to check all notifications
             const syncResult = await registerPeriodicSync(GENERIC_SYNC_TAG, GENERIC_SYNC_MIN_INTERVAL);
+            console.log('[Frontend] Periodic Sync registration result:', syncResult);
 
             if (syncResult.success) {
+                console.log('[Frontend] Returning success for scheduleProactiveNotification.');
                 return { status: 'success', message: 'Proactive notification scheduled successfully!', scheduleId: notificationId };
             } else {
+                console.warn('[Frontend] Returning warning for scheduleProactiveNotification due to sync registration failure.');
                 return { status: 'warning', message: \`Proactive notification saved, but Periodic Sync registration failed: \${syncResult.message}\`, scheduleId: notificationId };
             }
         } catch (error) {
             console.error('[Frontend] Error scheduling proactive notification:', error);
+            console.log('[Frontend] Returning error for scheduleProactiveNotification due to caught exception.');
             return { status: 'error', message: \`Failed to schedule proactive notification: \${error.message}\` };
         }
     `
