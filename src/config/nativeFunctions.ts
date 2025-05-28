@@ -72,17 +72,185 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
   {
     id: 'native_js_scheduleProactiveNotification',
     name: 'scheduleProactiveNotification',
-    description: 'Schedules a periodic proactive notification by sending a request to the backend push server.',
+    description: 'Schedules a notification (single or recurrent) by sending a request to the backend push server. This function allows for flexible scheduling based on the provided parameters.',
     parametersSchema: JSON.stringify({
-        type: 'object',
-        properties: {
-            notificationId: { type: 'string', description: 'A unique UUID for this scheduled notification.' },
-            notificationType: { type: 'string', description: "A type or category for this notification (e.g., 'productivity-tip', 'hydration-reminder')." },
-            targetIntervalMs: { type: 'number', description: 'The desired interval in milliseconds for this specific notification to be sent (e.g., 7200000 for 2 hours, 14400000 for 4 hours).' },
-            notificationText: { type: 'string', description: 'The exact text to be displayed in the notification.' }
-        },
-        required: ['notificationId', 'notificationType', 'targetIntervalMs', 'notificationText']
-    }),
+      "type": "object",
+      "properties": {
+          "id": {
+              "type": "string",
+              "description": "ID único opcional para a notificação (UUID recomendado). Se omitido, um ID será gerado pelo servidor. Fornecer um ID permite atualizar um agendamento existente com o mesmo ID."
+          },
+          "text": {
+              "type": "string",
+              "description": "O texto exato a ser exibido na notificação."
+          },
+          "type": {
+              "type": "string",
+              "description": "Um tipo ou categoria para esta notificação, usado para agrupamento ou diferenciação (ex: 'LembreteTrabalho', 'Hidratacao', 'DicaProdutividade', 'AlertaSistema')."
+          },
+          "scheduleType": {
+              "type": "string",
+              "description": "Define se a notificação é um disparo único ('SINGLE') ou recorrente ('RECURRENT').",
+              "enum": [
+                  "SINGLE",
+                  "RECURRENT"
+              ]
+          },
+          "sendAt": {
+              "type": "number",
+              "format": "int64",
+              "description": "Timestamp UNIX em milissegundos para quando uma notificação do tipo 'SINGLE' deve ser enviada. Deve ser uma data/hora no futuro. Ignorado para 'RECURRENT'."
+          },
+          "recurrenceRule": {
+              "type": "object",
+              "description": "Define as regras de recorrência para notificações do tipo 'RECURRENT'. Ignorado para 'SINGLE'.",
+              "properties": {
+                  "type": {
+                      "type": "string",
+                      "description": "O tipo de regra de recorrência.",
+                      "enum": [
+                          "INTERVAL",
+                          "WEEKLY",
+                          "MONTHLY"
+                      ]
+                  },
+                  "intervalMs": {
+                      "type": "number",
+                      "description": "Intervalo em milissegundos para recorrência do tipo 'INTERVAL' (ex: 3600000 para 1 hora, 86400000 para 1 dia). Deve ser um valor positivo."
+                  },
+                  "daysOfWeek": {
+                      "type": "array",
+                      "items": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 6
+                      },
+                      "description": "Array de dias da semana (0=Domingo, 1=Segunda,..., 6=Sábado) para recorrência do tipo 'WEEKLY'."
+                  },
+                  "daysOfMonth": {
+                      "type": "array",
+                      "items": {
+                          "type": "number",
+                          "minimum": 1,
+                          "maximum": 31
+                      },
+                      "description": "Array de dias do mês (1-31) para recorrência do tipo 'MONTHLY'. Se um dia não existir em um determinado mês (ex: 31 em Fevereiro), será ignorado para aquele mês."
+                  },
+                  "timeOfDay": {
+                      "type": "object",
+                      "description": "Horário específico do dia (HH:MM) para recorrências do tipo 'WEEKLY' ou 'MONTHLY'.",
+                      "properties": {
+                          "hour": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 23,
+                              "description": "A hora do dia, em formato 24 horas (0-23)."
+                          },
+                          "minute": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 59,
+                              "description": "O minuto da hora (0-59)."
+                          }
+                      },
+                      "required": [
+                          "hour",
+                          "minute"
+                      ]
+                  }
+              },
+              "required": [
+                  "type"
+              ],
+              "allOf": [
+                  {
+                      "if": {
+                          "properties": {
+                              "type": {
+                                  "const": "INTERVAL"
+                              }
+                          }
+                      },
+                      "then": {
+                          "required": [
+                              "intervalMs"
+                          ]
+                      }
+                  },
+                  {
+                      "if": {
+                          "properties": {
+                              "type": {
+                                  "const": "WEEKLY"
+                              }
+                          }
+                      },
+                      "then": {
+                          "required": [
+                              "daysOfWeek",
+                              "timeOfDay"
+                          ]
+                      }
+                  },
+                  {
+                      "if": {
+                          "properties": {
+                              "type": {
+                                  "const": "MONTHLY"
+                              }
+                          }
+                      },
+                      "then": {
+                          "required": [
+                              "daysOfMonth",
+                              "timeOfDay"
+                          ]
+                      }
+                  }
+              ]
+          },
+          "maxSends": {
+              "type": "number",
+              "description": "Número máximo de envios para notificações do tipo 'RECURRENT'. Use -1 ou omita para envios infinitos. Para 'SINGLE', este valor é ignorado (efetivamente 1 envio). Default: -1.",
+              "default": -1
+          }
+      },
+      "required": [
+          "text",
+          "type",
+          "scheduleType"
+      ],
+      "allOf": [
+          {
+              "if": {
+                  "properties": {
+                      "scheduleType": {
+                          "const": "SINGLE"
+                      }
+                  }
+              },
+              "then": {
+                  "required": [
+                      "sendAt"
+                  ]
+              }
+          },
+          {
+              "if": {
+                  "properties": {
+                      "scheduleType": {
+                          "const": "RECURRENT"
+                      }
+                  }
+              },
+              "then": {
+                  "required": [
+                      "recurrenceRule"
+                  ]
+              }
+          }
+      ]
+  }),
     isNative: true,
     type: 'javascript',
     code: `
@@ -98,7 +266,7 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
 
         // --- Main execution for the function call (wrapped in async IIFE) ---
         return (async () => {
-            const { notificationId, notificationType, targetIntervalMs, notificationText } = params;
+            const { id, text, type, scheduleType, sendAt, recurrenceRule, maxSends } = params;
 
             const permission = await requestNotificationPermission();
             if (permission !== 'granted') {
@@ -106,21 +274,21 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
                 return { status: 'error', message: 'Notification permission denied. Proactive notifications require permission.' };
             }
 
-            // Updated endpoint to match backend documentation
             const SCHEDULE_ENDPOINT = 'http://localhost:5000/schedule-notification';
             
-            // Constructing the payload according to backend API documentation
             const payload = {
-                id: notificationId,
-                text: notificationText,
-                type: notificationType,
-                scheduleType: 'RECURRENT', // Assuming proactive means recurrent
-                recurrenceRule: {
-                    type: 'INTERVAL',
-                    intervalMs: targetIntervalMs,
-                },
-                maxSends: -1, // Assuming infinite sends for proactive notifications
+                id: id, // Optional, will be undefined if not provided
+                text: text,
+                type: type,
+                scheduleType: scheduleType,
+                maxSends: maxSends !== undefined ? maxSends : -1, // Use provided maxSends or default to -1
             };
+
+            if (scheduleType === 'SINGLE') {
+                payload.sendAt = sendAt;
+            } else if (scheduleType === 'RECURRENT') {
+                payload.recurrenceRule = recurrenceRule;
+            }
 
             try {
                 const response = await fetch(SCHEDULE_ENDPOINT, {
