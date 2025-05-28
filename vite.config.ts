@@ -56,21 +56,21 @@ export default defineConfig({
                 runtimeCaching: [
                     {
                         urlPattern: ({ url }) => url.pathname.endsWith('.html'), // Ou mais específico, como seu index.html
-                        handler: 'NetworkFirst', // Tenta a rede primeiro, se falhar, usa o cache
+                        handler: 'StaleWhileRevalidate', // Alterado de 'NetworkFirst' para 'StaleWhileRevalidate'
                         options: {
                             cacheName: 'html-cache',
                             expiration: {
                                 maxEntries: 10,
                                 maxAgeSeconds: 60 * 60 * 24 * 1 // 1 dia (ajuste conforme necessidade)
                             },
-                            networkTimeoutSeconds: 3 // Timeout para a rede antes de cair para o cache
+                            // networkTimeoutSeconds não é aplicável para StaleWhileRevalidate
                         }
                     }
                 ]
             },
-            devOptions: {
-                enabled: true,
-            }
+            // devOptions: { // Removido: Esta opção deve ser 'false' ou omitida para builds de produção
+            //     enabled: true,
+            // }
         })
     ]
 })
