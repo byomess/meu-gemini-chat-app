@@ -68,18 +68,8 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(
         self.clients.claim().then(() => {
             console.log('Service Worker: Claimed clients.');
-            // Notify that the SW is active and ready for push notifications.
-            // This can be helpful for debugging or initial setup confirmation.
-            // Ensure Notification permission has been granted by the user in the main app
-            // for this to be visible.
+            // Removed the showNotification call from here as it's not directly related to the push mechanism.
             if ('PushManager' in self.registration) {
-                 self.registration.showNotification(
-                    'Notificações Ativadas', // Title: Notifications Activated
-                    {
-                        body: 'O sistema está pronto para receber notificações push.', // Body: The system is ready to receive push notifications.
-                        icon: '/pwa-192x192.png'
-                    }
-                ).catch(err => console.error('[SW Activate] Error showing notification:', err));
                 console.log('Service Worker: Activated. PushManager is available.');
             } else {
                 console.log('Service Worker: Activated. PushManager may not be supported or available.');
