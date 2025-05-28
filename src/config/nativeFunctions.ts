@@ -184,15 +184,25 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
             }
 
             const newSchedule = {
+                // Unique identifier for this specific scheduled notification.
                 id: notificationId,
+                // Category or classification for the notification (e.g., 'productivity-tip').
                 type: notificationType, // Use 'type' to avoid collision with 'tag' for sync
+                // The desired time interval in milliseconds for this notification to repeat.
                 targetIntervalMs: targetIntervalMs,
+                // Timestamp (ms since epoch) when this notification is next scheduled to be triggered.
                 nextTriggerTime: Date.now() + targetIntervalMs, // First trigger attempt
+                // Initial text/prompt for generating the notification message (can be used directly or by an AI).
                 messagePrompt: initialMessagePrompt,
+                // Placeholder for the actual AI-generated message to be displayed (intended to be filled by the Service Worker).
                 currentMessage: '', // Will be filled by SW after Gemini call
+                // Placeholder for a list of different message variations for this notification type (intended to be filled by SW).
                 messageVariations: [], // Will be filled by SW
+                // Index to keep track of the last used message variation from the messageVariations array.
                 lastVariationIndex: -1,
+                // Flag to indicate if this scheduled notification is active (true) or paused (false).
                 enabled: true,
+                // Timestamp (ms since epoch) when this notification schedule was created.
                 createdAt: Date.now(),
             };
 
