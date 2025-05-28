@@ -157,7 +157,7 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
                 console.error(\`[Frontend] Error registering Periodic Sync '\${tag}':\`, error);
                 // Specifically check for NotAllowedError if user denied permissions or other issues
                 if (error.name === 'NotAllowedError') {
-                    return { success: false, message: \`Periodic Sync registration denied. Ensure browser permissions are granted and user has interacted with the site.\` };
+                    return { success: false, message: \`Periodic Sync registration denied. This can happen if the site is not installed as a PWA, notification permissions are blocked, or due to insufficient site engagement. Please check browser settings and ensure the site is installed if applicable.\` };
                 }
                 return { success: false, message: \`Error registering Periodic Sync: \${error.message}\` };
             }
