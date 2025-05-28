@@ -161,52 +161,6 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
               },
               "required": [
                   "type"
-              ],
-              "allOf": [
-                  {
-                      "if": {
-                          "properties": {
-                              "type": {
-                                  "const": "INTERVAL"
-                              }
-                          }
-                      },
-                      "then": {
-                          "required": [
-                              "intervalMs"
-                          ]
-                      }
-                  },
-                  {
-                      "if": {
-                          "properties": {
-                              "type": {
-                                  "const": "WEEKLY"
-                              }
-                          }
-                      },
-                      "then": {
-                          "required": [
-                              "daysOfWeek",
-                              "timeOfDay"
-                          ]
-                      }
-                  },
-                  {
-                      "if": {
-                          "properties": {
-                              "type": {
-                                  "const": "MONTHLY"
-                              }
-                          }
-                      },
-                      "then": {
-                          "required": [
-                              "daysOfMonth",
-                              "timeOfDay"
-                          ]
-                      }
-                  }
               ]
           },
           "maxSends": {
@@ -219,36 +173,6 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
           "text",
           "type",
           "scheduleType"
-      ],
-      "allOf": [
-          {
-              "if": {
-                  "properties": {
-                      "scheduleType": {
-                          "const": "SINGLE"
-                      }
-                  }
-              },
-              "then": {
-                  "required": [
-                      "sendAt"
-                  ]
-              }
-          },
-          {
-              "if": {
-                  "properties": {
-                      "scheduleType": {
-                          "const": "RECURRENT"
-                      }
-                  }
-              },
-              "then": {
-                  "required": [
-                      "recurrenceRule"
-                  ]
-              }
-          }
       ]
   }),
     isNative: true,
