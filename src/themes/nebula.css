@@ -46,6 +46,7 @@
   --color-primary: #FF66FF; /* Softer Magenta */
   --color-primary-dark: #CC33CC; /* Darker Softer Magenta */
   --color-electric-blue: #00C0FF; /* New Electric Blue */
+  --color-electric-blue-dark: #006699; /* Darker Electric Blue for AI bubble background */
 
   --color-green-500: #00FF00; /* Lime Green */
   --color-emerald-600: #00CC00; /* Darker Lime Green */
@@ -114,9 +115,9 @@
 
   --color-message-bubble-user-bg: var(--color-primary); /* Neon */
   --color-message-bubble-user-text: var(--color-black);
-  --color-message-bubble-ai-bg: var(--color-gray-300); /* Lighter gray for AI bubble */
-  --color-message-bubble-ai-text: var(--color-white);
-  --color-message-bubble-ai-border: var(--color-gray-300);
+  --color-message-bubble-ai-bg: var(--color-electric-blue-dark);
+  --color-message-bubble-ai-text: var(--color-electric-blue);
+  --color-message-bubble-ai-border: var(--color-electric-blue-dark);
   --color-message-bubble-function-bg: var(--color-indigo-50);
   --color-message-bubble-function-text: var(--color-indigo-700);
   --color-message-bubble-function-border: var(--color-indigo-200);
