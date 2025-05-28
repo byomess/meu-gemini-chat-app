@@ -202,6 +202,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
                         : JSON.stringify(fd.parametersSchema || { type: "object", properties: {}, required: [] }),
                     endpointUrl: fd.endpointUrl || "",
                     httpMethod: fd.httpMethod || "POST",
+                    type: fd.type || (fd.code ? 'javascript' : 'api'), // ADDED: Ensure type property
                 })
             );
             setCurrentFunctionDeclarations(loadedFuncDeclarations);
@@ -279,6 +280,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
                 parametersSchema: lfd.parametersSchema, // Assegure-se que este é um objeto JSON válido
                 endpointUrl: lfd.endpointUrl,
                 httpMethod: lfd.httpMethod,
+                type: lfd.type, // ADDED: Pass through the type property
             }));
 
         // Garante que todas as categorias de segurança estão presentes
