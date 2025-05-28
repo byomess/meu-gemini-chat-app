@@ -431,16 +431,16 @@ const FunctionCallingSettingsTab: React.FC<FunctionCallingSettingsTabProps> = ({
                                         </>
                                     ) : (
                                         <div className="flex items-center space-x-2"> {/* Added flex container for alignment */}
+                                            <Tooltip content="Visualizar detalhes (somente leitura)">
+                                                <Button variant="ghost" size="icon-sm" onClick={() => { setEditingFunctionId(func.id); setNewFunction(func);}} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-table-item-icon-hover)]">
+                                                    <IoInformationCircleOutline size={19} />
+                                                </Button>
+                                            </Tooltip>
                                             <Tooltip content="Função Nativa">
                                                 <span className="flex-shrink-0 flex items-center px-2 py-1 text-xs font-medium bg-[var(--color-gray-500)] text-[var(--color-gray-900)] border border-[var(--color-gray-400)] rounded-full">
                                                     <IoLockClosedOutline className="mr-1.5" />
                                                     Nativa
                                                 </span>
-                                            </Tooltip>
-                                            <Tooltip content="Visualizar detalhes (somente leitura)">
-                                                <Button variant="ghost" size="icon-sm" onClick={() => { setEditingFunctionId(func.id); setNewFunction(func);}} className="text-[var(--color-table-item-icon)] hover:text-[var(--color-table-item-icon-hover)]">
-                                                    <IoInformationCircleOutline size={19} />
-                                                </Button>
                                             </Tooltip>
                                         </div>
                                     )
