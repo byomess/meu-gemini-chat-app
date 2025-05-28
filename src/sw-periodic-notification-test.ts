@@ -176,11 +176,14 @@ self.addEventListener('activate', (event) => {
 // Remove old message listeners for start/stop test as they are no longer needed.
 
 // Listen for the periodic sync event
-self.addEventListener('periodicsync', (event: PeriodicSyncEvent) => {
-    if (event.tag === GENERIC_SYNC_TAG) {
-        console.log('Service Worker: Received periodic sync event for tag:', event.tag);
-        event.waitUntil(handlePeriodicSyncLogic());
+self.addEventListener('periodicsync', (event: Event) => {
+    // Assert the event to our custom PeriodicSyncEvent type
+    const periodicSyncEvent = event as PeriodicSyncEvent;
+
+    if (periodicSyncEvent.tag === GENERIC_SYNC_TAG) {
+        console.log('Service Worker: Received periodic sync event for tag:', periodicSyncEvent.tag);
+        periodicSyncEvent.waitUntil(handlePeriodicSyncLogic());
     } else {
-        console.log('Service Worker: Received periodic sync event for an unknown tag:', event.tag);
+        console.log('Service Worker: Received periodic sync event for an unknown tag:', periodicSyncEvent.tag);
     }
 });
