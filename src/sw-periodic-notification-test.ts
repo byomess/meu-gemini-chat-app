@@ -8,6 +8,8 @@ interface PeriodicSyncEvent extends ExtendableEvent {
 
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
+import { registerRoute } from 'workbox-routing';
+import { NetworkOnly } from 'workbox-strategies';
 
 // Constants for IndexedDB and Periodic Sync
 const DB_NAME = 'LooxAppDB';
@@ -159,6 +161,12 @@ async function handlePeriodicSyncLogic() {
 
 self.skipWaiting();
 clientsClaim();
+
+// Ensure API calls to Google Generative Language are handled by the network directly
+registerRoute(
+  ({url}) => url.origin === 'https://generativelanguage.googleapis.com',
+  new NetworkOnly()
+);
 
 precacheAndRoute(self.__WB_MANIFEST || []);
 cleanupOutdatedCaches();
