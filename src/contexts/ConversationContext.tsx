@@ -278,20 +278,27 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
     // - If no visible conversations exist, creates a new one.
     // - Ensures a valid conversation is active if conversations do exist.
     useEffect(() => {
+        console.log('[ContextEffect] Running. ActiveID:', activeId, 'uiVisibleConversations count:', uiVisibleConversations.length);
         // uiVisibleConversations is already filtered for non-deleted and sorted by updatedAt descending.
         if (uiVisibleConversations.length > 0) {
             // Visible conversations exist. Ensure one is active if current activeId is null or invalid.
             const currentActiveIsValid = activeId !== null && uiVisibleConversations.some(c => c.id === activeId);
+            console.log('[ContextEffect] currentActiveIsValid:', currentActiveIsValid, 'Current activeId:', activeId);
             if (!currentActiveIsValid) {
-                // Set the most recent visible conversation (first in the sorted list) as active.
-                setActiveConversationId(uiVisibleConversations[0].id);
+                const newActiveId = uiVisibleConversations[0].id;
+                console.log('[ContextEffect] currentActiveIsValid is false. Setting active conversation to (most recent visible):', newActiveId);
+                setActiveConversationId(newActiveId);
+            } else {
+                console.log('[ContextEffect] currentActiveIsValid is true. Active ID remains:', activeId);
             }
         } else {
+            console.log('[ContextEffect] No visible conversations, creating new one.');
             // No visible conversations exist, create a new one.
             // createNewConversation also sets the new conversation as active.
             createNewConversation();
         }
-    }, [uiVisibleConversations, activeId, setActiveConversationId, createNewConversation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [uiVisibleConversations, activeId, setActiveConversationId]); // Removed createNewConversation from deps
 
     return (
         <ConversationContext.Provider value={{
