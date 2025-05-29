@@ -106,29 +106,39 @@ const AppContent = () => {
         const notificationBody = params.get('body');   // Already decoded by URLSearchParams
 
         if (notificationAction === 'open_chat' && notificationTitle && notificationBody) {
-            console.log('[App] Opened from notification:', { title: notificationTitle, body: notificationBody });
+            console.log('[App] Notification parameters detected. Scheduling conversation creation in 3 seconds.');
 
-            // Create a new conversation
-            const newConversation = createNewConversation({ isIncognito: false }); // Default: non-incognito
+            const timerId = setTimeout(() => {
+                console.log('[App] Timeout elapsed. Creating conversation from notification:', { title: notificationTitle, body: notificationBody });
 
-            // Set the conversation title from the notification title
-            if (newConversation && notificationTitle) {
-                updateConversationTitle(newConversation.id, notificationTitle);
-            }
+                // Create a new conversation
+                const newConversation = createNewConversation({ isIncognito: false }); // Default: non-incognito
 
-            // Add the notification content as a message from the model
-            addMessageToConversation(newConversation.id, {
-                sender: 'model',
-                text: notificationBody,
-                metadata: {
-                    fromNotification: true, // Mark message as originating from a notification
-                    originalNotificationTitle: notificationTitle // Store original title if needed
+                // Set the conversation title from the notification title
+                if (newConversation && notificationTitle) {
+                    updateConversationTitle(newConversation.id, notificationTitle);
                 }
-            });
-            // createNewConversation already sets the new conversation as active.
 
-            // Clear the query parameters from the URL to prevent re-processing and clean up the address bar.
-            navigate(location.pathname, { replace: true });
+                // Add the notification content as a message from the model
+                addMessageToConversation(newConversation.id, {
+                    sender: 'model',
+                    text: notificationBody,
+                    metadata: {
+                        fromNotification: true, // Mark message as originating from a notification
+                        originalNotificationTitle: notificationTitle // Store original title if needed
+                    }
+                });
+                // createNewConversation already sets the new conversation as active.
+
+                // Clear the query parameters from the URL to prevent re-processing and clean up the address bar.
+                navigate(location.pathname, { replace: true });
+            }, 3000); // 3-second delay
+
+            // Cleanup function to clear the timeout if the effect re-runs or component unmounts
+            return () => {
+                console.log('[App] Clearing notification processing timeout.');
+                clearTimeout(timerId);
+            };
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [location.search, createNewConversation, addMessageToConversation, navigate, updateConversationTitle]);
