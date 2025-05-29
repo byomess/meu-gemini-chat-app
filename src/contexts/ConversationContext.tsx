@@ -278,13 +278,21 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
     // - If no visible conversations exist, creates a new one.
     // - Ensures a valid conversation is active if conversations do exist.
     useEffect(() => {
-        console.log('[ContextEffect] Running. ActiveID:', activeId, 'uiVisibleConversations count:', uiVisibleConversations.length);
+        console.log('[ContextEffect] Running. ActiveID:', activeId, 'uiVisibleConversations count:', uiVisibleConversations.length, 'allConversations count:', allConversations.length);
         // uiVisibleConversations is already filtered for non-deleted and sorted by updatedAt descending.
         if (uiVisibleConversations.length > 0) {
             // Visible conversations exist. Ensure one is active if current activeId is null or invalid.
-            const currentActiveIsValid = activeId !== null && uiVisibleConversations.some(c => c.id === activeId);
+            // An activeId is valid if it's in uiVisibleConversations OR if it's in allConversations and not deleted
+            // (this covers the case where uiVisibleConversations might be stale after a new conversation is created).
+            const currentActiveIsValid = activeId !== null &&
+                (uiVisibleConversations.some(c => c.id === activeId) ||
+                 allConversations.some(c => c.id === activeId && !c.isDeleted));
+
             console.log('[ContextEffect] currentActiveIsValid:', currentActiveIsValid, 'Current activeId:', activeId);
+
             if (!currentActiveIsValid) {
+                // If current activeId is truly invalid (e.g., points to a deleted convo or is null),
+                // set the most recent visible conversation as active.
                 const newActiveId = uiVisibleConversations[0].id;
                 console.log('[ContextEffect] currentActiveIsValid is false. Setting active conversation to (most recent visible):', newActiveId);
                 setActiveConversationId(newActiveId);
@@ -292,13 +300,34 @@ export const ConversationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 console.log('[ContextEffect] currentActiveIsValid is true. Active ID remains:', activeId);
             }
         } else {
-            console.log('[ContextEffect] No visible conversations, creating new one.');
-            // No visible conversations exist, create a new one.
-            // createNewConversation also sets the new conversation as active.
-            createNewConversation();
+            // No visible conversations exist.
+            // However, check if allConversations has items that are all marked as deleted.
+            // If activeId is null and there are no truly visible conversations, create a new one.
+            if (allConversations.every(c => c.isDeleted)) {
+                console.log('[ContextEffect] No visible conversations (all are deleted or list is empty), creating new one.');
+                createNewConversation();
+            } else if (!activeId && uiVisibleConversations.length === 0 && allConversations.length > 0) {
+                // This case might occur if all conversations were soft-deleted and then one was "undeleted" by sync,
+                // but uiVisibleConversations hasn't caught up. Or if activeId was explicitly set to null.
+                // If there are non-deleted items in allConversations but uiVisible is empty, this indicates a transitional state.
+                // Let's be cautious and if activeId is null, pick the first non-deleted from allConversations.
+                const firstNonDeletedInAll = allConversations.find(c => !c.isDeleted);
+                if (firstNonDeletedInAll) {
+                    console.log('[ContextEffect] No visible conversations in uiVisible, but found non-deleted in allConversations. Setting active to:', firstNonDeletedInAll.id);
+                    setActiveConversationId(firstNonDeletedInAll.id);
+                } else {
+                    console.log('[ContextEffect] No visible conversations and no non-deleted in allConversations. Creating new one.');
+                    createNewConversation();
+                }
+            } else if (!activeId && uiVisibleConversations.length === 0 && allConversations.length === 0) {
+                 console.log('[ContextEffect] No conversations at all. Creating new one.');
+                 createNewConversation();
+            } else {
+                console.log('[ContextEffect] No visible conversations, but activeId is somehow set or allConversations is not empty. State:', activeId, uiVisibleConversations.length, allConversations.length);
+            }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [uiVisibleConversations, activeId, setActiveConversationId]); // Removed createNewConversation from deps
+    }, [uiVisibleConversations, allConversations, activeId, setActiveConversationId]); // Added allConversations, removed createNewConversation
 
     return (
         <ConversationContext.Provider value={{
