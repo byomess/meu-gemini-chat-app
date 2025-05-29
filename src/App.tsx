@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from './components/layout/Sidebar';
-import ChatArea from './components/layout/ChatArea'
+import ChatArea from './components/layout/ChatArea';
 import SettingsModal from './components/settings/SettingsModal';
+import { useLocation, useNavigate } from 'react-router-dom';
 import useIsMobile from './hooks/useIsMobile';
 import React from 'react';
 // import { useUrlConfigInitializer } from './hooks/useUrlConfigInitializer';
@@ -20,7 +21,10 @@ const AppContent = () => {
         allConversations,
         replaceAllConversations,
         lastConversationChangeSourceRef,
-        resetLastConversationChangeSource
+        resetLastConversationChangeSource,
+        createNewConversation,
+        addMessageToConversation,
+        updateConversationTitle,
     } = useConversations();
     const {
         allMemories,
@@ -82,6 +86,8 @@ const AppContent = () => {
     }, [isMobileSidebarOpen, isMobile, showNavigation]);
 
     const initialSyncPerformedRef = useRef(false); // ADDED: Ref to track if initial sync has been done
+    const location = useLocation(); // For reading URL params
+    const navigate = useNavigate(); // For clearing URL params
 
     // NEW: Trigger initial sync on component mount, only once when token is available
     useEffect(() => {
@@ -91,6 +97,41 @@ const AppContent = () => {
             initialSyncPerformedRef.current = true;
         }
     }, [settings.googleDriveAccessToken, syncDriveData]);
+
+    // Effect to handle opening app from notification
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const notificationAction = params.get('notification_action');
+        const notificationTitle = params.get('title'); // Already decoded by URLSearchParams
+        const notificationBody = params.get('body');   // Already decoded by URLSearchParams
+
+        if (notificationAction === 'open_chat' && notificationTitle && notificationBody) {
+            console.log('[App] Opened from notification:', { title: notificationTitle, body: notificationBody });
+
+            // Create a new conversation
+            const newConversation = createNewConversation({ isIncognito: false }); // Default: non-incognito
+
+            // Set the conversation title from the notification title
+            if (newConversation && notificationTitle) {
+                updateConversationTitle(newConversation.id, notificationTitle);
+            }
+
+            // Add the notification content as a message from the model
+            addMessageToConversation(newConversation.id, {
+                sender: 'model',
+                text: notificationBody,
+                metadata: {
+                    fromNotification: true, // Mark message as originating from a notification
+                    originalNotificationTitle: notificationTitle // Store original title if needed
+                }
+            });
+            // createNewConversation already sets the new conversation as active.
+
+            // Clear the query parameters from the URL to prevent re-processing and clean up the address bar.
+            navigate(location.pathname, { replace: true });
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.search, createNewConversation, addMessageToConversation, navigate, updateConversationTitle]);
 
     return (
         <>

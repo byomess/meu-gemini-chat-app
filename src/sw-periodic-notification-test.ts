@@ -34,12 +34,17 @@ self.addEventListener('push', (event: PushEvent) => {
     }
 
     const title = pushData.title || 'Nova Notificação';
+    const body = pushData.body || 'Você recebeu uma nova mensagem.'; // Capture body for data payload
     const options: NotificationOptions = {
-        body: pushData.body || 'Você recebeu uma nova mensagem.',
+        body: body, // Use captured body
         icon: pushData.icon || '/pwa-192x192.png', // Default icon
         badge: pushData.badge || '/pwa-72x72.png', // Example badge, ensure this asset exists
         tag: pushData.tag || 'general-push-notification', // Tag to group notifications
-        data: pushData.data || null, // Any additional data associated with the notification
+        data: { // Ensure data is an object and includes original title and body
+            ...(pushData.data || {}), // Spread existing data first
+            originalTitle: title,     // Then add/override our specific fields
+            originalBody: body,
+        },
         // actions: pushData.actions || [] // Example: [{ action: 'explore', title: 'Explore' }]
     };
 
@@ -83,19 +88,28 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
     console.log('[Service Worker] Notification click Received.', event.notification.tag);
     event.notification.close(); // Close the notification
 
-    // Example: Open a specific URL or focus an existing window
-    // You can use event.notification.data to pass URLs or other info
-    const targetUrl = event.notification.data && event.notification.data.url ? event.notification.data.url : '/';
+    const notificationData = event.notification.data;
+    // Use the specific fields we stored. Provide defaults if they are somehow missing.
+    const titleForUrl = notificationData?.originalTitle || 'Notificação Recebida';
+    const bodyForUrl = notificationData?.originalBody || 'Detalhes da notificação aqui.';
+
+    // Construct the URL to open the app with notification content.
+    // Using / as the base path, assuming index.html is served at root for the SPA.
+    const targetUrl = `/?notification_action=open_chat&title=${encodeURIComponent(titleForUrl)}&body=${encodeURIComponent(bodyForUrl)}`;
 
     event.waitUntil(
         self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+            // Check if there's already a window open for this app.
             for (const client of clientList) {
-                if (client.url === targetUrl && 'focus' in client) {
-                    return client.focus();
+                // Ensure the client URL is from the same origin and client.navigate is available.
+                if (new URL(client.url).origin === self.location.origin && 'navigate' in client && client.focus) {
+                    // If a window is already open, navigate it to the target URL and focus it.
+                    return client.navigate(targetUrl).then(navigatedClient => navigatedClient?.focus());
                 }
             }
+            // If no suitable window is found, open a new one.
             if (self.clients.openWindow) {
-                return self.clients.openWindow(targetUrl);
+                return self.clients.openWindow(targetUrl).then(windowClient => windowClient?.focus());
             }
         })
     );
