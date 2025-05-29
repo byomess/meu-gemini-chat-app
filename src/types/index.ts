@@ -133,6 +133,8 @@ export interface MessageMetadata {
     rawParts?: Part[];
     processingStatus?: ProcessingStatus;
     respondingToUserMessageId?: string; // Added this line
+    fromNotification?: boolean; // Mark message as originating from a notification
+    originalNotificationTitle?: string; // Store original title if needed
 }
 
 export interface Message {
