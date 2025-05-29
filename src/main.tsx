@@ -78,7 +78,7 @@ async function subscribeToPushNotifications() {
         }
 
         // Send the subscription to your backend server
-        const PUSH_SERVER_SUBSCRIBE_URL = 'http://localhost:5000/subscribe';
+        const PUSH_SERVER_SUBSCRIBE_URL = 'https://54.211.12.138.sslip.io/subscribe';
         await fetch(PUSH_SERVER_SUBSCRIBE_URL, {
             method: 'POST',
             body: JSON.stringify(subscription),

@@ -203,7 +203,7 @@ export const nativeFunctionDeclarations: FunctionDeclaration[] = [
                 return { status: 'error', message: 'Notification permission denied. Proactive notifications require permission.' };
             }
 
-            const SCHEDULE_ENDPOINT = 'http://localhost:5000/schedule-notification';
+            const SCHEDULE_ENDPOINT = 'https://54.211.12.138.sslip.io/schedule-notification';
             
             const payload = {
                 id: id, // Optional, will be undefined if not provided
