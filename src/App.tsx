@@ -132,7 +132,7 @@ const AppContent = () => {
 
                 // Clear the query parameters from the URL to prevent re-processing and clean up the address bar.
                 navigate(location.pathname, { replace: true });
-            }, 3000); // 3-second delay
+            }, 1000); // 1-second delay
 
             // Cleanup function to clear the timeout if the effect re-runs or component unmounts
             return () => {
