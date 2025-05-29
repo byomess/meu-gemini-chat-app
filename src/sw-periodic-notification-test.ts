@@ -102,7 +102,7 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
             // Check if there's already a window open for this app.
             for (const client of clientList) {
                 // Ensure the client URL is from the same origin and client.navigate is available.
-                if (new URL(client.url).origin === self.location.origin && 'navigate' in client && client.focus) {
+                if (new URL(client.url).origin === self.location.origin && 'navigate' in client && 'focus' in client) {
                     // If a window is already open, navigate it to the target URL and focus it.
                     return client.navigate(targetUrl).then(navigatedClient => navigatedClient?.focus());
                 }
