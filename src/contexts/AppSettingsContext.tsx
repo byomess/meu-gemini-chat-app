@@ -30,7 +30,7 @@ const defaultAppSettings: AppSettings = {
     },
     functionDeclarations: [], // Represents user-defined functions; native functions are merged in
     codeSynthaxHighlightEnabled: false,
-    aiAvatarUrl: '',
+    aiAvatarUrl: '/lux_avatar.png',
     enableWebSearch: true,
     enableAttachments: true,
     hideNavigation: false,
