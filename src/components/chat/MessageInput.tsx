@@ -51,6 +51,7 @@ const MessageInput: React.FC = () => {
         stopRecordingAndAttach,
         handleCancelRecording,
         stopMediaStream,
+        recordingTime, // NOVO: Obter recordingTime do hook
     } = useAudioRecording({
         addFilesToState: (files, isRecorded) => fileAttachments.addFilesToState(files, isRecorded),
         focusTextarea: () => textareaRef.current?.focus(),
@@ -259,6 +260,7 @@ const MessageInput: React.FC = () => {
                     FOCUSED_TEXTAREA_MAX_HEIGHT_VH={FOCUSED_TEXTAREA_MAX_HEIGHT_VH}
                     activeConversationId={activeConversationId}
                     apiKeyPresent={!!settings.apiKey}
+                    recordingTime={recordingTime} // NOVO: Passar recordingTime
                 />
 
                 {!settings.apiKey && activeConversationId && !isCurrentlyLoadingOverall && !isRecording && (

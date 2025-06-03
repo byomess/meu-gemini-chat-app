@@ -49,6 +49,7 @@ interface MessageInputFormProps {
     FOCUSED_TEXTAREA_MAX_HEIGHT_VH: number;
     activeConversationId: string | null; // For disabling textarea
     apiKeyPresent: boolean; // For disabling textarea
+    recordingTime: number; // NOVO: Adicionar recordingTime
 }
 
 const MessageInputForm: React.FC<MessageInputFormProps> = ({
@@ -59,7 +60,8 @@ const MessageInputForm: React.FC<MessageInputFormProps> = ({
     enableWebSearch, isWebSearchEnabledForNextMessage, onToggleWebSearch, isWebSearchButtonDisabled,
     enableAttachments, isAttachButtonDisabled, isMicDisabled, canSubmitEffectively,
     adjustTextareaHeight, getPixelValueFromRem, UNFOCUSED_TEXTAREA_MAX_HEIGHT_REM, FOCUSED_TEXTAREA_MAX_HEIGHT_VH,
-    activeConversationId, apiKeyPresent
+    activeConversationId, apiKeyPresent,
+    recordingTime // NOVO: Desestruturar recordingTime
 }) => {
 
     useEffect(() => {
@@ -73,16 +75,12 @@ const MessageInputForm: React.FC<MessageInputFormProps> = ({
         }
     }, [activeConversationId, textareaRef]);
 
-
-    const recordingPlaceholder = (
-        <div className="flex items-center text-sm text-[var(--color-input-placeholder)]">
-            <div className="relative w-3 h-3 mr-2 flex items-center justify-center">
-                <span className="absolute inline-flex w-2 h-2 bg-[var(--color-red-500)] rounded-full opacity-75 animate-ping"></span>
-                <span className="relative inline-block w-2 h-2 bg-[var(--color-red-500)] rounded-full"></span>
-            </div>
-            <span className="whitespace-nowrap">Gravando áudio...</span>
-        </div>
-    );
+    // NOVO: Função auxiliar para formatar o tempo
+    const formatTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    };
     
     const effectivePlaceholder = isRecording ? '' : (isCurrentlyLoading ? 'IA respondendo...' : placeholderText);
     const textareaDisabled = !activeConversationId || !apiKeyPresent || isCurrentlyLoading || isRecording;
@@ -127,7 +125,12 @@ const MessageInputForm: React.FC<MessageInputFormProps> = ({
             <div className="flex-1 mx-1.5 relative flex items-center">
                 {isRecording && (
                     <div className="absolute inset-0 flex items-center justify-start pl-3 pointer-events-none z-10">
-                        {recordingPlaceholder}
+                        <div className="relative w-3 h-3 mr-2 flex items-center justify-center">
+                            <span className="absolute inline-flex w-2 h-2 bg-[var(--color-red-500)] rounded-full opacity-75 animate-ping"></span>
+                            <span className="relative inline-block w-2 h-2 bg-[var(--color-red-500)] rounded-full"></span>
+                        </div>
+                        <span className="whitespace-nowrap">Gravando áudio...</span>
+                        <span className="font-mono text-sm ml-2">{formatTime(recordingTime)}</span> {/* NOVO: Exibir tempo */}
                     </div>
                 )}
                 <textarea ref={textareaRef} rows={1} value={text} onChange={(e) => onTextChange(e.target.value)}
