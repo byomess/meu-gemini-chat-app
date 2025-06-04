@@ -62,6 +62,7 @@ interface AppSettingsContextType {
     setGoogleDriveSyncStatus: (status: GoogleDriveSyncStatus) => void;
     updateGoogleDriveLastSync: (timestamp: string) => void;
     setGoogleDriveError: (error?: string) => void;
+    updateCustomPersonalityPrompt: (prompt: string) => void; // NOVO: Adicionado
 }
 
 export const AppSettingsContext = createContext<AppSettingsContextType | undefined>(undefined);
@@ -251,6 +252,14 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
         setStoredSettings(prev => ({ ...prev, googleDriveError: error, googleDriveSyncStatus: error ? 'Error' : prev.googleDriveSyncStatus }));
     }, [setStoredSettings]);
 
+    // NOVO: Adicionar esta função
+    const updateCustomPersonalityPrompt = useCallback((prompt: string) => {
+        setStoredSettings(prevSettings => ({
+            ...prevSettings,
+            customPersonalityPrompt: prompt,
+        }));
+    }, [setStoredSettings]);
+
 
     return (
         <AppSettingsContext.Provider value={{
@@ -271,6 +280,7 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
             setGoogleDriveSyncStatus,
             updateGoogleDriveLastSync,
             setGoogleDriveError,
+            updateCustomPersonalityPrompt, // NOVO: Expor a função aqui
         }}>
             {children}
         </AppSettingsContext.Provider>
