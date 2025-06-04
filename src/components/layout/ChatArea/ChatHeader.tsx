@@ -1,7 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { IoChatbubblesOutline, IoMenuOutline, IoSyncOutline, IoEllipsisVertical } from 'react-icons/io5';
+import React from 'react';
+import { IoChatbubblesOutline, IoMenuOutline, IoSyncOutline, IoEllipsisVertical, IoTrashBinOutline, IoSearchOutline } from 'react-icons/io5';
 import { GhostIcon } from 'lucide-react';
 import type { GoogleDriveSyncStatus } from '../../../types';
+import Dropdown from '../../common/Dropdown';
+import DropdownItem from '../../common/DropdownItem';
+import useIsMobile from '../../../hooks/useIsMobile'; // Import the useIsMobile hook
 
 interface ChatHeaderProps {
     onOpenMobileSidebar: () => void;
@@ -9,9 +12,9 @@ interface ChatHeaderProps {
     isIncognito: boolean;
     conversationTitle: string;
     googleDriveSyncStatus: GoogleDriveSyncStatus;
-    // Novas propriedades para as ações do dropdown
-    onClearChat: () => void; // Callback para limpar o chat
-    onSearchMessages: () => void; // Callback para buscar mensagens
+    onClearChat: () => void;
+    onSearchMessages: () => void;
+    // isMobile: boolean; // REMOVED: This will now be determined internally
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -21,38 +24,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     conversationTitle,
     googleDriveSyncStatus,
     onClearChat,
-    onSearchMessages
+    onSearchMessages,
 }) => {
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
-    // Fecha o dropdown ao clicar fora dele
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsDropdownOpen(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
-
-    const handleClearChat = () => {
-        setIsDropdownOpen(false); // Fecha o dropdown
-        onClearChat(); // Chama o handler do componente pai
-    };
-
-    const handleSearchMessages = () => {
-        setIsDropdownOpen(false); // Fecha o dropdown
-        onSearchMessages(); // Chama o handler do componente pai
-    };
+    const isMobile = useIsMobile(); // Use the hook to determine if it's mobile
 
     return (
         <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 backdrop-blur-md bg-[var(--color-chat-header-bg)] border-b border-[var(--color-chat-header-border)] shadow-sm">
-            {showMobileMenuButton && (
+            {/* The menu button will only render if it's mobile AND showMobileMenuButton is true */}
+            {isMobile && showMobileMenuButton && (
                 <button
                     onClick={onOpenMobileSidebar}
                     className="p-1 text-[var(--color-mobile-menu-button-text)] hover:text-[var(--color-mobile-menu-button-hover-text)]"
@@ -75,34 +54,26 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 <IoSyncOutline className="animate-spin text-[var(--color-chat-header-icon)] ml-2" size={20} />
             )}
 
-            {/* Menu de dropdown */}
-            <div className="relative ml-auto" ref={dropdownRef}>
-                <button
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="p-1 text-[var(--color-mobile-menu-button-text)] hover:text-[var(--color-mobile-menu-button-hover-text)]"
-                    title="Mais opções"
-                    aria-label="Mais opções"
-                >
-                    <IoEllipsisVertical size={24} />
-                </button>
-
-                {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-[var(--color-dropdown-bg)] border border-[var(--color-dropdown-border)] rounded-md shadow-lg z-30">
-                        <button
-                            onClick={handleClearChat}
-                            className="block w-full text-left px-4 py-2 text-sm text-[var(--color-dropdown-item-text)] hover:bg-[var(--color-dropdown-item-hover-bg)] hover:text-[var(--color-dropdown-item-hover-text)]"
-                        >
-                            Limpar chat
-                        </button>
-                        <button
-                            onClick={handleSearchMessages}
-                            className="block w-full text-left px-4 py-2 text-sm text-[var(--color-dropdown-item-text)] hover:bg-[var(--color-dropdown-item-hover-bg)] hover:text-[var(--color-dropdown-item-hover-text)]"
-                        >
-                            Buscar mensagens
-                        </button>
-                    </div>
-                )}
-            </div>
+            <Dropdown
+                className="ml-auto"
+                trigger={
+                    <button
+                        className="p-1 text-[var(--color-mobile-menu-button-text)] hover:text-[var(--color-mobile-menu-button-hover-text)]"
+                        title="Mais opções"
+                        aria-label="Mais opções"
+                    >
+                        <IoEllipsisVertical size={24} />
+                    </button>
+                }
+                position="right"
+            >
+                <DropdownItem onClick={onClearChat} icon={<IoTrashBinOutline size={18} />}>
+                    Limpar chat
+                </DropdownItem>
+                <DropdownItem onClick={onSearchMessages} icon={<IoSearchOutline size={18} />}>
+                    Buscar
+                </DropdownItem>
+            </Dropdown>
         </div>
     );
 };

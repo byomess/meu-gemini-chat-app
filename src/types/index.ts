@@ -14,9 +14,6 @@ export type GeminiModel =
     | "gemini-2.5-pro-preview-05-06"
     | "gemini-2.5-flash-preview-05-20"
     | "gemini-2.5-flash-preview-04-17"
-    | "gemini-1.5-pro-latest"
-    | "gemini-1.5-flash-latest"
-    | "gemini-pro";
 
 export interface GeminiModelConfig {
     model: GeminiModel;
@@ -48,10 +45,17 @@ export interface FunctionDeclaration {
     id: string;
     name: string;
     description: string;
-    parametersSchema: string;
-    endpointUrl: string;
-    httpMethod: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+    parametersSchema: string; // JSON string for parameters schema
+    isNative?: boolean;       // True for native functions, defaults to false/undefined for user-defined
+    type: 'api' | 'javascript'; // Execution type
+    endpointUrl?: string;     // Optional: For 'api' type
+    httpMethod?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'; // Optional: For 'api' type
+    code?: string;            // Optional: For 'javascript' type, e.g., "alert(params.message); return { success: true };"
+                              // This should be the body of the function.
 }
+
+// ADDED: Define ThemeName type
+export type ThemeName = 'loox' | 'aulapp' | 'dracula-dark' | 'solarized-light' | 'one-dark' | 'github-light' | 'shades-of-purple' | 'shades-of-purple-light' | 'nebula';
 
 export interface AppSettings {
     apiKey: string;
@@ -63,7 +67,7 @@ export interface AppSettings {
     enableWebSearch: boolean;
     enableAttachments: boolean;
     hideNavigation: boolean;
-    theme: 'loox' | 'aulapp';
+    theme: ThemeName; // MODIFIED: Use ThemeName
     showProcessingIndicators: boolean; // Add this line
     showAiFunctionCallAttachments: boolean; // New setting
     googleDriveAccessToken?: string;
@@ -129,6 +133,8 @@ export interface MessageMetadata {
     rawParts?: Part[];
     processingStatus?: ProcessingStatus;
     respondingToUserMessageId?: string; // Added this line
+    fromNotification?: boolean; // Mark message as originating from a notification
+    originalNotificationTitle?: string; // Store original title if needed
 }
 
 export interface Message {

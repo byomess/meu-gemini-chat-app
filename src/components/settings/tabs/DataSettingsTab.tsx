@@ -1,11 +1,10 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Button from '../../common/Button';
-import { IoCloudUploadOutline, IoCloudDownloadOutline, IoTrashOutline, IoCloseOutline, IoLogoGoogle, IoUnlinkOutline, IoRefreshOutline } from 'react-icons/io5';
+import { IoCloudUploadOutline, IoCloudDownloadOutline, IoTrashOutline, IoCloseOutline, IoLogoGoogle, IoUnlinkOutline, IoRefreshOutline, IoDocumentOutline } from 'react-icons/io5';
+import { FaSpinner } from 'react-icons/fa'; // Import spinner icon
 import type { AppSettings, Conversation, Memory, UrlConfigFile, RawImportedConversation, RawImportedMessage } from '../../../types';
 import { useDialog } from '../../../contexts/DialogContext';
-// REMOVED: import { useMemories } from '../../../contexts/MemoryContext';
-// REMOVED: import { useConversations } from '../../../contexts/ConversationContext';
-import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
+import SettingsPanel from '../SettingsPanel';
 import { useAppSettings } from '../../../contexts/AppSettingsContext';
 import {
     initGoogleTokenClient,
@@ -13,45 +12,18 @@ import {
     fetchUserProfile,
     revokeAccessToken
 } from '../../../services/googleAuthService';
-// REMOVED: import { useGoogleDriveSync } from '../../../hooks/useGoogleDriveSync'; // Import the sync hook
+import useIsMobile from '../../../hooks/useIsMobile'; // Import the hook
 
-export interface DataSettingsTabProps { // MODIFIED: Changed to interface and added syncDriveData prop
+export interface DataSettingsTabProps {
     syncDriveData: () => Promise<void>;
 }
 
-// Add 'profile' and 'email' scopes to allow fetching user profile information
 const GOOGLE_DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file profile email';
 
-const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => { // MODIFIED: Destructured syncDriveData
+const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
     const { showDialog } = useDialog();
-    // REMOVED: useMemories and useConversations calls, as their data is now managed by App.tsx for sync
-    // const {
-    //     allMemories,
-    //     replaceAllMemories,
-    //     clearAllMemories,
-    //     lastMemoryChangeSourceRef,
-    //     resetLastMemoryChangeSource
-    // } = useMemories();
-    // const {
-    //     allConversations,
-    //     replaceAllConversations,
-    //     deleteAllConversations,
-    //     lastConversationChangeSourceRef,
-    //     resetLastConversationChangeSource
-    // } = useConversations();
     const { settings, connectGoogleDrive, disconnectGoogleDrive, setGoogleDriveSyncStatus, setGoogleDriveError } = useAppSettings();
-
-    // REMOVED: Instantiation of useGoogleDriveSync moved to App.tsx
-    // const { syncDriveData } = useGoogleDriveSync({
-    //     memories: allMemories,
-    //     replaceAllMemories,
-    //     lastMemoryChangeSource: lastMemoryChangeSourceRef.current,
-    //     resetLastMemoryChangeSource,
-    //     conversations: allConversations,
-    //     replaceAllConversations,
-    //     lastConversationChangeSource: lastConversationChangeSourceRef.current,
-    //     resetLastConversationChangeSource,
-    // });
+    const isMobile = useIsMobile(); // Use the hook to detect mobile
 
     const [isGoogleClientInitialized, setIsGoogleClientInitialized] = useState(false);
     const [authActionLoading, setAuthActionLoading] = useState(false);
@@ -84,7 +56,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
                     memories: memoriesData.map(m => ({
                         id: m.id,
                         content: m.content,
-                        timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : String(m.timestamp), // Ensure string for export
+                        timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : String(m.timestamp),
                         sourceMessageId: m.sourceMessageId
                     }))
                 };
@@ -161,11 +133,8 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
                                     timestamp: new Date(m.timestamp),
                                     sourceMessageId: m.sourceMessageId
                                 }));
-                                // Use replaceAllMemories from context if needed, but it's not directly available here
-                                // This part of the import logic might need to be revisited if replaceAllMemories is critical for import
-                                // For now, direct localStorage update is used, which is what the original code did.
                                 localStorage.setItem('memories', JSON.stringify(newMemories));
-                                window.dispatchEvent(new Event('storage')); // Trigger storage event to update context
+                                window.dispatchEvent(new Event('storage'));
                             }
                         }
 
@@ -205,7 +174,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
             }
         };
         reader.readAsText(selectedFile);
-    }, [selectedFile, showDialog]); // Removed replaceAllMemories from dependencies as it's not used here
+    }, [selectedFile, showDialog]);
 
     const handleClearAllConversations = useCallback(() => {
         showDialog({
@@ -215,9 +184,8 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
             confirmText: "Excluir Tudo",
             cancelText: "Cancelar",
             onConfirm: () => {
-                // MODIFIED: Call deleteAllConversations directly from localStorage
                 localStorage.removeItem('conversations');
-                window.dispatchEvent(new Event('storage')); // Trigger storage event to update context
+                window.dispatchEvent(new Event('storage'));
                 showDialog({
                     title: "Conversas Excluídas",
                     message: "Todas as conversas foram excluídas com sucesso.",
@@ -225,7 +193,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
                 });
             }
         });
-    }, [showDialog]); // Removed deleteAllConversations from dependencies
+    }, [showDialog]);
 
     const handleClearAllMemories = useCallback(() => {
         showDialog({
@@ -235,9 +203,8 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
             confirmText: "Excluir Tudo",
             cancelText: "Cancelar",
             onConfirm: () => {
-                // MODIFIED: Call clearAllMemories directly from localStorage
                 localStorage.removeItem('memories');
-                window.dispatchEvent(new Event('storage')); // Trigger storage event to update context
+                window.dispatchEvent(new Event('storage'));
                 showDialog({
                     title: "Memórias Excluídas",
                     message: "Todas as memórias foram excluídas com sucesso.",
@@ -245,7 +212,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
                 });
             }
         });
-    }, [showDialog]); // Removed clearAllMemories from dependencies
+    }, [showDialog]);
 
     const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -306,11 +273,10 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
         if (!clientId) {
             console.error("Google Client ID (VITE_GOOGLE_CLIENT_ID) is not configured.");
             setGoogleDriveError("Google integration is not configured pelo administrador.");
-            setIsGoogleClientInitialized(false); // Ensure it's false if client ID is missing
+            setIsGoogleClientInitialized(false);
             return;
         }
 
-        // Function to attempt initialization
         const attemptInit = () => {
             if (typeof window.google !== 'undefined' && window.google.accounts && window.google.accounts.oauth2) {
                 initGoogleTokenClient(
@@ -348,14 +314,13 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
                         setAuthActionLoading(false);
                     }
                 );
-                setIsGoogleClientInitialized(true); // Set true only after initGoogleTokenClient is successfully called
+                setIsGoogleClientInitialized(true);
             } else {
-                // If google object is not yet available, try again after a short delay
                 setTimeout(attemptInit, 100);
             }
         };
 
-        attemptInit(); // Start the initialization attempt
+        attemptInit();
     }, [connectGoogleDrive, setGoogleDriveError, setGoogleDriveSyncStatus, showDialog]);
 
     const handleConnectGoogleDrive = useCallback(() => {
@@ -382,9 +347,7 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
 
     const handleManualSync = useCallback(() => {
         if (settings.googleDriveAccessToken) {
-            // The resetLastMemoryChangeSource and resetLastConversationChangeSource are now handled by the App.tsx
-            // where the useGoogleDriveSync hook is instantiated.
-            syncDriveData(); // Use syncDriveData from props
+            syncDriveData();
         } else {
             showDialog({
                 title: "Não Conectado",
@@ -394,13 +357,15 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
         }
     }, [settings.googleDriveAccessToken, syncDriveData, showDialog]);
 
+    const isSyncing = settings.googleDriveSyncStatus === 'Syncing';
+
     return (
         <div className="space-y-6">
             <SettingsPanel
                 title="Importar/Exportar Dados"
                 description="Importe ou exporte suas configurações, conversas e memórias para backup ou transferência."
             >
-                <section className="space-y-4">
+                <section className="space-y-6"> {/* Increased space between sections */}
                     <div className="bg-[var(--color-data-import-export-bg)] p-4 rounded-lg border border-[var(--color-data-import-export-border)] shadow-sm">
                         <h3 className="text-lg font-medium text-[var(--color-data-import-export-text)] mb-3">Exportar Dados</h3>
                         <p className="text-sm text-[var(--color-data-import-export-text)] mb-4">
@@ -417,36 +382,47 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
                             Carregue um arquivo de backup para restaurar suas configurações e conversas.
                             Isso substituirá os dados existentes.
                         </p>
-                        <div
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onDrop={handleDrop}
-                            className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg transition-all duration-200 ease-in-out
-                                ${isDragging ? 'border-[var(--color-data-drag-drop-active-border)] bg-[var(--color-data-drag-drop-hover-bg)] text-[var(--color-data-drag-drop-active-text)]' : 'border-[var(--color-data-drag-drop-border)] bg-transparent text-[var(--color-data-drag-drop-text)] hover:bg-[var(--color-data-drag-drop-hover-bg)]'}`}
-                        >
-                            <IoCloudUploadOutline size={40} className="mb-3" />
-                            <p className="text-center text-sm">
-                                Arraste e solte seu arquivo JSON aqui, ou
-                            </p>
-                            <Button variant="secondary" onClick={triggerFileInput} className="mt-3">
-                                Selecionar Arquivo
-                            </Button>
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileChange}
-                                accept="application/json"
-                                className="hidden"
-                            />
-                            {selectedFile && (
-                                <p className="mt-3 text-sm text-[var(--color-data-drag-drop-file-text)]">
-                                    Arquivo selecionado: <span className="font-medium">{selectedFile.name}</span>
-                                    <Button variant="ghost" size="icon-sm" onClick={() => setSelectedFile(null)} className="ml-2 text-[var(--color-data-drag-drop-file-remove-icon)] hover:bg-transparent">
-                                        <IoCloseOutline size={18} />
-                                    </Button>
+
+                        {/* Always present file input and selection display */}
+                        <Button variant="secondary" onClick={triggerFileInput} className="mt-3 w-full sm:w-auto">
+                            Selecionar Arquivo
+                        </Button>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            accept="application/json"
+                            className="hidden"
+                        />
+                        {selectedFile && (
+                            <div className="mt-4 flex items-center bg-[var(--color-data-drag-drop-file-bg)] p-2 rounded-md shadow-inner">
+                                <IoDocumentOutline size={18} className="mr-2 text-[var(--color-data-drag-drop-file-icon)]" />
+                                <span className="text-sm font-medium text-[var(--color-data-drag-drop-file-text)]">{selectedFile.name}</span>
+                                <Button variant="ghost" size="icon-sm" onClick={() => setSelectedFile(null)} className="ml-2 text-[var(--color-data-drag-drop-file-remove-icon)] hover:bg-transparent">
+                                    <IoCloseOutline size={18} />
+                                </Button>
+                            </div>
+                        )}
+
+                        {/* Conditional drag-and-drop area for non-mobile devices */}
+                        {!isMobile && (
+                            <div
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg transition-all duration-200 ease-in-out mt-4
+                                    ${isDragging ? 'border-[var(--color-data-drag-drop-active-border)] bg-[var(--color-data-drag-drop-hover-bg)] text-[var(--color-data-drag-drop-active-text)]' : 'border-[var(--color-data-drag-drop-border)] bg-transparent text-[var(--color-data-drag-drop-text)] hover:bg-[var(--color-data-drag-drop-hover-bg)]'}`}
+                            >
+                                <IoCloudUploadOutline size={40} className="mb-3" />
+                                <p className="text-center text-sm font-semibold">
+                                    Arraste e solte seu arquivo JSON aqui
                                 </p>
-                            )}
-                        </div>
+                                <p className="text-center text-xs text-[var(--color-data-drag-drop-text-secondary)] mb-3">
+                                    ou clique no botão acima para selecionar um arquivo.
+                                </p>
+                            </div>
+                        )}
+
                         <Button
                             variant="primary"
                             onClick={handleImportData}
@@ -478,22 +454,24 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
                 title="Sincronização com Google Drive"
                 description="Mantenha suas memórias sincronizadas com seu Google Drive pessoal."
             >
-                <section className="bg-[var(--color-data-import-export-bg)] p-4 rounded-lg border border-[var(--color-data-import-export-border)] shadow-sm space-y-3">
+                <section className="bg-[var(--color-data-import-export-bg)] p-4 rounded-lg border border-[var(--color-data-import-export-border)] shadow-sm space-y-4"> {/* Adjusted space-y */}
                     {settings.googleDriveUser ? (
                         <>
                             <p className="text-sm text-[var(--color-data-import-export-text)]">
-                                Conectado como: <span className="font-medium">{settings.googleDriveUser.email}</span>
+                                <span className="font-semibold">Conectado como:</span> <span className="font-medium">{settings.googleDriveUser.email}</span>
                             </p>
                             <p className="text-sm text-[var(--color-data-import-export-text)]">
-                                Status: <span className="font-medium">{settings.googleDriveSyncStatus}</span>
+                                <span className="font-semibold">Status:</span> <span className="font-medium">{settings.googleDriveSyncStatus}</span>
                                 {settings.googleDriveLastSync && ` (Última sincronização: ${new Date(settings.googleDriveLastSync).toLocaleString()})`}
                             </p>
                             <div className="flex flex-col sm:flex-row gap-3">
-                                <Button variant="secondary" onClick={handleManualSync} disabled={settings.googleDriveSyncStatus === 'Syncing'} className="w-full sm:w-auto">
-                                    <IoRefreshOutline className="mr-2" size={20} /> Sincronizar Agora
+                                <Button variant="secondary" onClick={handleManualSync} disabled={isSyncing} className="w-full sm:w-auto">
+                                    {isSyncing ? <FaSpinner className="animate-spin mr-2" size={20} /> : <IoRefreshOutline className="mr-2" size={20} />}
+                                    {isSyncing ? 'Sincronizando...' : 'Sincronizar Agora'}
                                 </Button>
                                 <Button variant="danger" onClick={handleDisconnectGoogleDrive} disabled={authActionLoading} className="w-full sm:w-auto">
-                                    <IoUnlinkOutline className="mr-2" size={20} /> Desconectar Google Drive
+                                    {authActionLoading ? <FaSpinner className="animate-spin mr-2" size={20} /> : <IoUnlinkOutline className="mr-2" size={20} />}
+                                    Desconectar Google Drive
                                 </Button>
                             </div>
                         </>
@@ -509,7 +487,8 @@ const DataSettingsTab: React.FC<DataSettingsTabProps> = ({ syncDriveData }) => {
                                 disabled={!isGoogleClientInitialized || authActionLoading || !import.meta.env.VITE_GOOGLE_CLIENT_ID}
                                 className="w-full sm:w-auto"
                             >
-                                <IoLogoGoogle className="mr-2" size={20} /> Conectar com Google Drive
+                                {authActionLoading ? <FaSpinner className="animate-spin mr-2" size={20} /> : <IoLogoGoogle className="mr-2" size={20} />}
+                                Conectar com Google Drive
                             </Button>
                         </>
                     )}

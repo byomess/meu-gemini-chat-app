@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import Button from '../common/Button'; // Certifique-se que o caminho está correto
 import {
   IoSettingsOutline,
@@ -10,6 +10,8 @@ import {
 } from 'react-icons/io5';
 import { useConversations } from '../../contexts/ConversationContext';
 import type { Conversation } from '../../types';
+import Dropdown from '../common/Dropdown'; // Import the new Dropdown component
+import DropdownItem from '../common/DropdownItem'; // Import the new DropdownItem component
 
 // Import GhostIcon from lucide-react or similar if available, otherwise use a placeholder or another icon
 import { GhostIcon } from 'lucide-react'; // Example: if you have lucide-react installed
@@ -40,10 +42,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
   const [tempTitle, setTempTitle] = useState<string>('');
-  const [showNewChatOptions, setShowNewChatOptions] = useState(false);
-  const newChatButtonRef = useRef<HTMLButtonElement>(null);
-  const newChatOptionsRef = useRef<HTMLDivElement>(null);
-
 
   const sortedConversations = [...conversations]; 
 
@@ -99,23 +97,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const handleNewChatClick = useCallback((isIncognito: boolean = false) => {
     createNewConversation({ isIncognito });
-    setShowNewChatOptions(false); // Close options after selection
+    // No need to close options here, Dropdown component handles it
     if(isMobile && onSelectConversation) onSelectConversation();
   }, [createNewConversation, isMobile, onSelectConversation]);
-
-  // Close new chat options when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (newChatOptionsRef.current && !newChatOptionsRef.current.contains(event.target as Node) &&
-          newChatButtonRef.current && !newChatButtonRef.current.contains(event.target as Node)) {
-        setShowNewChatOptions(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   const baseClasses = `bg-[var(--color-sidebar-bg)] text-[var(--color-sidebar-text)] h-screen flex flex-col p-3 transition-all duration-300 ease-in-out shadow-xl`;
   
@@ -151,42 +135,32 @@ const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       <div className="mb-3 relative"> {/* Added relative for positioning options */}
-        <Button
-          ref={newChatButtonRef}
-          variant="primary"
-          className={`w-full !py-2.5 flex items-center justify-center space-x-2.5 rounded-lg
-                      text-sm font-semibold shadow-md hover:shadow-lg 
-                      focus:ring-offset-[var(--color-focus-ring-offset)] 
-                      transition-all duration-200 ease-in-out group/newConvo transform active:scale-[0.98]
-                      bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]`}
-          onClick={() => setShowNewChatOptions(!showNewChatOptions)} // Toggle options
-          title={isMobile ? "Nova Conversa" : ""}
-          aria-label="Nova Conversa"
+        <Dropdown
+            trigger={
+                <Button
+                    variant="primary"
+                    className={`w-full !py-2.5 flex items-center justify-center space-x-2.5 rounded-lg
+                                text-sm font-semibold shadow-md hover:shadow-lg 
+                                focus:ring-offset-[var(--color-focus-ring-offset)] 
+                                transition-all duration-200 ease-in-out group/newConvo transform active:scale-[0.98]
+                                bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)]`}
+                    title={isMobile ? "Nova Conversa" : ""}
+                    aria-label="Nova Conversa"
+                >
+                    <IoAddCircleOutline size={22} className={'group-hover/newConvo:scale-105 transition-transform duration-300'} />
+                    <span className="whitespace-nowrap">Nova Conversa</span>
+                </Button>
+            }
+            position="left" // Position the dropdown menu to the left
+            menuClassName="w-full" // Make the dropdown menu take full width of its parent
         >
-          <IoAddCircleOutline size={22} className={'group-hover/newConvo:scale-110 group-hover/newConvo:rotate-90 transition-transform duration-300'} />
-          <span className="whitespace-nowrap">Nova Conversa</span>
-        </Button>
-        {showNewChatOptions && (
-          <div
-            ref={newChatOptionsRef}
-            className="absolute z-10 top-full left-0 right-0 mt-2 bg-[var(--color-sidebar-bg)] border border-[var(--color-sidebar-border)] rounded-md shadow-lg overflow-hidden"
-          >
-            <Button
-              variant="ghost"
-              className="w-full justify-start px-4 py-2 hover:bg-[var(--color-hover-bg)] text-[var(--color-sidebar-text)]"
-              onClick={() => handleNewChatClick(false)}
-            >
-              <IoChatbubbleEllipsesOutline size={18} className="mr-2" /> Conversa Padrão
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full justify-start px-4 py-2 hover:bg-[var(--color-hover-bg)] text-[var(--color-sidebar-text)]"
-              onClick={() => handleNewChatClick(true)}
-            >
-              <GhostIcon size={18} className="mr-2" /> Conversa Incógnita
-            </Button>
-          </div>
-        )}
+            <DropdownItem onClick={() => handleNewChatClick(false)} icon={<IoChatbubbleEllipsesOutline size={18} />}>
+                Conversa Padrão
+            </DropdownItem>
+            <DropdownItem onClick={() => handleNewChatClick(true)} icon={<GhostIcon size={18} />}>
+                Conversa Incógnita
+            </DropdownItem>
+        </Dropdown>
       </div>
 
       <nav className={`flex-grow flex flex-col min-h-0`}>
@@ -194,6 +168,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             Recentes
           </p>
         <div className={`flex-grow overflow-y-auto space-y-1 pr-1 -mr-1`}>
+            {/* Add custom scrollbar utility classes here if available, e.g., 'custom-scrollbar' */}
           {sortedConversations.map((convo) => (
             <div
               key={convo.id}
@@ -265,7 +240,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               )}
 
               {editingConversationId !== convo.id && (
-                <div className={`flex-shrink-0 flex items-center opacity-0 group-hover/convoItem:opacity-100 w-14 justify-end
+                <div className={`flex-shrink-0 flex items-center opacity-0 group-hover/convoItem:opacity-100 w-16 justify-end
                                 group-focus-within/convoItem:opacity-100
                                 transition-opacity duration-200 ease-in-out
                                 bg-[var(--color-convo-item-actions-bg)] group-hover/convoItem:bg-[var(--color-convo-item-actions-hover-bg)] backdrop-blur-sm rounded-md p-0.5 space-x-0.5
@@ -282,7 +257,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     aria-label="Editar título da conversa"
                     className={`${convo.id === activeConversationId ? 'text-[var(--color-convo-item-active-actions-icon)] opacity-80 hover:text-[var(--color-convo-item-active-actions-icon)]' : 'text-[var(--color-convo-item-actions-icon)] hover:text-[var(--color-convo-item-actions-hover-icon)]'} transition-colors`}
                   >
-                    <IoPencilOutline size={15} />
+                    <IoPencilOutline size={16} /> {/* Changed size from 15 to 16 */}
                   </Button>
                   <Button
                     variant="ghost" // Using ghost variant for minimal styling
@@ -292,7 +267,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     aria-label="Excluir conversa"
                     className={`${convo.id === activeConversationId ? 'text-[var(--color-convo-item-active-actions-icon)] opacity-80 hover:text-[var(--color-convo-item-active-actions-delete-hover-icon)]' : 'text-[var(--color-convo-item-actions-icon)] hover:text-[var(--color-convo-item-actions-delete-hover-icon)]'} transition-colors`}
                   >
-                    <IoTrashBinOutline size={15} />
+                    <IoTrashBinOutline size={16} /> {/* Changed size from 15 to 16 */}
                   </Button>
                 </div>
               )}

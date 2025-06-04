@@ -1,11 +1,13 @@
-import React, { createContext, useContext, type ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, type ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { HarmCategory, HarmBlockThreshold, type SafetySetting } from '../types';
-import type { AppSettings, GeminiModelConfig, FunctionDeclaration, GoogleDriveSyncStatus, GoogleDriveUser } from '../types';
+import type { AppSettings, GeminiModelConfig, FunctionDeclaration, GoogleDriveSyncStatus, GoogleDriveUser, ThemeName } from '../types';
+import { ALL_THEME_NAMES, DARK_THEME_NAMES } from '../constants/themes'; // NEW: Import theme constants
+import { nativeFunctionDeclarations } from '../config/nativeFunctions'; // ADDED: Import native functions
 
 const APP_SETTINGS_KEY = 'geminiChat_appSettings';
 
-export const DEFAULT_PERSONALITY_PROMPT = `Você é Loox, um assistente de IA pessoal projetado para ser um parceiro inteligente, prestativo e adaptável, operando dentro deste Web App. Sua missão é auxiliar os usuários em diversas tarefas, produtividade, explorar ideias e manter uma interação engajadora e personalizada.`;
+export const DEFAULT_PERSONALITY_PROMPT = `Você é Loox, um assistente de IA pessoal projetado para ser um parceiro inteligente, prestativo e adaptável, operando dentro deste Web App. Sua missão é auxiliar os usuários em diversas tarefas, produtividade, explorar ideias e manter uma interação engajante e personalizada.`;
 
 const defaultSafetySettings: SafetySetting[] = [
     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
@@ -26,13 +28,13 @@ const defaultAppSettings: AppSettings = {
         model: 'gemini-2.5-flash-preview-05-20',
         thinkingBudget: 1024,
     },
-    functionDeclarations: [],
+    functionDeclarations: [], // Represents user-defined functions; native functions are merged in
     codeSynthaxHighlightEnabled: false,
-    aiAvatarUrl: '',
+    aiAvatarUrl: '/lux_avatar.png',
     enableWebSearch: true,
     enableAttachments: true,
     hideNavigation: false,
-    theme: 'aulapp',
+    theme: 'loox',
     showProcessingIndicators: true,
     googleDriveAccessToken: undefined,
     googleDriveUser: null,
@@ -43,61 +45,88 @@ const defaultAppSettings: AppSettings = {
 };
 
 interface AppSettingsContextType {
-    settings: AppSettings;
+    settings: AppSettings; // This will contain the combined (native + user) function declarations
     setSettings: (settings: AppSettings | ((prevSettings: AppSettings) => AppSettings)) => void;
     saveApiKey: (apiKey: string) => void;
     updateGeminiModelConfig: (config: Partial<GeminiModelConfig>) => void;
-    updateFunctionDeclarations: (declarations: FunctionDeclaration[]) => void;
+    updateFunctionDeclarations: (declarations: FunctionDeclaration[]) => void; // Will receive combined, saves only user-defined
     updateCodeSyntaxHighlightEnabled: (enabled: boolean) => void;
     updateAiAvatarUrl: (url: string) => void;
     updateEnableWebSearch: (enabled: boolean) => void;
     updateAttachmentsEnabled: (enabled: boolean) => void;
     updateHideNavigation: (hidden: boolean) => void;
-    updateTheme: (theme: 'loox' | 'aulapp') => void;
-    updateShowProcessingIndicators: (enabled: boolean) => void; // Add this line
+    updateTheme: (theme: ThemeName) => void;
+    updateShowProcessingIndicators: (enabled: boolean) => void;
     connectGoogleDrive: (accessToken: string, user: GoogleDriveUser) => void;
     disconnectGoogleDrive: () => void;
     setGoogleDriveSyncStatus: (status: GoogleDriveSyncStatus) => void;
     updateGoogleDriveLastSync: (timestamp: string) => void;
     setGoogleDriveError: (error?: string) => void;
+    updateCustomPersonalityPrompt: (prompt: string) => void; // NOVO: Adicionado
 }
 
 export const AppSettingsContext = createContext<AppSettingsContextType | undefined>(undefined);
 
 export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [settings, setSettings] = useLocalStorage<AppSettings>(
+    const [storedSettings, setStoredSettings] = useLocalStorage<AppSettings>(
         APP_SETTINGS_KEY,
         defaultAppSettings
     );
 
+    // Memoize the combined list of function declarations
+    // This list merges native functions with user-defined functions from storage
+    const combinedFunctionDeclarations = useMemo(() => {
+        const userDefinedFunctionsFromStorage = storedSettings.functionDeclarations || [];
+        
+        // Filter out any user-defined functions that might have the same ID as a native function
+        // This gives precedence to native functions.
+        const uniqueUserDefinedFunctions = userDefinedFunctionsFromStorage.filter(
+            udf => !nativeFunctionDeclarations.some(nf => nf.id === udf.id)
+        );
+
+        return [...nativeFunctionDeclarations, ...uniqueUserDefinedFunctions];
+    }, [storedSettings.functionDeclarations]);
+
+    // Effective settings to be passed down through context
+    // This includes the combined list of function declarations
+    const effectiveSettings = useMemo(() => ({
+        ...storedSettings,
+        functionDeclarations: combinedFunctionDeclarations,
+    }), [storedSettings, combinedFunctionDeclarations]);
+
     useEffect(() => {
-        document.body.classList.remove('theme-loox', 'theme-aulapp');
-        document.body.classList.add(`theme-${settings.theme}`);
-    }, [settings.theme]);
+        // Manage body class for themes.
+        const THEMES_ON_BODY = ALL_THEME_NAMES.map(name => `theme-${name}`);
+        const currentTheme = effectiveSettings.theme && ALL_THEME_NAMES.includes(effectiveSettings.theme)
+            ? effectiveSettings.theme
+            : defaultAppSettings.theme;
 
-    React.useEffect(() => {
-        if (settings && settings.geminiModelConfig) {
+        document.body.classList.remove(...THEMES_ON_BODY);
+        document.body.classList.add(`theme-${currentTheme}`);
+
+        if (DARK_THEME_NAMES.includes(currentTheme)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, [effectiveSettings.theme]);
+
+    useEffect(() => {
+        if (effectiveSettings && effectiveSettings.geminiModelConfig) {
             let needsUpdate = false;
-            let currentSafetySettings = settings.geminiModelConfig.safetySettings;
+            let currentSafetySettings = effectiveSettings.geminiModelConfig.safetySettings;
 
-            // Check if all categories defined in defaultSafetySettings are present in currentSafetySettings
             const allCategoriesPresent = defaultSafetySettings.every(defaultSetting =>
                 currentSafetySettings && currentSafetySettings.find(s => s.category === defaultSetting.category)
             );
 
             if (!allCategoriesPresent) {
-                // If not all default categories are present, then reset to the context's defaultSafetySettings.
-                // This ensures a baseline of safety categories is always configured.
-                // console.log("AppSettingsContext: Resetting safety settings to default due to missing categories.");
-                currentSafetySettings = [...defaultSafetySettings.map(s => ({...s}))]; // Ensure new array and objects
+                currentSafetySettings = [...defaultSafetySettings.map(s => ({...s}))];
                 needsUpdate = true;
             }
-            // If allCategoriesPresent is true, we assume the existing currentSafetySettings
-            // (potentially from configUrl) are intentional, even if thresholds differ from context's defaults.
-            // No 'else' block that forces needsUpdate = true based on threshold differences alone.
 
             if (needsUpdate) {
-                setSettings(prevSettings => ({
+                setStoredSettings(prevSettings => ({
                     ...prevSettings,
                     geminiModelConfig: {
                         ...prevSettings.geminiModelConfig,
@@ -106,14 +135,14 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
                 }));
             }
         }
-    }, [settings.geminiModelConfig?.safetySettings]);
+    }, [effectiveSettings.geminiModelConfig?.safetySettings, setStoredSettings]);
 
     const saveApiKey = useCallback((apiKey: string) => {
-        setSettings((prevSettings) => ({ ...prevSettings, apiKey }));
-    }, [setSettings]);
+        setStoredSettings((prevSettings) => ({ ...prevSettings, apiKey }));
+    }, [setStoredSettings]);
 
     const updateGeminiModelConfig = useCallback((configUpdate: Partial<GeminiModelConfig>) => {
-        setSettings((prevSettings) => {
+        setStoredSettings((prevSettings) => {
             const newModelConfig = {
                 ...prevSettings.geminiModelConfig,
                 ...configUpdate,
@@ -126,119 +155,132 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
                 geminiModelConfig: newModelConfig,
             };
         });
-    }, [setSettings]);
+    }, [setStoredSettings]);
 
-    const updateFunctionDeclarations = useCallback((declarations: FunctionDeclaration[]) => {
-        setSettings((prevSettings) => ({
+    const updateFunctionDeclarations = useCallback((newDeclarations: FunctionDeclaration[]) => {
+        // Filter out native functions before saving to local storage.
+        // newDeclarations might be the combined list from the UI.
+        const userDefinedDeclarationsToSave = newDeclarations.filter(
+            decl => !decl.isNative
+        );
+        setStoredSettings((prevSettings) => ({
             ...prevSettings,
-            functionDeclarations: declarations,
+            // Only user-defined functions are stored in localStorage.
+            functionDeclarations: userDefinedDeclarationsToSave,
         }));
-    }, [setSettings]);
+    }, [setStoredSettings]);
 
     const updateCodeSyntaxHighlightEnabled = useCallback((enabled: boolean) => {
-        setSettings((prevSettings) => ({
+        setStoredSettings((prevSettings) => ({
             ...prevSettings,
             codeSynthaxHighlightEnabled: enabled,
         }));
-    }, [setSettings]);
+    }, [setStoredSettings]);
 
     const updateAiAvatarUrl = useCallback((url: string) => {
-        setSettings((prevSettings) => ({
+        setStoredSettings((prevSettings) => ({
             ...prevSettings,
             aiAvatarUrl: url,
         }));
-    }, [setSettings]);
+    }, [setStoredSettings]);
 
     const updateEnableWebSearch = useCallback((enabled: boolean) => {
-        setSettings((prevSettings) => ({
+        setStoredSettings((prevSettings) => ({
             ...prevSettings,
             enableWebSearch: enabled,
         }));
-    }, [setSettings]);
+    }, [setStoredSettings]);
 
     const updateAttachmentsEnabled = useCallback((enabled: boolean) => {
-        setSettings((prevSettings) => ({
+        setStoredSettings((prevSettings) => ({
             ...prevSettings,
             enableAttachments: enabled,
         }));
-    }, [setSettings]);
+    }, [setStoredSettings]);
 
     const updateHideNavigation = useCallback((hidden: boolean) => {
-        setSettings((prevSettings) => ({
+        setStoredSettings((prevSettings) => ({
             ...prevSettings,
             hideNavigation: hidden,
         }));
-    }, [setSettings]);
+    }, [setStoredSettings]);
 
-    const updateTheme = useCallback((theme: 'loox' | 'aulapp') => {
-        setSettings((prevSettings) => ({
+    const updateTheme = useCallback((theme: ThemeName) => {
+        setStoredSettings((prevSettings) => ({
             ...prevSettings,
             theme: theme,
         }));
-    }, [setSettings]);
+    }, [setStoredSettings]);
 
-    // Add this new callback
     const updateShowProcessingIndicators = useCallback((enabled: boolean) => {
-        setSettings((prevSettings) => ({
+        setStoredSettings((prevSettings) => ({
             ...prevSettings,
             showProcessingIndicators: enabled,
         }));
-    }, [setSettings]);
+    }, [setStoredSettings]);
 
     const connectGoogleDrive = useCallback((accessToken: string, user: GoogleDriveUser) => {
-        setSettings(prev => ({
+        setStoredSettings(prev => ({
             ...prev,
             googleDriveAccessToken: accessToken,
             googleDriveUser: user,
-            googleDriveSyncStatus: 'Synced', // Or 'Connected', assuming initial sync might follow
+            googleDriveSyncStatus: 'Synced',
             googleDriveLastSync: new Date().toISOString(),
             googleDriveError: undefined,
         }));
-    }, [setSettings]);
+    }, [setStoredSettings]);
 
     const disconnectGoogleDrive = useCallback(() => {
-        setSettings(prev => ({
+        setStoredSettings(prev => ({
             ...prev,
             googleDriveAccessToken: undefined,
             googleDriveUser: null,
             googleDriveSyncStatus: 'Disconnected',
             googleDriveError: undefined,
-            // googleDriveLastSync: undefined, // Optionally clear last sync time
         }));
-    }, [setSettings]);
+    }, [setStoredSettings]);
 
     const setGoogleDriveSyncStatus = useCallback((status: GoogleDriveSyncStatus) => {
-        setSettings(prev => ({ ...prev, googleDriveSyncStatus: status }));
-    }, [setSettings]);
+        setStoredSettings(prev => ({ ...prev, googleDriveSyncStatus: status }));
+    }, [setStoredSettings]);
 
     const updateGoogleDriveLastSync = useCallback((timestamp: string) => {
-        setSettings(prev => ({ ...prev, googleDriveLastSync: timestamp }));
-    }, [setSettings]);
+        setStoredSettings(prev => ({ ...prev, googleDriveLastSync: timestamp }));
+    }, [setStoredSettings]);
 
     const setGoogleDriveError = useCallback((error?: string) => {
-        setSettings(prev => ({ ...prev, googleDriveError: error, googleDriveSyncStatus: error ? 'Error' : prev.googleDriveSyncStatus }));
-    }, [setSettings]);
+        setStoredSettings(prev => ({ ...prev, googleDriveError: error, googleDriveSyncStatus: error ? 'Error' : prev.googleDriveSyncStatus }));
+    }, [setStoredSettings]);
+
+    // NOVO: Adicionar esta função
+    const updateCustomPersonalityPrompt = useCallback((prompt: string) => {
+        setStoredSettings(prevSettings => ({
+            ...prevSettings,
+            customPersonalityPrompt: prompt,
+        }));
+    }, [setStoredSettings]);
 
 
     return (
         <AppSettingsContext.Provider value={{
-            settings,
-            setSettings,
+            settings: effectiveSettings, // Provide the settings with combined function declarations
+            setSettings: setStoredSettings, // This updates the raw stored settings
             saveApiKey,
             updateGeminiModelConfig,
-            updateFunctionDeclarations,
+            updateFunctionDeclarations, // This correctly filters before saving
             updateCodeSyntaxHighlightEnabled,
             updateAiAvatarUrl,
             updateEnableWebSearch,
             updateAttachmentsEnabled,
             updateHideNavigation,
             updateTheme,
-            updateShowProcessingIndicators, // Add this to the context value
+            updateShowProcessingIndicators,
             connectGoogleDrive,
             disconnectGoogleDrive,
             setGoogleDriveSyncStatus,
             updateGoogleDriveLastSync,
             setGoogleDriveError,
+            updateCustomPersonalityPrompt, // NOVO: Expor a função aqui
         }}>
             {children}
         </AppSettingsContext.Provider>

@@ -4,6 +4,8 @@ import TextInput from '../../common/TextInput';
 import { IoSparklesOutline } from 'react-icons/io5';
 import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
 import ToggleSwitch from '../../common/ToggleSwitch'; // Import the new ToggleSwitch component
+import SelectInput from '../../common/SelectInput'; // Import the new SelectInput component
+import type { ThemeName } from '../../../types'; // ADDED: Import ThemeName
 
 export interface InterfaceSettingsTabProps {
     currentCodeHighlightEnabled: boolean;
@@ -20,6 +22,8 @@ export interface InterfaceSettingsTabProps {
     onToggleShowProcessingIndicators: () => void;
     currentShowAiFunctionCallAttachments: boolean; // New prop
     onToggleShowAiFunctionCallAttachments: () => void; // New prop
+    currentTheme: ThemeName; // ADDED: New prop for theme
+    onThemeChange: (theme: ThemeName) => void; // ADDED: New prop for theme change handler
 }
 
 const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
@@ -37,7 +41,21 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
     onToggleShowProcessingIndicators,
     currentShowAiFunctionCallAttachments, // Destructure new prop
     onToggleShowAiFunctionCallAttachments, // Destructure new prop
+    currentTheme, // Destructure new prop
+    onThemeChange, // Destructure new prop
 }) => {
+    const themeOptions = [
+        { value: 'loox', label: 'Loox (Escuro)' },
+        { value: 'aulapp', label: 'Aulapp (Claro)' },
+        { value: 'dracula-dark', label: 'Dracula (Escuro)' },
+        { value: 'solarized-light', label: 'Solarized Light (Claro)' },
+        { value: 'one-dark', label: 'One Dark (Escuro)' },
+        { value: 'github-light', label: 'GitHub Light (Claro)' },
+        { value: 'shades-of-purple', label: 'Shades of Purple (Escuro)' },
+        { value: 'shades-of-purple-light', label: 'Shades of Purple Light (Claro)' },
+        { value: 'nebula', label: 'Nebula (Escuro)' }, // UPDATED: New theme option
+    ];
+
     return (
         <div className="space-y-6">
             <SettingsPanel
@@ -64,8 +82,8 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
                                     src={currentAiAvatarUrl}
                                     alt="AI Avatar Preview"
                                     className="w-10 h-10 rounded-full object-cover border border-[var(--color-interface-settings-avatar-preview-border)] shadow-sm"
+                                    style={{ objectFit: 'cover' }}
                                     onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { // Explicitly type the event
-                                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3Cline x1='12' y1='8' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'%3E%3C/line%3E%3C/svg%3E"; // Fallback to a generic error icon
                                         e.currentTarget.className = "w-10 h-10 rounded-full object-cover border border-[var(--color-interface-settings-avatar-preview-border)] shadow-sm p-2 text-[var(--color-interface-settings-avatar-preview-text)] bg-[var(--color-interface-settings-avatar-preview-bg)]";
                                     }}
                                 />
@@ -76,6 +94,17 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
                             )}
                         </div>
                     </div>
+
+                    {/* Theme Selection - NEW */}
+                    <SelectInput
+                        id="theme-select"
+                        name="theme"
+                        label="Tema"
+                        value={currentTheme}
+                        onChange={(value) => onThemeChange(value as ThemeName)}
+                        options={themeOptions}
+                        helperText="Escolha o tema visual do aplicativo."
+                    />
 
                     {/* Code Syntax Highlight Toggle */}
                     <ToggleSwitch
@@ -108,7 +137,7 @@ const InterfaceSettingsTab: React.FC<InterfaceSettingsTabProps> = ({
                     <ToggleSwitch
                         id="hide-navigation-toggle"
                         label="Esconder Navegação"
-                        description="Oculta a barra lateral de navegação por padrão."
+                        description="Oculta a barra lateral de navegação por default."
                         checked={currentHideNavigation}
                         onChange={onToggleHideNavigation}
                     />

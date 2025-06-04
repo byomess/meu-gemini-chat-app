@@ -17,7 +17,8 @@ import type {
     GeminiModelConfig,
     FunctionDeclaration as AppFunctionDeclaration,
     SafetySetting,
-    MemoriesSettingsTabProps // Supondo que este tipo seja usado por MemoriesSettingsTab
+    MemoriesSettingsTabProps, // Supondo que este tipo seja usado por MemoriesSettingsTab
+    ThemeName // ADDED: Import ThemeName
 } from "../../types"; // Ajuste o caminho se necessário
 import {
     HarmBlockThreshold as GenaiHarmBlockThresholdEnum,
@@ -115,6 +116,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
         useState<boolean>(settings.showProcessingIndicators);
     const [currentShowAiFunctionCallAttachments, setCurrentShowAiFunctionCallAttachments] = // ADDED: New state for AI function call attachments
         useState<boolean>(settings.showAiFunctionCallAttachments);
+    const [currentTheme, setCurrentTheme] = useState<ThemeName>(settings.theme); // ADDED: New state for theme
 
     const defaultModelConfigValues: GeminiModelConfig = useMemo(() => {
         const defaultFirstModel =
@@ -158,6 +160,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
             setCurrentShowProcessingIndicatorsState(settings.showProcessingIndicators);
             setCurrentShowAiFunctionCallAttachments(settings.showAiFunctionCallAttachments); // ADDED: Sync new setting
             setCurrentCustomPersonalityPrompt(settings.customPersonalityPrompt || "");
+            setCurrentTheme(settings.theme); // ADDED: Sync theme
 
             const currentSettingsSafety = settings.geminiModelConfig?.safetySettings;
             let effectiveSafetySettings: SafetySetting[];
@@ -199,6 +202,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
                         : JSON.stringify(fd.parametersSchema || { type: "object", properties: {}, required: [] }),
                     endpointUrl: fd.endpointUrl || "",
                     httpMethod: fd.httpMethod || "POST",
+                    type: fd.type || (fd.code ? 'javascript' : 'api'), // ADDED: Ensure type property
                 })
             );
             setCurrentFunctionDeclarations(loadedFuncDeclarations);
@@ -276,6 +280,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
                 parametersSchema: lfd.parametersSchema, // Assegure-se que este é um objeto JSON válido
                 endpointUrl: lfd.endpointUrl,
                 httpMethod: lfd.httpMethod,
+                type: lfd.type, // ADDED: Pass through the type property
             }));
 
         // Garante que todas as categorias de segurança estão presentes
@@ -310,6 +315,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
             hideNavigation: currentHideNavigation,
             showProcessingIndicators: currentShowProcessingIndicatorsState, // Save new setting
             showAiFunctionCallAttachments: currentShowAiFunctionCallAttachments, // ADDED: Save new setting
+            theme: currentTheme, // ADDED: Save the selected theme
         }));
         showDialog({ title: "Sucesso", message: "Configurações salvas com sucesso!", type: "alert" });
         // onClose(); // Opcional: fechar o modal de configurações após salvar
@@ -499,7 +505,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
                                                                         <ModelSettingsTab
                                                                             currentGeminiModelConfig={localModelConfig}
                                                                             setCurrentGeminiModelConfig={setLocalModelConfig}
-                                                                        />
+                                                                                                                                                      />
                                                                     )}
                                                                     {tab.id === "functionCalling" && (
                                                                         <FunctionCallingSettingsTab
@@ -523,6 +529,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, syncDriv
                                                                             onToggleShowProcessingIndicators={handleToggleShowProcessingIndicatorsForTab}
                                                                             currentShowAiFunctionCallAttachments={currentShowAiFunctionCallAttachments} // UPDATED: Pass new state
                                                                             onToggleShowAiFunctionCallAttachments={handleToggleShowAiFunctionCallAttachmentsForTab} // UPDATED: Pass new handler
+                                                                            currentTheme={currentTheme} // ADDED: Pass theme state
+                                                                            onThemeChange={setCurrentTheme} // ADDED: Pass theme setter
                                                                         />
                                                                     )}
                                                                     {tab.id === "memories" && (

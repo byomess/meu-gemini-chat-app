@@ -7,6 +7,39 @@
     <title>Loox AI</title>
   </head>
   <body>
+    <script>
+      (function() {
+        const APP_SETTINGS_KEY = 'geminiChat_appSettings';
+        const DEFAULT_THEME = 'loox'; // Should match your defaultAppSettings
+        const THEMES = ['loox', 'aulapp', 'dracula-dark', 'solarized-light', 'one-dark', 'github-light', 'shades-of-purple', 'shades-of-purple-light', 'nebula']; // All available theme names
+        const DARK_THEMES = ['loox', 'dracula-dark', 'one-dark', 'shades-of-purple', 'nebula']; // Themes that require html.dark
+
+        let themeToApply = DEFAULT_THEME;
+        try {
+          const rawSettings = localStorage.getItem(APP_SETTINGS_KEY);
+          if (rawSettings) {
+            const settings = JSON.parse(rawSettings);
+            if (settings && settings.theme && THEMES.includes(settings.theme)) {
+              themeToApply = settings.theme;
+            }
+          }
+        } catch (e) {
+          // If error, default theme is already set
+          console.error('Error applying initial theme:', e);
+        }
+        // Remove any existing theme classes to prevent conflicts
+        THEMES.forEach(t => document.body.classList.remove('theme-' + t));
+        // Add the determined theme class
+        document.body.classList.add('theme-' + themeToApply);
+
+        // Manage html 'dark' class
+        if (DARK_THEMES.includes(themeToApply)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>

@@ -10,11 +10,13 @@ interface UseAudioRecordingProps {
 export function useAudioRecording({ addFilesToState, onRecordingStateChange, focusTextarea }: UseAudioRecordingProps) {
     const [isRecording, setIsRecording] = useState<boolean>(false);
     const [audioError, setAudioError] = useState<string | null>(null);
+    const [recordingTime, setRecordingTime] = useState<number>(0); // NOVO: Estado para o tempo de gravação
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
     const wasCancelledRef = useRef<boolean>(false);
     const mediaStreamRef = useRef<MediaStream | null>(null);
+    const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null); // NOVO: Ref para o ID do intervalo
 
     const stopMediaStream = useCallback(() => {
         if (mediaStreamRef.current) {
@@ -52,6 +54,11 @@ export function useAudioRecording({ addFilesToState, onRecordingStateChange, foc
                 stopMediaStream();
                 setIsRecording(false);
                 onRecordingStateChange?.(false);
+                // NOVO: Limpar o intervalo ao parar
+                if (recordingIntervalRef.current) {
+                    clearInterval(recordingIntervalRef.current);
+                    recordingIntervalRef.current = null;
+                }
 
                 if (wasCancelledRef.current) {
                     wasCancelledRef.current = false;
@@ -87,12 +94,23 @@ export function useAudioRecording({ addFilesToState, onRecordingStateChange, foc
                 stopMediaStream();
                 setIsRecording(false);
                 onRecordingStateChange?.(false);
+                // NOVO: Limpar o intervalo em caso de erro
+                if (recordingIntervalRef.current) {
+                    clearInterval(recordingIntervalRef.current);
+                    recordingIntervalRef.current = null;
+                }
                 focusTextarea?.();
             };
 
             mediaRecorderRef.current.start();
             setIsRecording(true);
             onRecordingStateChange?.(true);
+            // NOVO: Iniciar o contador de tempo
+            setRecordingTime(0); // Resetar o tempo ao iniciar uma nova gravação
+            recordingIntervalRef.current = setInterval(() => {
+                setRecordingTime(prevTime => prevTime + 1);
+            }, 1000);
+
         } catch (err: unknown) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const error = err as any;
@@ -107,6 +125,11 @@ export function useAudioRecording({ addFilesToState, onRecordingStateChange, foc
             setIsRecording(false);
             onRecordingStateChange?.(false);
             stopMediaStream();
+            // NOVO: Limpar o intervalo em caso de erro ao iniciar
+            if (recordingIntervalRef.current) {
+                clearInterval(recordingIntervalRef.current);
+                recordingIntervalRef.current = null;
+            }
         }
     };
 
@@ -114,6 +137,11 @@ export function useAudioRecording({ addFilesToState, onRecordingStateChange, foc
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
             wasCancelledRef.current = false;
             mediaRecorderRef.current.stop();
+        }
+        // NOVO: Limpar o intervalo ao parar (garantia, pois onstop também faz)
+        if (recordingIntervalRef.current) {
+            clearInterval(recordingIntervalRef.current);
+            recordingIntervalRef.current = null;
         }
     };
 
@@ -126,6 +154,11 @@ export function useAudioRecording({ addFilesToState, onRecordingStateChange, foc
             setIsRecording(false);
             onRecordingStateChange?.(false);
             audioChunksRef.current = [];
+        }
+        // NOVO: Limpar o intervalo ao cancelar
+        if (recordingIntervalRef.current) {
+            clearInterval(recordingIntervalRef.current);
+            recordingIntervalRef.current = null;
         }
         setAudioError(null);
         focusTextarea?.();
@@ -140,6 +173,11 @@ export function useAudioRecording({ addFilesToState, onRecordingStateChange, foc
             stopMediaStream();
             mediaRecorderRef.current = null;
             audioChunksRef.current = [];
+            // NOVO: Limpar o intervalo ao desmontar
+            if (recordingIntervalRef.current) {
+                clearInterval(recordingIntervalRef.current);
+                recordingIntervalRef.current = null;
+            }
         };
     }, [stopMediaStream]);
 
@@ -150,6 +188,7 @@ export function useAudioRecording({ addFilesToState, onRecordingStateChange, foc
         startRecording,
         stopRecordingAndAttach,
         handleCancelRecording,
-        stopMediaStream // Exporting for explicit cleanup if needed by parent
+        stopMediaStream,
+        recordingTime // NOVO: Exportar o tempo de gravação
     };
 }

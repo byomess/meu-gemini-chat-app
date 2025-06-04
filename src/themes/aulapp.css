@@ -1,6 +1,4 @@
-@import "tailwindcss";
-
-@theme {
+.theme-aulapp {
   /* Base Colors */
   --color-gray-50: #f9fafb;
   --color-gray-100: #f3f4f6;
@@ -44,6 +42,10 @@
   /* Custom Primary Color */
   --color-primary: #e04579;
   --color-primary-dark: #c73d6a;
+
+  /* New: Body background and text colors for this theme */
+  --color-body-bg: var(--color-gray-100);
+  --color-body-text: var(--color-gray-800);
 
   /* Semantic Colors (Sidebar specific for now) */
   --color-sidebar-bg: var(--color-white);
@@ -304,6 +306,7 @@
   --color-code-block-no-highlight-scrollbar-track: var(--color-gray-200);
   --color-inline-code-text-alt: var(--color-indigo-700);
   --color-inline-code-bg-alt: var(--color-gray-200);
+  --color-code-content-bg: var(--color-gray-50); /* Changed to gray-50 */
 
   /* CustomDialog Colors */
   --color-dialog-overlay-bg: color-mix(in srgb, var(--color-black) 10%, transparent);

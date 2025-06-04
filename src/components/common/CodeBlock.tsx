@@ -2,7 +2,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { PrismAsyncLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import RSHLightAsync from 'react-syntax-highlighter/dist/esm/light-async';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Changed from vs to vscDarkPlus
+import { vscDarkPlus, solarizedlight } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Removed 'github' import
 import { IoCopyOutline, IoCheckmarkDoneOutline } from 'react-icons/io5';
 
 import jsx from 'react-syntax-highlighter/dist/esm/languages/prism/jsx';
@@ -14,6 +14,7 @@ import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
 import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
 import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { DARK_THEME_NAMES } from '../../constants/themes'; // Import DARK_THEME_NAMES
 
 RSHLightAsync.registerLanguage('jsx', jsx);
 RSHLightAsync.registerLanguage('javascript', javascript);
@@ -55,6 +56,19 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({
         });
     }, [codeString]);
 
+    // Determine if the current theme is a dark theme
+    const isDarkTheme = DARK_THEME_NAMES.includes(settings.theme);
+
+    // Choose syntax highlighter style based on theme
+    const syntaxHighlightStyle = useMemo(() => {
+        // If it's a dark theme, use vscDarkPlus
+        if (isDarkTheme) {
+            return vscDarkPlus;
+        }
+        // For all light themes (aulapp, solarized-light, github-light), use solarizedlight
+        return solarizedlight;
+    }, [isDarkTheme]);
+
     if (inline) {
         return (
             <code className={`${className || ''} px-1 py-0.5 bg-[var(--color-inline-code-bg-alt)] text-[var(--color-inline-code-text-alt)] rounded text-[0.85em] font-mono`}>
@@ -80,7 +94,7 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({
             </div>
             {settings.codeSynthaxHighlightEnabled && language ? (
                 <SyntaxHighlighter
-                    style={vscDarkPlus} // Changed to dark theme
+                    style={syntaxHighlightStyle} // Use the determined style
                     language={language}
                     PreTag="div"
                     showLineNumbers={false}
@@ -93,7 +107,7 @@ const CodeBlockComponent: React.FC<CodeBlockProps> = ({
                         lineHeight: '1.6',
                         borderRadius: '0 0 0.5rem 0.5rem',
                         overflowX: 'auto',
-                        backgroundColor: 'var(--color-gray-800)', // Explicitly set to match wrapper background
+                        backgroundColor: 'var(--color-code-content-bg)', // Explicitly set background from theme
                     }}
                     codeTagProps={{
                         style: { 

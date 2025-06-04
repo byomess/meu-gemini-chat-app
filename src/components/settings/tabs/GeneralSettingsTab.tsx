@@ -1,5 +1,6 @@
 import React from 'react';
 import TextInput from '../../common/TextInput';
+import TextAreaInput from '../../common/TextAreaInput'; // Import the new TextAreaInput
 import { DEFAULT_PERSONALITY_PROMPT } from '../../../contexts/AppSettingsContext'; // Import the correct constant
 import SettingsPanel from '../SettingsPanel'; // Import the new SettingsPanel
 
@@ -51,14 +52,14 @@ const GeneralSettingsTab: React.FC<GeneralSettingsTabProps> = ({
                     </div>
 
                     <div>
-                        <TextInput
+                        <TextAreaInput // Changed from TextInput to TextAreaInput
                             id="custom-personality-prompt"
                             name="customPersonalityPrompt"
                             label="Prompt de Personalidade Personalizado"
                             value={currentCustomPersonalityPrompt}
                             onChange={setCurrentCustomPersonalityPrompt}
-                            type="text"
                             placeholder="Ex: Você é um assistente prestativo e amigável."
+                            rows={6} // Added rows prop for textarea height
                             helperText={
                                 <span>
                                     Defina um prompt para guiar a personalidade e o comportamento da IA. Deixe em branco para o padrão.

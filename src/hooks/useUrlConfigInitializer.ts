@@ -178,6 +178,7 @@ export function useUrlConfigInitializer() {
                                 parametersSchema: parsedInput.parametersSchema || "{}",
                                 endpointUrl: parsedInput.endpointUrl || "",
                                 httpMethod: parsedInput.httpMethod || "GET",
+                                type: parsedInput.type || (parsedInput.code ? 'javascript' : 'api'), // ADDED: type property
                             };
 
                             const validHttpMethods: Array<FunctionDeclaration['httpMethod']> = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
@@ -220,7 +221,11 @@ export function useUrlConfigInitializer() {
                                 changed = true;
                             }
                             if (configToApply.functionDeclarations !== undefined) {
-                                const newDeclarations = configToApply.functionDeclarations.map(fd => ({ ...fd, id: fd.id || uuidv4() }));
+                                const newDeclarations = configToApply.functionDeclarations.map(fd => ({
+                                    ...fd,
+                                    id: fd.id || uuidv4(),
+                                    type: fd.type || (fd.code ? 'javascript' : 'api') // ADDED: Ensure type property
+                                }));
                                 if (!areObjectsEffectivelyEqual(
                                     { functionDeclarations: newAppSettings.functionDeclarations },
                                     { functionDeclarations: newDeclarations }
