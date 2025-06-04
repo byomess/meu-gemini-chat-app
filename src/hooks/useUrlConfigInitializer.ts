@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import type { AppSettings, GeminiModelConfig, FunctionDeclaration, Memory, SafetySetting } from '../types';
+import type { AppSettings, GeminiModelConfig, FunctionDeclaration, Memory, SafetySetting, ThemeName } from '../types';
 import { AppSettingsContext } from '../contexts/AppSettingsContext';
 import { MemoryContext } from '../contexts/MemoryContext';
 import { v4 as uuidv4 } from 'uuid';
@@ -35,9 +35,10 @@ interface UrlConfigFile {
     codeSynthaxHighlightEnabled?: boolean;
     enableWebSearch?: boolean;
     enableAttachments?: boolean;
-    hideNavigation?: boolean; // Added new setting
+    hideNavigation?: boolean;
     showProcessingIndicators?: boolean;
-    showAiFunctionCallAttachments?: boolean; // New setting
+    showAiFunctionCallAttachments?: boolean;
+    theme?: ThemeName;
 }
 
 // Helper for basic deep comparison of JSON-like objects
@@ -260,6 +261,10 @@ export function useUrlConfigInitializer() {
                             }
                             if (configToApply.showAiFunctionCallAttachments !== undefined && newAppSettings.showAiFunctionCallAttachments !== configToApply.showAiFunctionCallAttachments) {
                                 newAppSettings.showAiFunctionCallAttachments = configToApply.showAiFunctionCallAttachments;
+                                changed = true;
+                            }
+                            if (configToApply.theme !== undefined && newAppSettings.theme !== configToApply.theme) {
+                                newAppSettings.theme = configToApply.theme;
                                 changed = true;
                             }
 

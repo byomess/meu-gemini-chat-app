@@ -171,6 +171,9 @@ export interface UrlConfigFile {
     enableWebSearch?: boolean;
     enableAttachments?: boolean;
     hideNavigation?: boolean;
+    theme?: ThemeName;
+    showProcessingIndicators?: boolean;
+    showAiFunctionCallAttachments?: boolean;
 }
 
 export interface RawImportedMessage {
